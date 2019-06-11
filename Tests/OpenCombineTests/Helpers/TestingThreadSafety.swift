@@ -7,7 +7,7 @@
 
 import Dispatch
 
-func exectuteConcurrently(times: Int = 100, _ bodies: () -> Void...) {
+func race(times: Int = 100, _ bodies: () -> Void...) {
 
     let queues = bodies.indices.lazy.map {
         DispatchQueue(label: "exectuteConcurrently helper queue #\($0)")

@@ -6,6 +6,7 @@
 //
 
 import XCTest
+
 #if OPENCOMBINE_COMPATIBILITY_TEST
 import Combine
 #else

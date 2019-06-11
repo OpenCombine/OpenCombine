@@ -73,13 +73,14 @@ extension PassthroughSubject {
         }
 
         func request(_ demand: Subscribers.Demand) {
-            _demand = demand
+            _parent?._lock.do {
+                _demand = demand
+            }
         }
 
         func cancel() {
             _parent = nil
             _downstream = nil
-            _demand = .none
         }
     }
 }

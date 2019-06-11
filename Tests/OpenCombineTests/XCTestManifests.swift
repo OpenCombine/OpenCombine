@@ -12,6 +12,8 @@ public func allTests() -> [XCTestCaseEntry] {
     return [
         testCase(SubscribersDemandTests.allTests),
         testCase(PassthroughSubjectTests.allTests),
+        testCase(CurrentValueSubjectTests.allTests),
+        testCase(ImmediateSchedulerTests.allTests),
     ]
 }
 #endif
