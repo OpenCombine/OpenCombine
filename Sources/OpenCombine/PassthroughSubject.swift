@@ -13,6 +13,8 @@ import Foundation
 /// during tests.
 public final class PassthroughSubject<Output, Failure: Error>: Subject  {
 
+    private let _lock = RecursiveLock()
+
     // TODO: Combine uses bag data structure
     private var _downstreams: [Conduit] = []
 
@@ -22,20 +24,28 @@ public final class PassthroughSubject<Output, Failure: Error>: Subject  {
         subscriber: S
     ) where Output == S.Input, Failure == S.Failure {
         let subscription = Conduit(parent: self, downstream: AnySubscriber(subscriber))
-        _downstreams.append(subscription)
+
+        _lock.do {
+            _downstreams.append(subscription)
+        }
+
         subscriber.receive(subscription: subscription)
     }
 
     public func send(_ input: Output) {
-        for subscriber in _downstreams where subscriber._demand > 0 {
-            let newDemand = subscriber._downstream?.receive(input) ?? .none
-            subscriber._demand += newDemand - 1
+        _lock.do {
+            for subscriber in _downstreams where subscriber._demand > 0 {
+                let newDemand = subscriber._downstream?.receive(input) ?? .none
+                subscriber._demand += newDemand - 1
+            }
         }
     }
 
     public func send(completion: Subscribers.Completion<Failure>) {
-        for subscriber in _downstreams {
-            subscriber._downstream?.receive(completion: completion)
+        _lock.do {
+            for subscriber in _downstreams {
+                subscriber._receive(completion: completion)
+            }
         }
     }
 }
@@ -44,24 +54,29 @@ extension PassthroughSubject {
 
     fileprivate class Conduit: Subscription {
 
-        var _parent: PassthroughSubject?
+        fileprivate var _parent: PassthroughSubject?
 
-        var _downstream: AnySubscriber<Output, Failure>?
+        fileprivate var _downstream: AnySubscriber<Output, Failure>?
 
-        var _demand: Subscribers.Demand = .none
+        fileprivate var _demand: Subscribers.Demand = .none
 
-        init(parent: PassthroughSubject, downstream: AnySubscriber<Output, Failure>) {
+        fileprivate init(parent: PassthroughSubject,
+                         downstream: AnySubscriber<Output, Failure>) {
             _parent = parent
             _downstream = downstream
         }
 
+        fileprivate func _receive(completion: Subscribers.Completion<Failure>) {
+            let downstream = _downstream
+            cancel()
+            downstream?.receive(completion: completion)
+        }
+
         func request(_ demand: Subscribers.Demand) {
-            // TODO
             _demand = demand
         }
 
         func cancel() {
-            // TODO
             _parent = nil
             _downstream = nil
             _demand = .none
