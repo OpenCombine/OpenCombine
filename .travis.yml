@@ -1,15 +1,24 @@
 language: generic
 matrix:
    include:
-     - os: linux
+     - name: "Ubuntu 16.04 | Swift 5.1"
+       os: linux
        dist: xenial
        sudo: required
-     - os: osx
+       env: SWIFT_VERSION="swift-5.1-DEVELOPMENT-SNAPSHOT-2019-05-29-a" OPENCOMBINE_COMPATIBILITY_TEST="NO"
+     - name: "macOS 10.14 | Swift 5.1"
+       os: osx
        osx_image: xcode10.2
-     # - os: osx
-     #   osx_image: xcode11.0
+       env: SWIFT_VERSION="swift-5.1-DEVELOPMENT-SNAPSHOT-2019-05-29-a" OPENCOMBINE_COMPATIBILITY_TEST="NO"
+   # - name: "macOS 10.15 | Swift 5.1"
+   #   os: osx
+   #   osx_image: xcode11.0
+   #   env: SWIFT_VERSION="swift-5.1-DEVELOPMENT-SNAPSHOT-2019-05-29-a" OPENCOMBINE_COMPATIBILITY_TEST="YES"
 install:
     - eval "$(curl -sL https://swiftenv.fuller.li/install.sh)"
 script:
     - swift test -c debug --enable-code-coverage
     - swift test -c release
+    - if [[ $OPENCOMBINE_COMPATIBILITY_TEST == "YES" ]]; then
+        swift test -c release -Xswiftc -DOPENCOMBINE_COMPATIBILITY_TEST;
+      fi
