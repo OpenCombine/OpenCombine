@@ -249,6 +249,9 @@ final class PassthroughSubjectTests: XCTestCase {
     }
 
     func testLifecycle() {
+
+        // TODO
+
         final class MySubscriber: Subscriber {
 
             typealias Input = Sut.Output
