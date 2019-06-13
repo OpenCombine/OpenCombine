@@ -19,6 +19,8 @@ final class CombineIdentifierTests: PerformanceTestCase {
 
     static let allTests = [
         ("testDefaultInitialized", testDefaultInitialized),
+        ("testAnyObject", testAnyObject),
+        ("testDefaultInitializedPerformance", testDefaultInitializedPerformance),
     ]
 
     func testDefaultInitialized() {
