@@ -1,3 +1,21 @@
+travis-ubuntu-16.04:
+  arch: x86_64
+  cpuCount: 0
+  cpuKind: Intel(R) Xeon(R) CPU @ 2.30GHz
+  cpuSpeedInMHz: 2300
+  logicalCPUCoresPerPackage: 1
+  physicalCPUCoresPerPackage: 1
+  platform: Linux 4.15.0-1028-gcp
+broadway_lamb-development-iMac:
+  arch: x86_64
+  busSpeedInMHz: 100
+  cpuCount: 1
+  cpuKind: Intel(R) Core(TM) i7-7700K CPU @ 4.20GHz
+  cpuSpeedInMHz: 4200
+  logicalCPUCoresPerPackage: 8
+  modelCode: iMac18,3
+  physicalCPUCoresPerPackage: 4
+  platform: Darwin 19.0.0
 travis-macOS-10.14:
   arch: x86_64
   busSpeedInMHz: 100
@@ -8,13 +26,3 @@ travis-macOS-10.14:
   modelCode: VMware7,1
   physicalCPUCoresPerPackage: 2
   platform: Darwin 18.5.0
-AD97066B-CC9E-4F63-8B7C-E46F768A3D34:
-  arch: x86_64
-  busSpeedInMHz: 100
-  cpuCount: 1
-  cpuKind: Intel(R) Core(TM) i7-7700K CPU @ 4.20GHz
-  cpuSpeedInMHz: 4200
-  logicalCPUCoresPerPackage: 8
-  modelCode: iMac18,3
-  physicalCPUCoresPerPackage: 4
-  platform: Darwin 19.0.0
