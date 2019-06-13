@@ -1,3 +1,13 @@
+travis-macOS-10.14:
+  arch: x86_64
+  busSpeedInMHz: 100
+  cpuCount: 2
+  cpuKind: Intel(R) Xeon(R) CPU E5-2697 v2 @ 2.70GHz
+  cpuSpeedInMHz: 2574
+  logicalCPUCoresPerPackage: 1
+  modelCode: VMware7,1
+  physicalCPUCoresPerPackage: 2
+  platform: Darwin 18.5.0
 AD97066B-CC9E-4F63-8B7C-E46F768A3D34:
   arch: x86_64
   busSpeedInMHz: 100
