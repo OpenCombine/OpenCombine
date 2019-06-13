@@ -1,0 +1,9 @@
+CombineIdentifierTests:
+  testDefaultInitializedPerformance:
+    maxPercentRelativeStandardDeviation: 1e+1
+    measurement: 1.62128123280127e-3
+    strategy: minimum
+  testDefaultInitializedPerformance | OPENCOMBINE_COMPATIBILITY_TEST:
+    maxPercentRelativeStandardDeviation: 1e+1
+    measurement: 3.5916640190407637e-05
+    strategy: minimum

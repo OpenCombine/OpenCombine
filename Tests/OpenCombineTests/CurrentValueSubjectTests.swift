@@ -21,7 +21,8 @@ final class CurrentValueSubjectTests: XCTestCase {
         ("testMultipleSubscriptions", testMultipleSubscriptions),
         ("testMultipleCompletions", testMultipleCompletions),
         ("testValuesAfterCompletion", testValuesAfterCompletion),
-//        ("testLifecycle", testLifecycle),
+        // TODO:
+        // ("testLifecycle", testLifecycle),
         ("testSynchronization", testSynchronization),
     ]
 

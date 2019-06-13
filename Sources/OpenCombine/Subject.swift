@@ -22,3 +22,9 @@ public protocol Subject: AnyObject, Publisher {
     ///   normally or failed with an error.
     func send(completion: Subscribers.Completion<Failure>)
 }
+
+extension Subject {
+
+    @inlinable
+    public func eraseToAnySubject() -> AnySubject<Output, Failure> { AnySubject(self) }
+}

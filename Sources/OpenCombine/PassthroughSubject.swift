@@ -15,6 +15,8 @@ public final class PassthroughSubject<Output, Failure: Error>: Subject  {
 
     private let _lock = RecursiveLock()
 
+    private var _completion: Subscribers.Completion<Failure>?
+
     // TODO: Combine uses bag data structure
     private var _downstreams: [Conduit] = []
 
@@ -42,6 +44,7 @@ public final class PassthroughSubject<Output, Failure: Error>: Subject  {
     }
 
     public func send(completion: Subscribers.Completion<Failure>) {
+        _completion = completion
         _lock.do {
             for subscriber in _downstreams {
                 subscriber._receive(completion: completion)

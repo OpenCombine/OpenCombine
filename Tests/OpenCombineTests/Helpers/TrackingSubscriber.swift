@@ -21,7 +21,7 @@ final class TrackingSubscriber: Subscriber {
     }
 
     private let _any: AnySubscriber<Int, TestingError>
-    private let _onDeinit: () -> Void
+    private let _onDeinit: (() -> Void)?
 
     private(set) var history: [Event] = []
 
@@ -58,7 +58,7 @@ final class TrackingSubscriber: Subscriber {
     init(receiveSubscription: ((Subscription) -> Void)? = nil,
          receiveValue: ((Input) -> Subscribers.Demand)? = nil,
          receiveCompletion: ((Subscribers.Completion<Failure>) -> Void)? = nil,
-         onDeinit: @escaping () -> Void) {
+         onDeinit: (() -> Void)? = nil) {
         _any = AnySubscriber(receiveSubscription: receiveSubscription,
                              receiveValue: receiveValue,
                              receiveCompletion: receiveCompletion)
@@ -81,6 +81,6 @@ final class TrackingSubscriber: Subscriber {
     }
 
     deinit {
-        _onDeinit()
+        _onDeinit?()
     }
 }

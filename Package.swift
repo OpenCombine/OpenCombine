@@ -7,8 +7,13 @@ let package = Package(
     products: [
         .library(name: "OpenCombine", targets: ["OpenCombine"]),
     ],
+    dependencies: [
+        .package(url: "https://github.com/broadwaylamb/GottaGoFast.git",
+                 .branch("master"))
+    ],
     targets: [
         .target(name: "OpenCombine"),
-        .testTarget(name: "OpenCombineTests", dependencies: ["OpenCombine"])
+        .testTarget(name: "OpenCombineTests",
+                    dependencies: ["OpenCombine", "GottaGoFast"])
     ]
 )

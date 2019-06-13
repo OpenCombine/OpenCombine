@@ -7,10 +7,23 @@
 
 public struct CombineIdentifier : Hashable, CustomStringConvertible {
 
+    private static var _counter: UInt = 0
+
+    // FIXME: Use a common lock instead of recursive?
+    private static let _counterLock = RecursiveLock()
+
     private let _id: UInt
 
     public init() {
-        _id = 0
+
+        var id: UInt = 0
+
+        Self._counterLock.do {
+            id = Self._counter
+            Self._counter += 1
+        }
+
+        _id = id
     }
 
     public init(_ obj: AnyObject) {
@@ -18,6 +31,6 @@ public struct CombineIdentifier : Hashable, CustomStringConvertible {
     }
 
     public var description: String {
-        String(_id, radix: 16)
+        "0x\(String(_id, radix: 16))"
     }
 }

@@ -18,23 +18,20 @@ public struct AnySubscriber<Input, Failure: Error>: Subscriber,
     private let _receiveSubscription: ((Subscription) -> Void)?
     private let _receiveValue: ((Input) -> Subscribers.Demand)?
     private let _receiveCompletion: ((Subscribers.Completion<Failure>) -> Void)?
+    private let _combineIdentifier: CombineIdentifier
 
-    private let _subscriber: CustomCombineIdentifierConvertible?
+    private let _parent: Any?
 
-    public var combineIdentifier: CombineIdentifier {
-        _subscriber?.combineIdentifier ?? CombineIdentifier()
-    }
+    private var _upstreamSubscription: Subscription?
+
+    public var combineIdentifier: CombineIdentifier { _combineIdentifier }
 
     public var description: String {
-        _subscriber.map(String.init(describing:)) ?? "AnySubscriber"
+        _parent.map(String.init(describing:)) ?? "AnySubscriber"
     }
 
-    /// The custom mirror for this instance.
-    ///
-    /// If this type has value semantics, the mirror should be unaffected by
-    /// subsequent mutations of the instance.
     public var customMirror: Mirror {
-        _subscriber.map(Mirror.init) ?? Mirror(reflecting: CombineIdentifier())
+        _parent.map(Mirror.init) ?? Mirror(CombineIdentifier(), children: [])
     }
 
     /// A custom playground description for this instance.
@@ -47,12 +44,16 @@ public struct AnySubscriber<Input, Failure: Error>: Subscriber,
         _receiveSubscription = s.receive(subscription:)
         _receiveValue = s.receive(_:)
         _receiveCompletion = s.receive(completion:)
-        _subscriber = s
+        _combineIdentifier = s.combineIdentifier
+        _parent = s
     }
 
     public init<S: Subject>(_ s: S) where Input == S.Output, Failure == S.Failure {
-        // TODO
-        fatalError("unimplemented")
+        _receiveValue = { s.send($0); return .unlimited }
+        _receiveCompletion = s.send(completion:)
+        _receiveSubscription = nil
+        _combineIdentifier = CombineIdentifier(s)
+        _parent = s
     }
 
     /// Creates a type-erasing subscriber that executes the provided closures.
@@ -69,7 +70,8 @@ public struct AnySubscriber<Input, Failure: Error>: Subscriber,
         _receiveSubscription = receiveSubscription
         _receiveValue = receiveValue
         _receiveCompletion = receiveCompletion
-        _subscriber = nil
+        _combineIdentifier = CombineIdentifier()
+        _parent = nil
     }
 
     public func receive(subscription: Subscription) {

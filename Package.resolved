@@ -1,0 +1,25 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "GottaGoFast",
+        "repositoryURL": "https://github.com/broadwaylamb/GottaGoFast.git",
+        "state": {
+          "branch": "master",
+          "revision": "8f14af9870e6b0caf6210cb4a933f957c509e08e",
+          "version": null
+        }
+      },
+      {
+        "package": "Yams",
+        "repositoryURL": "https://github.com/jpsim/Yams.git",
+        "state": {
+          "branch": null,
+          "revision": "c947a306d2e80ecb2c0859047b35c73b8e1ca27f",
+          "version": "2.0.0"
+        }
+      }
+    ]
+  },
+  "version": 1
+}

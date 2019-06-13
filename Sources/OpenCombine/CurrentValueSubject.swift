@@ -13,6 +13,8 @@ public final class CurrentValueSubject<Output, Failure: Error>: Subject {
     // TODO: Combine uses bag data structure
     private var _downstreams: [Conduit] = []
 
+    private var _completion: Subscribers.Completion<Failure>?
+
     /// The value wrapped by this subject, published as a new element whenever it changes.
     public var value: Output {
         didSet {
@@ -53,6 +55,7 @@ public final class CurrentValueSubject<Output, Failure: Error>: Subject {
     }
 
     public func send(completion: Subscribers.Completion<Failure>) {
+        _completion = completion
         _lock.do {
             for subscriber in _downstreams {
                 subscriber._receive(completion: completion)

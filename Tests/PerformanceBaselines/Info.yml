@@ -1,0 +1,10 @@
+AD97066B-CC9E-4F63-8B7C-E46F768A3D34:
+  arch: x86_64
+  busSpeedInMHz: 100
+  cpuCount: 1
+  cpuKind: Intel(R) Core(TM) i7-7700K CPU @ 4.20GHz
+  cpuSpeedInMHz: 4200
+  logicalCPUCoresPerPackage: 8
+  modelCode: iMac18,3
+  physicalCPUCoresPerPackage: 4
+  platform: Darwin 19.0.0
