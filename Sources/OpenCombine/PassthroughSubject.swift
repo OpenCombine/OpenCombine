@@ -13,7 +13,7 @@ import Foundation
 /// during tests.
 public final class PassthroughSubject<Output, Failure: Error>: Subject  {
 
-    private let _lock = RecursiveLock()
+    private let _lock = Lock(recursive: true)
 
     private var _completion: Subscribers.Completion<Failure>?
 

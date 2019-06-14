@@ -5,15 +5,18 @@
 //  Created by Sergej Jaskiewicz on 10.06.2019.
 //
 
-public struct CombineIdentifier : Hashable, CustomStringConvertible {
+public struct CombineIdentifier: Hashable, CustomStringConvertible {
 
-    private static var _counter: UInt = 0
+    @usableFromInline
+    internal static var _counter: UInt = 0
 
-    // FIXME: Use a common lock instead of recursive?
-    private static let _counterLock = RecursiveLock()
+    @usableFromInline
+    internal static var _counterLock = Lock(recursive: false)
 
-    private let _id: UInt
+    @usableFromInline
+    internal let _id: UInt
 
+    @inlinable
     public init() {
 
         var id: UInt = 0

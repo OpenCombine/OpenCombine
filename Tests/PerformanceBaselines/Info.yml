@@ -1,11 +1,3 @@
-travis-ubuntu-16.04:
-  arch: x86_64
-  cpuCount: 0
-  cpuKind: Intel(R) Xeon(R) CPU @ 2.30GHz
-  cpuSpeedInMHz: 2300
-  logicalCPUCoresPerPackage: 1
-  physicalCPUCoresPerPackage: 1
-  platform: Linux 4.15.0-1028-gcp
 broadway_lamb-development-iMac:
   arch: x86_64
   busSpeedInMHz: 100
@@ -26,3 +18,11 @@ travis-macOS-10.14:
   modelCode: VMware7,1
   physicalCPUCoresPerPackage: 2
   platform: Darwin 18.5.0
+travis-ubuntu-16.04:
+  arch: x86_64
+  cpuCount: 0
+  cpuKind: Intel(R) Xeon(R) CPU @ 2.30GHz
+  cpuSpeedInMHz: 2300
+  logicalCPUCoresPerPackage: 1
+  physicalCPUCoresPerPackage: 1
+  platform: Linux 4.15.0-1028-gcp

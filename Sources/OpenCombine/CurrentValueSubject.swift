@@ -8,7 +8,7 @@
 /// A subject that wraps a single value and publishes a new element whenever the value changes.
 public final class CurrentValueSubject<Output, Failure: Error>: Subject {
 
-    private let _lock = RecursiveLock()
+    private let _lock = Lock(recursive: true)
 
     // TODO: Combine uses bag data structure
     private var _downstreams: [Conduit] = []
