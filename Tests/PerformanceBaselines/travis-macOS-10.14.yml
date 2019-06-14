@@ -1,5 +1,5 @@
 CombineIdentifierTests:
   testDefaultInitializedPerformance:
     maxPercentRelativeStandardDeviation: 1e+1
-    measurement: 2.1283524999717e-4
+    measurement: 1.06726900003764e-4
     strategy: minimum
