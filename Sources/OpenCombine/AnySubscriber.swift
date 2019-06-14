@@ -13,25 +13,24 @@
 public struct AnySubscriber<Input, Failure: Error>: Subscriber,
                                                     CustomStringConvertible,
                                                     CustomReflectable,
-                                                    CustomPlaygroundDisplayConvertible {
+                                                    CustomPlaygroundDisplayConvertible
+{
 
     private let _receiveSubscription: ((Subscription) -> Void)?
     private let _receiveValue: ((Input) -> Subscribers.Demand)?
     private let _receiveCompletion: ((Subscribers.Completion<Failure>) -> Void)?
-    private let _combineIdentifier: CombineIdentifier
 
-    private let _parent: Any?
+    public let combineIdentifier: CombineIdentifier
 
-    private var _upstreamSubscription: Subscription?
-
-    public var combineIdentifier: CombineIdentifier { _combineIdentifier }
+    private var _underying: Any?
 
     public var description: String {
-        _parent.map(String.init(describing:)) ?? "AnySubscriber"
+       _underying.map(String.init(describing:)) ?? "AnySubscriber"
     }
 
     public var customMirror: Mirror {
-        _parent.map(Mirror.init) ?? Mirror(CombineIdentifier(), children: [])
+        _underying.map(Mirror.init(reflecting:))
+            ?? Mirror(combineIdentifier, children: EmptyCollection())
     }
 
     /// A custom playground description for this instance.
@@ -44,16 +43,13 @@ public struct AnySubscriber<Input, Failure: Error>: Subscriber,
         _receiveSubscription = s.receive(subscription:)
         _receiveValue = s.receive(_:)
         _receiveCompletion = s.receive(completion:)
-        _combineIdentifier = s.combineIdentifier
-        _parent = s
+        combineIdentifier = s.combineIdentifier
+        _underying = s
     }
 
     public init<S: Subject>(_ s: S) where Input == S.Output, Failure == S.Failure {
-        _receiveValue = { s.send($0); return .unlimited }
-        _receiveCompletion = s.send(completion:)
-        _receiveSubscription = nil
-        _combineIdentifier = CombineIdentifier(s)
-        _parent = s
+        let subscriber = SubjectSubscriber(s)
+        self.init(subscriber)
     }
 
     /// Creates a type-erasing subscriber that executes the provided closures.
@@ -70,8 +66,7 @@ public struct AnySubscriber<Input, Failure: Error>: Subscriber,
         _receiveSubscription = receiveSubscription
         _receiveValue = receiveValue
         _receiveCompletion = receiveCompletion
-        _combineIdentifier = CombineIdentifier()
-        _parent = nil
+        combineIdentifier = CombineIdentifier()
     }
 
     public func receive(subscription: Subscription) {
@@ -79,10 +74,37 @@ public struct AnySubscriber<Input, Failure: Error>: Subscriber,
     }
 
     public func receive(_ value: Input) -> Subscribers.Demand {
-        _receiveValue?(value) ?? .max(0)
+        _receiveValue?(value) ?? .none
     }
 
     public func receive(completion: Subscribers.Completion<Failure>) {
         _receiveCompletion?(completion)
     }
+}
+
+private final class SubjectSubscriber<S: Subject>: Subscriber, CustomStringConvertible
+{
+
+    let parent: S?
+    var upstreamSubscription: Subscription?
+
+    init(_ parent: S) {
+        self.parent = parent
+    }
+
+    func receive(subscription: Subscription) {
+        upstreamSubscription = subscription
+        subscription.request(.unlimited)
+    }
+
+    func receive(_ input: S.Output) -> Subscribers.Demand {
+        parent?.send(input)
+        return .none
+    }
+
+    func receive(completion: Subscribers.Completion<S.Failure>) {
+        parent?.send(completion: completion)
+    }
+
+    var description: String { "Subject" }
 }

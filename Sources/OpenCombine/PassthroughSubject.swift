@@ -55,7 +55,7 @@ public final class PassthroughSubject<Output, Failure: Error>: Subject  {
 
 extension PassthroughSubject {
 
-    fileprivate class Conduit: Subscription {
+    fileprivate final class Conduit: Subscription {
 
         fileprivate var _parent: PassthroughSubject?
 
