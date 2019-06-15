@@ -19,6 +19,7 @@ final class AssignTests: XCTestCase {
     static let allTests = [
         ("testDescription", testDescription),
         ("testReflection", testReflection),
+        ("testSubscription", testSubscription),
         ("testReceiveValue", testReceiveValue),
         ("testPublisherOperator", testPublisherOperator),
     ]
@@ -57,6 +58,29 @@ final class AssignTests: XCTestCase {
 
         XCTAssertEqual(children[2].label, "upstreamSubscription")
         XCTAssertNotNil(children[2].value)
+    }
+
+    func testSubscription() {
+
+        let object = TestObject()
+        let assign = Sut(object: object, keyPath: \.value)
+
+        let subscription1 = CustomSubscription()
+        assign.receive(subscription: subscription1)
+        XCTAssertEqual(subscription1.requested, .unlimited)
+        XCTAssertFalse(subscription1.canceled)
+
+        let subscription2 = CustomSubscription()
+        assign.receive(subscription: subscription2)
+        XCTAssertFalse(subscription1.canceled)
+        XCTAssertTrue(subscription2.canceled)
+
+        assign.receive(subscription: subscription1)
+        XCTAssertTrue(subscription1.canceled)
+
+        subscription1.canceled = false
+        assign.receive(completion: .finished)
+        XCTAssertTrue(subscription1.canceled)
     }
 
     func testReceiveValue() {

@@ -13,7 +13,6 @@ extension Subscribers {
                                             CustomReflectable,
                                             CustomPlaygroundDisplayConvertible
     {
-
         public typealias Failure = Never
 
         public private(set) var object: Root?
@@ -41,8 +40,12 @@ extension Subscribers {
         }
 
         public func receive(subscription: Subscription) {
-            _upstreamSubscription = subscription
-            subscription.request(.unlimited)
+            if _upstreamSubscription == nil {
+                _upstreamSubscription = subscription
+                subscription.request(.unlimited)
+            } else {
+                subscription.cancel()
+            }
         }
 
         public func receive(_ value: Input) -> Subscribers.Demand {

@@ -20,6 +20,7 @@ public func allTests() -> [XCTestCaseEntry] {
         // TODO
 //        testCase(MulticastTests.allTests),
         testCase(AssignTests.allTests),
+        testCase(SinkTests.allTests),
     ]
 }
 #endif
