@@ -5,8 +5,6 @@
 //  Created by Sergej Jaskiewicz on 14.06.2019.
 //
 
-// TODO: Semantics of Combine's Multicast is unclear. Waiting for the next beta?
-/*
 extension Publishers {
 
     public final class Multicast<Upstream: Publisher, SubjectType: Subject>
@@ -63,4 +61,4 @@ extension Publisher {
         multicast { subject }
     }
 }
-*/
+
