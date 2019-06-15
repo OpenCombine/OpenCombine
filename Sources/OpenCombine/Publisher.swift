@@ -41,13 +41,6 @@ public protocol Publisher {
 
 //extension Publisher {
 //
-//    public func multicast<S>(_ createSubject: @escaping () -> S) -> Publishers.Multicast<Self, S> where S : Subject, Self.Failure == S.Failure, Self.Output == S.Output
-//
-//    public func multicast<S>(subject: S) -> Publishers.Multicast<Self, S> where S : Subject, Self.Failure == S.Failure, Self.Output == S.Output
-//}
-
-//extension Publisher {
-//
 //    /// Specifies the scheduler on which to perform subscribe, cancel, and request operations.
 //    ///
 //    /// In contrast with `receive(on:options:)`, which affects downstream messages, `subscribe(on:)` changes the execution context of upstream messages. In the following example, requests to `jsonPublisher` are performed on `backgroundQueue`, but elements received from it are performed on `RunLoop.main`.

@@ -259,11 +259,11 @@ final class PassthroughSubjectTests: XCTestCase {
             let emptySubscriber = TrackingSubscriber(onDeinit: onDeinit)
             XCTAssertTrue(emptySubscriber.history.isEmpty)
             passthrough.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.countSubscriptions, 1)
+            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
             passthrough.send(31)
-            XCTAssertEqual(emptySubscriber.countInputs, 0)
+            XCTAssertEqual(emptySubscriber.inputs.count, 0)
             passthrough.send(completion: .failure("failure"))
-            XCTAssertEqual(emptySubscriber.countCompletions, 1)
+            XCTAssertEqual(emptySubscriber.completions.count, 1)
         }
 
         XCTAssertEqual(deinitCounter, 1)
@@ -273,9 +273,9 @@ final class PassthroughSubjectTests: XCTestCase {
             let emptySubscriber = TrackingSubscriber(onDeinit: onDeinit)
             XCTAssertTrue(emptySubscriber.history.isEmpty)
             passthrough.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.countSubscriptions, 1)
-            XCTAssertEqual(emptySubscriber.countInputs, 0)
-            XCTAssertEqual(emptySubscriber.countCompletions, 0)
+            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
+            XCTAssertEqual(emptySubscriber.inputs.count, 0)
+            XCTAssertEqual(emptySubscriber.completions.count, 0)
         }
 
         XCTAssertEqual(deinitCounter, 1) // We have a leak
@@ -291,10 +291,10 @@ final class PassthroughSubjectTests: XCTestCase {
             )
             XCTAssertTrue(emptySubscriber.history.isEmpty)
             passthrough.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.countSubscriptions, 1)
+            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
             passthrough.send(31)
-            XCTAssertEqual(emptySubscriber.countInputs, 1)
-            XCTAssertEqual(emptySubscriber.countCompletions, 0)
+            XCTAssertEqual(emptySubscriber.inputs.count, 1)
+            XCTAssertEqual(emptySubscriber.completions.count, 0)
             XCTAssertNotNil(subscription)
 
         }

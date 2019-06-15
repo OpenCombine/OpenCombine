@@ -40,64 +40,75 @@ final class TrackingSubscriber: Subscriber, CustomStringConvertible {
         }
     }
 
-    private let _any: AnySubscriber<Int, TestingError>
+    private let _receiveSubscription: ((Subscription) -> Void)?
+    private let _receiveValue: ((Input) -> Subscribers.Demand)?
+    private let _receiveCompletion: ((Subscribers.Completion<Failure>) -> Void)?
     private let _onDeinit: (() -> Void)?
 
     private(set) var history: [Event] = []
 
-    var countSubscriptions: Int {
-        history.lazy.filter {
-            if case .subscription = $0 {
-                return true
+    var subscriptions: LazyMapSequence<
+        LazyFilterSequence<LazyMapSequence<[Event], Subscription?>>, Subscription
+    > {
+        history.lazy.compactMap {
+            if case .subscription(let s) = $0 {
+                return s
             } else {
-                return false
+                return nil
             }
-        }.count
+        }
     }
 
-    var countInputs: Int {
-        history.lazy.filter {
-            if case .value = $0 {
-                return true
+    var inputs: LazyMapSequence<
+        LazyFilterSequence<LazyMapSequence<[Event], Int?>>, Int
+    > {
+        history.lazy.compactMap {
+            if case .value(let v) = $0 {
+                return v
             } else {
-                return false
+                return nil
             }
-        }.count
+        }
     }
 
-    var countCompletions: Int {
-        history.lazy.filter {
-            if case .completion = $0 {
-                return true
+    var completions: LazyMapSequence<
+        LazyFilterSequence<
+            LazyMapSequence<[Event], Subscribers.Completion<TestingError>?>
+        >,
+        Subscribers.Completion<TestingError>
+    > {
+        history.lazy.compactMap {
+            if case .completion(let c) = $0 {
+                return c
             } else {
-                return false
+                return nil
             }
-        }.count
+        }
     }
 
     init(receiveSubscription: ((Subscription) -> Void)? = nil,
          receiveValue: ((Input) -> Subscribers.Demand)? = nil,
          receiveCompletion: ((Subscribers.Completion<Failure>) -> Void)? = nil,
          onDeinit: (() -> Void)? = nil) {
-        _any = AnySubscriber(receiveSubscription: receiveSubscription,
-                             receiveValue: receiveValue,
-                             receiveCompletion: receiveCompletion)
+        _receiveSubscription = receiveSubscription
+        _receiveValue = receiveValue
+        _receiveCompletion = receiveCompletion
         _onDeinit = onDeinit
     }
 
     func receive(subscription: Subscription) {
         history.append(.subscription(subscription))
-        _any.receive(subscription: subscription)
+        _receiveSubscription?(subscription)
     }
 
     func receive(_ input: Int) -> Subscribers.Demand {
         history.append(.value(input))
-        return _any.receive(input)
+        return _receiveValue?(input) ?? .none
     }
 
     func receive(completion: Subscribers.Completion<TestingError>) {
         history.append(.completion(completion))
-        _any.receive(completion: completion)
+        _receiveCompletion?(completion)
     }
 
     var description: String {

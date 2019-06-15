@@ -34,8 +34,11 @@ public final class AnyCancellable: Cancellable {
         _cancel = canceller.cancel
     }
 
-    /// Cancel the activity.
     public func cancel() {
         _cancel()
+    }
+
+    deinit {
+        cancel()
     }
 }
