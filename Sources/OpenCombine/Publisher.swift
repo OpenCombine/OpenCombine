@@ -50,9 +50,9 @@ extension Publisher {
     /// - Parameters:
     ///     - subscriber: The subscriber to attach to this `Publisher`. After attaching, the subscriber can start
     ///       to receive values.
-    public func subscribe<S: Subscriber>(
-        _ subscriber: S
-        ) where Failure == S.Failure, Output == S.Input {
+    public func subscribe<S: Subscriber>(_ subscriber: S)
+        where Failure == S.Failure, Output == S.Input
+    {
         receive(subscriber: subscriber)
     }
 }
@@ -89,24 +89,6 @@ extension Publisher {
     ///   - options: Options that customize the delivery of elements.
     /// - Returns: A publisher that emits elements representing the time interval between the elements it receives.
     public func measureInterval<S>(using scheduler: S, options: S.SchedulerOptions? = nil) -> Publishers.MeasureInterval<Self, S> where S : Scheduler
-}
-
-extension Publisher {
-
-    /// Omits elements from the upstream publisher until a given closure returns false, before republishing all remaining elements.
-    ///
-    /// - Parameter predicate: A closure that takes an element as a parameter and returns a Boolean
-    /// value indicating whether to drop the element from the publisher’s output.
-    /// - Returns: A publisher that skips over elements until the provided closure returns `false`.
-    public func drop(while predicate: @escaping (Self.Output) -> Bool) -> Publishers.DropWhile<Self>
-
-    /// Omits elements from the upstream publisher until an error-throwing closure returns false, before republishing all remaining elements.
-    ///
-    /// If the predicate closure throws, the publisher fails with an error.
-    ///
-    /// - Parameter predicate: A closure that takes an element as a parameter and returns a Boolean value indicating whether to drop the element from the publisher’s output.
-    /// - Returns: A publisher that skips over elements until the provided closure returns `false`, and then republishes all remaining elements. If the predicate closure throws, the publisher fails with an error.
-    public func tryDrop(while predicate: @escaping (Self.Output) throws -> Bool) -> Publishers.TryDropWhile<Self>
 }
 
 extension Publisher {

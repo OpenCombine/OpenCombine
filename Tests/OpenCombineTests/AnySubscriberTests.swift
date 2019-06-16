@@ -59,7 +59,8 @@ final class AnySubscriberTests: XCTestCase {
 
         let subscriber = TrackingSubscriber()
         let erasingSubscriber = Sut(subscriber)
-        XCTAssertEqual(erasingSubscriber.description, "TrackingSubscriber: []")
+        XCTAssertEqual(erasingSubscriber.description,
+                       "TrackingSubscriberBase<TestingError>: []")
         XCTAssertEqual(erasingSubscriber.description,
                        erasingSubscriber.playgroundDescription as? String)
     }
@@ -85,7 +86,7 @@ final class AnySubscriberTests: XCTestCase {
         let erasingSubscriber = Sut(subscriber)
         XCTAssertEqual(
             String(describing: Mirror(reflecting: erasingSubscriber).subjectType),
-            "TrackingSubscriber"
+            "TrackingSubscriberBase<TestingError>"
         )
     }
 

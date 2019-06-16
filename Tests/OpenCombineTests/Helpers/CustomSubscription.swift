@@ -14,14 +14,32 @@ import OpenCombine
 @available(macOS 10.15, *)
 final class CustomSubscription: Subscription {
 
-    var requested = Subscribers.Demand.none
+    enum Event: Equatable {
+        case requested(Subscribers.Demand)
+        case canceled
+    }
+
+    private(set) var history: [Event] = []
+
+    var lastRequested: Subscribers.Demand? {
+        history.lazy.compactMap {
+            switch $0 {
+            case .requested(let demand):
+                return demand
+            case .canceled:
+                return nil
+            }
+        }.last
+    }
+
     var canceled = false
 
     func request(_ demand: Subscribers.Demand) {
-        requested = demand
+        history.append(.requested(demand))
     }
 
     func cancel() {
+        history.append(.canceled)
         canceled = true
     }
 }

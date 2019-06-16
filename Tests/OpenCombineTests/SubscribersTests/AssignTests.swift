@@ -67,7 +67,7 @@ final class AssignTests: XCTestCase {
 
         let subscription1 = CustomSubscription()
         assign.receive(subscription: subscription1)
-        XCTAssertEqual(subscription1.requested, .unlimited)
+        XCTAssertEqual(subscription1.lastRequested, .unlimited)
         XCTAssertFalse(subscription1.canceled)
 
         let subscription2 = CustomSubscription()
