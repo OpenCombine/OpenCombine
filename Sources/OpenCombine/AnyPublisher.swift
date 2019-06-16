@@ -12,16 +12,17 @@
 public struct AnyPublisher<Output, Failure: Error> {
 
     @usableFromInline
-    internal let _receiveSubscriber: (AnySubscriber<Output, Failure>) -> Void
+    internal let box: PublisherBoxBase<Output, Failure>
 
     /// Creates a type-erasing publisher to wrap the provided publisher.
     ///
     /// - Parameters:
     ///   - publisher: A publisher to wrap with a type-eraser.
     @inlinable
-    public init<P: Publisher>(_ publisher: P) where Output == P.Output,
-                                                    Failure == P.Failure {
-        _receiveSubscriber = publisher.receive(subscriber:)
+    public init<P: Publisher>(_ publisher: P)
+        where Output == P.Output, Failure == P.Failure
+    {
+        box = PublisherBox(base: publisher)
     }
 
     /// Creates a type-erasing publisher implemented by the provided closure.
@@ -30,7 +31,7 @@ public struct AnyPublisher<Output, Failure: Error> {
     ///   - subscribe: A closure to invoke when a subscriber subscribes to the publisher.
     @inlinable
     public init(_ subscribe: @escaping (AnySubscriber<Output, Failure>) -> Void) {
-        _receiveSubscriber = subscribe
+        box = PublisherBox(base: ClosureBasedPublisher(subscribe))
     }
 }
 
@@ -43,8 +44,58 @@ extension AnyPublisher: Publisher {
     ///     - subscriber: The subscriber to attach to this `Publisher`.
     ///                   once attached it can begin to receive values.
     @inlinable
-    public func receive<S: Subscriber>(subscriber: S) where Output == S.Input,
-                                                            Failure == S.Failure {
-        _receiveSubscriber(AnySubscriber(subscriber))
+    public func receive<S: Subscriber>(subscriber: S)
+        where Output == S.Input, Failure == S.Failure
+    {
+        box.receive(subscriber: subscriber)
+    }
+}
+
+@usableFromInline
+internal class PublisherBoxBase<Output, Failure: Error>: Publisher {
+
+    @inlinable
+    func receive<S: Subscriber>(subscriber: S)
+        where Failure == S.Failure, Output == S.Input
+    {
+        fatalError()
+    }
+}
+
+@usableFromInline
+internal final class PublisherBox<P: Publisher>: PublisherBoxBase<P.Output, P.Failure> {
+
+    @usableFromInline
+    let base: P
+
+    @inlinable
+    init(base: P) {
+        self.base = base
+    }
+
+    @inlinable
+    override func receive<S: Subscriber>(subscriber: S)
+        where Failure == S.Failure, Output == S.Input
+    {
+        base.receive(subscriber: subscriber)
+    }
+}
+
+@usableFromInline
+internal struct ClosureBasedPublisher<Output, Failure: Error>: Publisher {
+
+    @usableFromInline
+    let subscribe: (AnySubscriber<Output, Failure>) -> Void
+
+    @inlinable
+    init(_ subscribe: @escaping (AnySubscriber<Output, Failure>) -> Void) {
+        self.subscribe = subscribe
+    }
+
+    @inlinable
+    func receive<S: Subscriber>(subscriber: S)
+        where Failure == S.Failure, Output == S.Input
+    {
+        subscribe(AnySubscriber(subscriber))
     }
 }
