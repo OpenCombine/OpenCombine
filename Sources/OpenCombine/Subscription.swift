@@ -23,7 +23,7 @@ public protocol Subscription: Cancellable, CustomCombineIdentifierConvertible {
 /// MARK: -
 public enum Subscriptions {}
 
-private final class EmptySubscription: Subscription {
+private final class Empty: Subscription, CustomStringConvertible, CustomReflectable {
 
     private init() {}
 
@@ -33,7 +33,11 @@ private final class EmptySubscription: Subscription {
 
     var combineIdentifier: CombineIdentifier { CombineIdentifier() }
 
-    static let shared = EmptySubscription()
+    static let shared = Empty()
+
+    var description: String { "Empty" }
+
+    var customMirror: Mirror { Mirror(self, children: EmptyCollection()) }
 }
 
 extension Subscriptions {
@@ -41,5 +45,5 @@ extension Subscriptions {
     /// Returns the 'empty' subscription.
     ///
     /// Use the empty subscription when you need a `Subscription` that ignores requests and cancellation.
-    public static var empty: Subscription { EmptySubscription.shared }
+    public static var empty: Subscription { Empty.shared }
 }
