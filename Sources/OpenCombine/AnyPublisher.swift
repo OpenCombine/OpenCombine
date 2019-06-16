@@ -51,8 +51,12 @@ extension AnyPublisher: Publisher {
     }
 }
 
+/// A type-erasing base class. Its concrete subclass is generic over the underlying publisher.
 @usableFromInline
 internal class PublisherBoxBase<Output, Failure: Error>: Publisher {
+
+    @inlinable
+    init() {}
 
     @inlinable
     func receive<S: Subscriber>(subscriber: S)
@@ -71,6 +75,7 @@ internal final class PublisherBox<P: Publisher>: PublisherBoxBase<P.Output, P.Fa
     @inlinable
     init(base: P) {
         self.base = base
+        super.init()
     }
 
     @inlinable

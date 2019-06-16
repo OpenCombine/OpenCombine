@@ -20,6 +20,7 @@ final class AnyPublisherTests: XCTestCase {
 
     static let allTests = [
         ("testErasePublisher", testErasePublisher),
+        ("testClosureBasedPublisher", testClosureBasedPublisher),
     ]
 
     func testErasePublisher() {
