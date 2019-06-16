@@ -21,7 +21,7 @@ public protocol Cancellable {
 /// to cancel a publisher, but not to use the `Subscription` object to request items.
 public final class AnyCancellable: Cancellable {
 
-    private let _cancel: () -> Void
+    private var _cancel: (() -> Void)?
 
     /// Initializes the cancellable object with the given cancel-time closure.
     ///
@@ -35,7 +35,8 @@ public final class AnyCancellable: Cancellable {
     }
 
     public func cancel() {
-        _cancel()
+        _cancel?()
+        _cancel = nil
     }
 
     deinit {

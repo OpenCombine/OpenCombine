@@ -19,6 +19,7 @@ final class AnyCancelableTests: XCTestCase {
     static let allTests = [
         ("testClosureInitialized", testClosureInitialized),
         ("testCancelableInitialized", testCancelableInitialized),
+        ("testCancelTwice", testCancelTwice),
     ]
 
     func testClosureInitialized() {
@@ -69,5 +70,18 @@ final class AnyCancelableTests: XCTestCase {
         }
 
         XCTAssertTrue(cancelable.fired, "AnyCancelable should call cancel() on deinit")
+    }
+
+    func testCancelTwice() {
+
+        var counter = 0
+
+        let cancelable = AnyCancellable { counter += 1 }
+
+        XCTAssertEqual(counter, 0)
+        cancelable.cancel()
+        XCTAssertEqual(counter, 1)
+        cancelable.cancel()
+        XCTAssertEqual(counter, 1, "cancel() closure should only be invoked once")
     }
 }
