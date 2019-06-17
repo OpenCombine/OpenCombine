@@ -23,6 +23,7 @@ final class PassthroughSubjectTests: XCTestCase {
         ("testValuesAfterCompletion", testValuesAfterCompletion),
         ("testLifecycle", testLifecycle),
         ("testSynchronization", testSynchronization),
+        ("testShouldRemoveSubscriptionWhenCancel", testShouldRemoveSubscriptionWhenCancel)
     ]
 
     private typealias Sut = PassthroughSubject<Int, TestingError>
