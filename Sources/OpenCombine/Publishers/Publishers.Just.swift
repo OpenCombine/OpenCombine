@@ -66,3 +66,96 @@ private final class Inner<S: Subscriber>: Subscription,
         Mirror(self, unlabeledChildren: CollectionOfOne(_output))
     }
 }
+
+extension Publishers.Just: Equatable where Output: Equatable {}
+
+extension Publishers.Just where Output: Comparable {
+
+    public func min() -> Publishers.Just<Output> {
+        self
+    }
+
+    public func max() -> Publishers.Just<Output> {
+        self
+    }
+}
+
+extension Publishers.Just where Output: Equatable {
+
+    public func contains(_ output: Output) -> Publishers.Just<Bool> {
+        Publishers.Just(self.output == output)
+    }
+
+    public func removeDuplicates() -> Publishers.Just<Output> {
+        self
+    }
+}
+
+extension Publishers.Just {
+
+    public func allSatisfy(_ predicate: (Output) -> Bool) -> Publishers.Just<Bool> {
+        Publishers.Just(predicate(output))
+    }
+
+    public func contains(where predicate: (Output) -> Bool) -> Publishers.Just<Bool> {
+        Publishers.Just(predicate(output))
+    }
+
+    public func collect() -> Publishers.Just<[Output]> {
+        Publishers.Just([output])
+    }
+
+    public func min(
+        by areInIncreasingOrder: (Output, Output) -> Bool
+    ) -> Publishers.Just<Output> {
+        self
+    }
+
+    public func max(
+        by areInIncreasingOrder: (Output, Output) -> Bool
+    ) -> Publishers.Just<Output> {
+        self
+    }
+
+    public func count() -> Publishers.Just<Int> {
+        Publishers.Just(1)
+    }
+
+    public func first() -> Publishers.Just<Output> {
+        self
+    }
+
+    public func last() -> Publishers.Just<Output> {
+        self
+    }
+
+    public func ignoreOutput() -> Publishers.Empty<Output, Never> {
+        Publishers.Empty()
+    }
+
+    public func map<T>(_ transform: (Output) -> T) -> Publishers.Just<T> {
+        Publishers.Just(transform(output))
+    }
+
+    public func removeDuplicates(
+        by predicate: (Output, Output) -> Bool
+    ) -> Publishers.Just<Output> {
+        self
+    }
+
+    public func replaceError(with output: Output) -> Publishers.Just<Output> {
+        self
+    }
+
+    public func replaceEmpty(with output: Output) -> Publishers.Just<Output> {
+        self
+    }
+
+    public func retry(_ times: Int) -> Publishers.Just<Output> {
+        self
+    }
+
+    public func retry() -> Publishers.Just<Output> {
+        self
+    }
+}
