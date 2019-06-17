@@ -97,8 +97,20 @@ extension Publishers.Just {
         Publishers.Just(predicate(output))
     }
 
+    public func tryAllSatisfy(
+        _ predicate: (Output) throws -> Bool
+    ) -> Publishers.Once<Bool, Error> {
+        Publishers.Once(Result { try predicate(output) })
+    }
+
     public func contains(where predicate: (Output) -> Bool) -> Publishers.Just<Bool> {
         Publishers.Just(predicate(output))
+    }
+
+    public func tryContains(
+        where predicate: (Output) throws -> Bool
+    ) -> Publishers.Once<Bool, Error> {
+        Publishers.Once(Result { try predicate(output) })
     }
 
     public func collect() -> Publishers.Just<[Output]> {
@@ -111,8 +123,20 @@ extension Publishers.Just {
         self
     }
 
+    public func tryMin(
+        by areInIncreasingOrder: (Output, Output) throws -> Bool
+    ) -> Publishers.Just<Output> {
+        self
+    }
+
     public func max(
         by areInIncreasingOrder: (Output, Output) -> Bool
+    ) -> Publishers.Just<Output> {
+        self
+    }
+
+    public func tryMax(
+        by areInIncreasingOrder: (Output, Output) throws -> Bool
     ) -> Publishers.Just<Output> {
         self
     }
@@ -137,10 +161,28 @@ extension Publishers.Just {
         Publishers.Just(transform(output))
     }
 
+    public func tryMap<T>(
+        _ transform: (Output) throws -> T
+    ) -> Publishers.Once<T, Error> {
+        Publishers.Once(Result { try transform(output) })
+    }
+
+    public func mapError<E: Error>(
+        _ transform: (Never) -> E
+    ) -> Publishers.Once<Output, E> {
+        Publishers.Once(output)
+    }
+
     public func removeDuplicates(
         by predicate: (Output, Output) -> Bool
     ) -> Publishers.Just<Output> {
         self
+    }
+
+    public func tryRemoveDuplicates(
+        by predicate: (Output, Output) throws -> Bool
+    ) -> Publishers.Once<Output, Error> {
+        Publishers.Once(output)
     }
 
     public func replaceError(with output: Output) -> Publishers.Just<Output> {
@@ -157,5 +199,39 @@ extension Publishers.Just {
 
     public func retry() -> Publishers.Just<Output> {
         self
+    }
+
+    public func reduce<T>(
+        _ initialResult: T,
+        _ nextPartialResult: (T, Output) -> T
+    ) -> Publishers.Once<T, Never> {
+        Publishers.Once(nextPartialResult(initialResult, output))
+    }
+
+    public func tryReduce<T>(
+        _ initialResult: T,
+        _ nextPartialResult: (T, Output) throws -> T
+    ) -> Publishers.Once<T, Error> {
+        Publishers.Once(Result { try nextPartialResult(initialResult, output) })
+    }
+
+    public func scan<T>(
+        _ initialResult: T,
+        _ nextPartialResult: (T, Output) -> T
+    ) -> Publishers.Once<T, Publishers.Just<Output>.Failure> {
+        Publishers.Once(nextPartialResult(initialResult, output))
+    }
+
+    public func tryScan<T>(
+        _ initialResult: T,
+        _ nextPartialResult: (T, Output) throws -> T
+    ) -> Publishers.Once<T, Error> {
+        Publishers.Once(Result { try nextPartialResult(initialResult, output) })
+    }
+
+    public func setFailureType<E: Error>(
+        to failureType: E.Type
+    ) -> Publishers.Once<Output, E> {
+        Publishers.Once(output)
     }
 }

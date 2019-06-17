@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import XCTest
 
 struct TestingError: Error, Hashable, CustomStringConvertible {
     let description: String
@@ -25,6 +26,8 @@ struct TestingError: Error, Hashable, CustomStringConvertible {
     static func != (lhs: String, rhs: TestingError) -> Bool {
         !(lhs == rhs)
     }
+
+    static let oops: TestingError = "oops"
 }
 
 extension TestingError: LocalizedError {
@@ -35,4 +38,26 @@ extension TestingError: ExpressibleByStringLiteral {
     init(stringLiteral value: String) {
         self.init(description: value)
     }
+}
+
+func assertThrowsError<T>(_ expression: @autoclosure () throws -> T,
+                          _ expected: TestingError,
+                          _ message: @autoclosure () -> String = "",
+                          file: StaticString = #file,
+                          line: UInt = #line) {
+    XCTAssertThrowsError(try expression(), message(), file: file, line: line) { error in
+        if let error = error as? TestingError {
+            XCTAssertEqual(error, expected)
+        } else {
+            XCTFail(message(), file: file, line: line)
+        }
+    }
+}
+
+func throwing<A, B, C>(_: A, _: B) throws -> C {
+    throw TestingError.oops
+}
+
+func throwing<A, B>(_: A) throws -> B {
+    throw TestingError.oops
 }
