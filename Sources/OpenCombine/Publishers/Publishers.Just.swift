@@ -123,20 +123,8 @@ extension Publishers.Just {
         self
     }
 
-    public func tryMin(
-        by areInIncreasingOrder: (Output, Output) throws -> Bool
-    ) -> Publishers.Just<Output> {
-        self
-    }
-
     public func max(
         by areInIncreasingOrder: (Output, Output) -> Bool
-    ) -> Publishers.Just<Output> {
-        self
-    }
-
-    public func tryMax(
-        by areInIncreasingOrder: (Output, Output) throws -> Bool
     ) -> Publishers.Just<Output> {
         self
     }
@@ -182,7 +170,7 @@ extension Publishers.Just {
     public func tryRemoveDuplicates(
         by predicate: (Output, Output) throws -> Bool
     ) -> Publishers.Once<Output, Error> {
-        Publishers.Once(output)
+        Publishers.Once(Result { try _ = predicate(output, output); return output })
     }
 
     public func replaceError(with output: Output) -> Publishers.Just<Output> {

@@ -13,8 +13,6 @@ import Combine
 import OpenCombine
 #endif
 
-private typealias Sut = AnyPublisher<Int, TestingError>
-
 @available(macOS 10.15, *)
 final class AnyPublisherTests: XCTestCase {
 
@@ -22,6 +20,8 @@ final class AnyPublisherTests: XCTestCase {
         ("testErasePublisher", testErasePublisher),
         ("testClosureBasedPublisher", testClosureBasedPublisher),
     ]
+
+    private typealias Sut = AnyPublisher<Int, TestingError>
 
     func testErasePublisher() {
 

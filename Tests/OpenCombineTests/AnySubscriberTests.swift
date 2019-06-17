@@ -13,6 +13,7 @@ import Combine
 import OpenCombine
 #endif
 
+@available(macOS 10.15, *)
 private typealias Sut = AnySubscriber<Int, TestingError>
 
 @available(macOS 10.15, *)

@@ -5,15 +5,15 @@ matrix:
       os: linux
       dist: xenial
       sudo: required
-      env: SWIFT_VERSION="swift-5.1-DEVELOPMENT-SNAPSHOT-2019-05-29-a" OPENCOMBINE_COMPATIBILITY_TEST="NO"
+      env: SWIFT_VERSION="swift-5.1-DEVELOPMENT-SNAPSHOT-2019-06-16-a" OPENCOMBINE_COMPATIBILITY_TEST="NO"
     - name: "macOS 10.14 | Swift 5.1"
       os: osx
       osx_image: xcode10.2
-      env: SWIFT_VERSION="swift-5.1-DEVELOPMENT-SNAPSHOT-2019-05-29-a" OPENCOMBINE_COMPATIBILITY_TEST="NO"
+      env: SWIFT_VERSION="swift-5.1-DEVELOPMENT-SNAPSHOT-2019-06-16-a" OPENCOMBINE_COMPATIBILITY_TEST="NO"
   # - name: "macOS 10.15 | Swift 5.1"
   #   os: osx
   #   osx_image: xcode11.0
-  #   env: SWIFT_VERSION="swift-5.1-DEVELOPMENT-SNAPSHOT-2019-05-29-a" OPENCOMBINE_COMPATIBILITY_TEST="YES"
+  #   env: SWIFT_VERSION="swift-5.1-DEVELOPMENT-SNAPSHOT-2019-06-16-a" OPENCOMBINE_COMPATIBILITY_TEST="YES"
 before_install:
   - if [[ $TRAVIS_OS_NAME == "linux" ]]; then
       cat /proc/cpuinfo;

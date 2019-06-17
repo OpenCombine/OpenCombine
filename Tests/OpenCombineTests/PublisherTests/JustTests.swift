@@ -22,9 +22,7 @@ final class JustTests: XCTestCase {
         ("testLifecycle", testLifecycle),
         ("testCancelOnSubscription", testCancelOnSubscription),
         ("testMinOperatorSpecialization", testMinOperatorSpecialization),
-        ("testTryMinOperatorSpecialization", testTryMinOperatorSpecialization),
         ("testMaxOperatorSpecialization", testMaxOperatorSpecialization),
-        ("testTryMaxOperatorSpecialization", testTryMaxOperatorSpecialization),
         ("testContainsOperatorSpecialization", testContainsOperatorSpecialization),
         ("testTryContainsOperatorSpecialization", testTryContainsOperatorSpecialization),
         ("testRemoveDuplicatesOperatorSpecialization",
@@ -114,19 +112,9 @@ final class JustTests: XCTestCase {
         XCTAssertEqual(Sut(1).min(by: >), Sut(1))
     }
 
-    func testTryMinOperatorSpecialization() {
-        XCTAssertEqual(Sut(1).tryMin(by: >), Sut(1))
-        XCTAssertEqual(Sut(1).tryMin(by: throwing), Sut(1))
-    }
-
     func testMaxOperatorSpecialization() {
         XCTAssertEqual(Sut(341).max(), Sut(341))
         XCTAssertEqual(Sut(2).max(by: >), Sut(2))
-    }
-
-    func testTryMaxOperatorSpecialization() {
-        XCTAssertEqual(Sut(2).tryMax(by: >), Sut(2))
-        XCTAssertEqual(Sut(2).tryMax(by: throwing), Sut(2))
     }
 
     func testContainsOperatorSpecialization() {
@@ -145,12 +133,26 @@ final class JustTests: XCTestCase {
 
     func testRemoveDuplicatesOperatorSpecialization() {
         XCTAssertEqual(Sut(1000).removeDuplicates(), Sut(1000))
-        XCTAssertEqual(Sut(44).removeDuplicates(by: <), Sut(44))
+        var called: (Int, Int)?
+        XCTAssertEqual(
+            Sut(44).removeDuplicates { called = ($0, $1); return $0 < $1 },
+            Sut(44)
+        )
+        XCTAssertNil(called)
     }
 
     func testTryRemoveDuplicatesOperatorSpecialization() {
-        XCTAssertEqual(try Sut(44).tryRemoveDuplicates(by: <).result.get(), 44)
-        XCTAssertEqual(try Sut(44).tryRemoveDuplicates(by: throwing).result.get(), 44)
+        var called: (Int, Int)?
+        XCTAssertEqual(
+            try Sut(44)
+                .tryRemoveDuplicates { called = ($0, $1); return $0 < $1 }.result.get(),
+            44
+
+        )
+        XCTAssertEqual(called?.0, 44)
+        XCTAssertEqual(called?.1, 44)
+        assertThrowsError(try Sut(44).tryRemoveDuplicates(by: throwing).result.get(),
+                          .oops)
     }
 
     func testAllSatisfyOperatorSpecialization() {

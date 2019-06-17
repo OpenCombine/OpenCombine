@@ -28,3 +28,11 @@ extension Subject {
     @inlinable
     public func eraseToAnySubject() -> AnySubject<Output, Failure> { AnySubject(self) }
 }
+
+extension Subject where Output == Void {
+
+    /// Signals subscribers.
+    public func send() {
+        send(())
+    }
+}
