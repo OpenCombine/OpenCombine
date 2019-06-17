@@ -21,7 +21,7 @@ before_install:
 install:
   - eval "$(curl -sL https://swiftenv.fuller.li/install.sh)"
 script:
-  - swift test -c debug --enable-code-coverage
+  - swift test -c debug --enable-code-coverage --sanitize thread
   - swift test -c release
   - if [[ $OPENCOMBINE_COMPATIBILITY_TEST == "YES" ]]; then
       swift test -c release -Xswiftc -DOPENCOMBINE_COMPATIBILITY_TEST;

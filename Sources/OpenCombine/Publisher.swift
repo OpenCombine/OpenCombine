@@ -279,15 +279,6 @@ extension Publisher {
 
 extension Publisher {
 
-    /// Prints log messages for all publishing events.
-    ///
-    /// - Parameter prefix: A string with which to prefix all log messages. Defaults to an empty string.
-    /// - Returns: A publisher that prints log messages for all publishing events.
-    public func print(_ prefix: String = "", to stream: TextOutputStream? = nil) -> Publishers.Print<Self>
-}
-
-extension Publisher {
-
     /// Republishes elements while a predicate closure indicates publishing should continue.
     ///
     /// The publisher finishes when the closure returns `false`.

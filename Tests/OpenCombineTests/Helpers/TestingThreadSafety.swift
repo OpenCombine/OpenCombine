@@ -8,22 +8,11 @@
 import Dispatch
 
 func race(times: Int = 100, _ bodies: () -> Void...) {
-
-    let queues = bodies.indices.lazy.map {
-        DispatchQueue(label: "exectuteConcurrently helper queue #\($0)")
-    }
-
-    let group = DispatchGroup()
-
-    for (body, queue) in zip(bodies, queues) {
-        queue.async(group: group) {
-            for _ in 0..<times {
-                body()
-            }
+    DispatchQueue.concurrentPerform(iterations: bodies.count) {
+        for _ in 0..<times {
+            bodies[$0]()
         }
     }
-
-    group.wait()
 }
 
 @dynamicMemberLookup

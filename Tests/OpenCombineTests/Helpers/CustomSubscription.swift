@@ -21,6 +21,15 @@ final class CustomSubscription: Subscription {
 
     private(set) var history: [Event] = []
 
+    private let _requested: ((Subscribers.Demand) -> Void)?
+    private let _canceled: (() -> Void)?
+
+    init(onRequest: ((Subscribers.Demand) -> Void)? = nil,
+         onCancel: (() -> Void)? = nil) {
+        _requested = onRequest
+        _canceled = onCancel
+    }
+
     var lastRequested: Subscribers.Demand? {
         history.lazy.compactMap {
             switch $0 {
@@ -36,10 +45,12 @@ final class CustomSubscription: Subscription {
 
     func request(_ demand: Subscribers.Demand) {
         history.append(.requested(demand))
+        _requested?(demand)
     }
 
     func cancel() {
         history.append(.canceled)
         canceled = true
+        _canceled?()
     }
 }

@@ -27,7 +27,6 @@ final class CustomPublisher: Publisher {
     func receive<S: Subscriber>(subscriber: S)
         where Failure == S.Failure, Output == S.Input
     {
-        assert(self.subscriber == nil)
         self.subscriber = AnySubscriber(subscriber)
         subscription.map(subscriber.receive(subscription:))
     }
