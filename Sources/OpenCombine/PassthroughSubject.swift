@@ -49,6 +49,12 @@ public final class PassthroughSubject<Output, Failure: Error>: Subject  {
             }
         }
     }
+    
+    private func _removeSubscription(_ subscription: Conduit) {
+        _lock.do {
+            _downstreams.removeAll(where: { $0 === subscription })
+        }
+    }
 }
 
 extension PassthroughSubject {
@@ -80,6 +86,8 @@ extension PassthroughSubject {
         }
 
         func cancel() {
+            _parent?._removeSubscription(self)
+            
             _parent = nil
             _downstream = nil
         }

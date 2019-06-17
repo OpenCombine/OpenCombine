@@ -367,4 +367,27 @@ final class PassthroughSubjectTests: XCTestCase {
 
         XCTAssertEqual(completions.count, 200)
     }
+    
+    func testShouldRemoveSubscriptionWhenCancel() {
+        
+        weak var subscription: AnyObject?
+        
+        let pub = PassthroughSubject<Int, Never>()
+        
+        let sub = AnySubscriber<Int, Never>(receiveSubscription: { (s) in
+            subscription = s as AnyObject
+            s.request(.max(1))
+        }, receiveValue: { _ in
+            return .none
+        }, receiveCompletion: { _ in
+        })
+        
+        pub.subscribe(sub)
+
+        XCTAssertNotNil(subscription)
+        
+        pub.send(completion: .finished)
+        
+        XCTAssertNil(subscription)
+    }
 }
