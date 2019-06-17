@@ -19,7 +19,9 @@ final class OnceTests: XCTestCase {
     static let allTests = [
         ("testOnceSuccessNoInitialDemand", testOnceSuccessNoInitialDemand),
         ("testOnceSuccessWithInitialDemand", testOnceSuccessWithInitialDemand),
+        ("testSuccessCancelOnSubscription", testSuccessCancelOnSubscription),
         ("testOnceFailure", testOnceFailure),
+        ("testFailureCancelOnSubscription", testFailureCancelOnSubscription),
         ("testLifecycle", testLifecycle),
         ("testMinOperatorSpecialization", testMinOperatorSpecialization),
         ("testTryMinOperatorSpecialization", testTryMinOperatorSpecialization),
