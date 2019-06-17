@@ -12,26 +12,26 @@ struct TestingError: Error, Hashable, CustomStringConvertible {
     let description: String
 
     static func == (lhs: TestingError, rhs: String) -> Bool {
-        lhs.description == rhs
+        return lhs.description == rhs
     }
 
     static func == (lhs: String, rhs: TestingError) -> Bool {
-        lhs == rhs.description
+        return lhs == rhs.description
     }
 
     static func != (lhs: TestingError, rhs: String) -> Bool {
-        !(lhs == rhs)
+        return !(lhs == rhs)
     }
 
     static func != (lhs: String, rhs: TestingError) -> Bool {
-        !(lhs == rhs)
+        return !(lhs == rhs)
     }
 
     static let oops: TestingError = "oops"
 }
 
 extension TestingError: LocalizedError {
-    var errorDescription: String? { description }
+    var errorDescription: String? { return description }
 }
 
 extension TestingError: ExpressibleByStringLiteral {

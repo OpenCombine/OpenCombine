@@ -21,10 +21,10 @@ extension Subscribers {
 
         private var _upstreamSubscription: Subscription?
 
-        public var description: String { "Assign \(Root.self)." }
+        public var description: String { return "Assign \(Root.self)." }
 
         public var customMirror: Mirror {
-            let children = [
+            let children: [(label: String?, value: Any)] = [
                 (label: "object", value: object as Any),
                 (label: "keyPath", value: keyPath),
                 (label: "upstreamSubscription", value: _upstreamSubscription as Any)
@@ -32,7 +32,7 @@ extension Subscribers {
             return Mirror(self, children: children)
         }
 
-        public var playgroundDescription: Any { description }
+        public var playgroundDescription: Any { return description }
 
         public init(object: Root, keyPath: ReferenceWritableKeyPath<Root, Input>) {
             self.object = object

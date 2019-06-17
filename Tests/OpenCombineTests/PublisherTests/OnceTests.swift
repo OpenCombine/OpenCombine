@@ -242,7 +242,7 @@ final class OnceTests: XCTestCase {
                       receiveValue: { _ in })
 
             switch completion {
-            case .finished:
+            case .finished?:
                 break
             default:
                 XCTFail()

@@ -45,7 +45,7 @@ extension Subscribers {
 
         /// When adding any value to` .unlimited`, the result is `.unlimited`.
         public static func + (lhs: Demand, rhs: Int) -> Demand {
-            lhs + .max(rhs)
+            return lhs + .max(rhs)
         }
 
         /// When adding any value to `.unlimited`, the result is `.unlimited`.
@@ -92,7 +92,7 @@ extension Subscribers {
         /// When subtracting any value from `.unlimited`, the result is still `.unlimited`. A negative demand is
         /// possible, but be aware that it is not usable when requesting values in a subscription.
         public static func - (lhs: Demand, rhs: Int) -> Demand {
-            lhs - .max(rhs)
+            return lhs - .max(rhs)
         }
 
         /// When subtracting any value from `.unlimited`, the result is still `.unlimited`. A negative demand is
@@ -102,35 +102,35 @@ extension Subscribers {
         }
 
         public static func > (lhs: Demand, rhs: Int) -> Bool {
-            lhs > .max(rhs)
+            return lhs > .max(rhs)
         }
 
         public static func >= (lhs: Demand, rhs: Int) -> Bool {
-            lhs >= .max(rhs)
+            return lhs >= .max(rhs)
         }
 
         public static func > (lhs: Int, rhs: Demand) -> Bool {
-            .max(lhs) > rhs
+            return .max(lhs) > rhs
         }
 
         public static func >= (lhs: Int, rhs: Demand) -> Bool {
-            .max(lhs) >= rhs
+            return .max(lhs) >= rhs
         }
 
         public static func < (lhs: Demand, rhs: Int) -> Bool {
-            lhs < .max(rhs)
+            return lhs < .max(rhs)
         }
 
         public static func < (lhs: Int, rhs: Demand) -> Bool {
-            .max(lhs) < rhs
+            return .max(lhs) < rhs
         }
 
         public static func <= (lhs: Demand, rhs: Int) -> Bool {
-            lhs <= .max(rhs)
+            return lhs <= .max(rhs)
         }
 
         public static func <= (lhs: Int, rhs: Demand) -> Bool {
-            .max(lhs) <= rhs
+            return .max(lhs) <= rhs
         }
 
         /// If `lhs` is `.unlimited`, then the result is always `false`.
@@ -149,22 +149,22 @@ extension Subscribers {
 
         /// Returns `true` if `lhs` and `rhs` are equal. `.unlimited` is not equal to any integer.
         public static func == (lhs: Demand, rhs: Int) -> Bool {
-            lhs == .max(rhs)
+            return lhs == .max(rhs)
         }
 
         /// Returns `true` if `lhs` and `rhs` are not equal. `.unlimited` is not equal to any integer.
         public static func != (lhs: Demand, rhs: Int) -> Bool {
-            lhs != .max(rhs)
+            return lhs != .max(rhs)
         }
 
         /// Returns `true` if `lhs` and `rhs` are equal. `.unlimited` is not equal to any integer.
         public static func == (lhs: Int, rhs: Demand) -> Bool {
-            .max(lhs) == rhs
+            return .max(lhs) == rhs
         }
 
         /// Returns `true` if `lhs` and `rhs` are not equal. `.unlimited` is not equal to any integer.
         public static func != (lhs: Int, rhs: Demand) -> Bool {
-            .max(lhs) != rhs
+            return .max(lhs) != rhs
         }
 
         /// Returns the number of requested values, or `nil` if `.unlimited`.

@@ -82,10 +82,10 @@ private final class Inner<S: Subscriber>: Subscription,
         _downstream = nil
     }
 
-    var description: String { "Once" }
+    var description: String { return "Once" }
 
     var customMirror: Mirror {
-        Mirror(self, unlabeledChildren: CollectionOfOne(_output))
+        return Mirror(self, unlabeledChildren: CollectionOfOne(_output))
     }
 }
 
@@ -94,22 +94,22 @@ extension Publishers.Once: Equatable where Output: Equatable, Failure: Equatable
 extension Publishers.Once where Output: Equatable {
 
     public func contains(_ output: Output) -> Publishers.Once<Bool, Failure> {
-        Publishers.Once(result.map { $0 == output })
+        return Publishers.Once(result.map { $0 == output })
     }
 
     public func removeDuplicates() -> Publishers.Once<Output, Failure> {
-        self
+        return self
     }
 }
 
 extension Publishers.Once where Output: Comparable {
 
     public func min() -> Publishers.Once<Output, Failure> {
-        self
+        return self
     }
 
     public func max() -> Publishers.Once<Output, Failure> {
-        self
+        return self
     }
 }
 
@@ -118,141 +118,141 @@ extension Publishers.Once {
     public func allSatisfy(
         _ predicate: (Output) -> Bool
     ) -> Publishers.Once<Bool, Failure> {
-        Publishers.Once(result.map(predicate))
+        return Publishers.Once(result.map(predicate))
     }
 
     public func tryAllSatisfy(
         _ predicate: (Output) throws -> Bool
     ) -> Publishers.Once<Bool, Error> {
-        Publishers.Once(result.tryMap(predicate))
+        return Publishers.Once(result.tryMap(predicate))
     }
 
     public func contains(
         where predicate: (Output) -> Bool
     ) -> Publishers.Once<Bool, Failure> {
-        Publishers.Once(result.map(predicate))
+        return Publishers.Once(result.map(predicate))
     }
 
     public func tryContains(
         where predicate: (Output) throws -> Bool
     ) -> Publishers.Once<Bool, Error> {
-        Publishers.Once(result.tryMap(predicate))
+        return Publishers.Once(result.tryMap(predicate))
     }
 
     public func collect() -> Publishers.Once<[Output], Failure> {
-        Publishers.Once(result.map { [$0] })
+        return Publishers.Once(result.map { [$0] })
     }
 
     public func min(
         by areInIncreasingOrder: (Output, Output) -> Bool
     ) -> Publishers.Once<Output, Failure> {
-        self
+        return self
     }
 
     public func tryMin(
         by areInIncreasingOrder: (Output, Output) throws -> Bool
     ) -> Publishers.Once<Output, Failure> {
-        self
+        return self
     }
 
     public func max(
         by areInIncreasingOrder: (Output, Output
     ) -> Bool) -> Publishers.Once<Output, Failure> {
-        self
+        return self
     }
 
     public func tryMax(
         by areInIncreasingOrder: (Output, Output) throws -> Bool
     ) -> Publishers.Once<Output, Failure> {
-        self
+        return self
     }
 
     public func count() -> Publishers.Once<Int, Failure> {
-        Publishers.Once(result.map { _ in 1 })
+        return Publishers.Once(result.map { _ in 1 })
     }
 
     public func first() -> Publishers.Once<Output, Failure> {
-        self
+        return self
     }
 
     public func last() -> Publishers.Once<Output, Failure> {
-        self
+        return self
     }
 
     public func ignoreOutput() -> Publishers.Empty<Output, Failure> {
-        Publishers.Empty()
+        return Publishers.Empty()
     }
 
     public func map<T>(_ transform: (Output) -> T) -> Publishers.Once<T, Failure> {
-        Publishers.Once(result.map(transform))
+        return Publishers.Once(result.map(transform))
     }
 
     public func tryMap<T>(
         _ transform: (Output) throws -> T
     ) -> Publishers.Once<T, Error> {
-        Publishers.Once(result.tryMap(transform))
+        return Publishers.Once(result.tryMap(transform))
     }
 
     public func mapError<E: Error>(
         _ transform: (Failure) -> E
     ) -> Publishers.Once<Output, E> {
-        Publishers.Once(result.mapError(transform))
+        return Publishers.Once(result.mapError(transform))
     }
 
     public func removeDuplicates(
         by predicate: (Output, Output) -> Bool
     ) -> Publishers.Once<Output, Failure> {
-        self
+        return self
     }
 
     public func tryRemoveDuplicates(
         by predicate: (Output, Output) throws -> Bool
     ) -> Publishers.Once<Output, Error> {
-        Publishers.Once(result.mapError { $0 })
+        return Publishers.Once(result.mapError { $0 })
     }
 
     public func replaceError(with output: Output) -> Publishers.Once<Output, Never> {
-        Publishers.Once(.success(result.unwrapOr(output)))
+        return Publishers.Once(.success(result.unwrapOr(output)))
     }
 
     public func replaceEmpty(with output: Output) -> Publishers.Once<Output, Failure> {
-        self
+        return self
     }
 
     public func retry(_ times: Int) -> Publishers.Once<Output, Failure> {
-        self
+        return self
     }
 
     public func retry() -> Publishers.Once<Output, Failure> {
-        self
+        return self
     }
 
     public func reduce<T>(
         _ initialResult: T,
         _ nextPartialResult: (T, Output) -> T
-        ) -> Publishers.Once<T, Failure> {
-        Publishers.Once(result.map { nextPartialResult(initialResult, $0) })
+    ) -> Publishers.Once<T, Failure> {
+        return Publishers.Once(result.map { nextPartialResult(initialResult, $0) })
     }
 
     public func tryReduce<T>(
         _ initialResult: T,
         _ nextPartialResult: (T, Output) throws -> T
-        ) -> Publishers.Once<T, Error> {
-        Publishers.Once(result.tryMap { try nextPartialResult(initialResult, $0) })
+    ) -> Publishers.Once<T, Error> {
+        return Publishers.Once(result.tryMap { try nextPartialResult(initialResult, $0) })
     }
 
     public func scan<T>(
         _ initialResult: T,
         _ nextPartialResult: (T, Output) -> T
     ) -> Publishers.Once<T, Failure> {
-        Publishers.Once(result.map { nextPartialResult(initialResult, $0) })
+        return Publishers.Once(result.map { nextPartialResult(initialResult, $0) })
     }
 
     public func tryScan<T>(
         _ initialResult: T,
         _ nextPartialResult: (T, Output) throws -> T
     ) -> Publishers.Once<T, Error> {
-        Publishers.Once(result.tryMap { try nextPartialResult(initialResult, $0) })
+        return Publishers.Once(result.tryMap { try nextPartialResult(initialResult, $0) })
     }
 }
 
@@ -261,7 +261,7 @@ extension Publishers.Once where Failure == Never {
     public func setFailureType<E: Error>(
         to failureType: E.Type
     ) -> Publishers.Once<Output, E> {
-        Publishers.Once(result.success)
+        return Publishers.Once(result.success)
     }
 }
 

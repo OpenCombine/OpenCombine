@@ -32,7 +32,7 @@ extension Result {
     }
 
     internal func unwrapOr(_ handleError: @autoclosure () -> Success) -> Success {
-        unwrapOr { _ in handleError() }
+        return unwrapOr { _ in handleError() }
     }
 }
 

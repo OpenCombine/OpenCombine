@@ -15,7 +15,6 @@ func race(times: Int = 100, _ bodies: () -> Void...) {
     }
 }
 
-@dynamicMemberLookup
 final class Atomic<T> {
     private let _q = DispatchQueue(label: "Atomic", attributes: .concurrent)
 
@@ -26,16 +25,12 @@ final class Atomic<T> {
     }
 
     var value: T {
-        _q.sync { _value }
+        return _q.sync { _value }
     }
 
     func `do`(_ body: (inout T) -> Void) {
         _q.sync(flags: .barrier) {
             body(&_value)
         }
-    }
-
-    subscript<U>(dynamicMember kp: KeyPath<T, U>) -> U {
-        value[keyPath: kp]
     }
 }

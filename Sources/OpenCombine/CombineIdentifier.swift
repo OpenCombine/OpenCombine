@@ -21,9 +21,9 @@ public struct CombineIdentifier: Hashable, CustomStringConvertible {
 
         var id: UInt = 0
 
-        Self._counterLock.do {
-            id = Self._counter
-            Self._counter += 1
+        CombineIdentifier._counterLock.do {
+            id = CombineIdentifier._counter
+            CombineIdentifier._counter += 1
         }
 
         _id = id
@@ -34,6 +34,6 @@ public struct CombineIdentifier: Hashable, CustomStringConvertible {
     }
 
     public var description: String {
-        "0x\(String(_id, radix: 16))"
+        return "0x\(String(_id, radix: 16))"
     }
 }

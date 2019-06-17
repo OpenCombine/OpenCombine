@@ -31,7 +31,7 @@ final class CustomSubscription: Subscription {
     }
 
     var lastRequested: Subscribers.Demand? {
-        history.lazy.compactMap {
+        return history.lazy.compactMap {
             switch $0 {
             case .requested(let demand):
                 return demand

@@ -13,6 +13,6 @@ public protocol CustomCombineIdentifierConvertible {
 extension CustomCombineIdentifierConvertible where Self: AnyObject {
 
     public var combineIdentifier: CombineIdentifier {
-        CombineIdentifier(self)
+        return CombineIdentifier(self)
     }
 }

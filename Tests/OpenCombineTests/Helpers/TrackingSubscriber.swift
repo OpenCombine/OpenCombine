@@ -53,7 +53,7 @@ final class TrackingSubscriberBase<E: Error>: Subscriber, CustomStringConvertibl
     var subscriptions: LazyMapSequence<
         LazyFilterSequence<LazyMapSequence<[Event], Subscription?>>, Subscription
     > {
-        history.lazy.compactMap {
+        return history.lazy.compactMap {
             if case .subscription(let s) = $0 {
                 return s
             } else {
@@ -65,7 +65,7 @@ final class TrackingSubscriberBase<E: Error>: Subscriber, CustomStringConvertibl
     var inputs: LazyMapSequence<
         LazyFilterSequence<LazyMapSequence<[Event], Int?>>, Int
     > {
-        history.lazy.compactMap {
+        return history.lazy.compactMap {
             if case .value(let v) = $0 {
                 return v
             } else {
@@ -80,7 +80,7 @@ final class TrackingSubscriberBase<E: Error>: Subscriber, CustomStringConvertibl
         >,
         Subscribers.Completion<E>
     > {
-        history.lazy.compactMap {
+        return history.lazy.compactMap {
             if case .completion(let c) = $0 {
                 return c
             } else {
@@ -115,7 +115,7 @@ final class TrackingSubscriberBase<E: Error>: Subscriber, CustomStringConvertibl
     }
 
     var description: String {
-        "\(type(of: self)): \(history)"
+        return "\(type(of: self)): \(history)"
     }
 
     deinit {

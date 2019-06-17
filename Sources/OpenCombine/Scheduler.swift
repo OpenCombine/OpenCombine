@@ -93,11 +93,11 @@ extension Scheduler {
                          interval: SchedulerTimeType.Stride,
                          tolerance: SchedulerTimeType.Stride,
                          _ action: @escaping () -> Void) -> Cancellable {
-        schedule(after: date,
-                 interval: interval,
-                 tolerance: tolerance,
-                 options: nil,
-                 action)
+        return schedule(after: date,
+                        interval: interval,
+                        tolerance: tolerance,
+                        options: nil,
+                        action)
     }
 
     /// Performs the action at some time after the specified date, at the specified
@@ -106,6 +106,9 @@ extension Scheduler {
     public func schedule(after date: SchedulerTimeType,
                          interval: SchedulerTimeType.Stride,
                          _ action: @escaping () -> Void) -> Cancellable {
-        schedule(after: date, interval: interval, tolerance: minimumTolerance, action)
+        return schedule(after: date,
+                        interval: interval,
+                        tolerance: minimumTolerance,
+                        action)
     }
 }

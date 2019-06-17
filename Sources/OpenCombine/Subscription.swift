@@ -31,13 +31,13 @@ private final class Empty: Subscription, CustomStringConvertible, CustomReflecta
 
     func cancel() {}
 
-    var combineIdentifier: CombineIdentifier { CombineIdentifier() }
+    var combineIdentifier: CombineIdentifier { return CombineIdentifier() }
 
     static let shared = Empty()
 
-    var description: String { "Empty" }
+    var description: String { return "Empty" }
 
-    var customMirror: Mirror { Mirror(self, children: EmptyCollection()) }
+    var customMirror: Mirror { return Mirror(self, children: EmptyCollection()) }
 }
 
 extension Subscriptions {
@@ -45,5 +45,5 @@ extension Subscriptions {
     /// Returns the 'empty' subscription.
     ///
     /// Use the empty subscription when you need a `Subscription` that ignores requests and cancellation.
-    public static var empty: Subscription { Empty.shared }
+    public static var empty: Subscription { return Empty.shared }
 }

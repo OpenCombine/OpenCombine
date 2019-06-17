@@ -39,6 +39,6 @@ public protocol Subscriber: CustomCombineIdentifierConvertible {
 extension Subscriber {
 
     public func eraseToAnySubscriber() -> AnySubscriber<Input, Failure> {
-        AnySubscriber(self)
+        return AnySubscriber(self)
     }
 }

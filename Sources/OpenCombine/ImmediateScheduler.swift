@@ -21,13 +21,15 @@ public struct ImmediateScheduler: Scheduler {
         ///
         /// - Parameter other: The other scheduler time.
         /// - Returns: `0`, as a `Stride`.
-        public func distance(to other: SchedulerTimeType) -> Stride { 0 }
+        public func distance(to other: SchedulerTimeType) -> Stride { return 0 }
 
         /// Advances the time by the specified amount; this is meaningless in the context of an immediate scheduler.
         ///
         /// - Parameter n: The amount to advance by. The `ImmediateScheduler` ignores this value.
         /// - Returns: An empty `SchedulerTimeType`.
-        public func advanced(by n: Stride) -> SchedulerTimeType { SchedulerTimeType() }
+        public func advanced(by n: Stride) -> SchedulerTimeType {
+            return SchedulerTimeType()
+        }
 
         /// The increment by which the immediate scheduler counts time.
         public struct Stride: ExpressibleByFloatLiteral,
@@ -69,22 +71,22 @@ public struct ImmediateScheduler: Scheduler {
 
             @inlinable
             public static func < (lhs: Stride, rhs: Stride) -> Bool {
-                lhs.magnitude < rhs.magnitude
+                return lhs.magnitude < rhs.magnitude
             }
 
             @inlinable
             public static func * (lhs: Stride, rhs: Stride) -> Stride {
-                Stride(lhs.magnitude * rhs.magnitude)
+                return Stride(lhs.magnitude * rhs.magnitude)
             }
 
             @inlinable
             public static func + (lhs: Stride, rhs: Stride) -> Stride {
-                Stride(lhs.magnitude + rhs.magnitude)
+                return Stride(lhs.magnitude + rhs.magnitude)
             }
 
             @inlinable
             public static func - (lhs: Stride, rhs: Stride) -> Stride {
-                Stride(lhs.magnitude - rhs.magnitude)
+                return Stride(lhs.magnitude - rhs.magnitude)
             }
 
             @inlinable
@@ -100,15 +102,15 @@ public struct ImmediateScheduler: Scheduler {
                 lhs.magnitude += rhs.magnitude
             }
 
-            public static func seconds(_ s: Int) -> Stride { 0 }
+            public static func seconds(_ s: Int) -> Stride { return 0 }
 
-            public static func seconds(_ s: Double) -> Stride { 0 }
+            public static func seconds(_ s: Double) -> Stride { return 0 }
 
-            public static func milliseconds(_ ms: Int) -> Stride { 0 }
+            public static func milliseconds(_ ms: Int) -> Stride { return 0 }
 
-            public static func microseconds(_ us: Int) -> Stride { 0 }
+            public static func microseconds(_ us: Int) -> Stride { return 0 }
 
-            public static func nanoseconds(_ ns: Int) -> Stride { 0 }
+            public static func nanoseconds(_ ns: Int) -> Stride { return 0 }
         }
     }
 
@@ -124,9 +126,9 @@ public struct ImmediateScheduler: Scheduler {
         action()
     }
 
-    public var now: SchedulerTimeType { SchedulerTimeType() }
+    public var now: SchedulerTimeType { return SchedulerTimeType() }
 
-    public var minimumTolerance: SchedulerTimeType.Stride { 0 }
+    public var minimumTolerance: SchedulerTimeType.Stride { return 0 }
 
     public func schedule(after date: SchedulerTimeType,
                          tolerance: SchedulerTimeType.Stride,

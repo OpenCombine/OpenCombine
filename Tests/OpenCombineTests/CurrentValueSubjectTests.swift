@@ -355,7 +355,7 @@ final class CurrentValueSubjectTests: XCTestCase {
             }
         )
 
-        XCTAssertEqual(subscriptions.count, 200)
+        XCTAssertEqual(subscriptions.value.count, 200)
 
         race(
             {
@@ -366,15 +366,15 @@ final class CurrentValueSubjectTests: XCTestCase {
             }
         )
 
-        XCTAssertEqual(inputs.count, 40200)
+        XCTAssertEqual(inputs.value.count, 40200)
         XCTAssertEqual(cvs.value, 112)
 
         race(
             {
-                subscriptions[0].request(.max(4))
+                subscriptions.value[0].request(.max(4))
             },
             {
-                subscriptions[0].request(.max(10))
+                subscriptions.value[0].request(.max(10))
             }
         )
 
@@ -387,6 +387,6 @@ final class CurrentValueSubjectTests: XCTestCase {
             }
         )
 
-        XCTAssertEqual(completions.count, 200)
+        XCTAssertEqual(completions.value.count, 200)
     }
 }

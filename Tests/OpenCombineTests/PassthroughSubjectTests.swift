@@ -334,7 +334,7 @@ final class PassthroughSubjectTests: XCTestCase {
             }
         )
 
-        XCTAssertEqual(subscriptions.count, 200)
+        XCTAssertEqual(subscriptions.value.count, 200)
 
         race(
             {
@@ -345,14 +345,14 @@ final class PassthroughSubjectTests: XCTestCase {
             }
         )
 
-        XCTAssertEqual(inputs.count, 40000)
+        XCTAssertEqual(inputs.value.count, 40000)
 
         race(
             {
-                subscriptions[0].request(.max(4))
+                subscriptions.value[0].request(.max(4))
             },
             {
-                subscriptions[0].request(.max(10))
+                subscriptions.value[0].request(.max(10))
             }
         )
 
@@ -365,6 +365,6 @@ final class PassthroughSubjectTests: XCTestCase {
             }
         )
 
-        XCTAssertEqual(completions.count, 200)
+        XCTAssertEqual(completions.value.count, 200)
     }
 }

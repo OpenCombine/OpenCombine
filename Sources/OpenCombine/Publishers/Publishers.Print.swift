@@ -59,7 +59,7 @@ extension Publisher {
     /// - Returns: A publisher that prints log messages for all publishing events.
     public func print(_ prefix: String = "",
                       to stream: TextOutputStream? = nil) -> Publishers.Print<Self> {
-        Publishers.Print(upstream: self, prefix: prefix, to: stream)
+        return Publishers.Print(upstream: self, prefix: prefix, to: stream)
     }
 }
 
@@ -117,9 +117,9 @@ private final class Inner<Downstream: Subscriber>: Subscriber,
         _upstreamSubscription = nil
     }
 
-    var description: String { "Print" }
+    var description: String { return "Print" }
 
-    var customMirror: Mirror { Mirror(self, children: EmptyCollection()) }
+    var customMirror: Mirror { return Mirror(self, children: EmptyCollection()) }
 
     private func _log(_ description: String,
                       value: Any? = nil,

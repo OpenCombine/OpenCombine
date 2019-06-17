@@ -72,9 +72,9 @@ private final class _DropWhile<Upstream: Publisher, Downstream: Subscriber, Pred
     private var _upstreamSubscription: Subscription?
     private var _demand: Subscribers.Demand = .none
 
-    var description: String { "DropWhile" }
+    var description: String { return "DropWhile" }
 
-    var customMirror: Mirror { Mirror(self, children: EmptyCollection()) }
+    var customMirror: Mirror { return Mirror(self, children: EmptyCollection()) }
 
     init(downstream: Downstream, predicate: @escaping (Input) throws -> Bool) {
         _downstream = downstream
@@ -142,7 +142,7 @@ extension Publisher {
     public func drop(
         while predicate: @escaping (Output) -> Bool
     ) -> Publishers.DropWhile<Self> {
-        Publishers.DropWhile(upstream: self, predicate: predicate)
+        return Publishers.DropWhile(upstream: self, predicate: predicate)
     }
 
     /// Omits elements from the upstream publisher until an error-throwing closure returns false, before republishing
@@ -157,6 +157,6 @@ extension Publisher {
     public func tryDrop(
         while predicate: @escaping (Output) throws -> Bool
     ) -> Publishers.TryDropWhile<Self> {
-        Publishers.TryDropWhile(upstream: self, predicate: predicate)
+        return Publishers.TryDropWhile(upstream: self, predicate: predicate)
     }
 }

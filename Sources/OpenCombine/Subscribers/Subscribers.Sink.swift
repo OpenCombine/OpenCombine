@@ -26,13 +26,13 @@ extension Subscribers {
 
         private var _upstreamSubscription: Subscription?
 
-        public var description: String { "Sink" }
+        public var description: String { return "Sink" }
 
         public var customMirror: Mirror {
-            Mirror(self, children: EmptyCollection())
+            return Mirror(self, children: EmptyCollection())
         }
 
-        public var playgroundDescription: Any { description }
+        public var playgroundDescription: Any { return description }
 
         /// Initializes a sink with the provided closures.
         ///

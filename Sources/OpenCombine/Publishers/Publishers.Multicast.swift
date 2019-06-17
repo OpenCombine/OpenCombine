@@ -52,13 +52,13 @@ extension Publisher {
     public func multicast<S: Subject>(
         _ createSubject: @escaping () -> S
     ) -> Publishers.Multicast<Self, S> where Failure == S.Failure, Output == S.Output {
-        Publishers.Multicast(upstream: self, createSubject)
+        return Publishers.Multicast(upstream: self, createSubject)
     }
 
     public func multicast<S: Subject>(subject: S) -> Publishers.Multicast<Self, S>
         where Failure == S.Failure, Output == S.Output
     {
-        multicast { subject }
+        return multicast { subject }
     }
 }
 

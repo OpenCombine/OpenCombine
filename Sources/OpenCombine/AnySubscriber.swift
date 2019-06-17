@@ -19,12 +19,12 @@ public struct AnySubscriber<Input, Failure: Error>: Subscriber,
 
     public let combineIdentifier: CombineIdentifier
 
-    public var description: String { _box.description }
+    public var description: String { return _box.description }
 
-    public var customMirror: Mirror { _box.customMirror }
+    public var customMirror: Mirror { return _box.customMirror }
 
     /// A custom playground description for this instance.
-    public var playgroundDescription: Any { description }
+    public var playgroundDescription: Any { return description }
 
     /// Creates a type-erasing subscriber to wrap an existing subscriber.
     ///
@@ -61,7 +61,7 @@ public struct AnySubscriber<Input, Failure: Error>: Subscriber,
     }
 
     public func receive(_ value: Input) -> Subscribers.Demand {
-        _box.receive(value)
+        return _box.receive(value)
     }
 
     public func receive(completion: Subscribers.Completion<Failure>) {
@@ -86,9 +86,11 @@ internal class SubscriberBoxBase<Input, Failure: Error>: Subscriber,
         fatalError()
     }
 
-    var description: String { "AnySubscriber" }
+    var description: String { return "AnySubscriber" }
 
-    var customMirror: Mirror { Mirror(combineIdentifier, children: EmptyCollection()) }
+    var customMirror: Mirror {
+        return Mirror(combineIdentifier, children: EmptyCollection())
+    }
 }
 
 internal final class SubscriberBox<S: Subscriber>: SubscriberBoxBase<S.Input, S.Failure> {
@@ -104,16 +106,16 @@ internal final class SubscriberBox<S: Subscriber>: SubscriberBoxBase<S.Input, S.
     }
 
     override func receive(_ input: Input) -> Subscribers.Demand {
-        base.receive(input)
+        return base.receive(input)
     }
 
     override func receive(completion: Subscribers.Completion<Failure>) {
         base.receive(completion: completion)
     }
 
-    override var customMirror: Mirror { Mirror(reflecting: base) }
+    override var customMirror: Mirror { return Mirror(reflecting: base) }
 
-    override var description: String { String(describing: base) }
+    override var description: String { return String(describing: base) }
 }
 
 internal final class ClosureBasedSubscriber<Input, Failure: Error>
@@ -137,7 +139,7 @@ internal final class ClosureBasedSubscriber<Input, Failure: Error>
     }
 
     override func receive(_ input: Input) -> Subscribers.Demand {
-        _receiveValue?(input) ?? .none
+        return _receiveValue?(input) ?? .none
     }
 
     override func receive(completion: Subscribers.Completion<Failure>) {
@@ -169,10 +171,10 @@ internal final class SubjectSubscriber<S: Subject>
         parent?.send(completion: completion)
     }
 
-    override var description: String { "Subject" }
+    override var description: String { return "Subject" }
 
     override var customMirror: Mirror {
-        let children = [
+        let children: [(label: String?, value: Any)] = [
             (label: "parent", value: parent as Any),
             (label: "upstreamSubscription", value: upstreamSubscription as Any)
         ]

@@ -26,7 +26,9 @@ public protocol Subject: AnyObject, Publisher {
 extension Subject {
 
     @inlinable
-    public func eraseToAnySubject() -> AnySubject<Output, Failure> { AnySubject(self) }
+    public func eraseToAnySubject() -> AnySubject<Output, Failure> {
+        return AnySubject(self)
+    }
 }
 
 extension Subject where Output == Void {
