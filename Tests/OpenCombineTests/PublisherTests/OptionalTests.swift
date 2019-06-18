@@ -403,7 +403,7 @@ final class OptionalTests: XCTestCase {
 
         assertThrowsError(
             try Sut<Int>(42).tryDrop(while: throwingPredicate).result.get(),
-            "oops"
+            .oops
         )
         XCTAssertNil(try Sut<Int>(nil).tryDrop(while: throwingPredicate).result.get())
         assertThrowsError(
@@ -449,7 +449,7 @@ final class OptionalTests: XCTestCase {
 
         assertThrowsError(
             try Sut<Int>(42).tryFirst(where: throwingPredicate).result.get(),
-            "oops"
+            .oops
         )
         XCTAssertNil(try Sut<Int>(nil).tryFirst(where: throwingPredicate).result.get())
         assertThrowsError(
@@ -495,7 +495,7 @@ final class OptionalTests: XCTestCase {
 
         assertThrowsError(
             try Sut<Int>(42).tryLast(where: throwingPredicate).result.get(),
-            "oops"
+            .oops
         )
         XCTAssertNil(try Sut<Int>(nil).tryLast(where: throwingPredicate).result.get())
         assertThrowsError(
@@ -535,7 +535,7 @@ final class OptionalTests: XCTestCase {
 
         assertThrowsError(
             try Sut<Int>(42).tryFilter(throwingPredicate).result.get(),
-            "oops"
+            .oops
         )
         XCTAssertNil(try Sut<Int>(nil).tryFilter(throwingPredicate).result.get())
         assertThrowsError(
@@ -623,7 +623,7 @@ final class OptionalTests: XCTestCase {
         XCTAssertEqual(try Sut<Int>(42).tryCompactMap(transform).result.get(), "42")
         XCTAssertNil(try Sut<Int>(100).tryCompactMap(transform).result.get())
         XCTAssertNil(try Sut<Int>(nil).tryCompactMap(transform).result.get())
-        assertThrowsError(try Sut<Int>(42).tryMap(throwingTrasnform).result.get(), "oops")
+        assertThrowsError(try Sut<Int>(42).tryMap(throwingTrasnform).result.get(), .oops)
         XCTAssertNil(try Sut<Int>(nil).tryMap(throwingTrasnform).result.get())
         assertThrowsError(try Sut<Int>("error").tryMap(throwingTrasnform).result.get(),
                           "error")
@@ -790,7 +790,7 @@ final class OptionalTests: XCTestCase {
 
         assertThrowsError(
             try Sut<Int>(98).tryPrefix(while: throwingPredicate).result.get(),
-            "oops"
+            .oops
         )
         XCTAssertNil( try Sut<Int>(nil).tryPrefix(while: throwingPredicate).result.get())
         assertThrowsError(

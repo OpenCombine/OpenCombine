@@ -171,12 +171,65 @@ extension Publishers.Once {
         return Publishers.Once(result.map { _ in 1 })
     }
 
+    public func dropFirst(_ count: Int = 1) -> Publishers.Optional<Output, Failure> {
+        precondition(count >= 0, "count must not be negative")
+        return Publishers.Optional((try? result.get()).flatMap { count == 0 ? $0 : nil })
+    }
+
+    public func drop(
+        while predicate: (Output) -> Bool
+    ) -> Publishers.Optional<Output, Failure> {
+        return Publishers.Optional(result.map { predicate($0) ? nil : $0 })
+    }
+
+    public func tryDrop(
+        while predicate: (Output) throws -> Bool
+    ) -> Publishers.Optional<Output, Error> {
+        return Publishers.Optional(result.tryMap { try predicate($0) ? nil : $0 })
+    }
+
     public func first() -> Publishers.Once<Output, Failure> {
         return self
     }
 
+    public func first(
+        where predicate: (Output) -> Bool
+    ) -> Publishers.Optional<Output, Failure> {
+        return Publishers.Optional(result.map { predicate($0) ? $0 : nil })
+    }
+
+    public func tryFirst(
+        where predicate: (Output) throws -> Bool
+    ) -> Publishers.Optional<Output, Error> {
+        return Publishers.Optional(result.tryMap { try predicate($0) ? $0 : nil })
+    }
+
     public func last() -> Publishers.Once<Output, Failure> {
         return self
+    }
+
+    public func last(
+        where predicate: (Output) -> Bool
+    ) -> Publishers.Optional<Output, Failure> {
+        return Publishers.Optional(result.map { predicate($0) ? $0 : nil })
+    }
+
+    public func tryLast(
+        where predicate: (Output) throws -> Bool
+    ) -> Publishers.Optional<Output, Error> {
+        return Publishers.Optional(result.tryMap { try predicate($0) ? $0 : nil })
+    }
+
+    public func filter(
+        _ isIncluded: (Output) -> Bool
+    ) -> Publishers.Optional<Output, Failure> {
+        return Publishers.Optional(result.map { isIncluded($0) ? $0 : nil })
+    }
+
+    public func tryFilter(
+        _ isIncluded: (Output) throws -> Bool
+    ) -> Publishers.Optional<Output, Error> {
+        return Publishers.Optional(result.tryMap { try isIncluded($0) ? $0 : nil })
     }
 
     public func ignoreOutput() -> Publishers.Empty<Output, Failure> {
@@ -193,10 +246,70 @@ extension Publishers.Once {
         return Publishers.Once(result.tryMap(transform))
     }
 
+    public func compactMap<T>(
+        _ transform: (Output) -> T?
+    ) -> Publishers.Optional<T, Failure> {
+        return Publishers.Optional(result.map(transform))
+    }
+
+    public func tryCompactMap<T>(
+        _ transform: (Output) throws -> T?
+    ) -> Publishers.Optional<T, Error> {
+        return Publishers.Optional(result.tryMap(transform))
+    }
+
     public func mapError<E: Error>(
         _ transform: (Failure) -> E
     ) -> Publishers.Once<Output, E> {
         return Publishers.Once(result.mapError(transform))
+    }
+
+    public func output(at index: Int) -> Publishers.Optional<Output, Failure> {
+        precondition(index >= 0, "index must not be negative")
+        return Publishers.Optional(result.map { index == 0 ? $0 : nil })
+    }
+
+    public func output<R: RangeExpression>(
+        in range: R
+    ) -> Publishers.Optional<Output, Failure> where R.Bound == Int {
+        // TODO: Broken in Apple's Combine? (FB6169621)
+        // Empty range should result in a nil
+        let range = range.relative(to: 0..<Int.max)
+        return Publishers.Optional(
+            result.map { range.lowerBound == 0 ? $0 : nil }
+        )
+        // The above implementation is used for compatibility.
+        //
+        // It actually probably should be just this:
+        // return Publishers.Optional(
+        //     result.map { range.contains(0) ? $0 : nil }
+        // )
+    }
+
+    public func prefix(_ maxLength: Int) -> Publishers.Optional<Output, Failure> {
+        precondition(maxLength >= 0, "maxLength must not be negative")
+        // TODO: Seems broken in Apple's Combine (FB6168300)
+        return Publishers.Optional(
+            result.map { maxLength == 0 ? $0 : nil }
+        )
+        // The above implementation is used for compatibility.
+        //
+        // It actually should be the following:
+        // return Publishers.Optional(
+        //     result.map { $0.flatMap { maxLength > 0 ? $0 : nil } }
+        // )
+    }
+
+    public func prefix(
+        while predicate: (Output) -> Bool
+    ) -> Publishers.Optional<Output, Failure> {
+        return Publishers.Optional(result.map { predicate($0) ? $0 : nil })
+    }
+
+    public func tryPrefix(
+        while predicate: (Output) throws -> Bool
+    ) -> Publishers.Optional<Output, Error> {
+        return Publishers.Optional(result.tryMap { try predicate($0) ? $0 : nil })
     }
 
     public func removeDuplicates(

@@ -2703,41 +2703,6 @@ extension Publishers.MergeMany : Equatable where Upstream : Equatable {
     public static func == (lhs: Publishers.MergeMany<Upstream>, rhs: Publishers.MergeMany<Upstream>) -> Bool
 }
 
-extension Publishers.Once {
-
-    public func compactMap<T>(_ transform: (Output) -> T?) -> Publishers.Optional<T, Failure>
-
-    public func tryCompactMap<T>(_ transform: (Output) throws -> T?) -> Publishers.Optional<T, Error>
-
-    public func dropFirst(_ count: Int = 1) -> Publishers.Optional<Output, Failure>
-
-    public func drop(while predicate: (Output) -> Bool) -> Publishers.Optional<Output, Failure>
-
-    public func tryDrop(while predicate: (Output) throws -> Bool) -> Publishers.Optional<Output, Error>
-
-    public func first(where predicate: (Output) -> Bool) -> Publishers.Optional<Output, Failure>
-
-    public func tryFirst(where predicate: (Output) throws -> Bool) -> Publishers.Optional<Output, Error>
-
-    public func last(where predicate: (Output) -> Bool) -> Publishers.Optional<Output, Failure>
-
-    public func tryLast(where predicate: (Output) throws -> Bool) -> Publishers.Optional<Output, Error>
-
-    public func filter(_ isIncluded: (Output) -> Bool) -> Publishers.Optional<Output, Failure>
-
-    public func tryFilter(_ isIncluded: (Output) throws -> Bool) -> Publishers.Optional<Output, Error>
-
-    public func output(at index: Int) -> Publishers.Optional<Output, Failure>
-
-    public func output<R>(in range: R) -> Publishers.Optional<Output, Failure> where R : RangeExpression, R.Bound == Int
-
-    public func prefix(_ maxLength: Int) -> Publishers.Optional<Output, Failure>
-
-    public func prefix(while predicate: (Output) -> Bool) -> Publishers.Optional<Output, Failure>
-
-    public func tryPrefix(while predicate: (Output) throws -> Bool) -> Publishers.Optional<Output, Error>
-}
-
 extension Publishers.Count : Equatable where Upstream : Equatable {
 
     /// Returns a Boolean value indicating whether two values are equal.
