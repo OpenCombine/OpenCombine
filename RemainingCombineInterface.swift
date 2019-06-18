@@ -1951,37 +1951,6 @@ extension Publishers {
 
 extension Publishers {
 
-    /// A publisher that immediately terminates with the specified error.
-    public struct Fail<Output, Failure> : Publisher where Failure : Error {
-
-        /// Creates a publisher that immediately terminates with the specified failure.
-        ///
-        /// - Parameter error: The failure to send when terminating the publisher.
-        public init(error: Failure)
-
-        /// Creates publisher with the given output type, that immediately terminates with the specified failure.
-        ///
-        /// Use this initializer to create a `Fail` publisher that can work with subscribers or publishers that expect a given output type.
-        /// - Parameters:
-        ///   - outputType: The output type exposed by this publisher.
-        ///   - failure: The failure to send when terminating the publisher.
-        public init(outputType: Output.Type, failure: Failure)
-
-        /// The failure to send when terminating the publisher.
-        public let error: Failure
-
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
-        ///
-        /// - SeeAlso: `subscribe(_:)`
-        /// - Parameters:
-        ///     - subscriber: The subscriber to attach to this `Publisher`.
-        ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where Output == S.Input, Failure == S.Failure, S : Subscriber
-    }
-}
-
-extension Publishers {
-
     /// A publisher that only publishes the last element of a stream, after the stream finishes.
     public struct Last<Upstream> : Publisher where Upstream : Publisher {
 
@@ -2784,19 +2753,6 @@ extension Publishers.Concatenate : Equatable where Prefix : Equatable, Suffix : 
     ///   - rhs: Another concatenate publisher to compare for equality.
     /// - Returns: `true` if the two publishers’ prefix and suffix properties are equal, `false` otherwise.
     public static func == (lhs: Publishers.Concatenate<Prefix, Suffix>, rhs: Publishers.Concatenate<Prefix, Suffix>) -> Bool
-}
-
-extension Publishers.Fail : Equatable where Failure : Equatable {
-
-    /// Returns a Boolean value indicating whether two values are equal.
-    ///
-    /// Equality is the inverse of inequality. For any values `a` and `b`,
-    /// `a == b` implies that `a != b` is `false`.
-    ///
-    /// - Parameters:
-    ///   - lhs: A value to compare.
-    ///   - rhs: Another value to compare.
-    public static func == (lhs: Publishers.Fail<Output, Failure>, rhs: Publishers.Fail<Output, Failure>) -> Bool
 }
 
 extension Publishers.Last : Equatable where Upstream : Equatable {
