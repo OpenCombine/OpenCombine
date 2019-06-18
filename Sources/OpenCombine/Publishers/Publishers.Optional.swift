@@ -188,7 +188,7 @@ extension Publishers.Optional {
 
     public func dropFirst(_ count: Int = 1) -> Publishers.Optional<Output, Failure> {
         precondition(count >= 0, "count must not be negative")
-        return Publishers.Optional(nil)
+        return Publishers.Optional(try? result.get().flatMap { count == 0 ? $0 : nil })
     }
 
     public func drop(

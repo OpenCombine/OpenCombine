@@ -40,9 +40,9 @@ final class OptionalTests: XCTestCase {
         ("testCollectOperatorSpecialization", testCollectOperatorSpecialization),
         ("testCountOperatorSpecialization", testCountOperatorSpecialization),
         ("testDropFirstOperatorSpecialization", testDropFirstOperatorSpecialization),
-        ("testDropWhereOperatorSpecialization", testDropWhereOperatorSpecialization),
+        ("testDropWhileOperatorSpecialization", testDropWhileOperatorSpecialization),
         ("testTryDropWhereOperatorSpecialization",
-         testTryDropWhereOperatorSpecialization),
+         testTryDropWhileOperatorSpecialization),
         ("testFirstOperatorSpecialization", testFirstOperatorSpecialization),
         ("testFirstWhereOperatorSpecializtion", testFirstWhereOperatorSpecializtion),
         ("testTryFirstWhereOperatorSpecializtion",
@@ -369,11 +369,13 @@ final class OptionalTests: XCTestCase {
 
     func testDropFirstOperatorSpecialization() {
         XCTAssertEqual(Sut<Int>(10000).dropFirst().result, .success(nil))
+        XCTAssertEqual(Sut<Int>(10000).dropFirst(100).result, .success(nil))
+        XCTAssertEqual(Sut<Int>(10000).dropFirst(0).result, .success(10000))
         XCTAssertEqual(Sut<Int>(nil).dropFirst().result, .success(nil))
         XCTAssertEqual(Sut<Int>("error").dropFirst().result, .success(nil))
     }
 
-    func testDropWhereOperatorSpecialization() {
+    func testDropWhileOperatorSpecialization() {
         var count = 0
         let predicate: (Int) -> Bool = { count += 1; return $0 != 42 }
 
@@ -385,7 +387,7 @@ final class OptionalTests: XCTestCase {
         XCTAssertEqual(count, 2)
     }
 
-    func testTryDropWhereOperatorSpecialization() {
+    func testTryDropWhileOperatorSpecialization() {
         var count = 0
         let predicate: (Int) -> Bool = { count += 1; return $0 != 42 }
         let throwingPredicate: (Int) throws -> Bool = { _ in

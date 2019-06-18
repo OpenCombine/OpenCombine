@@ -2542,22 +2542,6 @@ extension Publishers.TryFilter {
 
 extension Publishers.Just {
 
-    public func tryMin(
-        by areInIncreasingOrder: (Output, Output) throws -> Bool
-    ) -> Publishers.Optional<Bool, Error> {
-        self
-    }
-
-    public func tryMax(
-        by areInIncreasingOrder: (Output, Output) throws -> Bool
-    ) -> Publishers.Optional<Bool, Error> {
-        self
-    }
-
-    public func compactMap<T>(_ transform: (Output) -> T?) -> Publishers.Optional<T, Publishers.Just<Output>.Failure>
-
-    public func tryCompactMap<T>(_ transform: (Output) throws -> T?) -> Publishers.Optional<T, Error>
-
     public func prepend(_ elements: Output...) -> Publishers.Sequence<[Output], Publishers.Just<Output>.Failure>
 
     public func prepend<S>(_ elements: S) -> Publishers.Sequence<[Output], Publishers.Just<Output>.Failure> where Output == S.Element, S : Sequence
@@ -2565,34 +2549,6 @@ extension Publishers.Just {
     public func append(_ elements: Output...) -> Publishers.Sequence<[Output], Publishers.Just<Output>.Failure>
 
     public func append<S>(_ elements: S) -> Publishers.Sequence<[Output], Publishers.Just<Output>.Failure> where Output == S.Element, S : Sequence
-
-    public func dropFirst(_ count: Int = 1) -> Publishers.Optional<Output, Publishers.Just<Output>.Failure>
-
-    public func drop(while predicate: (Output) -> Bool) -> Publishers.Optional<Output, Publishers.Just<Output>.Failure>
-
-    public func tryDrop(while predicate: (Output) throws -> Bool) -> Publishers.Optional<Output, Error>
-
-    public func first(where predicate: (Output) -> Bool) -> Publishers.Optional<Output, Publishers.Just<Output>.Failure>
-
-    public func tryFirst(where predicate: (Output) throws -> Bool) -> Publishers.Optional<Output, Error>
-
-    public func last(where predicate: (Output) -> Bool) -> Publishers.Optional<Output, Publishers.Just<Output>.Failure>
-
-    public func tryLast(where predicate: (Output) throws -> Bool) -> Publishers.Optional<Output, Error>
-
-    public func filter(_ isIncluded: (Output) -> Bool) -> Publishers.Optional<Output, Publishers.Just<Output>.Failure>
-
-    public func tryFilter(_ isIncluded: (Output) throws -> Bool) -> Publishers.Optional<Output, Error>
-
-    public func output(at index: Int) -> Publishers.Optional<Output, Publishers.Just<Output>.Failure>
-
-    public func output<R>(in range: R) -> Publishers.Optional<Output, Publishers.Just<Output>.Failure> where R : RangeExpression, R.Bound == Int
-
-    public func prefix(_ maxLength: Int) -> Publishers.Optional<Output, Publishers.Just<Output>.Failure>
-
-    public func prefix(while predicate: (Output) -> Bool) -> Publishers.Optional<Output, Publishers.Just<Output>.Failure>
-
-    public func tryPrefix(while predicate: (Output) throws -> Bool) -> Publishers.Optional<Output, Error>
 }
 
 extension Publishers.Contains : Equatable where Upstream : Equatable {

@@ -123,22 +123,77 @@ extension Publishers.Just {
         return self
     }
 
+    public func tryMin(
+        by areInIncreasingOrder: (Output, Output) throws -> Bool
+    ) -> Publishers.Optional<Bool, Error> {
+        Publishers.Optional(Result { try areInIncreasingOrder(output, output) })
+    }
+
     public func max(
         by areInIncreasingOrder: (Output, Output) -> Bool
     ) -> Publishers.Just<Output> {
         return self
     }
 
+    public func tryMax(
+        by areInIncreasingOrder: (Output, Output) throws -> Bool
+    ) -> Publishers.Optional<Bool, Error> {
+        Publishers.Optional(Result { try areInIncreasingOrder(output, output) })
+    }
+
     public func count() -> Publishers.Just<Int> {
         return Publishers.Just(1)
+    }
+
+    public func dropFirst(
+        _ count: Int = 1
+    ) -> Publishers.Optional<Output, Never> {
+        precondition(count >= 0, "count must not be negative")
+        return Publishers.Optional(count > 0 ? nil : output)
+    }
+
+    public func drop(
+        while predicate: (Output) -> Bool
+    ) -> Publishers.Optional<Output, Never> {
+        return Publishers.Optional(predicate(output) ? nil : output)
+    }
+
+    public func tryDrop(
+        while predicate: (Output) throws -> Bool
+    ) -> Publishers.Optional<Output, Error> {
+        return Publishers.Optional(Result { try predicate(output) ? nil : output })
     }
 
     public func first() -> Publishers.Just<Output> {
         return self
     }
 
+    public func first(
+        where predicate: (Output) -> Bool
+    ) -> Publishers.Optional<Output, Never> {
+        return Publishers.Optional(predicate(output) ? output : nil)
+    }
+
+    public func tryFirst(
+        where predicate: (Output) throws -> Bool
+    ) -> Publishers.Optional<Output, Error> {
+        return Publishers.Optional(Result { try predicate(output) ? output : nil })
+    }
+
     public func last() -> Publishers.Just<Output> {
         return self
+    }
+
+    public func last(
+        where predicate: (Output) -> Bool
+    ) -> Publishers.Optional<Output, Never> {
+        return Publishers.Optional(predicate(output) ? output : nil)
+    }
+
+    public func tryLast(
+        where predicate: (Output) throws -> Bool
+    ) -> Publishers.Optional<Output, Error> {
+        return Publishers.Optional(Result { try predicate(output) ? output : nil })
     }
 
     public func ignoreOutput() -> Publishers.Empty<Output, Never> {
@@ -153,6 +208,71 @@ extension Publishers.Just {
         _ transform: (Output) throws -> T
     ) -> Publishers.Once<T, Error> {
         return Publishers.Once(Result { try transform(output) })
+    }
+
+    public func compactMap<T>(
+        _ transform: (Output) -> T?
+    ) -> Publishers.Optional<T, Never> {
+        return Publishers.Optional(transform(output))
+    }
+
+    public func tryCompactMap<T>(
+        _ transform: (Output) throws -> T?
+    ) -> Publishers.Optional<T, Error> {
+        return Publishers.Optional(Result { try transform(output) })
+    }
+
+    public func filter(
+        _ isIncluded: (Output) -> Bool
+    ) -> Publishers.Optional<Output, Never> {
+        return Publishers.Optional(isIncluded(output) ? output : nil)
+    }
+
+    public func tryFilter(
+        _ isIncluded: (Output) throws -> Bool
+    ) -> Publishers.Optional<Output, Error> {
+        return Publishers.Optional(Result { try isIncluded(output) ? output : nil })
+    }
+
+    public func output(at index: Int) -> Publishers.Optional<Output, Never> {
+        precondition(index >= 0, "index must not be negative")
+        return Publishers.Optional(index == 0 ? output : nil)
+    }
+
+    public func output<R: RangeExpression>(
+        in range: R
+    ) -> Publishers.Optional<Output, Never> where R.Bound == Int {
+        // TODO: Broken in Apple's Combine? (FB6169621)
+        // Empty range should result in a nil
+        let range = range.relative(to: 0..<Int.max)
+        return Publishers.Optional(range.lowerBound == 0 ? output : nil)
+        // The above implementation is used for compatibility.
+        //
+        // It actually probably should be just this:
+        // return Publishers.Optional(range.contains(0) ? output : nil)
+    }
+
+    public func prefix(_ maxLength: Int) -> Publishers.Optional<Output, Never> {
+        precondition(maxLength >= 0, "maxLength must not be negative")
+        return Publishers.Optional(maxLength > 0 ? output : nil)
+    }
+
+    public func prefix(
+        while predicate: (Output) -> Bool
+    ) -> Publishers.Optional<Output, Never> {
+        return Publishers.Optional(predicate(output) ? output : nil)
+    }
+
+    public func tryPrefix(
+        while predicate: (Output) throws -> Bool
+    ) -> Publishers.Optional<Output, Error> {
+        return Publishers.Optional(Result { try predicate(output) ? output : nil })
+    }
+
+    public func setFailureType<E: Error>(
+        to failureType: E.Type
+        ) -> Publishers.Once<Output, E> {
+        return Publishers.Once(output)
     }
 
     public func mapError<E: Error>(
@@ -216,11 +336,5 @@ extension Publishers.Just {
         _ nextPartialResult: (T, Output) throws -> T
     ) -> Publishers.Once<T, Error> {
         return Publishers.Once(Result { try nextPartialResult(initialResult, output) })
-    }
-
-    public func setFailureType<E: Error>(
-        to failureType: E.Type
-    ) -> Publishers.Once<Output, E> {
-        return Publishers.Once(output)
     }
 }
