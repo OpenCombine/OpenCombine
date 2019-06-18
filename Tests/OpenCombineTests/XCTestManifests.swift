@@ -26,6 +26,7 @@ public func allTests() -> [XCTestCaseEntry] {
         testCase(EmptyTests.allTests),
         testCase(JustTests.allTests),
         testCase(OnceTests.allTests),
+        testCase(OptionalTests.allTests),
         testCase(PrintTests.allTests),
     ]
 }
