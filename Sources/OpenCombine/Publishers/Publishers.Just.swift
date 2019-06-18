@@ -126,7 +126,7 @@ extension Publishers.Just {
     public func tryMin(
         by areInIncreasingOrder: (Output, Output) throws -> Bool
     ) -> Publishers.Optional<Bool, Error> {
-        Publishers.Optional(Result { try areInIncreasingOrder(output, output) })
+        return Publishers.Optional(Result { try areInIncreasingOrder(output, output) })
     }
 
     public func max(
@@ -138,7 +138,7 @@ extension Publishers.Just {
     public func tryMax(
         by areInIncreasingOrder: (Output, Output) throws -> Bool
     ) -> Publishers.Optional<Bool, Error> {
-        Publishers.Optional(Result { try areInIncreasingOrder(output, output) })
+        return Publishers.Optional(Result { try areInIncreasingOrder(output, output) })
     }
 
     public func count() -> Publishers.Just<Int> {
