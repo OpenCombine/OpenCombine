@@ -23,7 +23,7 @@ extension Publishers {
         public func receive<S: Subscriber>(subscriber: S)
             where Failure == S.Failure, Output == S.Input
         {
-            let dropWhile = _DropWhile<Upstream, S, (Output) -> Bool>(
+            let dropWhile = _DropWhile<Upstream, S>(
                 downstream: subscriber, predicate: predicate
             )
             upstream.receive(subscriber: dropWhile)
@@ -46,7 +46,7 @@ extension Publishers {
         public func receive<S: Subscriber>(subscriber: S)
             where Output == S.Input, S.Failure == Error
         {
-            let dropWhile = _DropWhile<Upstream, S, (Output) throws -> Bool>(
+            let dropWhile = _DropWhile<Upstream, S>(
                 downstream: subscriber, predicate: predicate
             )
 
@@ -55,7 +55,7 @@ extension Publishers {
     }
 }
 
-private final class _DropWhile<Upstream: Publisher, Downstream: Subscriber, Predicate>
+private final class _DropWhile<Upstream: Publisher, Downstream: Subscriber>
     : Subscriber,
       CustomStringConvertible,
       CustomReflectable,
