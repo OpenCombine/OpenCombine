@@ -1,57 +1,56 @@
 //
-//  Publishers.Decode.swift
+//  Publishers.Encode.swift
 //  
 //
-//  Created by Joseph Spadafora on 6/21/19.
+//  Created by Joseph Spadafora on 6/22/19.
 //
 
 extension Publishers {
-    
-    
-    public struct Decode<Upstream, Output, Coder>: Publisher where Upstream : Publisher, Output : Decodable, Coder : TopLevelDecoder, Upstream.Output == Coder.Input
- {
+    public struct Encode<Upstream, Coder>: Publisher where Upstream : Publisher, Coder : TopLevelEncoder, Upstream.Output : Encodable {
         
         public typealias Failure = Error
+        public typealias Output = Coder.Output
         
         public let upstream: Upstream
         
-        private let decoder: Coder
+        private let encoder: Coder
         
-        public init(upstream: Upstream, decoder: Coder) {
+        public init(upstream: Upstream, encoder: Coder) {
             self.upstream = upstream
-            self.decoder = decoder
+            self.encoder = encoder
         }
         
         public func receive<S: Subscriber>(subscriber: S)
             where Failure == S.Failure, Output == S.Input
         {
-            let decodeSubscriber = _Decode<Upstream, S, Coder>(downstream: subscriber, decoder: decoder)
-            upstream.receive(subscriber: decodeSubscriber)
+            let encodeSubscriber = _Encode<Upstream, S, Coder>(downstream: subscriber, encoder: encoder)
+            upstream.receive(subscriber: encodeSubscriber)
         }
     }
 }
 
-private final class _Decode<Upstream: Publisher, Downstream: Subscriber, Coder: TopLevelDecoder>:
+
+private final class _Encode<Upstream: Publisher, Downstream: Subscriber, Coder: TopLevelEncoder>:
     Subscriber,
     CustomStringConvertible,
     CustomReflectable,
-Subscription where Downstream.Input: Decodable, Coder.Input == Upstream.Output {
+Subscription where Coder.Output == Downstream.Input, Upstream.Output: Encodable {
     typealias Input = Upstream.Output
     typealias Failure = Upstream.Failure
     typealias Output = Downstream.Input
     
-    private let _decoder: Coder
+    private let _encoder: Coder
     private var _downstream: Downstream
     private var _upstreamSubscription: Subscription?
     private var _demand: Subscribers.Demand = .none
     
-    var description: String { return "Decode" }
+    var description: String { return "Encode" }
     
     var customMirror: Mirror { return Mirror(self, children: EmptyCollection()) }
     
-    init(downstream: Downstream, decoder: Coder) {
+    init(downstream: Downstream, encoder: Coder) {
         self._downstream = downstream
-        self._decoder = decoder
+        self._encoder = encoder
     }
     
     func receive(subscription: Subscription) {
@@ -62,7 +61,7 @@ Subscription where Downstream.Input: Decodable, Coder.Input == Upstream.Output {
     
     func receive(_ input: Input) -> Subscribers.Demand {
         do {
-            let value = try _decoder.decode(Downstream.Input.self, from: input)
+            let value = try _encoder.encode(input)
             return _downstream.receive(value)
         } catch {
             _downstream.receive(completion: .failure(error as! Downstream.Failure))
@@ -70,7 +69,7 @@ Subscription where Downstream.Input: Decodable, Coder.Input == Upstream.Output {
             return .none
         }
     }
-
+    
     func receive(completion: Subscribers.Completion<Failure>) {
         switch completion {
         case .finished:
@@ -93,7 +92,9 @@ Subscription where Downstream.Input: Decodable, Coder.Input == Upstream.Output {
 }
 
 extension Publisher {
-    public func decode<Item, Coder>(type: Item.Type, decoder: Coder) -> Publishers.Decode<Self, Item, Coder> where Item : Decodable, Coder : TopLevelDecoder, Self.Output == Coder.Input {
-        return Publishers.Decode(upstream: self, decoder: decoder)
+    public func encode<Coder>(encoder: Coder) -> Publishers.Encode<Self, Coder> where Coder : TopLevelEncoder {
+        return Publishers.Encode(upstream: self, encoder: encoder)
     }
 }
+
+

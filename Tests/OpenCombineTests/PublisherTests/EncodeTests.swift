@@ -1,6 +1,6 @@
 //
-//  DecodeTests.swift
-//  
+//  EncodeTests.swift
+//
 //
 //  Created by Joseph Spadafora on 6/21/19.
 //
@@ -14,9 +14,9 @@ import OpenCombine
 #endif
 
 @available(macOS 10.15, *)
-final class DecodeTests: XCTestCase {
+final class EncodeTests: XCTestCase {
     static let allTests = [
-        ("testDecodeWorks", testDecodeWorks)
+        ("testEncodeWorks", testEncodeWorks)
     ]
     
     private let jsonEncoder = JSONEncoder()
@@ -24,21 +24,21 @@ final class DecodeTests: XCTestCase {
     
     var cancel: Cancellable?
     
-    func testDecodeWorks() {
-        let promise = XCTestExpectation(description: "decode")
+    func testEncodeWorks() {
+        let promise = XCTestExpectation(description: "encode")
         let testValue = TestDecodable()
-        let data = try! jsonEncoder.encode(testValue)
         
-        var decodedValue: TestDecodable?
+        var data: Data?
         cancel = Publishers
-            .Just(data)
-            .decode(type: TestDecodable.self, decoder: jsonDecoder)
+            .Just(testValue)
+            .encode(encoder: jsonEncoder)
             .sink(receiveValue: { foundValue in
-                decodedValue = foundValue
+                data = foundValue
                 promise.fulfill()
             })
         
         wait(for: [promise], timeout: 1)
-        XCTAssert(testValue.identifier == decodedValue?.identifier)
+        let decoded = try! jsonDecoder.decode(TestDecodable.self, from: data!)
+        XCTAssert(decoded.identifier == testValue.identifier)
     }
 }
