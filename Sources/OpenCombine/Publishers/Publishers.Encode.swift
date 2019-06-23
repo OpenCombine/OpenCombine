@@ -5,10 +5,17 @@
 //  Created by Joseph Spadafora on 6/22/19.
 //
 
+
 extension Publishers {
-    public struct Encode<Upstream, Coder>: Publisher where Upstream : Publisher, Coder : TopLevelEncoder, Upstream.Output : Encodable {
+    
+    public struct Encode<Upstream, Coder> : Publisher where Upstream : Publisher, Coder : TopLevelEncoder, Upstream.Output : Encodable {
         
+        /// The kind of errors this publisher might publish.
+        ///
+        /// Use `Never` if this `Publisher` does not publish errors.
         public typealias Failure = Error
+        
+        /// The kind of values published by this publisher.
         public typealias Output = Coder.Output
         
         public let upstream: Upstream
@@ -20,6 +27,12 @@ extension Publishers {
             self.encoder = encoder
         }
         
+        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        ///
+        /// - SeeAlso: `subscribe(_:)`
+        /// - Parameters:
+        ///     - subscriber: The subscriber to attach to this `Publisher`.
+        ///                   once attached it can begin to receive values.
         public func receive<S: Subscriber>(subscriber: S)
             where Failure == S.Failure, Output == S.Input
         {
@@ -28,7 +41,6 @@ extension Publishers {
         }
     }
 }
-
 
 private final class _Encode<Upstream: Publisher, Downstream: Subscriber, Coder: TopLevelEncoder>:
     Subscriber,

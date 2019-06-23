@@ -5,23 +5,31 @@
 //  Created by Joseph Spadafora on 6/21/19.
 //
 
+
 extension Publishers {
     
-    
-    public struct Decode<Upstream, Output, Coder>: Publisher where Upstream : Publisher, Output : Decodable, Coder : TopLevelDecoder, Upstream.Output == Coder.Input
- {
+    public struct Decode<Upstream, Output, Coder> : Publisher where Upstream : Publisher, Output : Decodable, Coder : TopLevelDecoder, Upstream.Output == Coder.Input {
         
+        /// The kind of errors this publisher might publish.
+        ///
+        /// Use `Never` if this `Publisher` does not publish errors.
         public typealias Failure = Error
         
         public let upstream: Upstream
         
-        private let decoder: Coder
+        let decoder: Coder
         
         public init(upstream: Upstream, decoder: Coder) {
             self.upstream = upstream
             self.decoder = decoder
         }
         
+        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        ///
+        /// - SeeAlso: `subscribe(_:)`
+        /// - Parameters:
+        ///     - subscriber: The subscriber to attach to this `Publisher`.
+        ///                   once attached it can begin to receive values.
         public func receive<S: Subscriber>(subscriber: S)
             where Failure == S.Failure, Output == S.Input
         {
