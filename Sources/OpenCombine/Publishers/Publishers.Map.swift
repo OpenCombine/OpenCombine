@@ -7,22 +7,33 @@
 
 extension Publishers {
     
-    public struct Map<Upstream, Output>: Publisher where Upstream : Publisher {
+    
+    /// A publisher that transforms all elements from the upstream publisher with a provided closure.
+    public struct Map<Upstream, Output> : Publisher where Upstream : Publisher {
         
+        /// The kind of errors this publisher might publish.
+        ///
+        /// Use `Never` if this `Publisher` does not publish errors.
         public typealias Failure = Upstream.Failure
         
-        public let transform: (Upstream.Output) -> Output
-        
+        /// The publisher from which this publisher receives elements.
         public let upstream: Upstream
         
-        public init(upstream: Upstream, transform: @escaping (Upstream.Output) -> Output) {
+        /// The closure that transforms elements from the upstream publisher.
+        public let transform: (Upstream.Output) -> Output
+        
+        init(upstream: Upstream, transform: @escaping (Upstream.Output) -> Output) {
             self.upstream = upstream
             self.transform = transform
         }
         
-        public func receive<S: Subscriber>(subscriber: S)
-            where Failure == S.Failure, Output == S.Input
-        {
+        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        ///
+        /// - SeeAlso: `subscribe(_:)`
+        /// - Parameters:
+        ///     - subscriber: The subscriber to attach to this `Publisher`.
+        ///                   once attached it can begin to receive values.
+        public func receive<S>(subscriber: S) where Output == S.Input, S : Subscriber, Upstream.Failure == S.Failure {
             let mapSubscriber = _Map<Upstream, Output, S>(downstream: subscriber, transform: transform)
             upstream.receive(subscriber: mapSubscriber)
         }
