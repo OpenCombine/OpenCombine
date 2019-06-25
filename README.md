@@ -12,6 +12,7 @@ The project is in early development.
 ### Contributing
 
 In order to work on this project you will need Xcode 10.2 and Swift 5.0 or later.
+
 Please refer to the [issue #1](https://github.com/broadwaylamb/OpenCombine/issues/1) for the list of operators that remain unimplemented, as well as the [RemainingCombineInterface.swift](https://github.com/broadwaylamb/OpenCombine/blob/master/RemainingCombineInterface.swift) file. The latter contains the generated interface of Apple's Combine from the latest Xcode 11 version. When the functionality is implemented in OpenCombine, it should be removed from the RemainingCombineInterface.swift file.
 
 You can refer to [this gist](https://gist.github.com/broadwaylamb/c2c8550d76b3ff851c4c1dbf0a872e26) to observe Apple's Combine API changes between different Xcode (beta) versions.
@@ -22,4 +23,6 @@ You can run compatibility tests against Apple's Combine. In order to do that you
 $ swift test -Xswiftc -DOPENCOMBINE_COMPATIBILITY_TEST
 ```
 
-Or enable the `-DOPENCOMBINE_COMPATIBILITY_TEST` compiler flag in Xcode's build settings. Note that on iOS only the latter will work. 
+Or enable the `-DOPENCOMBINE_COMPATIBILITY_TEST` compiler flag in Xcode's build settings. Note that on iOS only the latter will work.
+
+> NOTE: Before starting to work on some feature, please consult the [GitHub project](https://github.com/broadwaylamb/OpenCombine/projects/2) to make sure that nobody's already making progress on the same feature! If not, then please create a draft PR to indicate that you're beginning your work.
