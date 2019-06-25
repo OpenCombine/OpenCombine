@@ -66,7 +66,7 @@ private final class _Map<Upstream: Publisher, T, Downstream: Subscriber>: Subscr
     }
     
     func receive(_ input: Input) -> Subscribers.Demand {
-        _downstream.receive(_transform(input))
+        return _downstream.receive(_transform(input))
     }
     
     func receive(completion: Subscribers.Completion<Failure>) {
