@@ -84,8 +84,6 @@ Subscription where Downstream.Input: Decodable, Coder.Input == Upstream.Output, 
         case .finished:
             _downstream.receive(completion: .finished)
         case .failure(let error):
-            // Safe to force unwrap here, since Downstream.Failure can be
-            // either Upstream.Failure or Error
             _downstream.receive(completion: .failure(error))
         }
     }
