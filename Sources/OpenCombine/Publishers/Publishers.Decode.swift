@@ -43,7 +43,7 @@ private final class _Decode<Upstream: Publisher, Downstream: Subscriber, Coder: 
     Subscriber,
     CustomStringConvertible,
     CustomReflectable,
-Subscription where Downstream.Input: Decodable, Coder.Input == Upstream.Output {
+Subscription where Downstream.Input: Decodable, Coder.Input == Upstream.Output, Downstream.Failure == Error {
     typealias Input = Upstream.Output
     typealias Failure = Upstream.Failure
     typealias Output = Downstream.Input
@@ -73,7 +73,7 @@ Subscription where Downstream.Input: Decodable, Coder.Input == Upstream.Output {
             let value = try _decoder.decode(Downstream.Input.self, from: input)
             return _downstream.receive(value)
         } catch {
-            _downstream.receive(completion: .failure(error as! Downstream.Failure))
+            _downstream.receive(completion: .failure(error))
             cancel()
             return .none
         }
@@ -86,7 +86,7 @@ Subscription where Downstream.Input: Decodable, Coder.Input == Upstream.Output {
         case .failure(let error):
             // Safe to force unwrap here, since Downstream.Failure can be
             // either Upstream.Failure or Error
-            _downstream.receive(completion: .failure(error as! Downstream.Failure))
+            _downstream.receive(completion: .failure(error))
         }
     }
     

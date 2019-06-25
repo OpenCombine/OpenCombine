@@ -22,22 +22,17 @@ final class EncodeTests: XCTestCase {
     private let jsonEncoder = JSONEncoder()
     private let jsonDecoder = JSONDecoder()
     
-    var cancel: Cancellable?
-    
     func testEncodeWorks() {
-        let promise = XCTestExpectation(description: "encode")
         let testValue = TestDecodable()
         
         var data: Data?
-        cancel = Publishers
+        _ = Publishers
             .Just(testValue)
             .encode(encoder: jsonEncoder)
             .sink(receiveValue: { foundValue in
                 data = foundValue
-                promise.fulfill()
             })
         
-        wait(for: [promise], timeout: 1)
         let decoded = try! jsonDecoder.decode(TestDecodable.self, from: data!)
         XCTAssert(decoded.identifier == testValue.identifier)
     }

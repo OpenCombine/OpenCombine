@@ -46,7 +46,7 @@ private final class _Encode<Upstream: Publisher, Downstream: Subscriber, Coder: 
     Subscriber,
     CustomStringConvertible,
     CustomReflectable,
-Subscription where Coder.Output == Downstream.Input, Upstream.Output: Encodable {
+Subscription where Coder.Output == Downstream.Input, Upstream.Output: Encodable, Downstream.Failure == Error {
     typealias Input = Upstream.Output
     typealias Failure = Upstream.Failure
     typealias Output = Downstream.Input
@@ -76,7 +76,7 @@ Subscription where Coder.Output == Downstream.Input, Upstream.Output: Encodable 
             let value = try _encoder.encode(input)
             return _downstream.receive(value)
         } catch {
-            _downstream.receive(completion: .failure(error as! Downstream.Failure))
+            _downstream.receive(completion: .failure(error))
             cancel()
             return .none
         }
@@ -84,12 +84,8 @@ Subscription where Coder.Output == Downstream.Input, Upstream.Output: Encodable 
     
     func receive(completion: Subscribers.Completion<Failure>) {
         switch completion {
-        case .finished:
-            _downstream.receive(completion: .finished)
-        case .failure(let error):
-            // Safe to force unwrap here, since Downstream.Failure can be
-            // either Upstream.Failure or Error
-            _downstream.receive(completion: .failure(error as! Downstream.Failure))
+        case .finished: _downstream.receive(completion: .finished)
+        case .failure(let error): _downstream.receive(completion: .failure(error))
         }
     }
     
