@@ -18,7 +18,8 @@ import OpenCombine
 final class FilterTests: XCTestCase {
     static let allTests = [
         ("testFilterRemovesElements", testFilterRemovesElements),
-        ("testFilteringOtherFilters", testFilteringOtherFilters)
+        ("testFilteringOtherFilters", testFilteringOtherFilters),
+        ("testTryFilterCanFilterOtherFilter", testTryFilterCanFilterOtherFilter)
     ]
     
     func testFilterRemovesElements() {
@@ -56,4 +57,44 @@ final class FilterTests: XCTestCase {
         
         XCTAssertEqual(results, [15])
     }
+    
+    func testTryFilterWorks() {
+        var results: [Int] = []
+        
+        let subscription = CustomSubscription()
+        let publisher = CustomPublisher(subscription: subscription)
+        _ = Publishers.TryFilter(upstream: publisher) {
+            try $0 % 2 == 0 && nonthrowingReturn($0)
+        }.sink {
+            results.append($0)
+        }
+        for i in 1...5 {
+            _ = publisher.send(i)
+        }
+        
+        XCTAssertEqual(results, [2, 4])
+    }
+    
+    func testTryFilterCanFilterOtherFilter() {
+        var results: [Int] = []
+        
+        let subscription = CustomSubscription()
+        let publisher = CustomPublisher(subscription: subscription)
+        _ = Publishers.Filter(upstream: publisher) {
+            $0 % 3 == 0
+        }.tryFilter {
+            try nonthrowingReturn($0)
+        }.sink {
+            results.append($0)
+        }
+        for i in 1...9 {
+            _ = publisher.send(i)
+        }
+        
+        XCTAssertEqual(results, [3, 6, 9])
+    }
+}
+
+private func nonthrowingReturn(_ value: Int) throws -> Bool {
+    return true
 }
