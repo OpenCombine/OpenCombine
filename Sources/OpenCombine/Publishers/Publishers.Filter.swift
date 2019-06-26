@@ -130,3 +130,24 @@ Subscription where Upstream.Output == Downstream.Input {
         _upstreamSubscription = nil
     }
 }
+
+extension Publishers.Filter {
+    public func filter(_ isIncluded: @escaping (Publishers.Filter<Upstream>.Output) -> Bool) -> Publishers.Filter<Upstream> {
+        return Publishers.Filter(upstream: upstream) { isIncluded($0) && self.isIncluded($0) }
+    }
+    
+    public func tryFilter(_ isIncluded: @escaping (Publishers.Filter<Upstream>.Output) throws -> Bool) -> Publishers.TryFilter<Upstream> {
+        return Publishers.TryFilter(upstream: upstream) { try isIncluded($0) && self.isIncluded($0) }
+    }
+}
+
+extension Publishers.TryFilter {
+
+    public func filter(_ isIncluded: @escaping (Publishers.TryFilter<Upstream>.Output) -> Bool) -> Publishers.TryFilter<Upstream> {
+        return Publishers.TryFilter(upstream: upstream)  { try isIncluded($0) && self.isIncluded($0) }
+    }
+
+    public func tryFilter(_ isIncluded: @escaping (Publishers.TryFilter<Upstream>.Output) throws -> Bool) -> Publishers.TryFilter<Upstream> {
+        return Publishers.TryFilter(upstream: upstream) { try isIncluded($0) && self.isIncluded($0) }
+    }
+}
