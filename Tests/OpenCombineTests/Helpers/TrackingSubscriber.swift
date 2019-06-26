@@ -17,7 +17,7 @@ typealias TrackingSubscriber = TrackingSubscriberBase<TestingError>
 @available(macOS 10.15, *)
 final class TrackingSubscriberBase<Failure: Error>: Subscriber, CustomStringConvertible {
 
-    enum Event: Equatable {
+    enum Event: Equatable, CustomStringConvertible {
         case subscription(Subscription)
         case value(Int)
         case completion(Subscribers.Completion<Failure>)
@@ -39,6 +39,19 @@ final class TrackingSubscriberBase<Failure: Error>: Subscriber, CustomStringConv
                 }
             default:
                 return false
+            }
+        }
+
+        var description: String {
+            switch self {
+            case .subscription:
+                return "subscription"
+            case .value(let value):
+                return "value(\(value))"
+            case .completion(.finished):
+                return "finished"
+            case .completion(.failure(let error)):
+                return "failure(\(error))"
             }
         }
     }

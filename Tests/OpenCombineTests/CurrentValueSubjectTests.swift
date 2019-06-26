@@ -20,11 +20,11 @@ final class CurrentValueSubjectTests: XCTestCase {
 
     static let allTests = [
         ("testRequestingDemand", testRequestingDemand),
+        ("testSendFailureCompletion", testSendFailureCompletion),
         ("testMultipleSubscriptions", testMultipleSubscriptions),
         ("testMultipleCompletions", testMultipleCompletions),
         ("testValuesAfterCompletion", testValuesAfterCompletion),
-        // TODO:
-        // ("testLifecycle", testLifecycle),
+        ("testLifecycle", testLifecycle),
         ("testSynchronization", testSynchronization),
     ]
 
@@ -115,6 +115,33 @@ final class CurrentValueSubjectTests: XCTestCase {
         XCTAssertEqual(numberOfInputsHistory, expectedNumberOfInputsHistory)
     }
 
+    func testSendFailureCompletion() {
+        let cvs = Sut(0)
+        let subscriber = TrackingSubscriber(
+            receiveSubscription: { subscription in
+                subscription.request(.unlimited)
+            }
+        )
+
+        cvs.subscribe(subscriber)
+
+        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+                                            .value(0)])
+
+        cvs.value += 3
+
+        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+                                            .value(0),
+                                            .value(3)])
+
+        cvs.send(completion: .failure(.oops))
+
+        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+                                            .value(0),
+                                            .value(3),
+                                            .completion(.finished)])
+    }
+
     func testMultipleSubscriptions() {
 
         let cvs = Sut(112)
@@ -124,10 +151,7 @@ final class CurrentValueSubjectTests: XCTestCase {
             typealias Failure = Sut.Failure
 
             let sut: Sut
-
-            var subscriptions: [Subscription] = []
-            var inputs: [Int] = []
-            var completions: [Subscribers.Completion<TestingError>] = []
+            let tracking = TrackingSubscriber()
 
             init(sut: Sut) {
                 self.sut = sut
@@ -135,21 +159,20 @@ final class CurrentValueSubjectTests: XCTestCase {
 
             func receive(subscription: Subscription) {
                 subscription.request(.unlimited)
-                subscriptions.append(subscription)
+                tracking.receive(subscription: subscription)
 
-                if subscriptions.count < 10 {
+                if tracking.subscriptions.count < 10 {
                     // This must recurse
                     sut.subscribe(self)
                 }
             }
 
             func receive(_ input: Input) -> Subscribers.Demand {
-                inputs.append(input)
-                return .none
+                return tracking.receive(input)
             }
 
             func receive(completion: Subscribers.Completion<Failure>) {
-                completions.append(completion)
+                tracking.receive(completion: completion)
             }
         }
 
@@ -157,109 +180,123 @@ final class CurrentValueSubjectTests: XCTestCase {
 
         cvs.subscribe(subscriber)
 
-        XCTAssertEqual(subscriber.subscriptions.count, 10)
-        XCTAssertEqual(subscriber.inputs.count, 10)
-        XCTAssertEqual(subscriber.completions.count, 0)
+        XCTAssertEqual(subscriber.tracking.history, [.value(112),
+                                                     .subscription(Subscriptions.empty),
+                                                     .value(112),
+                                                     .subscription(Subscriptions.empty),
+                                                     .value(112),
+                                                     .subscription(Subscriptions.empty),
+                                                     .value(112),
+                                                     .subscription(Subscriptions.empty),
+                                                     .value(112),
+                                                     .subscription(Subscriptions.empty),
+                                                     .value(112),
+                                                     .subscription(Subscriptions.empty),
+                                                     .value(112),
+                                                     .subscription(Subscriptions.empty),
+                                                     .value(112),
+                                                     .subscription(Subscriptions.empty),
+                                                     .value(112),
+                                                     .subscription(Subscriptions.empty),
+                                                     .value(112),
+                                                     .subscription(Subscriptions.empty)])
 
         cvs.subscribe(subscriber)
 
-        XCTAssertEqual(subscriber.subscriptions.count, 11)
-        XCTAssertEqual(subscriber.inputs.count, 11)
-        XCTAssertEqual(subscriber.completions.count, 0)
+        XCTAssertEqual(subscriber.tracking.history, [.value(112),
+                                                     .subscription(Subscriptions.empty),
+                                                     .value(112),
+                                                     .subscription(Subscriptions.empty),
+                                                     .value(112),
+                                                     .subscription(Subscriptions.empty),
+                                                     .value(112),
+                                                     .subscription(Subscriptions.empty),
+                                                     .value(112),
+                                                     .subscription(Subscriptions.empty),
+                                                     .value(112),
+                                                     .subscription(Subscriptions.empty),
+                                                     .value(112),
+                                                     .subscription(Subscriptions.empty),
+                                                     .value(112),
+                                                     .subscription(Subscriptions.empty),
+                                                     .value(112),
+                                                     .subscription(Subscriptions.empty),
+                                                     .value(112),
+                                                     .subscription(Subscriptions.empty),
+                                                     .value(112),
+                                                     .subscription(Subscriptions.empty)])
     }
 
     // Reactive Streams Spec: Rule #6
     func testMultipleCompletions() {
 
-        var subscriptions: [Subscription] = []
-        var inputs: [Int] = []
-        var completions: [Subscribers.Completion<TestingError>] = []
-
         let cvs = Sut(112)
-        let subscriber = AnySubscriber<Int, TestingError>(
+        let subscriber = TrackingSubscriber(
             receiveSubscription: { subscription in
-                subscriptions.append(subscription)
                 subscription.request(.unlimited)
-            },
-            receiveValue: { value in
-                inputs.append(value)
-                return .none
             },
             receiveCompletion: { completion in
                 cvs.send(completion: .failure("must not recurse"))
-                completions.append(completion)
             }
         )
 
         cvs.subscribe(subscriber)
         cvs.value = 42
-
-        XCTAssertEqual(subscriptions.count, 1)
-        XCTAssertEqual(inputs.count, 2)
-        XCTAssertEqual(completions.count, 0)
-
-        cvs.send(completion: .finished)
-
-        XCTAssertEqual(subscriptions.count, 1)
-        XCTAssertEqual(inputs.count, 2)
-        XCTAssertEqual(completions.count, 1)
+        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+                                            .value(112),
+                                            .value(42)])
 
         cvs.send(completion: .finished)
+        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+                                            .value(112),
+                                            .value(42),
+                                            .completion(.finished)])
 
-        XCTAssertEqual(subscriptions.count, 1)
-        XCTAssertEqual(inputs.count, 2)
-        XCTAssertEqual(completions.count, 1)
+        cvs.send(completion: .finished)
+        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+                                            .value(112),
+                                            .value(42),
+                                            .completion(.finished)])
 
         cvs.send(completion: .failure("oops"))
-
-        XCTAssertEqual(subscriptions.count, 1)
-        XCTAssertEqual(inputs.count, 2)
-        XCTAssertEqual(completions.count, 1)
+        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+                                            .value(112),
+                                            .value(42),
+                                            .completion(.finished)])
     }
 
     // Reactive Streams Spec: Rule #6
     func testValuesAfterCompletion() {
-        var subscriptions: [Subscription] = []
-        var inputs: [Int] = []
-        var completions: [Subscribers.Completion<TestingError>] = []
-
         let cvs = Sut(112)
-        let subscriber = AnySubscriber<Int, TestingError>(
+        let subscriber = TrackingSubscriber(
             receiveSubscription: { subscription in
-                subscriptions.append(subscription)
                 subscription.request(.unlimited)
-            },
-            receiveValue: { value in
-                inputs.append(value)
-                return .none
             },
             receiveCompletion: { completion in
                 cvs.value = 42
-                completions.append(completion)
             }
         )
 
         cvs.subscribe(subscriber)
 
         cvs.value = 44
-
-        XCTAssertEqual(subscriptions.count, 1)
-        XCTAssertEqual(inputs.count, 2)
-        XCTAssertEqual(completions.count, 0)
+        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+                                            .value(112),
+                                            .value(44)])
 
         cvs.send(completion: .finished)
-
-        XCTAssertEqual(subscriptions.count, 1)
-        XCTAssertEqual(inputs.count, 2)
-        XCTAssertEqual(completions.count, 1)
+        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+                                            .value(112),
+                                            .value(44),
+                                            .completion(.finished)])
 
         cvs.value = 1201
-
-        XCTAssertEqual(subscriptions.count, 1)
-        XCTAssertEqual(inputs.count, 2)
-        XCTAssertEqual(completions.count, 1)
+        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+                                            .value(112),
+                                            .value(44),
+                                            .completion(.finished)])
     }
-    /* TODO: Figure out why Apple's Combine behaves this way, see FB6146252
+
     func testLifecycle() {
 
         var deinitCounter = 0
@@ -275,13 +312,19 @@ final class CurrentValueSubjectTests: XCTestCase {
                 onDeinit: onDeinit
             )
             XCTAssertTrue(subscriber.history.isEmpty)
+
             cvs.subscribe(subscriber)
-            XCTAssertEqual(subscriber.countSubscriptions, 1)
-            XCTAssertEqual(subscriber.countInputs, 1)
+            XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+                                                .value(0)])
+
             cvs.value += 1
-            XCTAssertEqual(subscriber.countInputs, 1)
+            XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+                                                .value(0)])
+
             cvs.send(completion: .failure("failure"))
-            XCTAssertEqual(subscriber.countCompletions, 1)
+            XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+                                                .value(0),
+                                                .completion(.finished)])
         }
 
         XCTAssertEqual(deinitCounter, 0)
@@ -294,9 +337,8 @@ final class CurrentValueSubjectTests: XCTestCase {
             )
             XCTAssertTrue(subscriber.history.isEmpty)
             cvs.subscribe(subscriber)
-            XCTAssertEqual(subscriber.countSubscriptions, 1)
-            XCTAssertEqual(subscriber.countInputs, 1)
-            XCTAssertEqual(subscriber.countCompletions, 0)
+            XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+                                                .value(0)])
         }
 
         XCTAssertEqual(deinitCounter, 0) // We have a leak
@@ -311,20 +353,19 @@ final class CurrentValueSubjectTests: XCTestCase {
             )
             XCTAssertTrue(subscriber.history.isEmpty)
             cvs.subscribe(subscriber)
-            XCTAssertEqual(subscriber.countSubscriptions, 1)
+            XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+                                                .value(0)])
             cvs.send(31)
-            XCTAssertEqual(subscriber.countInputs, 2)
-            XCTAssertEqual(subscriber.countCompletions, 0)
+            XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+                                                .value(0),
+                                                .value(31)])
             XCTAssertNotNil(subscription)
         }
 
         XCTAssertEqual(deinitCounter, 0)
-        dump(subscription!)
         subscription?.cancel()
         XCTAssertEqual(deinitCounter, 1)
-        dump(subscription!)
     }
-    */
 
     func testSynchronization() {
 

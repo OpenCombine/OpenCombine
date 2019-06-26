@@ -18,6 +18,7 @@ final class PassthroughSubjectTests: XCTestCase {
 
     static let allTests = [
         ("testRequestingDemand", testRequestingDemand),
+        ("testSendFailureCompletion", testSendFailureCompletion),
         ("testMultipleSubscriptions", testMultipleSubscriptions),
         ("testMultipleCompletions", testMultipleCompletions),
         ("testValuesAfterCompletion", testValuesAfterCompletion),
@@ -101,6 +102,24 @@ final class PassthroughSubjectTests: XCTestCase {
         }
 
         XCTAssertEqual(numberOfInputsHistory, expectedNumberOfInputsHistory)
+    }
+
+    func testSendFailureCompletion() {
+        let cvs = Sut()
+        let subscriber = TrackingSubscriber(
+            receiveSubscription: { subscription in
+                subscription.request(.unlimited)
+            }
+        )
+
+        cvs.subscribe(subscriber)
+
+        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty)])
+
+        cvs.send(completion: .failure(.oops))
+
+        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+                                            .completion(.failure(.oops))])
     }
 
     func testMultipleSubscriptions() {

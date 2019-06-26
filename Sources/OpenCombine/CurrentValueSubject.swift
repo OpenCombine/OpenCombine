@@ -43,7 +43,7 @@ public final class CurrentValueSubject<Output, Failure: Error>: Subject {
 
     public func send(_ input: Output) {
         _lock.do {
-            for subscriber in _downstreams {
+            for subscriber in _downstreams where !subscriber.isCompleted {
                 if subscriber._demand > 0 {
                     let newDemand = subscriber._downstream?.receive(input) ?? .none
                     subscriber._demand += newDemand - 1
@@ -58,7 +58,7 @@ public final class CurrentValueSubject<Output, Failure: Error>: Subject {
         _completion = completion
         _lock.do {
             for subscriber in _downstreams {
-                subscriber._receive(completion: completion)
+                subscriber._receive(completion: .finished)
             }
         }
     }
@@ -77,6 +77,10 @@ extension CurrentValueSubject {
         /// Whethere we satisfied the demand
         fileprivate var _delivered = false
 
+        var isCompleted: Bool {
+            return _parent == nil
+        }
+
         fileprivate init(parent: CurrentValueSubject,
                          downstream: AnySubscriber<Output, Failure>) {
             _parent = parent
@@ -84,9 +88,10 @@ extension CurrentValueSubject {
         }
 
         fileprivate func _receive(completion: Subscribers.Completion<Failure>) {
-            let downstream = _downstream
-            cancel()
-            downstream?.receive(completion: completion)
+            if !isCompleted {
+                _parent = nil
+                _downstream?.receive(completion: completion)
+            }
         }
 
         func request(_ demand: Subscribers.Demand) {
