@@ -103,6 +103,10 @@ internal struct ClosureBasedPublisher<Output, Failure: Error>: Publisher {
     internal func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
         where Failure == SubscriberType.Failure, Output == SubscriberType.Input
     {
-        subscribe(AnySubscriber(subscriber))
+        if let anySubscriber = subscriber as? AnySubscriber<Output, Failure> {
+            subscribe(anySubscriber)
+        } else {
+            subscribe(AnySubscriber(subscriber))
+        }
     }
 }
