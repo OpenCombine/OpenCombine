@@ -64,7 +64,7 @@ Subscription where Downstream.Input: Decodable, Coder.Input == Upstream.Output, 
     
     func receive(subscription: Subscription) {
         _upstreamSubscription = subscription
-        subscription.request(.max(1))
+        subscription.request(.unlimited)
         _downstream.receive(subscription: self)
     }
     
