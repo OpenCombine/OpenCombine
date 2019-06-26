@@ -31,8 +31,8 @@ extension Publishers {
         /// The failure to send when terminating the publisher.
         public let error: Failure
 
-        public func receive<S: Subscriber>(subscriber: S)
-            where Output == S.Input, Failure == S.Failure
+        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
+            where Output == SubscriberType.Input, Failure == SubscriberType.Failure
         {
             subscriber.receive(subscription: Subscriptions.empty)
             subscriber.receive(completion: .failure(error))

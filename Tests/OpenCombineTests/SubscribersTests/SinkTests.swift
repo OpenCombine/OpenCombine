@@ -117,4 +117,3 @@ final class SinkTests: XCTestCase {
         XCTAssertEqual(value, 100)
     }
 }
-

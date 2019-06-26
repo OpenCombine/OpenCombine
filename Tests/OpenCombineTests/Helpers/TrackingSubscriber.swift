@@ -15,12 +15,12 @@ import OpenCombine
 typealias TrackingSubscriber = TrackingSubscriberBase<TestingError>
 
 @available(macOS 10.15, *)
-final class TrackingSubscriberBase<E: Error>: Subscriber, CustomStringConvertible {
+final class TrackingSubscriberBase<Failure: Error>: Subscriber, CustomStringConvertible {
 
     enum Event: Equatable {
         case subscription(Subscription)
         case value(Int)
-        case completion(Subscribers.Completion<E>)
+        case completion(Subscribers.Completion<Failure>)
 
         static func == (lhs: Event, rhs: Event) -> Bool {
             switch (lhs, rhs) {
@@ -76,9 +76,9 @@ final class TrackingSubscriberBase<E: Error>: Subscriber, CustomStringConvertibl
 
     var completions: LazyMapSequence<
         LazyFilterSequence<
-            LazyMapSequence<[Event], Subscribers.Completion<E>?>
+            LazyMapSequence<[Event], Subscribers.Completion<Failure>?>
         >,
-        Subscribers.Completion<E>
+        Subscribers.Completion<Failure>
     > {
         return history.lazy.compactMap {
             if case .completion(let c) = $0 {
@@ -109,7 +109,7 @@ final class TrackingSubscriberBase<E: Error>: Subscriber, CustomStringConvertibl
         return _receiveValue?(input) ?? .none
     }
 
-    func receive(completion: Subscribers.Completion<E>) {
+    func receive(completion: Subscribers.Completion<Failure>) {
         history.append(.completion(completion))
         _receiveCompletion?(completion)
     }
@@ -166,8 +166,8 @@ final class TrackingSubject: Subject {
         history.append(.completion(completion))
     }
 
-    func receive<S: Subscriber>(subscriber: S)
-        where Failure == S.Failure, Output == S.Input
+    func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
+        where Failure == SubscriberType.Failure, Output == SubscriberType.Input
     {
         history.append(.subscriber(subscriber.combineIdentifier))
     }

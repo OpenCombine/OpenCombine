@@ -198,14 +198,15 @@ final class JustTests: XCTestCase {
     }
 
     func testRemoveDuplicatesOperatorSpecialization() {
-        
+
         XCTAssertEqual(Sut(1000).removeDuplicates(), Sut(1000))
 
         var count = 0
         let comparator: (Int, Int) -> Bool = { count += 1; return $0 == $1 }
         XCTAssertEqual(Sut(44).removeDuplicates(by: comparator), Sut(44))
 
-        XCTAssertEqual(count, 0,
+        XCTAssertEqual(count,
+                       0,
                        "comparator should not be called for removeDuplicates(by:)")
     }
 

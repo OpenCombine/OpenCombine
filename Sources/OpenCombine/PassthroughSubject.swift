@@ -20,9 +20,9 @@ public final class PassthroughSubject<Output, Failure: Error>: Subject  {
 
     public init() {}
 
-    public func receive<S: Subscriber>(
-        subscriber: S
-    ) where Output == S.Input, Failure == S.Failure {
+    public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
+        where Output == SubscriberType.Input, Failure == SubscriberType.Failure
+    {
         let subscription = Conduit(parent: self, downstream: AnySubscriber(subscriber))
 
         _lock.do {

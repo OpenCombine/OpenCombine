@@ -5,8 +5,8 @@
 //  Created by Sergej Jaskiewicz on 13.06.2019.
 //
 
-import XCTest
 import GottaGoFast
+import XCTest
 
 #if OPENCOMBINE_COMPATIBILITY_TEST
 import Combine
@@ -26,16 +26,17 @@ final class CombineIdentifierTests: PerformanceTestCase {
     func testDefaultInitialized() {
         let id1 = CombineIdentifier()
         let id2 = CombineIdentifier()
-        XCTAssertNotEqual(id1, id2,
+        XCTAssertNotEqual(id1,
+                          id2,
                           "Default-initialized Combine identifiers must be different")
     }
 
     func testAnyObject() {
 
-        class C {}
+        class Object {}
 
-        let c1 = C()
-        let c2 = C()
+        let c1 = Object()
+        let c2 = Object()
 
         let id1 = CombineIdentifier(c1)
         let id2 = CombineIdentifier(c2)
@@ -56,4 +57,3 @@ final class CombineIdentifierTests: PerformanceTestCase {
         }
     }
 }
-

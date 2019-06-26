@@ -20,10 +20,10 @@ extension Publishers {
         /// The closure that indicates whether to drop the element.
         public let predicate: (Output) -> Bool
 
-        public func receive<S: Subscriber>(subscriber: S)
-            where Failure == S.Failure, Output == S.Input
+        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
+            where Failure == SubscriberType.Failure, Output == SubscriberType.Input
         {
-            let dropWhile = _DropWhile<Upstream, S, (Output) -> Bool>(
+            let dropWhile = _DropWhile<Upstream, SubscriberType, (Output) -> Bool>(
                 downstream: subscriber, predicate: predicate
             )
             upstream.receive(subscriber: dropWhile)
@@ -43,10 +43,10 @@ extension Publishers {
         /// The error-throwing closure that indicates whether to drop the element.
         public let predicate: (Upstream.Output) throws -> Bool
 
-        public func receive<S: Subscriber>(subscriber: S)
-            where Output == S.Input, S.Failure == Error
+        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
+            where Output == SubscriberType.Input, SubscriberType.Failure == Error
         {
-            let dropWhile = _DropWhile<Upstream, S, (Output) throws -> Bool>(
+            let dropWhile = _DropWhile<Upstream, SubscriberType, (Output) throws -> Bool>(
                 downstream: subscriber, predicate: predicate
             )
 

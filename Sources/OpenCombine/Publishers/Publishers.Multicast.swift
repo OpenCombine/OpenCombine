@@ -28,8 +28,9 @@ extension Publishers {
             _creator = creator
         }
 
-        public func receive<S: Subscriber>(subscriber: S)
-            where SubjectType.Failure == S.Failure, SubjectType.Output == S.Input
+        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
+            where SubjectType.Failure == SubscriberType.Failure,
+                  SubjectType.Output == SubscriberType.Input
         {
             _subject.subscribe(subscriber)
         }
@@ -49,16 +50,19 @@ extension Publishers {
 
 extension Publisher {
 
-    public func multicast<S: Subject>(
-        _ createSubject: @escaping () -> S
-    ) -> Publishers.Multicast<Self, S> where Failure == S.Failure, Output == S.Output {
+    public func multicast<SubjectType: Subject>(
+        _ createSubject: @escaping () -> SubjectType
+    ) -> Publishers.Multicast<Self, SubjectType>
+        where Failure == SubjectType.Failure, Output == SubjectType.Output
+    {
         return Publishers.Multicast(upstream: self, createSubject)
     }
 
-    public func multicast<S: Subject>(subject: S) -> Publishers.Multicast<Self, S>
-        where Failure == S.Failure, Output == S.Output
+    public func multicast<SubjectType: Subject>(
+        subject: SubjectType
+    ) -> Publishers.Multicast<Self, SubjectType>
+        where Failure == SubjectType.Failure, Output == SubjectType.Output
     {
         return multicast { subject }
     }
 }
-
