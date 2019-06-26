@@ -2801,34 +2801,6 @@ extension Publisher {
 
 extension Publishers {
 
-    /// A publisher that publishes a given sequence of elements.
-    ///
-    /// When the publisher exhausts the elements in the sequence, the next request causes the publisher to finish.
-    public struct Sequence<Elements, Failure> : Publisher where Elements : Sequence, Failure : Error {
-
-        /// The kind of values published by this publisher.
-        public typealias Output = Elements.Element
-
-        /// The sequence of elements to publish.
-        public let sequence: Elements
-
-        /// Creates a publisher for a sequence of elements.
-        ///
-        /// - Parameter sequence: The sequence of elements to publish.
-        public init(sequence: Elements)
-
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
-        ///
-        /// - SeeAlso: `subscribe(_:)`
-        /// - Parameters:
-        ///     - subscriber: The subscriber to attach to this `Publisher`.
-        ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where Failure == S.Failure, S : Subscriber, Elements.Element == S.Input
-    }
-}
-
-extension Publishers {
-
     /// A publisher created by applying the zip function to two upstream publishers.
     public struct Zip<A, B> : Publisher where A : Publisher, B : Publisher, A.Failure == B.Failure {
 
@@ -3805,19 +3777,6 @@ extension Publishers.Sequence where Elements : RangeReplaceableCollection {
     public func append(_ publisher: Publishers.Sequence<Elements, Failure>) -> Publishers.Sequence<Elements, Failure>
 }
 
-extension Publishers.Sequence : Equatable where Elements : Equatable {
-
-    /// Returns a Boolean value indicating whether two values are equal.
-    ///
-    /// Equality is the inverse of inequality. For any values `a` and `b`,
-    /// `a == b` implies that `a != b` is `false`.
-    ///
-    /// - Parameters:
-    ///   - lhs: A value to compare.
-    ///   - rhs: Another value to compare.
-    public static func == (lhs: Publishers.Sequence<Elements, Failure>, rhs: Publishers.Sequence<Elements, Failure>) -> Bool
-}
-
 extension Publishers.Zip : Equatable where A : Equatable, B : Equatable {
 
     /// Returns a Boolean value that indicates whether two publishers are equivalent.
@@ -3900,11 +3859,6 @@ extension Publishers.First : Equatable where Upstream : Equatable {
     ///   - rhs: Another drop publisher to compare for equality.
     /// - Returns: `true` if the two publishers have equal upstream publishers, `false` otherwise.
     public static func == (lhs: Publishers.First<Upstream>, rhs: Publishers.First<Upstream>) -> Bool
-}
-
-extension Sequence {
-
-    public func publisher() -> Publishers.Sequence<Self, Never>
 }
 
 /// Adds a `Publisher` to a property.
