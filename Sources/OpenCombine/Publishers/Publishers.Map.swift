@@ -9,8 +9,10 @@ extension Publisher {
 
     /// Transforms all elements from the upstream publisher with a provided closure.
     ///
-    /// - Parameter transform: A closure that takes one element as its parameter and returns a new element.
-    /// - Returns: A publisher that uses the provided closure to map elements from the upstream publisher to new elements that it then publishes.
+    /// - Parameter transform: A closure that takes one element as its parameter and
+    ///   returns a new element.
+    /// - Returns: A publisher that uses the provided closure to map elements from the
+    ///   upstream publisher to new elements that it then publishes.
     public func map<Result>(_ transform: @escaping (Output) -> Result)
         -> Publishers.Map<Self, Result> {
             return Publishers.Map(upstream: self, transform: transform)
@@ -18,7 +20,8 @@ extension Publisher {
 }
 
 extension Publishers {
-    /// A publisher that transforms all elements from the upstream publisher with a provided closure.
+    /// A publisher that transforms all elements from the upstream publisher with
+    /// a provided closure.
     public struct Map<Upstream: Publisher, Output> : Publisher {
 
         /// The kind of errors this publisher might publish.
@@ -35,12 +38,6 @@ extension Publishers {
 }
 
 extension Publishers.Map {
-    /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
-    ///
-    /// - SeeAlso: `subscribe(_:)`
-    /// - Parameters:
-    ///     - subscriber: The subscriber to attach to this `Publisher`.
-    ///                   once attached it can begin to receive values.
     public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
         where Output == SubscriberType.Input,
         Upstream.Failure == SubscriberType.Failure {

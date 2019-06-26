@@ -67,7 +67,6 @@ opt_in_rules:
 line_length:
   warning: 90
   error: 120
-  ignores_comments: true
   ignores_urls: true
 
 generic_type_name:

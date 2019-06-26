@@ -38,7 +38,8 @@ public final class AnySubject<Output, Failure: Error>: Subject {
     }
 }
 
-/// A type-erasing base class. Its concrete subclass is generic over the underlying publisher.
+/// A type-erasing base class. Its concrete subclass is generic over the underlying
+/// publisher.
 private class SubjectBoxBase<Output, Failure: Error>: Subject {
 
     func send(_ value: Output) {

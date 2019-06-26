@@ -7,8 +7,8 @@
 
 /// A type-erasing publisher.
 ///
-/// Use `AnyPublisher` to wrap a publisher whose type has details you don’t want to expose to subscribers or other
-/// publishers.
+/// Use `AnyPublisher` to wrap a publisher whose type has details you don’t want to expose
+/// to subscribers or other publishers.
 public struct AnyPublisher<Output, Failure: Error> {
 
     @usableFromInline
@@ -37,7 +37,8 @@ public struct AnyPublisher<Output, Failure: Error> {
 
 extension AnyPublisher: Publisher {
 
-    /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+    /// This function is called to attach the specified `Subscriber` to this `Publisher`
+    /// by `subscribe(_:)`
     ///
     /// - SeeAlso: `subscribe(_:)`
     /// - Parameters:
@@ -51,7 +52,8 @@ extension AnyPublisher: Publisher {
     }
 }
 
-/// A type-erasing base class. Its concrete subclass is generic over the underlying publisher.
+/// A type-erasing base class. Its concrete subclass is generic over the underlying
+/// publisher.
 @usableFromInline
 internal class PublisherBoxBase<Output, Failure: Error>: Publisher {
 

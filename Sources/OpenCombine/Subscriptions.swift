@@ -11,7 +11,8 @@ extension Subscriptions {
 
     /// Returns the 'empty' subscription.
     ///
-    /// Use the empty subscription when you need a `Subscription` that ignores requests and cancellation.
+    /// Use the empty subscription when you need a `Subscription` that ignores requests
+    /// and cancellation.
     public static var empty: Subscription { return Empty.shared }
 }
 

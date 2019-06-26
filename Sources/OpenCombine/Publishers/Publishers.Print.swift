@@ -7,7 +7,8 @@
 
 extension Publishers {
 
-    /// A publisher that prints log messages for all publishing events, optionally prefixed with a given string.
+    /// A publisher that prints log messages for all publishing events, optionally
+    /// prefixed with a given string.
     ///
     /// This publisher prints log messages when receiving the following events:
     /// * subscription
@@ -55,7 +56,8 @@ extension Publisher {
 
     /// Prints log messages for all publishing events.
     ///
-    /// - Parameter prefix: A string with which to prefix all log messages. Defaults to an empty string.
+    /// - Parameter prefix: A string with which to prefix all log messages. Defaults to
+    ///   an empty string.
     /// - Returns: A publisher that prints log messages for all publishing events.
     public func print(_ prefix: String = "",
                       to stream: TextOutputStream? = nil) -> Publishers.Print<Self> {

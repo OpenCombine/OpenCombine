@@ -7,8 +7,8 @@
 
 /// A subject that passes along values and completion.
 ///
-/// Use a `PassthroughSubject` in unit tests when you want a publisher than can publish specific values on-demand
-/// during tests.
+/// Use a `PassthroughSubject` in unit tests when you want a publisher than can publish
+/// specific values on-demand during tests.
 public final class PassthroughSubject<Output, Failure: Error>: Subject  {
 
     private let _lock = Lock(recursive: true)

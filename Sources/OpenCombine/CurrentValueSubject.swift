@@ -5,7 +5,8 @@
 //  Created by Sergej Jaskiewicz on 11.06.2019.
 //
 
-/// A subject that wraps a single value and publishes a new element whenever the value changes.
+/// A subject that wraps a single value and publishes a new element whenever the value
+/// changes.
 public final class CurrentValueSubject<Output, Failure: Error>: Subject {
 
     private let _lock = Lock(recursive: true)

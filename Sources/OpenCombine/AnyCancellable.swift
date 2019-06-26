@@ -7,8 +7,9 @@
 
 /// A type-erasing cancellable object that executes a provided closure when canceled.
 ///
-/// Subscriber implementations can use this type to provide a “cancellation token” that makes it possible for a caller
-/// to cancel a publisher, but not to use the `Subscription` object to request items.
+/// Subscriber implementations can use this type to provide a “cancellation token” that
+/// makes it possible for a caller to cancel a publisher, but not to use the
+/// `Subscription` object to request items.
 public final class AnyCancellable: Cancellable {
 
     private var _cancel: (() -> Void)?

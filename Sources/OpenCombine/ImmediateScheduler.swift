@@ -7,8 +7,8 @@
 
 /// A scheduler for performing synchronous actions.
 ///
-/// You can only use this scheduler for immediate actions. If you attempt to schedule actions after a specific date,
-/// the scheduler produces a fatal error.
+/// You can only use this scheduler for immediate actions. If you attempt to schedule
+/// actions after a specific date, the scheduler produces a fatal error.
 public struct ImmediateScheduler: Scheduler {
 
     /// The time type used by the immediate scheduler.
@@ -16,16 +16,18 @@ public struct ImmediateScheduler: Scheduler {
 
         fileprivate init() {}
 
-        /// Returns the distance to another immediate scheduler time; this distance is always `0` in the context of
-        /// an immediate scheduler.
+        /// Returns the distance to another immediate scheduler time; this distance is
+        /// always `0` in the context of an immediate scheduler.
         ///
         /// - Parameter other: The other scheduler time.
         /// - Returns: `0`, as a `Stride`.
         public func distance(to other: SchedulerTimeType) -> Stride { return 0 }
 
-        /// Advances the time by the specified amount; this is meaningless in the context of an immediate scheduler.
+        /// Advances the time by the specified amount; this is meaningless in the context
+        /// of an immediate scheduler.
         ///
-        /// - Parameter n: The amount to advance by. The `ImmediateScheduler` ignores this value.
+        /// - Parameter n: The amount to advance by. The `ImmediateScheduler` ignores this
+        ///   value.
         /// - Returns: An empty `SchedulerTimeType`.
         public func advanced(by _: Stride) -> SchedulerTimeType {
             return SchedulerTimeType()
@@ -120,7 +122,8 @@ public struct ImmediateScheduler: Scheduler {
 
     /// The shared instance of the immediate scheduler.
     ///
-    /// You cannot create instances of the immediate scheduler yourself. Use only the shared instance.
+    /// You cannot create instances of the immediate scheduler yourself. Use only
+    /// the shared instance.
     public static let shared = ImmediateScheduler()
 
     @inlinable

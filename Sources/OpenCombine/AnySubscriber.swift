@@ -7,9 +7,9 @@
 
 /// A type-erasing subscriber.
 ///
-/// Use an `AnySubscriber` to wrap an existing subscriber whose details you don’t want to expose.
-/// You can also use `AnySubscriber` to create a custom subscriber by providing closures for `Subscriber`’s
-/// methods, rather than implementing `Subscriber` directly.
+/// Use an `AnySubscriber` to wrap an existing subscriber whose details you don’t want
+/// to expose. You can also use `AnySubscriber` to create a custom subscriber by providing
+/// closures for `Subscriber`’s methods, rather than implementing `Subscriber` directly.
 public struct AnySubscriber<Input, Failure: Error>: Subscriber,
                                                     CustomStringConvertible,
                                                     CustomReflectable,
@@ -46,11 +46,12 @@ public struct AnySubscriber<Input, Failure: Error>: Subscriber,
     /// Creates a type-erasing subscriber that executes the provided closures.
     ///
     /// - Parameters:
-    ///   - receiveSubscription: A closure to execute when the subscriber receives the initial subscription from
+    ///   - receiveSubscription: A closure to execute when the subscriber receives
+    ///     the initial subscription from the publisher.
+    ///   - receiveValue: A closure to execute when the subscriber receives a value from
     ///     the publisher.
-    ///   - receiveValue: A closure to execute when the subscriber receives a value from the publisher.
-    ///   - receiveCompletion: A closure to execute when the subscriber receives a completion callback from
-    ///     the publisher.
+    ///   - receiveCompletion: A closure to execute when the subscriber receives
+    ///     a completion callback from the publisher.
     public init(receiveSubscription: ((Subscription) -> Void)? = nil,
                 receiveValue: ((Input) -> Subscribers.Demand)? = nil,
                 receiveCompletion: ((Subscribers.Completion<Failure>) -> Void)? = nil) {
@@ -73,7 +74,8 @@ public struct AnySubscriber<Input, Failure: Error>: Subscriber,
     }
 }
 
-/// A type-erasing base class. Its concrete subclass is generic over the underlying publisher.
+/// A type-erasing base class. Its concrete subclass is generic over the underlying
+/// publisher.
 internal class SubscriberBoxBase<Input, Failure: Error>: Subscriber,
                                                          CustomStringConvertible,
                                                          CustomReflectable {
