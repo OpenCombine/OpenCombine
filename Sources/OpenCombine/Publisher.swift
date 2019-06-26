@@ -90,14 +90,16 @@ extension Publisher {
     /// - Returns: A publisher that emits elements representing the time interval between the elements it receives.
     public func measureInterval<S>(using scheduler: S, options: S.SchedulerOptions? = nil) -> Publishers.MeasureInterval<Self, S> where S : Scheduler
 }
-
+*/
 extension Publisher {
 
     /// Republishes all elements that match a provided closure.
     ///
     /// - Parameter isIncluded: A closure that takes one element and returns a Boolean value indicating whether to republish the element.
     /// - Returns: A publisher that republishes all elements that satisfy the closure.
-    public func filter(_ isIncluded: @escaping (Self.Output) -> Bool) -> Publishers.Filter<Self>
+    public func filter(_ isIncluded: @escaping (Self.Output) -> Bool) -> Publishers.Filter<Self> {
+        return Publishers.Filter(upstream: self, isIncluded: isIncluded)
+    }
 
     /// Republishes all elements that match a provided error-throwing closure.
     ///
@@ -105,9 +107,11 @@ extension Publisher {
     ///
     /// - Parameter isIncluded:  A closure that takes one element and returns a Boolean value indicating whether to republish the element.
     /// - Returns:  A publisher that republishes all elements that satisfy the closure.
-    public func tryFilter(_ isIncluded: @escaping (Self.Output) throws -> Bool) -> Publishers.TryFilter<Self>
+    public func tryFilter(_ isIncluded: @escaping (Self.Output) throws -> Bool) -> Publishers.TryFilter<Self> {
+        return Publishers.TryFilter(upstream: self, isIncluded: isIncluded)
+    }
 }
-
+/*
 extension Publisher {
 
     /// Raises a debugger signal when a provided closure needs to stop the process in the debugger.
