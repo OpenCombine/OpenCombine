@@ -296,7 +296,6 @@ final class PassthroughSubjectTests: XCTestCase {
             XCTAssertEqual(emptySubscriber.inputs.count, 1)
             XCTAssertEqual(emptySubscriber.completions.count, 0)
             XCTAssertNotNil(subscription)
-
         }
 
         XCTAssertEqual(deinitCounter, 1)

@@ -18,4 +18,3 @@ extension Subscribers {
         case failure(Failure)
     }
 }
-

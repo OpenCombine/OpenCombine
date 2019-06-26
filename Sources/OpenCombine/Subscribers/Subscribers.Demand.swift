@@ -5,6 +5,8 @@
 //  Created by Sergej Jaskiewicz on 10.06.2019.
 //
 
+// swiftlint:disable shorthand_operator - because of false positives here
+
 extension Subscribers {
 
     /// A requested number of items, sent to a publisher from a subscriber via the subscription.

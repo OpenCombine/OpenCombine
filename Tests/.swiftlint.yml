@@ -1,0 +1,6 @@
+excluded:
+  - LinuxMain.swift
+
+disabled_rules:
+  - explicit_acl
+  - explicit_top_level_acl

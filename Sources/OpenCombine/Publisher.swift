@@ -35,8 +35,8 @@ public protocol Publisher {
     /// - Parameters:
     ///     - subscriber: The subscriber to attach to this `Publisher`.
     ///                   once attached it can begin to receive values.
-    func receive<S: Subscriber>(subscriber: S) where Failure == S.Failure,
-                                                     Output == S.Input
+    func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
+        where Failure == SubscriberType.Failure, Output == SubscriberType.Input
 }
 
 extension Publisher {
@@ -50,8 +50,8 @@ extension Publisher {
     /// - Parameters:
     ///     - subscriber: The subscriber to attach to this `Publisher`. After attaching, the subscriber can start
     ///       to receive values.
-    public func subscribe<S: Subscriber>(_ subscriber: S)
-        where Failure == S.Failure, Output == S.Input
+    public func subscribe<SubscriberType: Subscriber>(_ subscriber: SubscriberType)
+        where Failure == SubscriberType.Failure, Output == SubscriberType.Input
     {
         receive(subscriber: subscriber)
     }

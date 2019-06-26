@@ -13,6 +13,8 @@ import Combine
 import OpenCombine
 #endif
 
+// swiftlint:disable explicit_top_level_acl
+
 @available(macOS 10.15, *)
 final class CurrentValueSubjectTests: XCTestCase {
 
@@ -324,11 +326,10 @@ final class CurrentValueSubjectTests: XCTestCase {
     }
     */
 
-
     func testSynchronization() {
 
         let subscriptions = Atomic<[Subscription]>([])
-        let inputs =  Atomic<[Int]>([])
+        let inputs = Atomic<[Int]>([])
         let completions = Atomic<[Subscribers.Completion<TestingError>]>([])
 
         let cvs = Sut(112)

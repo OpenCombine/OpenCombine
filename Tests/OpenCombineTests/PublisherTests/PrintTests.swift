@@ -126,16 +126,16 @@ final class PrintTests: XCTestCase {
                 $0.request(.max(30))
                 $0.cancel()
                 downstreamSubscription = $0
-        },
+            },
             receiveValue: {
                 stream.write("callback value\n")
                 downstreamSubscription?.request(.max(100))
                 return $0 == 10 ? .unlimited : .max(2)
-        },
+            },
             receiveCompletion: { _ in
                 stream.write("callback completion\n")
                 downstreamSubscription?.request(.max(12))
-        }
+            }
         )
 
         printer.subscribe(tracking)
@@ -203,7 +203,7 @@ final class PrintTests: XCTestCase {
         let printer = publisher.print(to: stream)
 
         let counter = Atomic(0)
-        _ = printer.sink(receiveValue: { _ in counter.do { $0 += 1 }})
+        _ = printer.sink(receiveValue: { _ in counter.do { $0 += 1 } })
 
         race(
             { _ = publisher.send(12) },
@@ -215,7 +215,9 @@ final class PrintTests: XCTestCase {
 }
 
 private final class StringStream: TextOutputStream {
+
     var output = Atomic("")
+
     func write(_ string: String) {
         output.do { $0.write(string) }
     }

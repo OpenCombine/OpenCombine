@@ -29,8 +29,8 @@ public final class CurrentValueSubject<Output, Failure: Error>: Subject {
         self.value = value
     }
 
-    public func receive<S: Subscriber>(subscriber: S)
-        where Output == S.Input, Failure == S.Failure
+    public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
+        where Output == SubscriberType.Input, Failure == SubscriberType.Failure
     {
         let subscription = Conduit(parent: self, downstream: AnySubscriber(subscriber))
 
@@ -76,7 +76,6 @@ extension CurrentValueSubject {
 
         /// Whethere we satisfied the demand
         fileprivate var _delivered = false
-
 
         fileprivate init(parent: CurrentValueSubject,
                          downstream: AnySubscriber<Output, Failure>) {

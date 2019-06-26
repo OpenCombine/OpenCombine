@@ -25,10 +25,10 @@ private struct UnwrappingFailure: Error {}
 /// - Returns: A value of type `T`, the result of evaluating and unwrapping the given `expression`.
 /// - Throws: An error when `expression == nil`. It will also rethrow any error thrown while evaluating the given
 ///   expression.
-public func XCTUnwrap<T>(_ expression: @autoclosure () throws -> T?,
-                         _ message: @autoclosure () -> String = "",
-                         file: StaticString = #file,
-                         line: UInt = #line) throws -> T {
+public func XCTUnwrap<Result>(_ expression: @autoclosure () throws -> Result?,
+                              _ message: @autoclosure () -> String = "",
+                              file: StaticString = #file,
+                              line: UInt = #line) throws -> Result {
     let result = try expression()
     XCTAssertNotNil(result, message(), file: file, line: line)
     if let result = result {

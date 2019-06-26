@@ -42,8 +42,8 @@ extension Publishers {
         /// If `false`, it never completes.
         public let completeImmediately: Bool
 
-        public func receive<S: Subscriber>(subscriber: S)
-            where Output == S.Input, Failure == S.Failure
+        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
+            where Output == SubscriberType.Input, Failure == SubscriberType.Failure
         {
             subscriber.receive(subscription: Subscriptions.empty)
             if completeImmediately {

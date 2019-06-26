@@ -40,11 +40,11 @@ extension TestingError: ExpressibleByStringLiteral {
     }
 }
 
-func assertThrowsError<T>(_ expression: @autoclosure () throws -> T,
-                          _ expected: TestingError,
-                          _ message: @autoclosure () -> String = "",
-                          file: StaticString = #file,
-                          line: UInt = #line) {
+func assertThrowsError<Result>(_ expression: @autoclosure () throws -> Result,
+                               _ expected: TestingError,
+                               _ message: @autoclosure () -> String = "",
+                               file: StaticString = #file,
+                               line: UInt = #line) {
     XCTAssertThrowsError(try expression(), message(), file: file, line: line) { error in
         if let error = error as? TestingError {
             XCTAssertEqual(error, expected)
@@ -54,10 +54,12 @@ func assertThrowsError<T>(_ expression: @autoclosure () throws -> T,
     }
 }
 
+// swiftlint:disable:next generic_type_name
 func throwing<A, B, C>(_: A, _: B) throws -> C {
     throw TestingError.oops
 }
 
+// swiftlint:disable:next generic_type_name
 func throwing<A, B>(_: A) throws -> B {
     throw TestingError.oops
 }

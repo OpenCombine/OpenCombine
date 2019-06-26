@@ -14,7 +14,7 @@ public protocol Subscriber: CustomCombineIdentifierConvertible {
     /// The kind of errors this subscriber might receive.
     ///
     /// Use `Never` if this `Subscriber` cannot receive errors.
-    associatedtype Failure : Error
+    associatedtype Failure: Error
 
     /// Tells the subscriber that it has successfully subscribed to the publisher and may request items.
     ///
@@ -27,13 +27,13 @@ public protocol Subscriber: CustomCombineIdentifierConvertible {
     ///
     /// - Parameter input: The published element.
     /// - Returns: A `Demand` instance indicating how many more elements the subcriber expects to receive.
-    func receive(_ input: Self.Input) -> Subscribers.Demand
+    func receive(_ input: Input) -> Subscribers.Demand
 
     /// Tells the subscriber that the publisher has completed publishing, either normally or with an error.
     ///
     /// - Parameter completion: A `Completion` case indicating whether publishing completed normally or
     ///   with an error.
-    func receive(completion: Subscribers.Completion<Self.Failure>)
+    func receive(completion: Subscribers.Completion<Failure>)
 }
 
 extension Subscriber {

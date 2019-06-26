@@ -9,7 +9,9 @@ public final class AnySubject<Output, Failure: Error>: Subject {
 
     private let _box: SubjectBoxBase<Output, Failure>
 
-    public init<S: Subject>(_ subject: S) where Output == S.Output, Failure == S.Failure {
+    public init<SubjectType: Subject>(_ subject: SubjectType)
+        where Output == SubjectType.Output, Failure == SubjectType.Failure
+    {
         _box = SubjectBox(base: subject)
     }
 
@@ -21,8 +23,9 @@ public final class AnySubject<Output, Failure: Error>: Subject {
         _box = ClosureBasedSubject(subscribe, send, sendCompletion)
     }
 
-    public func receive<S: Subscriber>(subscriber: S) where Output == S.Input,
-                                                            Failure == S.Failure {
+    public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
+        where Output == SubscriberType.Input, Failure == SubscriberType.Failure
+    {
         _box.receive(subscriber: subscriber)
     }
 
@@ -46,18 +49,20 @@ private class SubjectBoxBase<Output, Failure: Error>: Subject {
         fatalError()
     }
 
-    func receive<S: Subscriber>(subscriber: S)
-        where Failure == S.Failure, Output == S.Input
+    func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
+        where Failure == SubscriberType.Failure, Output == SubscriberType.Input
     {
         fatalError()
     }
 }
 
-private final class SubjectBox<S: Subject>: SubjectBoxBase<S.Output, S.Failure> {
+private final class SubjectBox<SubjectType: Subject>
+    : SubjectBoxBase<SubjectType.Output,
+      SubjectType.Failure> {
 
-    private let base: S
+    private let base: SubjectType
 
-    init(base: S) {
+    init(base: SubjectType) {
         self.base = base
     }
 
@@ -69,8 +74,8 @@ private final class SubjectBox<S: Subject>: SubjectBoxBase<S.Output, S.Failure> 
         base.send(completion: completion)
     }
 
-    override func receive<S: Subscriber>(subscriber: S)
-        where Failure == S.Failure, Output == S.Input
+    override func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
+        where Failure == SubscriberType.Failure, Output == SubscriberType.Input
     {
         base.receive(subscriber: subscriber)
     }
@@ -102,8 +107,8 @@ private final class ClosureBasedSubject<Output, Failure: Error>
         _receiveCompletion(completion)
     }
 
-    override func receive<S: Subscriber>(subscriber: S)
-        where Failure == S.Failure, Output == S.Input
+    override func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
+        where Failure == SubscriberType.Failure, Output == SubscriberType.Input
     {
         _subscribe(AnySubscriber(subscriber))
     }
