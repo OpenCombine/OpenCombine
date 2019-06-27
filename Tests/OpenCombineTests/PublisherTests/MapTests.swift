@@ -18,6 +18,8 @@ final class MapTests: XCTestCase {
     static let allTests = [
         ("testEmpty", testEmpty),
         ("testError", testError),
+        ("testTryMapFailureBecauseOfThrow", testTryMapFailureBecauseOfThrow),
+        ("testTryMapFailureOnCompletion", testTryMapFailureOnCompletion),
         ("testRange", testRange),
         ("testNoDemand", testNoDemand),
         ("testDemandSubscribe", testDemandSubscribe),
@@ -52,6 +54,57 @@ final class MapTests: XCTestCase {
             .subscription(Subscriptions.empty),
             .completion(Subscribers.Completion<TestingError>.failure(expectedError))
         ])
+    }
+
+    func testTryMapFailureBecauseOfThrow() {
+        var counter = 0 // How many times the transform is called?
+
+        let publisher = PassthroughSubject<Int, Error>()
+        let map = publisher.tryMap { value -> Int in
+            counter += 1
+            if value == 100 {
+                throw "too much" as TestingError
+            }
+            return value * 2
+        }
+        let tracking = TrackingSubscriberBase<Error>(
+            receiveSubscription: { $0.request(.unlimited) }
+        )
+
+        publisher.send(1)
+        map.subscribe(tracking)
+        publisher.send(2)
+        publisher.send(3)
+        publisher.send(100)
+        publisher.send(9)
+        publisher.send(completion: .finished)
+
+        XCTAssertEqual(tracking.history,
+                       [.subscription(Subscriptions.empty),
+                        .value(4),
+                        .value(6),
+                        .completion(.failure("too much" as TestingError)),
+                        .value(18),
+                        .completion(.finished)])
+
+        XCTAssertEqual(counter, 4)
+    }
+
+    func testTryMapFailureOnCompletion() {
+
+        let publisher = PassthroughSubject<Int, Error>()
+        let map = publisher.tryMap { $0 * 2 }
+
+        let tracking = TrackingSubscriberBase<Error>()
+
+        publisher.send(1)
+        map.subscribe(tracking)
+        publisher.send(completion: .failure(TestingError.oops))
+        publisher.send(2)
+
+        XCTAssertEqual(tracking.history,
+                       [.subscription(Subscriptions.empty),
+                        .completion(.failure(TestingError.oops))])
     }
 
     func testRange() {
