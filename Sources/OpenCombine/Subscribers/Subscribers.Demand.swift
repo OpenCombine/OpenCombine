@@ -32,7 +32,8 @@ extension Subscribers {
             case (_, .unlimited):
                 return .unlimited
             case let (.max(i), .max(j)):
-                return .max(i + j)
+                let (sum, isOverflow) = i.addingReportingOverflow(j)
+                return isOverflow ? .unlimited : .max(sum)
             }
         }
 
@@ -61,7 +62,8 @@ extension Subscribers {
             case .unlimited:
                 return .unlimited
             case let .max(i):
-                return .max(i * rhs)
+                let (product, isOverflow) = i.multipliedReportingOverflow(by: rhs)
+                return isOverflow ? .unlimited : .max(product)
             }
         }
 
@@ -80,7 +82,8 @@ extension Subscribers {
             case (_, .unlimited):
                 return .max(0)
             case let (.max(i), .max(j)):
-                return .max(i - j)
+                let (difference, isOverflow) = i.subtractingReportingOverflow(j)
+                return isOverflow ? .none : .max(difference)
             }
         }
 
