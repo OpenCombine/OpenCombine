@@ -1,32 +1,52 @@
 language: generic
+
+addons:
+  homebrew:
+    packages:
+      - swiftlint
+    update: true
+
 matrix:
   include:
-    - name: "Ubuntu 16.04 | Swift 5.1"
+    - name: "Ubuntu 16.04 | Swift 5.1 | Tests"
       os: linux
       dist: xenial
       sudo: required
-      env: SWIFT_VERSION="swift-5.1-DEVELOPMENT-SNAPSHOT-2019-06-16-a" OPENCOMBINE_COMPATIBILITY_TEST="NO"
-    - name: "macOS 10.14 | Swift 5.0"
+      env: SWIFT_VERSION="swift-5.1-DEVELOPMENT-SNAPSHOT-2019-06-16-a"
+    - name: "macOS 10.14 | Swift 5.0 | Tests"
       os: osx
       osx_image: xcode10.2
-      env: SWIFT_VERSION="5.0" OPENCOMBINE_COMPATIBILITY_TEST="NO"
+      env: SWIFT_VERSION="5.0"
   # - name: "macOS 10.14 | Swift 5.1"
   #   os: osx
   #   osx_image: xcode10.2
-  #   env: SWIFT_VERSION="swift-5.1-DEVELOPMENT-SNAPSHOT-2019-06-16-a" OPENCOMBINE_COMPATIBILITY_TEST="NO"
+  #   env: SWIFT_VERSION="swift-5.1-DEVELOPMENT-SNAPSHOT-2019-06-16-a"
   # - name: "macOS 10.15 | Swift 5.1"
   #   os: osx
   #   osx_image: xcode11.0
   #   env: SWIFT_VERSION="swift-5.1-DEVELOPMENT-SNAPSHOT-2019-06-16-a" OPENCOMBINE_COMPATIBILITY_TEST="YES"
+    - name: "macOS 10.14 | Swift 5.0 | SwiftLint"
+      os: osx
+      osx_image: xcode10.2
+      env: SWIFT_VERSION="5.0" SWIFT_LINT="YES"
 before_install:
   - if [[ $TRAVIS_OS_NAME == "linux" ]]; then
       cat /proc/cpuinfo;
     fi
 install:
-  - eval "$(curl -sL https://swiftenv.fuller.li/install.sh)"
+  - if [[ $TRAVIS_OS_NAME == "linux" ]]; then
+      eval "$(curl -sL https://swiftenv.fuller.li/install.sh)";
+    fi
 script:
-  - swift test -c debug --enable-code-coverage --sanitize thread
-  - swift test -c release
+  - if [[ $SWIFT_LINT != "YES" ]]; then
+      swift test -c debug --enable-code-coverage --sanitize thread;
+    fi
+  - if [[ $SWIFT_LINT != "YES" ]]; then
+      swift test -c release;
+    fi
   - if [[ $OPENCOMBINE_COMPATIBILITY_TEST == "YES" ]]; then
       swift test -c release -Xswiftc -DOPENCOMBINE_COMPATIBILITY_TEST;
+    fi
+  - if [[ $SWIFT_LINT == "YES" ]]; then
+      swiftlint lint --strict --reporter "emoji";
     fi

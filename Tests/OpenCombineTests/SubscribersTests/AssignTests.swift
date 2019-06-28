@@ -27,7 +27,9 @@ final class AssignTests: XCTestCase {
     private typealias Sut<Root> = Subscribers.Assign<Root, Int>
 
     private final class TestObject {
+
         var value: Int = 0
+
         init() {}
     }
 

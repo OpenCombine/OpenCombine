@@ -5,9 +5,12 @@
 //  Created by Sergej Jaskiewicz on 10.06.2019.
 //
 
+// swiftlint:disable shorthand_operator - because of false positives here
+
 extension Subscribers {
 
-    /// A requested number of items, sent to a publisher from a subscriber via the subscription.
+    /// A requested number of items, sent to a publisher from a subscriber via
+    /// the subscription.
     ///
     /// - `unlimited`: A request for an unlimited number of items.
     /// - `max`: A request for a maximum number of items.
@@ -29,7 +32,8 @@ extension Subscribers {
             case (_, .unlimited):
                 return .unlimited
             case let (.max(i), .max(j)):
-                return .max(i + j)
+                let (sum, isOverflow) = i.addingReportingOverflow(j)
+                return isOverflow ? .unlimited : .max(sum)
             }
         }
 
@@ -58,7 +62,8 @@ extension Subscribers {
             case .unlimited:
                 return .unlimited
             case let .max(i):
-                return .max(i * rhs)
+                let (product, isOverflow) = i.multipliedReportingOverflow(by: rhs)
+                return isOverflow ? .unlimited : .max(product)
             }
         }
 
@@ -66,10 +71,10 @@ extension Subscribers {
             lhs = lhs * rhs
         }
 
-        /// When subtracting any value (including `.unlimited`) from `.unlimited`, the result is still
-        /// `.unlimited`. Subtracting `.unlimited` from any value (except `.unlimited`) results in
-        /// `.max(0)`. A negative demand is possible, but be aware that it is not usable when requesting values in
-        /// a subscription.
+        /// When subtracting any value (including `.unlimited`) from `.unlimited`,
+        /// the result is still `.unlimited`. Subtracting `.unlimited` from any value
+        /// (except `.unlimited`) results in `.max(0)`. A negative demand is possible,
+        /// but be aware that it is not usable when requesting values in a subscription.
         public static func - (lhs: Demand, rhs: Demand) -> Demand {
             switch (lhs, rhs) {
             case (.unlimited, _):
@@ -77,26 +82,29 @@ extension Subscribers {
             case (_, .unlimited):
                 return .max(0)
             case let (.max(i), .max(j)):
-                return .max(i - j)
+                let (difference, isOverflow) = i.subtractingReportingOverflow(j)
+                return isOverflow ? .none : .max(difference)
             }
         }
 
-        /// When subtracting any value (including `.unlimited`) from `.unlimited`, the result is still
-        /// `.unlimited`. Subtracting `.unlimited` from any value (except `.unlimited`) results in
-        /// `.max(0)`. A negative demand is possible, but be aware that it is not usable when requesting values in
-        /// a subscription.
+        /// When subtracting any value (including `.unlimited`) from `.unlimited`,
+        /// the result is still `.unlimited`. Subtracting `.unlimited` from any value
+        /// (except `.unlimited`) results in `.max(0)`. A negative demand is possible,
+        /// but be aware that it is not usable when requesting values in a subscription.
         public static func -= (lhs: inout Demand, rhs: Demand) {
             lhs = lhs - rhs
         }
 
-        /// When subtracting any value from `.unlimited`, the result is still `.unlimited`. A negative demand is
-        /// possible, but be aware that it is not usable when requesting values in a subscription.
+        /// When subtracting any value from `.unlimited`, the result is still
+        /// `.unlimited`. A negative demand is possible, but be aware that it is
+        /// not usable when requesting values in a subscription.
         public static func - (lhs: Demand, rhs: Int) -> Demand {
             return lhs - .max(rhs)
         }
 
-        /// When subtracting any value from `.unlimited`, the result is still `.unlimited`. A negative demand is
-        /// possible, but be aware that it is not usable when requesting values in a subscription.
+        /// When subtracting any value from `.unlimited`, the result is still
+        /// `.unlimited`. A negative demand is possible, but be aware that it is
+        /// not usable when requesting values in a subscription.
         public static func -= (lhs: inout Demand, rhs: Int) {
             lhs = lhs - rhs
         }
@@ -147,22 +155,26 @@ extension Subscribers {
             }
         }
 
-        /// Returns `true` if `lhs` and `rhs` are equal. `.unlimited` is not equal to any integer.
+        /// Returns `true` if `lhs` and `rhs` are equal. `.unlimited` is not equal to any
+        /// integer.
         public static func == (lhs: Demand, rhs: Int) -> Bool {
             return lhs == .max(rhs)
         }
 
-        /// Returns `true` if `lhs` and `rhs` are not equal. `.unlimited` is not equal to any integer.
+        /// Returns `true` if `lhs` and `rhs` are not equal. `.unlimited` is not equal to
+        /// any integer.
         public static func != (lhs: Demand, rhs: Int) -> Bool {
             return lhs != .max(rhs)
         }
 
-        /// Returns `true` if `lhs` and `rhs` are equal. `.unlimited` is not equal to any integer.
+        /// Returns `true` if `lhs` and `rhs` are equal. `.unlimited` is not equal to any
+        /// integer.
         public static func == (lhs: Int, rhs: Demand) -> Bool {
             return .max(lhs) == rhs
         }
 
-        /// Returns `true` if `lhs` and `rhs` are not equal. `.unlimited` is not equal to any integer.
+        /// Returns `true` if `lhs` and `rhs` are not equal. `.unlimited` is not equal to
+        /// any integer.
         public static func != (lhs: Int, rhs: Demand) -> Bool {
             return .max(lhs) != rhs
         }

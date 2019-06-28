@@ -7,8 +7,8 @@
 
 /// A subject that passes along values and completion.
 ///
-/// Use a `PassthroughSubject` in unit tests when you want a publisher than can publish specific values on-demand
-/// during tests.
+/// Use a `PassthroughSubject` in unit tests when you want a publisher than can publish
+/// specific values on-demand during tests.
 public final class PassthroughSubject<Output, Failure: Error>: Subject  {
 
     private let _lock = Lock(recursive: true)
@@ -20,9 +20,9 @@ public final class PassthroughSubject<Output, Failure: Error>: Subject  {
 
     public init() {}
 
-    public func receive<S: Subscriber>(
-        subscriber: S
-    ) where Output == S.Input, Failure == S.Failure {
+    public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
+        where Output == SubscriberType.Input, Failure == SubscriberType.Failure
+    {
         let subscription = Conduit(parent: self, downstream: AnySubscriber(subscriber))
 
         _lock.do {

@@ -81,7 +81,7 @@ final class OptionalTests: XCTestCase {
          testSetFailureTypeOperatorSpecialization),
     ]
 
-    private typealias Sut<T> = Publishers.Optional<T, TestingError>
+    private typealias Sut<Output> = Publishers.Optional<Output, TestingError>
 
     func testSuccessNoInitialDemand() {
         let success = Sut(42)
@@ -127,7 +127,6 @@ final class OptionalTests: XCTestCase {
 
         XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
                                           .completion(.failure("failure"))])
-
     }
 
     func testFailureCancelOnSubscription() {
@@ -288,7 +287,8 @@ final class OptionalTests: XCTestCase {
         XCTAssertEqual(Sut<Int>("error").removeDuplicates(by: comparator).result,
                        .failure("error"))
 
-        XCTAssertEqual(count, 0,
+        XCTAssertEqual(count,
+                       0,
                        "comparator should not be called for removeDuplicates(by:)")
     }
 
@@ -317,7 +317,8 @@ final class OptionalTests: XCTestCase {
             "error"
         )
 
-        XCTAssertEqual(count, 0,
+        XCTAssertEqual(count,
+                       0,
                        "comparator should not be called for tryRemoveDuplicates(by:)")
     }
 
@@ -349,8 +350,10 @@ final class OptionalTests: XCTestCase {
         assertThrowsError(try Sut<Int>(1).tryAllSatisfy(throwingPredicate).result.get(),
                           .oops)
         XCTAssertNil(try Sut<Int>(nil).tryAllSatisfy(throwingPredicate).result.get())
-        assertThrowsError(try Sut<Int>("error").tryAllSatisfy(throwingPredicate).result.get(),
-                          "error")
+        assertThrowsError(
+            try Sut<Int>("error").tryAllSatisfy(throwingPredicate).result.get(),
+            "error"
+        )
 
         XCTAssertEqual(count, 3)
     }
@@ -560,7 +563,7 @@ final class OptionalTests: XCTestCase {
             case .finished?:
                 break
             default:
-                XCTFail()
+                XCTFail("ignoreOutput should send 'finished' completion for Optional")
             }
         }
     }
@@ -809,4 +812,3 @@ final class OptionalTests: XCTestCase {
         )
     }
 }
-

@@ -80,7 +80,7 @@ final class OnceTests: XCTestCase {
          testSetFailureTypeOperatorSpecialization),
     ]
 
-    private typealias Sut<T> = Publishers.Once<T, TestingError>
+    private typealias Sut<Output> = Publishers.Once<Output, TestingError>
 
     func testOnceSuccessNoInitialDemand() {
         let success = Sut(42)
@@ -126,7 +126,6 @@ final class OnceTests: XCTestCase {
 
         XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
                                           .completion(.failure("failure"))])
-
     }
 
     func testFailureCancelOnSubscription() {
@@ -254,7 +253,8 @@ final class OnceTests: XCTestCase {
         XCTAssertEqual(Sut<Int>("error").removeDuplicates(by: comparator).result,
                        .failure("error"))
 
-        XCTAssertEqual(count, 0,
+        XCTAssertEqual(count,
+                       0,
                        "comparator should not be called for removeDuplicates(by:)")
     }
 
@@ -278,7 +278,8 @@ final class OnceTests: XCTestCase {
             "error"
         )
 
-        XCTAssertEqual(count, 0,
+        XCTAssertEqual(count,
+                       0,
                        "comparator should not be called for tryRemoveDuplicates(by:)")
     }
 
@@ -502,7 +503,7 @@ final class OnceTests: XCTestCase {
             case .finished?:
                 break
             default:
-                XCTFail()
+                XCTFail("ignoreOutput should send 'finished' completion for Once")
             }
         }
     }

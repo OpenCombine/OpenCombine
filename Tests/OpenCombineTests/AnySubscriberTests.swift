@@ -190,7 +190,7 @@ private let events: [TrackingSubscriber.Event] = [
 ]
 
 @available(OSX 10.15, *)
-private func publishEvents(_ events: [TrackingSubscriber.Event],_ erased: Sut) {
+private func publishEvents(_ events: [TrackingSubscriber.Event], _ erased: Sut) {
     for event in events {
         switch event {
         case .subscription(let s):
@@ -219,7 +219,6 @@ private func publishEvents(
         }
     }
 }
-
 
 @available(OSX 10.15, *)
 private func subscriberEventToSubjectEvent(

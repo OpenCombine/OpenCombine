@@ -91,7 +91,7 @@ final class DropWhileTests: XCTestCase {
 
         let subscription = CustomSubscription()
         let publisher = CustomPublisher(subscription: subscription)
-        let drop = publisher.drop(while: { return $0.isMultiple(of: 2) })
+        let drop = publisher.drop(while: { $0.isMultiple(of: 2) })
         var downstreamSubscription: Subscription?
         let tracking = TrackingSubscriber(
             receiveSubscription: {

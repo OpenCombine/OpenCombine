@@ -74,7 +74,8 @@ extension Publisher where Self.Failure == Never {
     /// - Parameters:
     ///   - keyPath: The key path of the property to assign.
     ///   - object: The object on which to assign the value.
-    /// - Returns: A cancellable instance; used when you end KVO-based assignment of the key path’s value.
+    /// - Returns: A cancellable instance; used when you end KVO-based assignment of
+    ///   the key path’s value.
     public func assign<Root>(to keyPath: ReferenceWritableKeyPath<Root, Output>,
                              on object: Root) -> AnyCancellable {
         let subscriber = Subscribers.Assign(object: object, keyPath: keyPath)

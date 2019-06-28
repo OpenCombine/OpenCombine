@@ -11,7 +11,8 @@
 /// failure type is `Never`.
 public protocol ConnectablePublisher: Publisher {
 
-    /// Connects to the publisher and returns a `Cancellable` instance with which to cancel publishing.
+    /// Connects to the publisher and returns a `Cancellable` instance with which
+    /// to cancel publishing.
     ///
     /// - Returns: A `Cancellable` instance that can be used to cancel publishing.
     func connect() -> Cancellable

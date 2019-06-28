@@ -323,52 +323,6 @@ extension Publishers {
 
 extension Publishers {
 
-    public struct Decode<Upstream, Output, Coder> : Publisher where Upstream : Publisher, Output : Decodable, Coder : TopLevelDecoder, Upstream.Output == Coder.Input {
-
-        /// The kind of errors this publisher might publish.
-        ///
-        /// Use `Never` if this `Publisher` does not publish errors.
-        public typealias Failure = Error
-
-        public let upstream: Upstream
-
-        public init(upstream: Upstream, decoder: Coder)
-
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
-        ///
-        /// - SeeAlso: `subscribe(_:)`
-        /// - Parameters:
-        ///     - subscriber: The subscriber to attach to this `Publisher`.
-        ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where Output == S.Input, S : Subscriber, S.Failure == Publishers.Decode<Upstream, Output, Coder>.Failure
-    }
-
-    public struct Encode<Upstream, Coder> : Publisher where Upstream : Publisher, Coder : TopLevelEncoder, Upstream.Output : Encodable {
-
-        /// The kind of errors this publisher might publish.
-        ///
-        /// Use `Never` if this `Publisher` does not publish errors.
-        public typealias Failure = Error
-
-        /// The kind of values published by this publisher.
-        public typealias Output = Coder.Output
-
-        public let upstream: Upstream
-
-        public init(upstream: Upstream, encoder: Coder)
-
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
-        ///
-        /// - SeeAlso: `subscribe(_:)`
-        /// - Parameters:
-        ///     - subscriber: The subscriber to attach to this `Publisher`.
-        ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Coder.Output == S.Input, S.Failure == Publishers.Encode<Upstream, Coder>.Failure
-    }
-}
-
-extension Publishers {
-
     /// A publisher that emits a Boolean value when a specified element is received from its upstream publisher.
     public struct Contains<Upstream> : Publisher where Upstream : Publisher, Upstream.Output : Equatable {
 
@@ -1950,29 +1904,6 @@ extension Publishers {
 }
 
 extension Publishers {
-
-    /// A publisher that transforms all elements from the upstream publisher with a provided closure.
-    public struct Map<Upstream, Output> : Publisher where Upstream : Publisher {
-
-        /// The kind of errors this publisher might publish.
-        ///
-        /// Use `Never` if this `Publisher` does not publish errors.
-        public typealias Failure = Upstream.Failure
-
-        /// The publisher from which this publisher receives elements.
-        public let upstream: Upstream
-
-        /// The closure that transforms elements from the upstream publisher.
-        public let transform: (Upstream.Output) -> Output
-
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
-        ///
-        /// - SeeAlso: `subscribe(_:)`
-        /// - Parameters:
-        ///     - subscriber: The subscriber to attach to this `Publisher`.
-        ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where Output == S.Input, S : Subscriber, Upstream.Failure == S.Failure
-    }
 
     /// A publisher that transforms all elements from the upstream publisher with a provided error-throwing closure.
     public struct TryMap<Upstream, Output> : Publisher where Upstream : Publisher {
