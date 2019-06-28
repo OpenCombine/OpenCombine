@@ -7,7 +7,8 @@
 
 extension Publishers {
 
-    /// A publisher that omits elements from an upstream publisher until a given closure returns false.
+    /// A publisher that omits elements from an upstream publisher until a given closure
+    /// returns false.
     public struct DropWhile<Upstream: Publisher>: Publisher {
 
         public typealias Output = Upstream.Output
@@ -20,17 +21,18 @@ extension Publishers {
         /// The closure that indicates whether to drop the element.
         public let predicate: (Output) -> Bool
 
-        public func receive<S: Subscriber>(subscriber: S)
-            where Failure == S.Failure, Output == S.Input
+        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
+            where Failure == SubscriberType.Failure, Output == SubscriberType.Input
         {
-            let dropWhile = _DropWhile<Upstream, S, (Output) -> Bool>(
+            let dropWhile = _DropWhile<Upstream, SubscriberType, (Output) -> Bool>(
                 downstream: subscriber, predicate: predicate
             )
             upstream.receive(subscriber: dropWhile)
         }
     }
 
-    /// A publisher that omits elements from an upstream publisher until a given error-throwing closure returns false.
+    /// A publisher that omits elements from an upstream publisher until a given
+    /// error-throwing closure returns false.
     public struct TryDropWhile<Upstream: Publisher>: Publisher {
 
         public typealias Output = Upstream.Output
@@ -43,10 +45,10 @@ extension Publishers {
         /// The error-throwing closure that indicates whether to drop the element.
         public let predicate: (Upstream.Output) throws -> Bool
 
-        public func receive<S: Subscriber>(subscriber: S)
-            where Output == S.Input, S.Failure == Error
+        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
+            where Output == SubscriberType.Input, SubscriberType.Failure == Error
         {
-            let dropWhile = _DropWhile<Upstream, S, (Output) throws -> Bool>(
+            let dropWhile = _DropWhile<Upstream, SubscriberType, (Output) throws -> Bool>(
                 downstream: subscriber, predicate: predicate
             )
 
@@ -133,27 +135,31 @@ private final class _DropWhile<Upstream: Publisher, Downstream: Subscriber, Pred
 
 extension Publisher {
 
-    /// Omits elements from the upstream publisher until a given closure returns false, before republishing all remaining
-    /// elements.
+    /// Omits elements from the upstream publisher until a given closure returns false,
+    /// before republishing all remaining elements.
     ///
-    /// - Parameter predicate: A closure that takes an element as a parameter and returns a Boolean
-    ///   value indicating whether to drop the element from the publisher’s output.
-    /// - Returns: A publisher that skips over elements until the provided closure returns `false`.
+    /// - Parameter predicate: A closure that takes an element as a parameter and returns
+    ///   a Boolean value indicating whether to drop the element from the publisher’s
+    ///   output.
+    /// - Returns: A publisher that skips over elements until the provided closure returns
+    ///   `false`.
     public func drop(
         while predicate: @escaping (Output) -> Bool
     ) -> Publishers.DropWhile<Self> {
         return Publishers.DropWhile(upstream: self, predicate: predicate)
     }
 
-    /// Omits elements from the upstream publisher until an error-throwing closure returns false, before republishing
-    /// all remaining elements.
+    /// Omits elements from the upstream publisher until an error-throwing closure returns
+    /// false, before republishing all remaining elements.
     ///
     /// If the predicate closure throws, the publisher fails with an error.
     ///
-    /// - Parameter predicate: A closure that takes an element as a parameter and returns a Boolean value
-    ///   indicating whether to drop the element from the publisher’s output.
-    /// - Returns: A publisher that skips over elements until the provided closure returns `false`, and then
-    ///   republishes all remaining elements. If the predicate closure throws, the publisher fails with an error.
+    /// - Parameter predicate: A closure that takes an element as a parameter and returns
+    ///   a Boolean value indicating whether to drop the element from the publisher’s
+    ///   output.
+    /// - Returns: A publisher that skips over elements until the provided closure returns
+    ///   `false`, and then republishes all remaining elements. If the predicate closure
+    ///   throws, the publisher fails with an error.
     public func tryDrop(
         while predicate: @escaping (Output) throws -> Bool
     ) -> Publishers.TryDropWhile<Self> {

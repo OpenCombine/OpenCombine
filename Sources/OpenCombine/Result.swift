@@ -37,7 +37,7 @@ extension Result {
 }
 
 extension Result where Failure == Never {
-    var success: Success {
+    internal var success: Success {
         switch self {
         case .success(let success):
             return success

@@ -15,20 +15,20 @@ func race(times: Int = 100, _ bodies: () -> Void...) {
     }
 }
 
-final class Atomic<T> {
+final class Atomic<Value> {
     private let _q = DispatchQueue(label: "Atomic", attributes: .concurrent)
 
-    private var _value: T
+    private var _value: Value
 
-    init(_ initialValue: T) {
+    init(_ initialValue: Value) {
         _value = initialValue
     }
 
-    var value: T {
+    var value: Value {
         return _q.sync { _value }
     }
 
-    func `do`(_ body: (inout T) -> Void) {
+    func `do`(_ body: (inout Value) -> Void) {
         _q.sync(flags: .barrier) {
             body(&_value)
         }

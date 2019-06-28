@@ -9,11 +9,12 @@ extension Publishers {
 
     /// A publisher that emits an output to each subscriber just once, and then finishes.
     ///
-    /// You can use a `Just` publisher to start a chain of publishers. A `Just` publisher is also useful when replacing
-    /// a value with `Catch`.
+    /// You can use a `Just` publisher to start a chain of publishers. A `Just` publisher
+    /// is also useful when replacing a value with `Catch`.
     ///
     /// In contrast with `Publishers.Once`, a `Just` publisher cannot fail with an error.
-    /// In contrast with `Publishers.Optional`, a `Just` publisher always produces a value.
+    /// In contrast with `Publishers.Optional`, a `Just` publisher always produces
+    /// a value.
     public struct Just<Output>: Publisher {
 
         public typealias Failure = Never
@@ -28,42 +29,11 @@ extension Publishers {
             self.output = output
         }
 
-        public func receive<S: Subscriber>(subscriber: S)
-            where S.Input == Output, S.Failure == Never
+        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
+            where SubscriberType.Input == Output, SubscriberType.Failure == Never
         {
             subscriber.receive(subscription: Inner(value: output, downstream: subscriber))
         }
-    }
-}
-
-private final class Inner<S: Subscriber>: Subscription,
-                                          CustomStringConvertible,
-                                          CustomReflectable
-{
-    private let _output: S.Input
-    private var _downstream: S?
-
-    init(value: S.Input, downstream: S) {
-        _output = value
-        _downstream = downstream
-    }
-
-    func request(_ demand: Subscribers.Demand) {
-        if let downstream = _downstream, demand > 0 {
-            _ = downstream.receive(_output)
-            downstream.receive(completion: .finished)
-            _downstream = nil
-        }
-    }
-
-    func cancel() {
-        _downstream = nil
-    }
-
-    var description: String { return "Just" }
-
-    var customMirror: Mirror {
-        return Mirror(self, unlabeledChildren: CollectionOfOne(_output))
     }
 }
 
@@ -200,25 +170,27 @@ extension Publishers.Just {
         return Publishers.Empty()
     }
 
-    public func map<T>(_ transform: (Output) -> T) -> Publishers.Just<T> {
+    public func map<ElementOfResult>(
+        _ transform: (Output) -> ElementOfResult
+    ) -> Publishers.Just<ElementOfResult> {
         return Publishers.Just(transform(output))
     }
 
-    public func tryMap<T>(
-        _ transform: (Output) throws -> T
-    ) -> Publishers.Once<T, Error> {
+    public func tryMap<ElementOfResult>(
+        _ transform: (Output) throws -> ElementOfResult
+    ) -> Publishers.Once<ElementOfResult, Error> {
         return Publishers.Once(Result { try transform(output) })
     }
 
-    public func compactMap<T>(
-        _ transform: (Output) -> T?
-    ) -> Publishers.Optional<T, Never> {
+    public func compactMap<ElementOfResult>(
+        _ transform: (Output) -> ElementOfResult?
+    ) -> Publishers.Optional<ElementOfResult, Never> {
         return Publishers.Optional(transform(output))
     }
 
-    public func tryCompactMap<T>(
-        _ transform: (Output) throws -> T?
-    ) -> Publishers.Optional<T, Error> {
+    public func tryCompactMap<ElementOfResult>(
+        _ transform: (Output) throws -> ElementOfResult?
+    ) -> Publishers.Optional<ElementOfResult, Error> {
         return Publishers.Optional(Result { try transform(output) })
     }
 
@@ -239,9 +211,9 @@ extension Publishers.Just {
         return Publishers.Optional(index == 0 ? output : nil)
     }
 
-    public func output<R: RangeExpression>(
-        in range: R
-    ) -> Publishers.Optional<Output, Never> where R.Bound == Int {
+    public func output<RangeExpr: RangeExpression>(
+        in range: RangeExpr
+    ) -> Publishers.Optional<Output, Never> where RangeExpr.Bound == Int {
         // TODO: Broken in Apple's Combine? (FB6169621)
         // Empty range should result in a nil
         let range = range.relative(to: 0..<Int.max)
@@ -269,15 +241,15 @@ extension Publishers.Just {
         return Publishers.Optional(Result { try predicate(output) ? output : nil })
     }
 
-    public func setFailureType<E: Error>(
-        to failureType: E.Type
-        ) -> Publishers.Once<Output, E> {
+    public func setFailureType<Failure: Error>(
+        to failureType: Failure.Type
+    ) -> Publishers.Once<Output, Failure> {
         return Publishers.Once(output)
     }
 
-    public func mapError<E: Error>(
-        _ transform: (Never) -> E
-    ) -> Publishers.Once<Output, E> {
+    public func mapError<Failure: Error>(
+        _ transform: (Never) -> Failure
+    ) -> Publishers.Once<Output, Failure> {
         return Publishers.Once(output)
     }
 
@@ -310,31 +282,62 @@ extension Publishers.Just {
         return self
     }
 
-    public func reduce<T>(
-        _ initialResult: T,
-        _ nextPartialResult: (T, Output) -> T
-    ) -> Publishers.Once<T, Never> {
+    public func reduce<Accumulator>(
+        _ initialResult: Accumulator,
+        _ nextPartialResult: (Accumulator, Output) -> Accumulator
+    ) -> Publishers.Once<Accumulator, Never> {
         return Publishers.Once(nextPartialResult(initialResult, output))
     }
 
-    public func tryReduce<T>(
-        _ initialResult: T,
-        _ nextPartialResult: (T, Output) throws -> T
-    ) -> Publishers.Once<T, Error> {
+    public func tryReduce<Accumulator>(
+        _ initialResult: Accumulator,
+        _ nextPartialResult: (Accumulator, Output) throws -> Accumulator
+    ) -> Publishers.Once<Accumulator, Error> {
         return Publishers.Once(Result { try nextPartialResult(initialResult, output) })
     }
 
-    public func scan<T>(
-        _ initialResult: T,
-        _ nextPartialResult: (T, Output) -> T
-    ) -> Publishers.Once<T, Publishers.Just<Output>.Failure> {
+    public func scan<ElementOfResult>(
+        _ initialResult: ElementOfResult,
+        _ nextPartialResult: (ElementOfResult, Output) -> ElementOfResult
+    ) -> Publishers.Once<ElementOfResult, Never> {
         return Publishers.Once(nextPartialResult(initialResult, output))
     }
 
-    public func tryScan<T>(
-        _ initialResult: T,
-        _ nextPartialResult: (T, Output) throws -> T
-    ) -> Publishers.Once<T, Error> {
+    public func tryScan<ElementOfResult>(
+        _ initialResult: ElementOfResult,
+        _ nextPartialResult: (ElementOfResult, Output) throws -> ElementOfResult
+    ) -> Publishers.Once<ElementOfResult, Error> {
         return Publishers.Once(Result { try nextPartialResult(initialResult, output) })
+    }
+}
+
+private final class Inner<SubscriberType: Subscriber>: Subscription,
+    CustomStringConvertible,
+    CustomReflectable
+{
+    private let _output: SubscriberType.Input
+    private var _downstream: SubscriberType?
+
+    init(value: SubscriberType.Input, downstream: SubscriberType) {
+        _output = value
+        _downstream = downstream
+    }
+
+    func request(_ demand: Subscribers.Demand) {
+        if let downstream = _downstream, demand > 0 {
+            _ = downstream.receive(_output)
+            downstream.receive(completion: .finished)
+            _downstream = nil
+        }
+    }
+
+    func cancel() {
+        _downstream = nil
+    }
+
+    var description: String { return "Just" }
+
+    var customMirror: Mirror {
+        return Mirror(self, unlabeledChildren: CollectionOfOne(_output))
     }
 }
