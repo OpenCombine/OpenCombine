@@ -7,7 +7,8 @@
 
 extension Publishers {
 
-    public struct Encode<Upstream, Coder> : Publisher where Upstream : Publisher, Coder : TopLevelEncoder, Upstream.Output : Encodable {
+    public struct Encode<Upstream, Coder> : Publisher
+    where Upstream : Publisher, Coder : TopLevelEncoder, Upstream.Output : Encodable {
 
         /// The kind of errors this publisher might publish.
         ///

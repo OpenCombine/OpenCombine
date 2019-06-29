@@ -7,7 +7,8 @@
 
 extension Publishers {
 
-    public struct Decode<Upstream, Output, Coder> : Publisher where Upstream : Publisher, Output : Decodable, Coder : TopLevelDecoder, Upstream.Output == Coder.Input {
+    public struct Decode<Upstream, Output, Coder> : Publisher
+    where Upstream : Publisher, Output : Decodable, Coder : TopLevelDecoder, Upstream.Output == Coder.Input {
 
         /// The kind of errors this publisher might publish.
         ///
@@ -38,10 +39,10 @@ extension Publishers {
     }
 }
 
-private final class _Decode<Upstream: Publisher, Downstream: Subscriber, Coder: TopLevelDecoder>: OperatorSubscription<Downstream>,
-    Subscriber,
-    CustomStringConvertible,
-Subscription where Downstream.Input: Decodable, Coder.Input == Upstream.Output, Downstream.Failure == Error {
+private final class _Decode<Upstream: Publisher, Downstream: Subscriber, Coder: TopLevelDecoder>:
+    OperatorSubscription<Downstream>, Subscriber, CustomStringConvertible, Subscription
+    where Downstream.Input: Decodable, Coder.Input == Upstream.Output, Downstream.Failure == Error {
+    
     typealias Input = Upstream.Output
     typealias Failure = Upstream.Failure
     typealias Output = Downstream.Input
@@ -89,7 +90,9 @@ Subscription where Downstream.Input: Decodable, Coder.Input == Upstream.Output, 
 }
 
 extension Publisher {
-    public func decode<Item, Coder>(type: Item.Type, decoder: Coder) -> Publishers.Decode<Self, Item, Coder> where Item : Decodable, Coder : TopLevelDecoder, Self.Output == Coder.Input {
+    public func decode<Item, Coder>(type: Item.Type, decoder: Coder)
+        -> Publishers.Decode<Self, Item, Coder>
+        where Item : Decodable, Coder : TopLevelDecoder, Self.Output == Coder.Input {
         return Publishers.Decode(upstream: self, decoder: decoder)
     }
 }
