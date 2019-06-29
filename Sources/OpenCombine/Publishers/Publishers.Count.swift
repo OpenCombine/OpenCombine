@@ -82,7 +82,7 @@ private final class _Count<Upstream: Publisher, Downstream: Subscriber>:
 }
 
 extension Publisher {
-    
+
     /// Publishes the number of elements received from the upstream publisher.
     ///
     /// - Returns: A publisher that consumes all elements until the

@@ -22,22 +22,21 @@ final class CountTests: XCTestCase {
 
     func testSendsCorrectCount() {
         var currentCount = 0
-        
+
         let publisher = PassthroughSubject<Void, Never>()
         _ = publisher
             .count()
             .sink(receiveValue: { currentCount = $0 })
-        
+
         let sendAmount = Int.random(in: 1...1000)
         for _ in 0..<sendAmount {
             publisher.send()
         }
-        
+
         publisher.send(completion: .finished)
         XCTAssert(currentCount == sendAmount)
     }
-    
+
     func testCountWaitsUntilFinishedToSend() {
-        
     }
 }
