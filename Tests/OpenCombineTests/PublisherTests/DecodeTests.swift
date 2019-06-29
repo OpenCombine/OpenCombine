@@ -46,9 +46,8 @@ final class DecodeTests: XCTestCase {
             .Just(failData)
             .decode(type: TestDecodable.self, decoder: jsonDecoder)
             .sink(receiveCompletion: { completion in
-                switch completion {
-                case .failure(let error): decodeError = error
-                case .finished: break
+                if case let .failure(error) = completion {
+                    decodeError = error
                 }
             }, receiveValue: { _ in })
         XCTAssert(decodeError != nil)
