@@ -20,7 +20,7 @@ extension Publishers {
 
         public let upstream: Upstream
 
-        let decoder: Coder
+        internal let decoder: Coder
 
         public init(upstream: Upstream, decoder: Coder) {
             self.upstream = upstream
