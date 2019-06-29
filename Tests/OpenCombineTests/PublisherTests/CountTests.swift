@@ -13,19 +13,18 @@ import Combine
 import OpenCombine
 #endif
 
-
 @available(macOS 10.15, *)
 final class CountTests: XCTestCase {
-    
+
     static let allTests = [
         ("testCount", testCount),
         ("testDemand", testDemand),
     ]
-    
+
     func testCount() {
         // TODO
     }
-    
+
     func testDemand() {
         // TODO
     }
