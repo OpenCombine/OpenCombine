@@ -70,4 +70,3 @@ final class AnySubjectTests: XCTestCase {
                                 .subscriber(subscriber.combineIdentifier)])
     }
 }
-

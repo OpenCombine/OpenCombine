@@ -7,7 +7,8 @@
 
 extension Publishers {
 
-    /// A publisher that omits elements from an upstream publisher until a given closure returns false.
+    /// A publisher that omits elements from an upstream publisher until a given closure
+    /// returns false.
     public struct DropWhile<Upstream: Publisher>: Publisher {
 
         public typealias Output = Upstream.Output
@@ -20,17 +21,16 @@ extension Publishers {
         /// The closure that indicates whether to drop the element.
         public let predicate: (Output) -> Bool
 
-        public func receive<S: Subscriber>(subscriber: S)
-            where Failure == S.Failure, Output == S.Input
+        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
+            where Failure == SubscriberType.Failure, Output == SubscriberType.Input
         {
-            let dropWhile = _DropWhile<Upstream, S, (Output) -> Bool>(
-                downstream: subscriber, predicate: predicate
-            )
-            upstream.receive(subscriber: dropWhile)
+            let inner = Inner(downstream: subscriber, predicate: catching(predicate))
+            upstream.receive(subscriber: inner)
         }
     }
 
-    /// A publisher that omits elements from an upstream publisher until a given error-throwing closure returns false.
+    /// A publisher that omits elements from an upstream publisher until a given
+    /// error-throwing closure returns false.
     public struct TryDropWhile<Upstream: Publisher>: Publisher {
 
         public typealias Output = Upstream.Output
@@ -43,117 +43,165 @@ extension Publishers {
         /// The error-throwing closure that indicates whether to drop the element.
         public let predicate: (Upstream.Output) throws -> Bool
 
-        public func receive<S: Subscriber>(subscriber: S)
-            where Output == S.Input, S.Failure == Error
+        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
+            where Output == SubscriberType.Input, SubscriberType.Failure == Error
         {
-            let dropWhile = _DropWhile<Upstream, S, (Output) throws -> Bool>(
-                downstream: subscriber, predicate: predicate
-            )
-
-            upstream.receive(subscriber: dropWhile)
+            let inner = Inner(downstream: subscriber, predicate: catching(predicate))
+            upstream.receive(subscriber: inner)
         }
     }
 }
 
-private final class _DropWhile<Upstream: Publisher, Downstream: Subscriber, Predicate>
-    : Subscriber,
+private class _DropWhile<Upstream: Publisher, Downstream: Subscriber>
+    : OperatorSubscription<Downstream>,
       CustomStringConvertible,
-      CustomReflectable,
       Subscription
-          where Upstream.Output == Downstream.Input
+    where Upstream.Output == Downstream.Input
 {
-
-    typealias Input = Downstream.Input
+    typealias Input = Upstream.Output
     typealias Failure = Upstream.Failure
+    typealias Predicate = (Input) -> Result<Bool, Downstream.Failure>
 
-    private var _downstream: Downstream
-    private let _predicate: (Input) throws -> Bool
-    private var _predicateReturnedFalse = false
-    private var _upstreamSubscription: Subscription?
-    private var _demand: Subscribers.Demand = .none
+    /// The predicate is reset to `nil` as soon as it returns `false`.
+    var predicate: Predicate?
+
+    var demand: Subscribers.Demand = .none
+
+    init(downstream: Downstream, predicate: @escaping Predicate) {
+        self.predicate = predicate
+        super.init(downstream: downstream)
+    }
 
     var description: String { return "DropWhile" }
 
-    var customMirror: Mirror { return Mirror(self, children: EmptyCollection()) }
-
-    init(downstream: Downstream, predicate: @escaping (Input) throws -> Bool) {
-        _downstream = downstream
-        _predicate = predicate
-    }
-
     func receive(subscription: Subscription) {
-        _upstreamSubscription = subscription
+        upstreamSubscription = subscription
+
+        // NOTE: until the predicate returns false, we will ask the upstream publisher
+        // for elements one by one, no matter how much elements the downstream subscriber
+        // requests.
+        //
+        // However, IF the downstream requests anything, we accumulate this demand in the
+        // `demand` property so that later we can provide the downstream with the correct
+        // amount of values.
+        //
+        // As soon as the predicate returns false, we switch to the mode where
+        // we just forward all the requests from the downstream to the upstream.
         subscription.request(.max(1))
-        _downstream.receive(subscription: self)
+
+        downstream.receive(subscription: self)
     }
 
     func receive(_ input: Input) -> Subscribers.Demand {
 
-        if _predicateReturnedFalse {
-            return _downstream.receive(input)
+        guard let predicate = self.predicate else {
+            return downstream.receive(input)
         }
 
-        do {
-            if try !_predicate(input) {
-                _predicateReturnedFalse = true
-                return _demand + _downstream.receive(input) - 1
-            } else {
-                return .max(1)
-            }
-        } catch {
-            // Safe to force unwrap here — predicate throws only if we're within
-            // a TryDropWhile, and its (and its downstream's) Failure type is always
-            // plain Error
-            _downstream.receive(completion: .failure(error as! Downstream.Failure))
+        switch predicate(input) {
+        case .success(true):
+            // See the NOTE above to understand why we return .max(1)
+            return .max(1)
+        case .success(false):
+            // Okay, we hit the first element not satisfying the predicate,
+            // from now on we just republish the values to the downstream.
+            self.predicate = nil
+
+            // The demand that the downstream has requested has been accumulated in the
+            // `demand` property. Now it's time to pay the debt.
+            //
+            // Subtracting 1 for the current value.
+            return demand + downstream.receive(input) - 1
+        case .failure(let error):
+            downstream.receive(completion: .failure(error))
             cancel()
             return .none
         }
     }
 
-    func receive(completion: Subscribers.Completion<Failure>) {
-        switch completion {
-        case .finished:
-            _downstream.receive(completion: .finished)
-        case .failure(let error):
-            // Safe to force unwrap here, since Downstream.Failure can be
-            // either Upstream.Failure or Error
-            _downstream.receive(completion: .failure(error as! Downstream.Failure))
+    func request(_ demand: Subscribers.Demand) {
+        if predicate == nil {
+            // If predicate is nil, that means that we have already received a value
+            // that doesn't satisfy the predicate, hence we're in the state where we
+            // just forward each request to the upstream.
+            upstreamSubscription?.request(demand)
+        } else {
+            // Otherwise, as mentioned in the NOTE above, we accumulate all the demand
+            // requested by the downstream until the predicate returns false.
+            self.demand += demand
         }
     }
+}
 
-    func request(_ demand: Subscribers.Demand) {
-        _demand = demand
+extension Publishers.DropWhile {
+
+    private final class Inner<Downstream: Subscriber>
+        : _DropWhile<Upstream, Downstream>,
+          Subscriber
+        where Upstream.Output == Downstream.Input, Downstream.Failure == Upstream.Failure
+    {
+        func receive(completion: Subscribers.Completion<Failure>) {
+            downstream.receive(completion: completion)
+        }
     }
+}
 
-    func cancel() {
-        _upstreamSubscription?.cancel()
-        _upstreamSubscription = nil
+extension Publishers.TryDropWhile {
+
+    private final class Inner<Downstream: Subscriber>
+        : _DropWhile<Upstream, Downstream>,
+           Subscriber
+        where Upstream.Output == Downstream.Input, Downstream.Failure == Error
+    {
+        func receive(completion: Subscribers.Completion<Failure>) {
+            // The `completion` argument has the type
+            // `Subscribers.Completion<Upstream.Failure>`, and
+            // the `downstream.receive(completion:)` method expects
+            // `Subscribers.Completion<Error>`.
+            //
+            // Since user-defined generic types in Swift are invariant relative to their
+            // generic parameters, `Subscribers.Completion<Upstream.Failure>` is not
+            // a subtype of `Subscribers.Completion<Error>` and therefore cannot be passed
+            // where the latter is expected.
+            //
+            // So we need to destructure `completion` explicitly in this switch.
+            switch completion {
+            case .finished:
+                downstream.receive(completion: .finished)
+            case .failure(let error):
+                downstream.receive(completion: .failure(error))
+            }
+        }
     }
 }
 
 extension Publisher {
 
-    /// Omits elements from the upstream publisher until a given closure returns false, before republishing all remaining
-    /// elements.
+    /// Omits elements from the upstream publisher until a given closure returns false,
+    /// before republishing all remaining elements.
     ///
-    /// - Parameter predicate: A closure that takes an element as a parameter and returns a Boolean
-    ///   value indicating whether to drop the element from the publisher’s output.
-    /// - Returns: A publisher that skips over elements until the provided closure returns `false`.
+    /// - Parameter predicate: A closure that takes an element as a parameter and returns
+    ///   a Boolean value indicating whether to drop the element from the publisher’s
+    ///   output.
+    /// - Returns: A publisher that skips over elements until the provided closure returns
+    ///   `false`.
     public func drop(
         while predicate: @escaping (Output) -> Bool
     ) -> Publishers.DropWhile<Self> {
         return Publishers.DropWhile(upstream: self, predicate: predicate)
     }
 
-    /// Omits elements from the upstream publisher until an error-throwing closure returns false, before republishing
-    /// all remaining elements.
+    /// Omits elements from the upstream publisher until an error-throwing closure returns
+    /// false, before republishing all remaining elements.
     ///
     /// If the predicate closure throws, the publisher fails with an error.
     ///
-    /// - Parameter predicate: A closure that takes an element as a parameter and returns a Boolean value
-    ///   indicating whether to drop the element from the publisher’s output.
-    /// - Returns: A publisher that skips over elements until the provided closure returns `false`, and then
-    ///   republishes all remaining elements. If the predicate closure throws, the publisher fails with an error.
+    /// - Parameter predicate: A closure that takes an element as a parameter and returns
+    ///   a Boolean value indicating whether to drop the element from the publisher’s
+    ///   output.
+    /// - Returns: A publisher that skips over elements until the provided closure returns
+    ///   `false`, and then republishes all remaining elements. If the predicate closure
+    ///   throws, the publisher fails with an error.
     public func tryDrop(
         while predicate: @escaping (Output) throws -> Bool
     ) -> Publishers.TryDropWhile<Self> {

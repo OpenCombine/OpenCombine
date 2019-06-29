@@ -29,14 +29,15 @@ public protocol Publisher {
     /// Use `Never` if this `Publisher` does not publish errors.
     associatedtype Failure: Error
 
-    /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+    /// This function is called to attach the specified `Subscriber` to this `Publisher`
+    /// by `subscribe(_:)`
     ///
     /// - SeeAlso: `subscribe(_:)`
     /// - Parameters:
     ///     - subscriber: The subscriber to attach to this `Publisher`.
     ///                   once attached it can begin to receive values.
-    func receive<S: Subscriber>(subscriber: S) where Failure == S.Failure,
-                                                     Output == S.Input
+    func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
+        where Failure == SubscriberType.Failure, Output == SubscriberType.Input
 }
 
 extension Publisher {
@@ -45,17 +46,20 @@ extension Publisher {
     ///
     /// Always call this function instead of `receive(subscriber:)`.
     /// Adopters of `Publisher` must implement `receive(subscriber:)`.
-    /// The implementation of `subscribe(_:)` in this extension calls through to `receive(subscriber:)`.
+    /// The implementation of `subscribe(_:)` in this extension calls through to
+    /// `receive(subscriber:)`.
     /// - SeeAlso: `receive(subscriber:)`
     /// - Parameters:
-    ///     - subscriber: The subscriber to attach to this `Publisher`. After attaching, the subscriber can start
-    ///       to receive values.
-    public func subscribe<S: Subscriber>(_ subscriber: S)
-        where Failure == S.Failure, Output == S.Input
+    ///     - subscriber: The subscriber to attach to this `Publisher`. After attaching,
+    ///       the subscriber can start to receive values.
+    public func subscribe<SubscriberType: Subscriber>(_ subscriber: SubscriberType)
+        where Failure == SubscriberType.Failure, Output == SubscriberType.Input
     {
         receive(subscriber: subscriber)
     }
 }
+
+// swiftlint:disable line_length
 
 /*
 extension Publisher {

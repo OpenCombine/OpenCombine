@@ -45,7 +45,7 @@ final class AnyCancelableTests: XCTestCase {
 
     func testCancelableInitialized() {
 
-        final class C: Cancellable {
+        final class CancellableObject: Cancellable {
 
             var fired = false
 
@@ -54,7 +54,7 @@ final class AnyCancelableTests: XCTestCase {
             }
         }
 
-        let cancelable = C()
+        let cancelable = CancellableObject()
         let sut = AnyCancellable(cancelable)
 
         XCTAssertFalse(cancelable.fired)

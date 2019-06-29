@@ -9,13 +9,13 @@ public protocol TopLevelDecoder {
 
     associatedtype Input
 
-    func decode<T: Decodable>(_ type: T.Type, from: Input) throws -> T
+    func decode<DecodablyType: Decodable>(_ type: DecodablyType.Type,
+                                          from: Input) throws -> DecodablyType
 }
 
 public protocol TopLevelEncoder {
 
     associatedtype Output
 
-    func encode<T: Encodable>(_ value: T) throws -> Self.Output
+    func encode<EncodableType: Encodable>(_ value: EncodableType) throws -> Output
 }
-

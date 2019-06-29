@@ -7,14 +7,16 @@
 
 extension Publishers {
 
-    /// A publisher that publishes an output to each subscriber exactly once then finishes, or fails immediately without
-    /// producing any elements.
+    /// A publisher that publishes an output to each subscriber exactly once then
+    /// finishes, or fails immediately without producing any elements.
     ///
-    /// If `result` is `.success`, then `Once` waits until it receives a request for at least 1 value before sending
-    /// the output. If `result` is `.failure`, then `Once` sends the failure immediately upon subscription.
+    /// If `result` is `.success`, then `Once` waits until it receives a request for
+    /// at least 1 value before sending the output. If `result` is `.failure`, then `Once`
+    /// sends the failure immediately upon subscription.
     ///
-    /// In contrast with `Just`, a `Once` publisher can terminate with an error instead of sending a value.
-    /// In contrast with `Optional`, a `Once` publisher always sends one value (unless it terminates with an error).
+    /// In contrast with `Just`, a `Once` publisher can terminate with an error instead of
+    /// sending a value. In contrast with `Optional`, a `Once` publisher always sends one
+    /// value (unless it terminates with an error).
     public struct Once<Output, Failure: Error>: Publisher {
 
         /// The result to deliver to each subscriber.
@@ -22,29 +24,33 @@ extension Publishers {
 
         /// Creates a publisher that delivers the specified result.
         ///
-        /// If the result is `.success`, the `Once` publisher sends the specified output to all subscribers and
-        /// finishes normally. If the result is `.failure`, then the publisher fails immediately with the specified error.
+        /// If the result is `.success`, the `Once` publisher sends the specified output
+        /// to all subscribers and finishes normally. If the result is `.failure`, then
+        /// the publisher fails immediately with the specified error.
+        ///
         /// - Parameter result: The result to deliver to each subscriber.
         public init(_ result: Result<Output, Failure>) {
             self.result = result
         }
 
-        /// Creates a publisher that sends the specified output to all subscribers and finishes normally.
+        /// Creates a publisher that sends the specified output to all subscribers and
+        /// finishes normally.
         ///
         /// - Parameter output: The output to deliver to each subscriber.
         public init(_ output: Output) {
             self.init(.success(output))
         }
 
-        /// Creates a publisher that immediately terminates upon subscription with the given failure.
+        /// Creates a publisher that immediately terminates upon subscription with
+        /// the given failure.
         ///
         /// - Parameter failure: The failure to send when terminating.
         public init(_ failure: Failure) {
             self.init(.failure(failure))
         }
 
-        public func receive<S: Subscriber>(subscriber: S)
-            where S.Input == Output, S.Failure == Failure
+        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
+            where SubscriberType.Input == Output, SubscriberType.Failure == Failure
         {
             switch result {
             case .success(let value):
@@ -58,14 +64,14 @@ extension Publishers {
     }
 }
 
-private final class Inner<S: Subscriber>: Subscription,
+private final class Inner<SubscriberType: Subscriber>: Subscription,
                                           CustomStringConvertible,
                                           CustomReflectable
 {
-    private let _output: S.Input
-    private var _downstream: S?
+    private let _output: SubscriberType.Input
+    private var _downstream: SubscriberType?
 
-    init(value: S.Input, downstream: S) {
+    init(value: SubscriberType.Input, downstream: SubscriberType) {
         _output = value
         _downstream = downstream
     }
@@ -236,31 +242,33 @@ extension Publishers.Once {
         return Publishers.Empty()
     }
 
-    public func map<T>(_ transform: (Output) -> T) -> Publishers.Once<T, Failure> {
+    public func map<ElementOfResult>(
+        _ transform: (Output) -> ElementOfResult
+    ) -> Publishers.Once<ElementOfResult, Failure> {
         return Publishers.Once(result.map(transform))
     }
 
-    public func tryMap<T>(
-        _ transform: (Output) throws -> T
-    ) -> Publishers.Once<T, Error> {
+    public func tryMap<ElementOfResult>(
+        _ transform: (Output) throws -> ElementOfResult
+    ) -> Publishers.Once<ElementOfResult, Error> {
         return Publishers.Once(result.tryMap(transform))
     }
 
-    public func compactMap<T>(
-        _ transform: (Output) -> T?
-    ) -> Publishers.Optional<T, Failure> {
+    public func compactMap<ElementOfResult>(
+        _ transform: (Output) -> ElementOfResult?
+    ) -> Publishers.Optional<ElementOfResult, Failure> {
         return Publishers.Optional(result.map(transform))
     }
 
-    public func tryCompactMap<T>(
-        _ transform: (Output) throws -> T?
-    ) -> Publishers.Optional<T, Error> {
+    public func tryCompactMap<ElementOfResult>(
+        _ transform: (Output) throws -> ElementOfResult?
+    ) -> Publishers.Optional<ElementOfResult, Error> {
         return Publishers.Optional(result.tryMap(transform))
     }
 
-    public func mapError<E: Error>(
-        _ transform: (Failure) -> E
-    ) -> Publishers.Once<Output, E> {
+    public func mapError<TransformedFailure: Error>(
+        _ transform: (Failure) -> TransformedFailure
+    ) -> Publishers.Once<Output, TransformedFailure> {
         return Publishers.Once(result.mapError(transform))
     }
 
@@ -269,9 +277,9 @@ extension Publishers.Once {
         return Publishers.Optional(result.map { index == 0 ? $0 : nil })
     }
 
-    public func output<R: RangeExpression>(
-        in range: R
-    ) -> Publishers.Optional<Output, Failure> where R.Bound == Int {
+    public func output<RangeExpr: RangeExpression>(
+        in range: RangeExpr
+    ) -> Publishers.Optional<Output, Failure> where RangeExpr.Bound == Int {
         // TODO: Broken in Apple's Combine? (FB6169621)
         // Empty range should result in a nil
         let range = range.relative(to: 0..<Int.max)
@@ -340,41 +348,40 @@ extension Publishers.Once {
         return self
     }
 
-    public func reduce<T>(
-        _ initialResult: T,
-        _ nextPartialResult: (T, Output) -> T
-    ) -> Publishers.Once<T, Failure> {
+    public func reduce<Accumulator>(
+        _ initialResult: Accumulator,
+        _ nextPartialResult: (Accumulator, Output) -> Accumulator
+    ) -> Publishers.Once<Accumulator, Failure> {
         return Publishers.Once(result.map { nextPartialResult(initialResult, $0) })
     }
 
-    public func tryReduce<T>(
-        _ initialResult: T,
-        _ nextPartialResult: (T, Output) throws -> T
-    ) -> Publishers.Once<T, Error> {
+    public func tryReduce<Accumulator>(
+        _ initialResult: Accumulator,
+        _ nextPartialResult: (Accumulator, Output) throws -> Accumulator
+    ) -> Publishers.Once<Accumulator, Error> {
         return Publishers.Once(result.tryMap { try nextPartialResult(initialResult, $0) })
     }
 
-    public func scan<T>(
-        _ initialResult: T,
-        _ nextPartialResult: (T, Output) -> T
-    ) -> Publishers.Once<T, Failure> {
+    public func scan<ElementOfResult>(
+        _ initialResult: ElementOfResult,
+        _ nextPartialResult: (ElementOfResult, Output) -> ElementOfResult
+    ) -> Publishers.Once<ElementOfResult, Failure> {
         return Publishers.Once(result.map { nextPartialResult(initialResult, $0) })
     }
 
-    public func tryScan<T>(
-        _ initialResult: T,
-        _ nextPartialResult: (T, Output) throws -> T
-    ) -> Publishers.Once<T, Error> {
+    public func tryScan<ElementOfResult>(
+        _ initialResult: ElementOfResult,
+        _ nextPartialResult: (ElementOfResult, Output) throws -> ElementOfResult
+    ) -> Publishers.Once<ElementOfResult, Error> {
         return Publishers.Once(result.tryMap { try nextPartialResult(initialResult, $0) })
     }
 }
 
 extension Publishers.Once where Failure == Never {
 
-    public func setFailureType<E: Error>(
-        to failureType: E.Type
-    ) -> Publishers.Once<Output, E> {
+    public func setFailureType<Failure: Error>(
+        to failureType: Failure.Type
+    ) -> Publishers.Once<Output, Failure> {
         return Publishers.Once(result.success)
     }
 }
-

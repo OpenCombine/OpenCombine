@@ -24,8 +24,8 @@ final class CustomPublisher: Publisher {
         self.subscription = subscription
     }
 
-    func receive<S: Subscriber>(subscriber: S)
-        where Failure == S.Failure, Output == S.Input
+    func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
+        where Failure == SubscriberType.Failure, Output == SubscriberType.Input
     {
         self.subscriber = AnySubscriber(subscriber)
         subscription.map(subscriber.receive(subscription:))

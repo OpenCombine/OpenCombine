@@ -5,6 +5,8 @@
 //  Created by Sergej Jaskiewicz on 10.06.2019.
 //
 
+// swiftlint:disable identical_operands
+
 import XCTest
 
 #if OPENCOMBINE_COMPATIBILITY_TEST
@@ -25,11 +27,11 @@ final class SubscribersDemandTests: XCTestCase {
     ]
 
     func testAddition() {
-        
+
         XCTAssertEqual(.max(42)   + .unlimited, Subscribers.Demand.unlimited)
         XCTAssertEqual(.unlimited + .unlimited, Subscribers.Demand.unlimited)
-        XCTAssertEqual(.unlimited + .max(42),   Subscribers.Demand.unlimited)
-        XCTAssertEqual(.max(100)  + .max(42),   Subscribers.Demand.max(142))
+        XCTAssertEqual(.unlimited + .max(42), Subscribers.Demand.unlimited)
+        XCTAssertEqual(.max(100)  + .max(42), Subscribers.Demand.max(142))
 
         XCTAssertEqual(.max(81)   + 42, Subscribers.Demand.max(123))
         XCTAssertEqual(.unlimited + 42, Subscribers.Demand.unlimited)
@@ -43,13 +45,21 @@ final class SubscribersDemandTests: XCTestCase {
         XCTAssertEqual(demand, .unlimited)
         demand += Int.min
         XCTAssertEqual(demand, .unlimited)
+        demand = .max(Int.max)
+        XCTAssertEqual(demand + 1, .unlimited)
+        demand += 1
+        XCTAssertEqual(demand, .unlimited)
+        demand = .max(Int.min)
+        XCTAssertEqual(demand + (-1), .unlimited)
+        demand += -1
+        XCTAssertEqual(demand, .unlimited)
     }
 
     func testSubtraction() {
         XCTAssertEqual(.max(42)   - .unlimited, Subscribers.Demand.max(0))
         XCTAssertEqual(.unlimited - .unlimited, Subscribers.Demand.unlimited)
-        XCTAssertEqual(.unlimited - .max(42),   Subscribers.Demand.unlimited)
-        XCTAssertEqual(.max(100)  - .max(42),   Subscribers.Demand.max(58))
+        XCTAssertEqual(.unlimited - .max(42), Subscribers.Demand.unlimited)
+        XCTAssertEqual(.max(100)  - .max(42), Subscribers.Demand.max(58))
 
         XCTAssertEqual(.max(81)   - 42, Subscribers.Demand.max(39))
         XCTAssertEqual(.unlimited - 42, Subscribers.Demand.unlimited)
@@ -66,11 +76,19 @@ final class SubscribersDemandTests: XCTestCase {
         XCTAssertEqual(demand, .unlimited)
         demand -= .unlimited
         XCTAssertEqual(demand, .unlimited)
+        demand = .max(Int.min)
+        XCTAssertEqual(demand - 1, .none)
+        demand -= 1
+        XCTAssertEqual(demand, .none)
+        demand = .max(Int.max)
+        XCTAssertEqual(demand - (-1), .none)
+        demand -= -1
+        XCTAssertEqual(demand, .none)
     }
 
     func testMultiplication() {
-        XCTAssertEqual(.max(42)   *  2,      Subscribers.Demand.max(84))
-        XCTAssertEqual(.max(42)   * -10,     Subscribers.Demand.max(-420))
+        XCTAssertEqual(.max(42)   *  2, Subscribers.Demand.max(84))
+        XCTAssertEqual(.max(42)   * -10, Subscribers.Demand.max(-420))
         XCTAssertEqual(.unlimited * Int.max, Subscribers.Demand.unlimited)
 
         var demand = Subscribers.Demand.none
@@ -81,6 +99,18 @@ final class SubscribersDemandTests: XCTestCase {
         XCTAssertEqual(demand, .max(40))
         demand = .unlimited
         demand *= Int.max
+        XCTAssertEqual(demand, .unlimited)
+
+        demand = .max(Int.max)
+        XCTAssertEqual(demand * 2, .unlimited)
+
+        demand *= 2
+        XCTAssertEqual(demand, .unlimited)
+
+        demand = .max(Int.min)
+        XCTAssertEqual(demand * 2, .unlimited)
+
+        demand *= 2
         XCTAssertEqual(demand, .unlimited)
     }
 
@@ -177,7 +207,7 @@ final class SubscribersDemandTests: XCTestCase {
     }
 
     func testMax() {
-        XCTAssertEqual(Subscribers.Demand.none.max,    0)
+        XCTAssertEqual(Subscribers.Demand.none.max, 0)
         XCTAssertEqual(Subscribers.Demand.max(42).max, 42)
         XCTAssertEqual(Subscribers.Demand.max(-10).max, -10)
         XCTAssertNil(Subscribers.Demand.unlimited.max)

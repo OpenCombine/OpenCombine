@@ -20,7 +20,8 @@ final class DropWhileTests: XCTestCase {
 
     static let allTests = [
         ("testDropWhile", testDropWhile),
-        ("testTryDropWhile", testTryDropWhile),
+        ("testTryDropWhileFailureBecauseOfThrow", testTryDropWhileFailureBecauseOfThrow),
+        ("testTryDropWhileFailureOnCompletion", testTryDropWhileFailureOnCompletion),
         ("testDemand", testDemand),
         ("testTryDropWhileCancelsUpstreamOnThrow",
          testTryDropWhileCancelsUpstreamOnThrow),
@@ -56,7 +57,7 @@ final class DropWhileTests: XCTestCase {
         XCTAssertEqual(counter, 4)
     }
 
-    func testTryDropWhile() {
+    func testTryDropWhileFailureBecauseOfThrow() {
 
         var counter = 0 // How many times the predicate is called?
 
@@ -87,11 +88,28 @@ final class DropWhileTests: XCTestCase {
         XCTAssertEqual(counter, 3)
     }
 
+    func testTryDropWhileFailureOnCompletion() {
+
+        let publisher = PassthroughSubject<Int, Error>()
+        let drop = publisher.tryDrop { $0.isMultiple(of: 2) }
+
+        let tracking = TrackingSubscriberBase<Error>()
+
+        publisher.send(1)
+        drop.subscribe(tracking)
+        publisher.send(completion: .failure(TestingError.oops))
+        publisher.send(2)
+
+        XCTAssertEqual(tracking.history,
+                       [.subscription(Subscriptions.empty),
+                        .completion(.failure(TestingError.oops))])
+    }
+
     func testDemand() {
 
         let subscription = CustomSubscription()
         let publisher = CustomPublisher(subscription: subscription)
-        let drop = publisher.drop(while: { return $0.isMultiple(of: 2) })
+        let drop = publisher.drop(while: { $0.isMultiple(of: 2) })
         var downstreamSubscription: Subscription?
         let tracking = TrackingSubscriber(
             receiveSubscription: {
@@ -104,6 +122,7 @@ final class DropWhileTests: XCTestCase {
         drop.subscribe(tracking)
 
         XCTAssertNotNil(downstreamSubscription)
+        dump(type(of: downstreamSubscription!))
 
         XCTAssertEqual(subscription.history, [.requested(.max(1))])
 
@@ -113,17 +132,28 @@ final class DropWhileTests: XCTestCase {
         XCTAssertEqual(publisher.send(2), .max(1))
         XCTAssertEqual(subscription.history, [.requested(.max(1))])
 
-        XCTAssertEqual(publisher.send(3), .max(45))
+        downstreamSubscription?.request(.max(95))
+        downstreamSubscription?.request(.max(5))
         XCTAssertEqual(subscription.history, [.requested(.max(1))])
+
+        XCTAssertEqual(publisher.send(3), .max(145)) // 145 = 42 + 95 + 5 + 3
+        XCTAssertEqual(subscription.history, [.requested(.max(1))])
+
+        downstreamSubscription?.request(.max(121))
+        XCTAssertEqual(subscription.history, [.requested(.max(1)), .requested(.max(121))])
 
         XCTAssertEqual(publisher.send(7), .max(4))
-        XCTAssertEqual(subscription.history, [.requested(.max(1))])
+        XCTAssertEqual(subscription.history, [.requested(.max(1)), .requested(.max(121))])
 
         downstreamSubscription?.cancel()
         downstreamSubscription?.cancel()
-        XCTAssertEqual(subscription.history, [.requested(.max(1)), .canceled])
+        XCTAssertEqual(subscription.history, [.requested(.max(1)),
+                                              .requested(.max(121)),
+                                              .canceled])
         downstreamSubscription?.request(.max(50))
-        XCTAssertEqual(subscription.history, [.requested(.max(1)), .canceled])
+        XCTAssertEqual(subscription.history, [.requested(.max(1)),
+                                              .requested(.max(121)),
+                                              .canceled])
 
         XCTAssertEqual(publisher.send(8), .max(4))
     }

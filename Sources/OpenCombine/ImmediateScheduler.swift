@@ -7,8 +7,8 @@
 
 /// A scheduler for performing synchronous actions.
 ///
-/// You can only use this scheduler for immediate actions. If you attempt to schedule actions after a specific date,
-/// the scheduler produces a fatal error.
+/// You can only use this scheduler for immediate actions. If you attempt to schedule
+/// actions after a specific date, the scheduler produces a fatal error.
 public struct ImmediateScheduler: Scheduler {
 
     /// The time type used by the immediate scheduler.
@@ -16,18 +16,20 @@ public struct ImmediateScheduler: Scheduler {
 
         fileprivate init() {}
 
-        /// Returns the distance to another immediate scheduler time; this distance is always `0` in the context of
-        /// an immediate scheduler.
+        /// Returns the distance to another immediate scheduler time; this distance is
+        /// always `0` in the context of an immediate scheduler.
         ///
         /// - Parameter other: The other scheduler time.
         /// - Returns: `0`, as a `Stride`.
         public func distance(to other: SchedulerTimeType) -> Stride { return 0 }
 
-        /// Advances the time by the specified amount; this is meaningless in the context of an immediate scheduler.
+        /// Advances the time by the specified amount; this is meaningless in the context
+        /// of an immediate scheduler.
         ///
-        /// - Parameter n: The amount to advance by. The `ImmediateScheduler` ignores this value.
+        /// - Parameter n: The amount to advance by. The `ImmediateScheduler` ignores this
+        ///   value.
         /// - Returns: An empty `SchedulerTimeType`.
-        public func advanced(by n: Stride) -> SchedulerTimeType {
+        public func advanced(by _: Stride) -> SchedulerTimeType {
             return SchedulerTimeType()
         }
 
@@ -62,7 +64,9 @@ public struct ImmediateScheduler: Scheduler {
             }
 
             @inlinable
-            public init?<T: BinaryInteger>(exactly source: T) {
+            public init?<BinaryIntegerType: BinaryInteger>(
+                exactly source: BinaryIntegerType
+            ) {
                 guard let magnitude = Int(exactly: source) else {
                     return nil
                 }
@@ -102,15 +106,15 @@ public struct ImmediateScheduler: Scheduler {
                 lhs.magnitude += rhs.magnitude
             }
 
-            public static func seconds(_ s: Int) -> Stride { return 0 }
+            public static func seconds(_: Int) -> Stride { return 0 }
 
-            public static func seconds(_ s: Double) -> Stride { return 0 }
+            public static func seconds(_: Double) -> Stride { return 0 }
 
-            public static func milliseconds(_ ms: Int) -> Stride { return 0 }
+            public static func milliseconds(_: Int) -> Stride { return 0 }
 
-            public static func microseconds(_ us: Int) -> Stride { return 0 }
+            public static func microseconds(_: Int) -> Stride { return 0 }
 
-            public static func nanoseconds(_ ns: Int) -> Stride { return 0 }
+            public static func nanoseconds(_: Int) -> Stride { return 0 }
         }
     }
 
@@ -118,7 +122,8 @@ public struct ImmediateScheduler: Scheduler {
 
     /// The shared instance of the immediate scheduler.
     ///
-    /// You cannot create instances of the immediate scheduler yourself. Use only the shared instance.
+    /// You cannot create instances of the immediate scheduler yourself. Use only
+    /// the shared instance.
     public static let shared = ImmediateScheduler()
 
     @inlinable
