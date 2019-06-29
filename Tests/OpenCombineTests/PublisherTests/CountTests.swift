@@ -17,7 +17,8 @@ import OpenCombine
 final class CountTests: XCTestCase {
 
     static let allTests = [
-        ("testSendsCorrectCount", testSendsCorrectCount)
+        ("testSendsCorrectCount", testSendsCorrectCount),
+        ("testCountWaitsUntilFinishedToSend", testCountWaitsUntilFinishedToSend)
     ]
 
     func testSendsCorrectCount() {
@@ -38,5 +39,20 @@ final class CountTests: XCTestCase {
     }
 
     func testCountWaitsUntilFinishedToSend() {
+        var currentCount = 0
+
+        let publisher = PassthroughSubject<Void, Never>()
+        _ = publisher
+            .count()
+            .sink(receiveValue: { currentCount = $0 })
+
+        publisher.send()
+        XCTAssert(currentCount == 0)
+
+        publisher.send()
+        XCTAssert(currentCount == 0)
+
+        publisher.send(completion: .finished)
+        XCTAssert(currentCount == 2)
     }
 }
