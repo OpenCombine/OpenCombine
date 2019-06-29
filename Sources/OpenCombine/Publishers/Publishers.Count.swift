@@ -80,3 +80,15 @@ private final class _Count<Upstream: Publisher, Downstream: Subscriber>:
         _demand = demand
     }
 }
+
+extension Publisher {
+    
+    /// Publishes the number of elements received from the upstream publisher.
+    ///
+    /// - Returns: A publisher that consumes all elements until the
+    /// upstream publisher finishes, then emits a single
+    /// value with the total number of elements received.
+    public func count() -> Publishers.Count<Self> {
+        return Publishers.Count(upstream: self)
+    }
+}

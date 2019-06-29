@@ -565,14 +565,7 @@ extension Publisher {
     public func tryScan<T>(_ initialResult: T, _ nextPartialResult: @escaping (T, Self.Output) throws -> T) -> Publishers.TryScan<Self, T>
 }
 
-extension Publisher {
 
-    /// Publishes the number of elements received from the upstream publisher.
-    ///
-    /// - Returns: A publisher that consumes all elements until the upstream publisher finishes, then emits a single
-    /// value with the total number of elements received.
-    public func count() -> Publishers.Count<Self>
-}
 
 extension Publisher {
 
