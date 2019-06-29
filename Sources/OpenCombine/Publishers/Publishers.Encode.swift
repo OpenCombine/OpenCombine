@@ -1,13 +1,14 @@
 //
 //  Publishers.Encode.swift
-//  
+//
 //
 //  Created by Joseph Spadafora on 6/22/19.
 //
 
 extension Publishers {
 
-    public struct Encode<Upstream, Coder> : Publisher where Upstream : Publisher, Coder : TopLevelEncoder, Upstream.Output : Encodable {
+    public struct Encode<Upstream, Coder> : Publisher
+    where Upstream : Publisher, Coder : TopLevelEncoder, Upstream.Output : Encodable {
 
         /// The kind of errors this publisher might publish.
         ///
