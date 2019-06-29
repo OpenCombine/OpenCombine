@@ -7,8 +7,10 @@
 
 extension Publishers {
 
-    public struct Encode<Upstream, Coder> : Publisher
-    where Upstream : Publisher, Coder : TopLevelEncoder, Upstream.Output : Encodable {
+    public struct Encode<Upstream, Coder> : Publisher where
+        Upstream : Publisher,
+        Coder : TopLevelEncoder,
+        Upstream.Output : Encodable {
 
         /// The kind of errors this publisher might publish.
         ///
@@ -27,26 +29,32 @@ extension Publishers {
             self.encoder = encoder
         }
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<S: Subscriber>(subscriber: S)
-            where Failure == S.Failure, Output == S.Input
-        {
-            let encodeSubscriber = _Encode<Upstream, S, Coder>(downstream: subscriber, encoder: encoder)
-            upstream.receive(subscriber: encodeSubscriber)
+        public func receive<Receiver: Subscriber>(subscriber: Receiver)
+            where Failure == Receiver.Failure, Output == Receiver.Input {
+                let encodeSubscriber = _Encode<Upstream, Receiver, Coder>(
+                    downstream: subscriber,
+                    encoder: encoder
+                )
+                upstream.receive(subscriber: encodeSubscriber)
         }
     }
 }
 
+// swiftlint:disable:next line_length
 private final class _Encode<Upstream: Publisher, Downstream: Subscriber, Coder: TopLevelEncoder>:
-    Subscriber,
-    CustomStringConvertible,
-    CustomReflectable,
-Subscription where Coder.Output == Downstream.Input, Upstream.Output: Encodable, Downstream.Failure == Error {
+    Subscriber, CustomStringConvertible,
+    CustomReflectable, Subscription where
+    Coder.Output == Downstream.Input,
+    Upstream.Output: Encodable,
+    Downstream.Failure == Error {
+
     typealias Input = Upstream.Output
     typealias Failure = Upstream.Failure
     typealias Output = Downstream.Input
@@ -84,8 +92,10 @@ Subscription where Coder.Output == Downstream.Input, Upstream.Output: Encodable,
 
     func receive(completion: Subscribers.Completion<Failure>) {
         switch completion {
-        case .finished: _downstream.receive(completion: .finished)
-        case .failure(let error): _downstream.receive(completion: .failure(error))
+        case .finished:
+            _downstream.receive(completion: .finished)
+        case .failure(let error):
+            _downstream.receive(completion: .failure(error))
         }
     }
 
@@ -100,7 +110,8 @@ Subscription where Coder.Output == Downstream.Input, Upstream.Output: Encodable,
 }
 
 extension Publisher {
-    public func encode<Coder>(encoder: Coder) -> Publishers.Encode<Self, Coder> where Coder : TopLevelEncoder {
-        return Publishers.Encode(upstream: self, encoder: encoder)
+    public func encode<Coder>(encoder: Coder)
+        -> Publishers.Encode<Self, Coder> where Coder : TopLevelEncoder {
+            return Publishers.Encode(upstream: self, encoder: encoder)
     }
 }

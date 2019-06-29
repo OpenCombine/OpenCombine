@@ -7,8 +7,11 @@
 
 extension Publishers {
 
-    public struct Decode<Upstream, Output, Coder> : Publisher
-    where Upstream : Publisher, Output : Decodable, Coder : TopLevelDecoder, Upstream.Output == Coder.Input {
+    public struct Decode<Upstream, Output, Coder> : Publisher where
+        Upstream : Publisher,
+        Output : Decodable,
+        Coder : TopLevelDecoder,
+        Upstream.Output == Coder.Input {
 
         /// The kind of errors this publisher might publish.
         ///
@@ -24,24 +27,31 @@ extension Publishers {
             self.decoder = decoder
         }
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<S: Subscriber>(subscriber: S)
-            where Failure == S.Failure, Output == S.Input
-        {
-            let decodeSubscriber = _Decode<Upstream, S, Coder>(downstream: subscriber, decoder: decoder)
-            upstream.receive(subscriber: decodeSubscriber)
+        public func receive<Receiver: Subscriber>(subscriber: Receiver)
+            where Failure == Receiver.Failure, Output == Receiver.Input {
+                let decodeSubscriber = _Decode<Upstream, Receiver, Coder>(
+                    downstream: subscriber,
+                    decoder: decoder
+                )
+                upstream.receive(subscriber: decodeSubscriber)
         }
     }
 }
 
+// swiftlint:disable:next line_length
 private final class _Decode<Upstream: Publisher, Downstream: Subscriber, Coder: TopLevelDecoder>:
-    OperatorSubscription<Downstream>, Subscriber, CustomStringConvertible, Subscription
-where Downstream.Input: Decodable, Coder.Input == Upstream.Output, Downstream.Failure == Error {
+    OperatorSubscription<Downstream>, Subscriber,
+    CustomStringConvertible, Subscription where
+    Downstream.Input: Decodable,
+    Coder.Input == Upstream.Output,
+    Downstream.Failure == Error {
 
     typealias Input = Upstream.Output
     typealias Failure = Upstream.Failure
@@ -86,7 +96,6 @@ where Downstream.Input: Decodable, Coder.Input == Upstream.Output, Downstream.Fa
     func request(_ demand: Subscribers.Demand) {
         _demand = demand
     }
-
 }
 
 extension Publisher {
