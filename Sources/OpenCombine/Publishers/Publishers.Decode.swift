@@ -48,7 +48,8 @@ extension Publishers {
 // swiftlint:disable:next line_length
 private final class _Decode<Upstream: Publisher, Downstream: Subscriber, Coder: TopLevelDecoder>:
     OperatorSubscription<Downstream>, Subscriber,
-    CustomStringConvertible, Subscription where
+    CustomStringConvertible, Subscription
+    where
     Downstream.Input: Decodable,
     Coder.Input == Upstream.Output,
     Downstream.Failure == Error {

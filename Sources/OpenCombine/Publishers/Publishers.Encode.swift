@@ -49,8 +49,9 @@ extension Publishers {
 
 // swiftlint:disable:next line_length
 private final class _Encode<Upstream: Publisher, Downstream: Subscriber, Coder: TopLevelEncoder>:
-    Subscriber, CustomStringConvertible,
-    CustomReflectable, Subscription where
+    OperatorSubscription<Downstream>, Subscriber,
+    CustomStringConvertible, Subscription
+    where
     Coder.Output == Downstream.Input,
     Upstream.Output: Encodable,
     Downstream.Failure == Error {
@@ -60,31 +61,27 @@ private final class _Encode<Upstream: Publisher, Downstream: Subscriber, Coder: 
     typealias Output = Downstream.Input
 
     private let _encoder: Coder
-    private var _downstream: Downstream
-    private var _upstreamSubscription: Subscription?
     private var _demand: Subscribers.Demand = .none
 
     var description: String { return "Encode" }
 
-    var customMirror: Mirror { return Mirror(self, children: EmptyCollection()) }
-
     init(downstream: Downstream, encoder: Coder) {
-        self._downstream = downstream
         self._encoder = encoder
+        super.init(downstream: downstream)
     }
 
     func receive(subscription: Subscription) {
-        _upstreamSubscription = subscription
+        upstreamSubscription = subscription
         subscription.request(.unlimited)
-        _downstream.receive(subscription: self)
+        downstream.receive(subscription: self)
     }
 
     func receive(_ input: Input) -> Subscribers.Demand {
         do {
             let value = try _encoder.encode(input)
-            return _downstream.receive(value)
+            return downstream.receive(value)
         } catch {
-            _downstream.receive(completion: .failure(error))
+            downstream.receive(completion: .failure(error))
             cancel()
             return .none
         }
@@ -93,19 +90,14 @@ private final class _Encode<Upstream: Publisher, Downstream: Subscriber, Coder: 
     func receive(completion: Subscribers.Completion<Failure>) {
         switch completion {
         case .finished:
-            _downstream.receive(completion: .finished)
+            downstream.receive(completion: .finished)
         case .failure(let error):
-            _downstream.receive(completion: .failure(error))
+            downstream.receive(completion: .failure(error))
         }
     }
 
     func request(_ demand: Subscribers.Demand) {
         _demand = demand
-    }
-
-    func cancel() {
-        _upstreamSubscription?.cancel()
-        _upstreamSubscription = nil
     }
 }
 
