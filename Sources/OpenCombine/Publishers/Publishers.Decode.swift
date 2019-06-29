@@ -39,41 +39,36 @@ extension Publishers {
     }
 }
 
-private final class _Decode<Upstream: Publisher, Downstream: Subscriber, Coder: TopLevelDecoder>:
+private final class _Decode<Upstream: Publisher, Downstream: Subscriber, Coder: TopLevelDecoder>: OperatorSubscription<Downstream>,
     Subscriber,
     CustomStringConvertible,
-    CustomReflectable,
 Subscription where Downstream.Input: Decodable, Coder.Input == Upstream.Output, Downstream.Failure == Error {
     typealias Input = Upstream.Output
     typealias Failure = Upstream.Failure
     typealias Output = Downstream.Input
     
     private let _decoder: Coder
-    private var _downstream: Downstream
-    private var _upstreamSubscription: Subscription?
     private var _demand: Subscribers.Demand = .none
     
     var description: String { return "Decode" }
     
-    var customMirror: Mirror { return Mirror(self, children: EmptyCollection()) }
-    
     init(downstream: Downstream, decoder: Coder) {
-        self._downstream = downstream
         self._decoder = decoder
+        super.init(downstream: downstream)
     }
     
     func receive(subscription: Subscription) {
-        _upstreamSubscription = subscription
+        upstreamSubscription = subscription
         subscription.request(.unlimited)
-        _downstream.receive(subscription: self)
+        downstream.receive(subscription: self)
     }
     
     func receive(_ input: Input) -> Subscribers.Demand {
         do {
             let value = try _decoder.decode(Downstream.Input.self, from: input)
-            return _downstream.receive(value)
+            return downstream.receive(value)
         } catch {
-            _downstream.receive(completion: .failure(error))
+            downstream.receive(completion: .failure(error))
             cancel()
             return .none
         }
@@ -82,9 +77,9 @@ Subscription where Downstream.Input: Decodable, Coder.Input == Upstream.Output, 
     func receive(completion: Subscribers.Completion<Failure>) {
         switch completion {
         case .finished:
-            _downstream.receive(completion: .finished)
+            downstream.receive(completion: .finished)
         case .failure(let error):
-            _downstream.receive(completion: .failure(error))
+            downstream.receive(completion: .failure(error))
         }
     }
     
@@ -92,10 +87,6 @@ Subscription where Downstream.Input: Decodable, Coder.Input == Upstream.Output, 
         _demand = demand
     }
     
-    func cancel() {
-        _upstreamSubscription?.cancel()
-        _upstreamSubscription = nil
-    }
 }
 
 extension Publisher {
