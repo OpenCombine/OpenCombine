@@ -18,13 +18,13 @@ final class EncodeTests: XCTestCase {
     static let allTests = [
         ("testEncodeWorks", testEncodeWorks)
     ]
-    
+
     private let jsonEncoder = JSONEncoder()
     private let jsonDecoder = JSONDecoder()
-    
+
     func testEncodeWorks() {
         let testValue = TestDecodable()
-        
+
         var data: Data?
         _ = Publishers
             .Just(testValue)
@@ -32,7 +32,7 @@ final class EncodeTests: XCTestCase {
             .sink(receiveValue: { foundValue in
                 data = foundValue
             })
-        
+
         let decoded = try! jsonDecoder.decode(TestDecodable.self, from: data!)
         XCTAssert(decoded.identifier == testValue.identifier)
     }

@@ -16,16 +16,18 @@ import OpenCombine
 @available(macOS 10.15, *)
 final class DecodeTests: XCTestCase {
     static let allTests = [
-        ("testDecodeWorks", testDecodeWorks)
+        ("testDecodeWorks", testDecodeWorks),
+        ("testDownstraemReceivesFailure", testDownstreamReceivesFailure)
     ]
-    
+
     private let jsonEncoder = JSONEncoder()
     private let jsonDecoder = JSONDecoder()
-    
+
+    let testValue = TestDecodable()
+
     func testDecodeWorks() {
-        let testValue = TestDecodable()
         let data = try! jsonEncoder.encode(testValue)
-        
+
         var decodedValue: TestDecodable?
         _ = Publishers
             .Just(data)
@@ -33,7 +35,22 @@ final class DecodeTests: XCTestCase {
             .sink(receiveValue: { foundValue in
                 decodedValue = foundValue
             })
-        
+
         XCTAssert(testValue.identifier == decodedValue?.identifier)
+    }
+
+    func testDownstreamReceivesFailure() {
+        var decodeError: Error?
+        let failData = "whoops".data(using: .utf8)!
+        _ = Publishers
+            .Just(failData)
+            .decode(type: TestDecodable.self, decoder: jsonDecoder)
+            .sink(receiveCompletion: { completion in
+                switch completion {
+                case .failure(let error): decodeError = error
+                case .finished: break
+                }
+            }, receiveValue: { _ in })
+        XCTAssert(decodeError != nil)
     }
 }
