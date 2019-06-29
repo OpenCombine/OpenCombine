@@ -44,3 +44,19 @@ extension Result where Failure == Never {
         }
     }
 }
+
+/// An overload of `catching` that takes a non-thowing function and returns
+/// a function that returns an always succeeding `Result.`
+internal func catching<Input, Output, Failure: Error>(
+    _ transform: @escaping (Input) -> Output
+) -> (Input) -> Result<Output, Failure> {
+    return { input in .success(transform(input)) }
+}
+
+/// Takes a function that may throw an error and returns a function that doesn't throw
+/// an error but returns `Result`.
+internal func catching<Input, Output>(
+    _ transform: @escaping (Input) throws -> Output
+    ) -> (Input) -> Result<Output, Error> {
+    return { input in Result { try transform(input) } }
+}
