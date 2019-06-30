@@ -98,7 +98,9 @@ final class JustTests: XCTestCase {
     func testJustWithInitialDemand() {
         let just = Sut(42)
         let tracking =
-            TrackingSubscriberBase<Int, Never>(receiveSubscription: { $0.request(.unlimited) })
+            TrackingSubscriberBase<Int, Never>(receiveSubscription: {
+                $0.request(.unlimited)
+            })
         just.subscribe(tracking)
 
         XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
@@ -122,7 +124,9 @@ final class JustTests: XCTestCase {
         var deinitCount = 0
         do {
             let just = Sut(42)
-            let tracking = TrackingSubscriberBase<Int, Never>(onDeinit: { deinitCount += 1 })
+            let tracking = TrackingSubscriberBase<Int, Never>(onDeinit: {
+                deinitCount += 1
+            })
             just.subscribe(tracking)
             tracking.subscriptions.first?.cancel()
         }

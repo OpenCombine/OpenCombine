@@ -15,7 +15,11 @@ import OpenCombine
 typealias TrackingSubscriber = TrackingSubscriberBase<Int, TestingError>
 
 @available(macOS 10.15, *)
-final class TrackingSubscriberBase<Value: Equatable, Failure: Error>: Subscriber, CustomStringConvertible {
+final class TrackingSubscriberBase<Value: Equatable,
+                                   Failure: Error>
+    : Subscriber,
+      CustomStringConvertible
+{
 
     enum Event: Equatable, CustomStringConvertible {
         case subscription(Subscription)

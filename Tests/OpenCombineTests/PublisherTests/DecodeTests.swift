@@ -29,11 +29,11 @@ final class DecodeTests: XCTestCase {
         let subject = PassthroughSubject<Data, Error>()
         let publisher = subject.decode(type: [String: String].self, decoder: jsonDecoder)
         let subscriber = TrackingSubscriberBase<[String: String], Error>()
-        
+
         // When
         publisher.subscribe(subscriber)
         subject.send(data)
-        
+
         // Then
         XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
                                             .value(testValue)])
@@ -49,12 +49,44 @@ final class DecodeTests: XCTestCase {
         // When
         publisher.subscribe(subscriber)
         subject.send(failData)
-        
+
         // Then
         guard case .completion(.failure) = subscriber.history[1] else {
             XCTFail("Decode failure not found")
             return
         }
+    }
+
+    func testDemand() {
+        // `CustomSubscription` tracks all the requests and cancellations
+        // in its `history` property
+        let subscription = CustomSubscription()
+
+        // `CustomPublisher` sends the subscription object it has been initialized with
+        // to whoever subscribed to the `CustomPublisher`.
+        let publisher = CustomPublisherBase<Data>(subscription: subscription)
+
+        // `_Decode` helper will receive the `CustomSubscription `
+        let decode = publisher.decode(type: [String : String].self,
+                                      decoder: JSONDecoder())
+
+        // This is actually `_Decode`
+        var downstreamSubscription: Subscription?
+
+        // `TrackingSubscriber` records every event like "receiveSubscription",
+        // "receiveValue" and "receiveCompletion" into its `history` property,
+        // optionally executing the provided callbacks.
+        let tracking = TrackingSubscriberBase<[String: String], Error>(
+            receiveSubscription: {
+                $0.request(.max(42))
+                downstreamSubscription = $0
+            },
+            receiveValue: { _ in .max(2) }
+        )
+
+        decode.subscribe(tracking)
+        XCTAssert(downstreamSubscription != nil) // Removes unused variable warning
+        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
     }
 }
 
