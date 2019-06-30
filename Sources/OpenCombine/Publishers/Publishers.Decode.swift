@@ -104,9 +104,12 @@ private final class _Decode<Upstream: Publisher,
 }
 
 extension Publisher {
-    public func decode<Item, Coder>(type: Item.Type, decoder: Coder)
-        -> Publishers.Decode<Self, Item, Coder>
-        where Item : Decodable, Coder : TopLevelDecoder, Self.Output == Coder.Input {
+    public func decode<Item: Decodable,
+                       Coder: TopLevelDecoder>(
+        type: Item.Type,
+        decoder: Coder
+    ) -> Publishers.Decode<Self, Item, Coder>
+        where Self.Output == Coder.Input {
             return Publishers.Decode(upstream: self, decoder: decoder)
     }
 }

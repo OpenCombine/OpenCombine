@@ -48,14 +48,16 @@ extension Publishers {
     }
 }
 
-// swiftlint:disable:next line_length
-private final class _Encode<Upstream: Publisher, Downstream: Subscriber, Coder: TopLevelEncoder>:
-    OperatorSubscription<Downstream>, Subscriber,
-    CustomStringConvertible, Subscription
-    where
-    Coder.Output == Downstream.Input,
-    Upstream.Output: Encodable,
-    Downstream.Failure == Error {
+private final class _Encode<Upstream: Publisher,
+                            Downstream: Subscriber,
+                            Coder: TopLevelEncoder>
+    : OperatorSubscription<Downstream>,
+      Subscriber,
+      CustomStringConvertible,
+      Subscription
+    where Coder.Output == Downstream.Input,
+          Upstream.Output: Encodable,
+          Downstream.Failure == Error {
 
     typealias Input = Upstream.Output
     typealias Failure = Upstream.Failure
@@ -103,8 +105,11 @@ private final class _Encode<Upstream: Publisher, Downstream: Subscriber, Coder: 
 }
 
 extension Publisher {
-    public func encode<Coder>(encoder: Coder)
-        -> Publishers.Encode<Self, Coder> where Coder : TopLevelEncoder {
-            return Publishers.Encode(upstream: self, encoder: encoder)
+    public func encode<Coder>(
+        encoder: Coder
+    ) -> Publishers.Encode<Self, Coder>
+        where Coder : TopLevelEncoder
+    {
+        return Publishers.Encode(upstream: self, encoder: encoder)
     }
 }
