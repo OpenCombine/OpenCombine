@@ -109,7 +109,8 @@ extension Publisher {
         type: Item.Type,
         decoder: Coder
     ) -> Publishers.Decode<Self, Item, Coder>
-        where Self.Output == Coder.Input {
+        where Self.Output == Coder.Input
+    {
             return Publishers.Decode(upstream: self, decoder: decoder)
     }
 }
