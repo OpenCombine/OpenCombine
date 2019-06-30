@@ -147,23 +147,7 @@ extension Publishers.TryMap {
         where Downstream.Failure == Error
     {
         func receive(completion: Subscribers.Completion<Failure>) {
-            // The `completion` argument has the type
-            // `Subscribers.Completion<Upstream.Failure>`, and
-            // the `downstream.receive(completion:)` method expects
-            // `Subscribers.Completion<Error>`.
-            //
-            // Since user-defined generic types in Swift are invariant relative to their
-            // generic parameters, `Subscribers.Completion<Upstream.Failure>` is not
-            // a subtype of `Subscribers.Completion<Error>` and therefore cannot be passed
-            // where the latter is expected.
-            //
-            // So we need to destructure `completion` explicitly in this switch.
-            switch completion {
-            case .finished:
-                downstream.receive(completion: .finished)
-            case .failure(let error):
-                downstream.receive(completion: .failure(error))
-            }
+            downstream.receive(completion: completion.eraseError())
         }
     }
 }
