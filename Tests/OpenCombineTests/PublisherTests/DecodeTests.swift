@@ -23,33 +23,39 @@ final class DecodeTests: XCTestCase {
     private let jsonEncoder = JSONEncoder()
     private let jsonDecoder = JSONDecoder()
 
-    let testValue = TestDecodable()
-
-    func testDecodeWorks() {
-        let data = try! jsonEncoder.encode(testValue)
-
-        var decodedValue: TestDecodable?
-        _ = Publishers
-            .Just(data)
-            .decode(type: TestDecodable.self, decoder: jsonDecoder)
-            .sink(receiveValue: { foundValue in
-                decodedValue = foundValue
-            })
-
-        XCTAssert(testValue.identifier == decodedValue?.identifier)
+    func testDecodeWorks() throws {
+        // Given
+        let data = try jsonEncoder.encode(testValue)
+        let subject = PassthroughSubject<Data, Error>()
+        let publisher = subject.decode(type: [String: String].self, decoder: jsonDecoder)
+        let subscriber = TrackingSubscriberBase<[String: String], Error>()
+        
+        // When
+        publisher.subscribe(subscriber)
+        subject.send(data)
+        
+        // Then
+        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+                                            .value(testValue)])
     }
 
     func testDownstreamReceivesFailure() {
-        var decodeError: Error?
-        let failData = "whoops".data(using: .utf8)!
-        _ = Publishers
-            .Just(failData)
-            .decode(type: TestDecodable.self, decoder: jsonDecoder)
-            .sink(receiveCompletion: { completion in
-                if case let .failure(error) = completion {
-                    decodeError = error
-                }
-            }, receiveValue: { _ in })
-        XCTAssert(decodeError != nil)
+        // Given
+        let failData = Data("whoops".utf8)
+        let subject = PassthroughSubject<Data, Error>()
+        let publisher = subject.decode(type: [String: String].self, decoder: jsonDecoder)
+        let subscriber = TrackingSubscriberBase<[String: String], Error>()
+
+        // When
+        publisher.subscribe(subscriber)
+        subject.send(failData)
+        
+        // Then
+        guard case .completion(.failure) = subscriber.history[1] else {
+            XCTFail("Decode failure not found")
+            return
+        }
     }
 }
+
+let testValue = ["test": "TestDecodable"]

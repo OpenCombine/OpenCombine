@@ -7,11 +7,12 @@
 
 extension Publishers {
 
-    public struct Decode<Upstream, Output, Coder> : Publisher where
-        Upstream : Publisher,
-        Output : Decodable,
-        Coder : TopLevelDecoder,
-        Upstream.Output == Coder.Input {
+    public struct Decode<Upstream, Output, Coder>: Publisher
+        where Upstream: Publisher,
+        Output: Decodable,
+        Coder: TopLevelDecoder,
+        Upstream.Output == Coder.Input
+    {
 
         /// The kind of errors this publisher might publish.
         ///
@@ -20,11 +21,11 @@ extension Publishers {
 
         public let upstream: Upstream
 
-        internal let decoder: Coder
+        private let _decoder: Coder
 
         public init(upstream: Upstream, decoder: Coder) {
             self.upstream = upstream
-            self.decoder = decoder
+            self._decoder = decoder
         }
 
         /// This function is called to attach the specified `Subscriber`
@@ -34,25 +35,28 @@ extension Publishers {
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<Receiver: Subscriber>(subscriber: Receiver)
-            where Failure == Receiver.Failure, Output == Receiver.Input {
-                let decodeSubscriber = _Decode<Upstream, Receiver, Coder>(
-                    downstream: subscriber,
-                    decoder: decoder
-                )
-                upstream.receive(subscriber: decodeSubscriber)
+        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
+            where Failure == SubscriberType.Failure, Output == SubscriberType.Input
+        {
+            let decodeSubscriber = _Decode<Upstream, SubscriberType, Coder>(
+                downstream: subscriber,
+                decoder: _decoder
+            )
+            upstream.receive(subscriber: decodeSubscriber)
         }
     }
 }
 
-// swiftlint:disable:next line_length
-private final class _Decode<Upstream: Publisher, Downstream: Subscriber, Coder: TopLevelDecoder>:
-    OperatorSubscription<Downstream>, Subscriber,
-    CustomStringConvertible, Subscription
-    where
-    Downstream.Input: Decodable,
-    Coder.Input == Upstream.Output,
-    Downstream.Failure == Error {
+private final class _Decode<Upstream: Publisher,
+                            Downstream: Subscriber,
+                            Coder: TopLevelDecoder>
+    : OperatorSubscription<Downstream>,
+      Subscriber,
+      CustomStringConvertible,
+      Subscription
+    where Downstream.Input: Decodable,
+          Coder.Input == Upstream.Output,
+          Downstream.Failure == Error {
 
     typealias Input = Upstream.Output
     typealias Failure = Upstream.Failure

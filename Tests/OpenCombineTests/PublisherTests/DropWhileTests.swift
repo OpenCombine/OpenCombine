@@ -69,7 +69,7 @@ final class DropWhileTests: XCTestCase {
             }
             return $0.isMultiple(of: 2)
         }
-        let tracking = TrackingSubscriberBase<Error>(
+        let tracking = TrackingSubscriberBase<Int, Error>(
             receiveSubscription: { $0.request(.unlimited) }
         )
 
@@ -93,7 +93,7 @@ final class DropWhileTests: XCTestCase {
         let publisher = PassthroughSubject<Int, Error>()
         let drop = publisher.tryDrop { $0.isMultiple(of: 2) }
 
-        let tracking = TrackingSubscriberBase<Error>()
+        let tracking = TrackingSubscriberBase<Int, Error>()
 
         publisher.send(1)
         drop.subscribe(tracking)
@@ -163,7 +163,7 @@ final class DropWhileTests: XCTestCase {
         let subscription = CustomSubscription()
         let publisher = CustomPublisher(subscription: subscription)
         let drop = publisher.tryDrop(while: { _ in throw "too much" as TestingError })
-        let tracking = TrackingSubscriberBase<Error>(
+        let tracking = TrackingSubscriberBase<Int, Error>(
             receiveSubscription: { $0.request(.unlimited) },
             receiveValue: { _ in .max(42) }
         )

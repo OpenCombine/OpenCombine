@@ -25,7 +25,7 @@ final class AnyPublisherTests: XCTestCase {
 
     func testErasePublisher() {
 
-        let publisher = TrackingSubject()
+        let publisher = TrackingSubject<Int>()
         let erased = AnyPublisher(publisher)
         let subscriber = TrackingSubscriber()
 

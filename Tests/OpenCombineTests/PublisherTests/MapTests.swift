@@ -29,7 +29,7 @@ final class MapTests: XCTestCase {
 
     func testEmpty() {
         // Given
-        let tracking = TrackingSubscriberBase<Never>(
+        let tracking = TrackingSubscriberBase<Int, Never>(
             receiveSubscription: { $0.request(.unlimited) }
         )
         let publisher = PassthroughSubject<Int, Never>()

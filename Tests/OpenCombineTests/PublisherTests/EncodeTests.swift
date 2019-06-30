@@ -22,8 +22,8 @@ final class EncodeTests: XCTestCase {
     private let jsonEncoder = JSONEncoder()
     private let jsonDecoder = JSONDecoder()
 
-    func testEncodeWorks() {
-        let testValue = TestDecodable()
+    func testEncodeWorks() throws {
+        let testValue = ["test": "TestDecodable"]
 
         var data: Data?
         _ = Publishers
@@ -33,7 +33,7 @@ final class EncodeTests: XCTestCase {
                 data = foundValue
             })
 
-        let decoded = try! jsonDecoder.decode(TestDecodable.self, from: data!)
-        XCTAssert(decoded.identifier == testValue.identifier)
+        let decoded = try jsonDecoder.decode([String: String].self, from: data!)
+        XCTAssert(decoded == testValue)
     }
 }

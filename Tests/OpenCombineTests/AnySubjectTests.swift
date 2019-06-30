@@ -25,7 +25,7 @@ final class AnySubjectTests: XCTestCase {
 
     func testEraseSubject() {
 
-        let subject = TrackingSubject()
+        let subject = TrackingSubject<Int>()
         let erased = AnySubject(subject)
         let subscriber = TrackingSubscriber()
 
@@ -46,7 +46,7 @@ final class AnySubjectTests: XCTestCase {
 
     func testClosureBasedSubject() {
 
-        var events: [TrackingSubject.Event] = []
+        var events: [TrackingSubject<Int>.Event] = []
 
         let erased = AnySubject<Int, TestingError>(
             { events.append(.subscriber($0.combineIdentifier)) },
