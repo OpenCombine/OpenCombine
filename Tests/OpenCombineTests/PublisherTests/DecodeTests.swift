@@ -17,7 +17,8 @@ import OpenCombine
 final class DecodeTests: XCTestCase {
     static let allTests = [
         ("testDecodeWorks", testDecodeWorks),
-        ("testDownstraemReceivesFailure", testDownstreamReceivesFailure)
+        ("testDownstraemReceivesFailure", testDownstreamReceivesFailure),
+        ("testDemand", testDemand)
     ]
 
     private let jsonEncoder = JSONEncoder()
