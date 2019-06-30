@@ -8,10 +8,9 @@
 #if OPENCOMBINE_COMPATIBILITY_TEST
 import Combine
 #else
-import OpenCombine
-#endif
-
 import Foundation
+import OpenCombine
 
 extension JSONDecoder: TopLevelDecoder {}
 extension JSONEncoder: TopLevelEncoder {}
+#endif

@@ -37,22 +37,22 @@ final class EncodeTests: XCTestCase {
         let decoded = try jsonDecoder.decode([String: String].self, from: data!)
         XCTAssert(decoded == testValue)
     }
-    
+
     func testDemand() {
         // `CustomSubscription` tracks all the requests and cancellations
         // in its `history` property
         let subscription = CustomSubscription()
-        
+
         // `CustomPublisher` sends the subscription object it has been initialized with
         // to whoever subscribed to the `CustomPublisher`.
         let publisher = CustomPublisherBase<[String: String]>(subscription: subscription)
-        
+
         // `_Encode` helper will receive the `CustomSubscription `
         let encode = publisher.encode(encoder: jsonEncoder)
-        
+
         // This is actually `_Decode`
         var downstreamSubscription: Subscription?
-        
+
         // `TrackingSubscriber` records every event like "receiveSubscription",
         // "receiveValue" and "receiveCompletion" into its `history` property,
         // optionally executing the provided callbacks.
@@ -60,10 +60,10 @@ final class EncodeTests: XCTestCase {
             receiveSubscription: {
                 $0.request(.max(42))
                 downstreamSubscription = $0
-        },
+            },
             receiveValue: { _ in .max(2) }
         )
-        
+
         encode.subscribe(tracking)
         XCTAssert(downstreamSubscription != nil) // Removes unused variable warning
         XCTAssertEqual(subscription.history, [.requested(.unlimited)])
