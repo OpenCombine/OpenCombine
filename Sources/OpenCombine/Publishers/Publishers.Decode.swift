@@ -9,9 +9,9 @@ extension Publishers {
 
     public struct Decode<Upstream, Output, Coder>: Publisher
         where Upstream: Publisher,
-        Output: Decodable,
-        Coder: TopLevelDecoder,
-        Upstream.Output == Coder.Input
+              Output: Decodable,
+              Coder: TopLevelDecoder,
+              Upstream.Output == Coder.Input
     {
 
         /// The kind of errors this publisher might publish.
