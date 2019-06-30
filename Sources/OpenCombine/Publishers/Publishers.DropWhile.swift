@@ -154,7 +154,7 @@ extension Publishers.TryDropWhile {
         where Upstream.Output == Downstream.Input, Downstream.Failure == Error
     {
         func receive(completion: Subscribers.Completion<Failure>) {
-            downstream.receive(completion.eraseError())
+            downstream.receive(completion: completion.eraseError())
         }
     }
 }
