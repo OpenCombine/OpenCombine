@@ -24,17 +24,23 @@ final class EncodeTests: XCTestCase {
     private let jsonDecoder = JSONDecoder()
 
     func testEncodeWorks() throws {
+        // Given
         let testValue = ["test": "TestDecodable"]
+        let subject = PassthroughSubject<[String: String], Error>()
+        let publisher = subject.encode(encoder: jsonEncoder)
+        let subscriber = TrackingSubscriberBase<Data, Error>()
 
-        var data: Data?
-        _ = Publishers
-            .Just(testValue)
-            .encode(encoder: jsonEncoder)
-            .sink(receiveValue: { foundValue in
-                data = foundValue
-            })
+        // When
+        publisher.subscribe(subscriber)
+        subject.send(testValue)
 
-        let decoded = try jsonDecoder.decode([String: String].self, from: data!)
+        // Then
+        guard case let .value(data) = subscriber.history[1] else {
+            XCTFail("No encoded data found")
+            return
+        }
+
+        let decoded = try jsonDecoder.decode([String: String].self, from: data)
         XCTAssert(decoded == testValue)
     }
 
