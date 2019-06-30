@@ -11,6 +11,11 @@ import Combine
 import OpenCombine
 #endif
 
+/// `CustomSubscription` tracks all the requests and cancellations
+/// in its `history` property.
+///
+/// In order to inject `CustomSubscription` into the chain of subscriptions,
+/// use the `CustomSubscriber` class.
 @available(macOS 10.15, *)
 final class CustomSubscription: Subscription {
 
@@ -19,6 +24,7 @@ final class CustomSubscription: Subscription {
         case canceled
     }
 
+    /// The history of requests and cancellations of this subscription.
     private(set) var history: [Event] = []
 
     private let _requested: ((Subscribers.Demand) -> Void)?

@@ -11,9 +11,31 @@ import Combine
 import OpenCombine
 #endif
 
+/// `TrackingSubscriber` records every event like "receiveSubscription",
+/// "receiveValue" and "receiveCompletion" into its `history` property,
+/// optionally executing the provided callbacks.
+///
+/// This is useful when testing operators that somehow transform their upstream's output.
+///
+/// Note that `TrackingSubscriber.Event` is equatable, but doesn't respect
+/// the subscription, in other words,
+/// `TrackingSubscriber.Event.subscription(Subscription.empty)`
+/// is considered equal to any other subscription no matter what the subscription object
+/// actually is.
 @available(macOS 10.15, *)
 typealias TrackingSubscriber = TrackingSubscriberBase<TestingError>
 
+/// `TrackingSubscriber` records every event like "receiveSubscription",
+/// "receiveValue" and "receiveCompletion" into its `history` property,
+/// optionally executing the provided callbacks.
+///
+/// This is useful when testing operators that somehow transform their upstream's output.
+///
+/// Note that `TrackingSubscriber.Event` is equatable, but doesn't respect
+/// the subscription, in other words,
+/// `TrackingSubscriber.Event.subscription(Subscription.empty)`
+/// is considered equal to any other subscription no matter what the subscription object
+/// actually is.
 @available(macOS 10.15, *)
 final class TrackingSubscriberBase<Failure: Error>: Subscriber, CustomStringConvertible {
 
@@ -61,8 +83,10 @@ final class TrackingSubscriberBase<Failure: Error>: Subscriber, CustomStringConv
     private let _receiveCompletion: ((Subscribers.Completion<Failure>) -> Void)?
     private let _onDeinit: (() -> Void)?
 
+    /// The history of subscriptions, inputs and completions of this subscriber
     private(set) var history: [Event] = []
 
+    /// A lazy view on `history` with all events except subscriptions filtered out
     var subscriptions: LazyMapSequence<
         LazyFilterSequence<LazyMapSequence<[Event], Subscription?>>, Subscription
     > {
@@ -75,6 +99,7 @@ final class TrackingSubscriberBase<Failure: Error>: Subscriber, CustomStringConv
         }
     }
 
+    /// A lazy view on `history` with all events except receiving input filtered out
     var inputs: LazyMapSequence<
         LazyFilterSequence<LazyMapSequence<[Event], Int?>>, Int
     > {
@@ -87,6 +112,7 @@ final class TrackingSubscriberBase<Failure: Error>: Subscriber, CustomStringConv
         }
     }
 
+    /// A lazy view on `history` with all events except completions filtered out
     var completions: LazyMapSequence<
         LazyFilterSequence<
             LazyMapSequence<[Event], Subscribers.Completion<Failure>?>
