@@ -37,6 +37,12 @@ extension Publishers {
     }
 }
 
+public extension Publishers.Just where Output == Void {
+    init() {
+        self.init(())
+    }
+}
+
 extension Publishers.Just: Equatable where Output: Equatable {}
 
 extension Publishers.Just where Output: Comparable {
