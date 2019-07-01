@@ -21,15 +21,20 @@ final class EncodeTests: XCTestCase {
         ("testEncodeSuccessHistory", testEncodeSuccessHistory)
     ]
 
-    private let jsonEncoder = JSONEncoder()
-    private let jsonDecoder = JSONDecoder()
+    private var encoder = TestEncoder()
+    private var decoder = TestDecoder()
+
+    override func setUp() {
+        encoder = TestEncoder()
+        decoder = TestDecoder()
+    }
 
     func testEncodeWorks() throws {
         // Given
         let testValue = ["test": "TestDecodable"]
         let subject = PassthroughSubject<[String: String], Error>()
-        let publisher = subject.encode(encoder: jsonEncoder)
-        let subscriber = TrackingSubscriberBase<Data, Error>(
+        let publisher = subject.encode(encoder: encoder)
+        let subscriber = TrackingSubscriberBase<Int, Error>(
             receiveSubscription: { $0.request(.unlimited) }
         )
 
@@ -38,21 +43,15 @@ final class EncodeTests: XCTestCase {
         subject.send(testValue)
 
         // Then
-        guard case let .value(data) = subscriber.history[1] else {
-            XCTFail("No encoded data found")
-            return
-        }
-
-        let decoded = try jsonDecoder.decode([String: String].self, from: data)
-        XCTAssert(decoded == testValue)
+        XCTAssert(encoder.encoded.first?.value as? [String: String] == testValue)
     }
 
     func testEncodeSuccessHistory() throws {
         // Given
         let testValue = ["test": "TestDecodable"]
         let subject = PassthroughSubject<[String: String], Error>()
-        let publisher = subject.encode(encoder: jsonEncoder)
-        let subscriber = TrackingSubscriberBase<Data, Error>(
+        let publisher = subject.encode(encoder: encoder)
+        let subscriber = TrackingSubscriberBase<Int, Error>(
             receiveSubscription: { $0.request(.unlimited) }
         )
 
@@ -61,9 +60,11 @@ final class EncodeTests: XCTestCase {
         subject.send(testValue)
 
         // Then
-        let testData = try jsonEncoder.encode(testValue)
+        guard let testKey = encoder.encoded.first?.key, encoder.encoded.count == 1 else {
+            throw "Could not get testing data from encoding" as TestingError
+        }
         XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
-                                            .value(testData)])
+                                            .value(testKey)])
     }
 
     func testDemand() {
@@ -76,7 +77,7 @@ final class EncodeTests: XCTestCase {
         let publisher = CustomPublisherBase<[String: String]>(subscription: subscription)
 
         // `_Encode` helper will receive the `CustomSubscription `
-        let encode = publisher.encode(encoder: jsonEncoder)
+        let encode = publisher.encode(encoder: encoder)
 
         // This is actually `_Decode`
         var downstreamSubscription: Subscription?
@@ -84,7 +85,7 @@ final class EncodeTests: XCTestCase {
         // `TrackingSubscriber` records every event like "receiveSubscription",
         // "receiveValue" and "receiveCompletion" into its `history` property,
         // optionally executing the provided callbacks.
-        let tracking = TrackingSubscriberBase<Data, Error>(
+        let tracking = TrackingSubscriberBase<Int, Error>(
             receiveSubscription: {
                 $0.request(.max(37))
                 downstreamSubscription = $0

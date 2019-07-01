@@ -21,17 +21,28 @@ final class DecodeTests: XCTestCase {
         ("testDemand", testDemand)
     ]
 
-    private let jsonEncoder = JSONEncoder()
-    private let jsonDecoder = JSONDecoder()
+    var jsonEncoder: TestEncoder = TestEncoder()
+    var jsonDecoder: TestDecoder = TestDecoder()
+
+    override func setUp() {
+        jsonEncoder = TestEncoder()
+        jsonDecoder = TestDecoder()
+    }
 
     func testDecodeWorks() throws {
         // Given
-        let data = try jsonEncoder.encode(testValue)
-        let subject = PassthroughSubject<Data, Error>()
+        let data = 78 // Represents decodable data
+        let subject = PassthroughSubject<Int, Error>()
         let publisher = subject.decode(type: [String: String].self, decoder: jsonDecoder)
         let subscriber = TrackingSubscriberBase<[String: String], Error>(
             receiveSubscription: { $0.request(.unlimited) }
         )
+        jsonDecoder.handleDecode = { decodeData in
+            if decodeData == data {
+                return testValue
+            }
+            return nil
+        }
 
         // When
         publisher.subscribe(subscriber)
@@ -44,8 +55,8 @@ final class DecodeTests: XCTestCase {
 
     func testDownstreamReceivesFailure() {
         // Given
-        let failData = Data("whoops".utf8)
-        let subject = PassthroughSubject<Data, Error>()
+        let failData = 95
+        let subject = PassthroughSubject<Int, Error>()
         let publisher = subject.decode(type: [String: String].self, decoder: jsonDecoder)
         let subscriber =  TrackingSubscriberBase<[String: String], Error>(
             receiveSubscription: { $0.request(.unlimited) }
@@ -56,10 +67,8 @@ final class DecodeTests: XCTestCase {
         subject.send(failData)
 
         // Then
-        let decodeContext = DecodingError.Context(codingPath: [], debugDescription: "")
-        let decodeError = DecodingError.dataCorrupted(decodeContext)
         XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
-                                            .completion(.failure(decodeError))])
+                                            .completion(.failure(TestDecoder.error))])
     }
 
     func testDemand() {
@@ -69,11 +78,11 @@ final class DecodeTests: XCTestCase {
 
         // `CustomPublisher` sends the subscription object it has been initialized with
         // to whoever subscribed to the `CustomPublisher`.
-        let publisher = CustomPublisherBase<Data>(subscription: subscription)
+        let publisher = CustomPublisherBase<Int>(subscription: subscription)
 
         // `_Decode` helper will receive the `CustomSubscription `
         let decode = publisher.decode(type: [String : String].self,
-                                      decoder: JSONDecoder())
+                                      decoder: jsonDecoder)
 
         // This is actually `_Decode`
         var downstreamSubscription: Subscription?
