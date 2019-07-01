@@ -65,7 +65,6 @@ private final class _Encode<Upstream: Publisher,
     typealias Output = Downstream.Input
 
     private let _encoder: Coder
-    private var _demand: Subscribers.Demand = .none
 
     var description: String { return "Encode" }
 
@@ -76,7 +75,6 @@ private final class _Encode<Upstream: Publisher,
 
     func receive(subscription: Subscription) {
         upstreamSubscription = subscription
-        subscription.request(.unlimited)
         downstream.receive(subscription: self)
     }
 
@@ -92,16 +90,11 @@ private final class _Encode<Upstream: Publisher,
     }
 
     func receive(completion: Subscribers.Completion<Failure>) {
-        switch completion {
-        case .finished:
-            downstream.receive(completion: .finished)
-        case .failure(let error):
-            downstream.receive(completion: .failure(error))
-        }
+        downstream.receive(completion: completion.eraseError())
     }
 
     func request(_ demand: Subscribers.Demand) {
-        _demand = demand
+        upstreamSubscription?.request(demand)
     }
 }
 

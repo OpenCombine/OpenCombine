@@ -29,7 +29,9 @@ final class DecodeTests: XCTestCase {
         let data = try jsonEncoder.encode(testValue)
         let subject = PassthroughSubject<Data, Error>()
         let publisher = subject.decode(type: [String: String].self, decoder: jsonDecoder)
-        let subscriber = TrackingSubscriberBase<[String: String], Error>()
+        let subscriber = TrackingSubscriberBase<[String: String], Error>(
+            receiveSubscription: { $0.request(.unlimited) }
+        )
 
         // When
         publisher.subscribe(subscriber)
@@ -45,7 +47,9 @@ final class DecodeTests: XCTestCase {
         let failData = Data("whoops".utf8)
         let subject = PassthroughSubject<Data, Error>()
         let publisher = subject.decode(type: [String: String].self, decoder: jsonDecoder)
-        let subscriber = TrackingSubscriberBase<[String: String], Error>()
+        let subscriber =  TrackingSubscriberBase<[String: String], Error>(
+            receiveSubscription: { $0.request(.unlimited) }
+        )
 
         // When
         publisher.subscribe(subscriber)
@@ -87,7 +91,7 @@ final class DecodeTests: XCTestCase {
 
         decode.subscribe(tracking)
         XCTAssertNotNil(downstreamSubscription) // Removes unused variable warning
-        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
+        XCTAssertEqual(subscription.history, [.requested(.max(42))])
     }
 }
 

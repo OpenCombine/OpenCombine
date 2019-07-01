@@ -63,7 +63,6 @@ private final class _Decode<Upstream: Publisher,
     typealias Output = Downstream.Input
 
     private let _decoder: Coder
-    private var _demand: Subscribers.Demand = .none
 
     var description: String { return "Decode" }
 
@@ -74,7 +73,6 @@ private final class _Decode<Upstream: Publisher,
 
     func receive(subscription: Subscription) {
         upstreamSubscription = subscription
-        subscription.request(.unlimited)
         downstream.receive(subscription: self)
     }
 
@@ -94,7 +92,7 @@ private final class _Decode<Upstream: Publisher,
     }
 
     func request(_ demand: Subscribers.Demand) {
-        _demand = demand
+        upstreamSubscription?.request(demand)
     }
 }
 
@@ -106,6 +104,6 @@ extension Publisher {
     ) -> Publishers.Decode<Self, Item, Coder>
         where Self.Output == Coder.Input
     {
-            return Publishers.Decode(upstream: self, decoder: decoder)
+        return Publishers.Decode(upstream: self, decoder: decoder)
     }
 }

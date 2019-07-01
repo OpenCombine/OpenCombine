@@ -29,7 +29,9 @@ final class EncodeTests: XCTestCase {
         let testValue = ["test": "TestDecodable"]
         let subject = PassthroughSubject<[String: String], Error>()
         let publisher = subject.encode(encoder: jsonEncoder)
-        let subscriber = TrackingSubscriberBase<Data, Error>()
+        let subscriber = TrackingSubscriberBase<Data, Error>(
+            receiveSubscription: { $0.request(.unlimited) }
+        )
 
         // When
         publisher.subscribe(subscriber)
@@ -50,7 +52,9 @@ final class EncodeTests: XCTestCase {
         let testValue = ["test": "TestDecodable"]
         let subject = PassthroughSubject<[String: String], Error>()
         let publisher = subject.encode(encoder: jsonEncoder)
-        let subscriber = TrackingSubscriberBase<Data, Error>()
+        let subscriber = TrackingSubscriberBase<Data, Error>(
+            receiveSubscription: { $0.request(.unlimited) }
+        )
 
         // When
         publisher.subscribe(subscriber)
@@ -82,7 +86,7 @@ final class EncodeTests: XCTestCase {
         // optionally executing the provided callbacks.
         let tracking = TrackingSubscriberBase<Data, Error>(
             receiveSubscription: {
-                $0.request(.max(42))
+                $0.request(.max(37))
                 downstreamSubscription = $0
             },
             receiveValue: { _ in .max(2) }
@@ -90,6 +94,6 @@ final class EncodeTests: XCTestCase {
 
         encode.subscribe(tracking)
         XCTAssertNotNil(downstreamSubscription) // Removes unused variable warning
-        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
+        XCTAssertEqual(subscription.history, [.requested(.max(37))])
     }
 }
