@@ -90,12 +90,7 @@ private final class _Decode<Upstream: Publisher,
     }
 
     func receive(completion: Subscribers.Completion<Failure>) {
-        switch completion {
-        case .finished:
-            downstream.receive(completion: .finished)
-        case .failure(let error):
-            downstream.receive(completion: .failure(error))
-        }
+        downstream.receive(completion: completion.eraseError())
     }
 
     func request(_ demand: Subscribers.Demand) {

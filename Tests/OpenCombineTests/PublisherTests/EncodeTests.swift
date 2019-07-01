@@ -17,7 +17,8 @@ import OpenCombine
 final class EncodeTests: XCTestCase {
     static let allTests = [
         ("testEncodeWorks", testEncodeWorks),
-        ("testDemand", testDemand)
+        ("testDemand", testDemand),
+        ("testEncodeSuccessHistory", testEncodeSuccessHistory)
     ]
 
     private let jsonEncoder = JSONEncoder()
@@ -42,6 +43,23 @@ final class EncodeTests: XCTestCase {
 
         let decoded = try jsonDecoder.decode([String: String].self, from: data)
         XCTAssert(decoded == testValue)
+    }
+
+    func testEncodeSuccessHistory() throws {
+        // Given
+        let testValue = ["test": "TestDecodable"]
+        let subject = PassthroughSubject<[String: String], Error>()
+        let publisher = subject.encode(encoder: jsonEncoder)
+        let subscriber = TrackingSubscriberBase<Data, Error>()
+
+        // When
+        publisher.subscribe(subscriber)
+        subject.send(testValue)
+
+        // Then
+        let testData = try jsonEncoder.encode(testValue)
+        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+                                            .value(testData)])
     }
 
     func testDemand() {
@@ -71,7 +89,7 @@ final class EncodeTests: XCTestCase {
         )
 
         encode.subscribe(tracking)
-        XCTAssert(downstreamSubscription != nil) // Removes unused variable warning
+        XCTAssertNotNil(downstreamSubscription) // Removes unused variable warning
         XCTAssertEqual(subscription.history, [.requested(.unlimited)])
     }
 }

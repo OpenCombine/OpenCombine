@@ -8,9 +8,9 @@
 extension Publishers {
 
     public struct Encode<Upstream, Coder>: Publisher
-        where Upstream : Publisher,
-              Coder : TopLevelEncoder,
-              Upstream.Output : Encodable
+        where Upstream: Publisher,
+              Coder: TopLevelEncoder,
+              Upstream.Output: Encodable
     {
 
         /// The kind of errors this publisher might publish.
@@ -37,13 +37,14 @@ extension Publishers {
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<Receiver: Subscriber>(subscriber: Receiver)
-            where Failure == Receiver.Failure, Output == Receiver.Input {
-                let encodeSubscriber = _Encode<Upstream, Receiver, Coder>(
-                    downstream: subscriber,
-                    encoder: encoder
-                )
-                upstream.receive(subscriber: encodeSubscriber)
+        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
+            where Failure == SubscriberType.Failure, Output == SubscriberType.Input
+        {
+            let encodeSubscriber = _Encode<Upstream, SubscriberType, Coder>(
+                downstream: subscriber,
+                encoder: encoder
+            )
+            upstream.receive(subscriber: encodeSubscriber)
         }
     }
 }
@@ -108,7 +109,7 @@ extension Publisher {
     public func encode<Coder>(
         encoder: Coder
     ) -> Publishers.Encode<Self, Coder>
-        where Coder : TopLevelEncoder
+        where Coder: TopLevelEncoder
     {
         return Publishers.Encode(upstream: self, encoder: encoder)
     }

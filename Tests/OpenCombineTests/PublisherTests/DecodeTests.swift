@@ -52,10 +52,10 @@ final class DecodeTests: XCTestCase {
         subject.send(failData)
 
         // Then
-        guard case .completion(.failure) = subscriber.history[1] else {
-            XCTFail("Decode failure not found")
-            return
-        }
+        let decodeContext = DecodingError.Context(codingPath: [], debugDescription: "")
+        let decodeError = DecodingError.dataCorrupted(decodeContext)
+        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+                                            .completion(.failure(decodeError))])
     }
 
     func testDemand() {
@@ -86,7 +86,7 @@ final class DecodeTests: XCTestCase {
         )
 
         decode.subscribe(tracking)
-        XCTAssert(downstreamSubscription != nil) // Removes unused variable warning
+        XCTAssertNotNil(downstreamSubscription) // Removes unused variable warning
         XCTAssertEqual(subscription.history, [.requested(.unlimited)])
     }
 }
