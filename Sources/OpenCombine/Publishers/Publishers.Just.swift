@@ -37,8 +37,8 @@ extension Publishers {
     }
 }
 
-public extension Publishers.Just where Output == Void {
-    init() {
+extension Publishers.Just where Output == Void {
+    public init() {
         self.init(())
     }
 }
