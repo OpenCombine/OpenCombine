@@ -11,6 +11,25 @@ import Combine
 import OpenCombine
 #endif
 
+/// `CustomPublisher` sends the `subscription` object it has been initialized with
+/// to whoever subscribed to this publisher.
+///
+/// This is useful in conjunction with the `CustomSubscription` class, which allows you
+/// to track the demand requested by the subscribers of this publisher.
+///
+/// Example:
+///
+///     let subscription = CustomSubscription()
+///     let publisher = CustomPublisher(subscription: subscription)
+///
+///     let subscriber = AnySubscriber(receiveSubscription: {
+///         $0.request(42)
+///         $0.cancel()
+///     })
+///
+///     publisher.subscribe(subscriber)
+///
+///     assert(subscription.history == [.requested(.max(42)), .cancelled])
 @available(macOS 10.15, *)
 typealias CustomPublisher = CustomPublisherBase<Int>
 
