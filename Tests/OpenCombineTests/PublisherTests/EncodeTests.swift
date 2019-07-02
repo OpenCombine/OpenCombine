@@ -25,6 +25,7 @@ final class EncodeTests: XCTestCase {
     private var decoder = TestDecoder()
 
     override func setUp() {
+        super.setUp()
         encoder = TestEncoder()
         decoder = TestDecoder()
     }
@@ -61,7 +62,8 @@ final class EncodeTests: XCTestCase {
 
         // Then
         guard let testKey = encoder.encoded.first?.key, encoder.encoded.count == 1 else {
-            throw "Could not get testing data from encoding" as TestingError
+            XCTFail("Could not get testing data from encoding")
+            return
         }
         XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
                                             .value(testKey)])
