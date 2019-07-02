@@ -7,10 +7,11 @@
 
 extension Publishers {
 
-    public struct Encode<Upstream, Coder> : Publisher where
-        Upstream : Publisher,
-        Coder : TopLevelEncoder,
-        Upstream.Output : Encodable {
+    public struct Encode<Upstream, Coder>: Publisher
+        where Upstream: Publisher,
+              Coder: TopLevelEncoder,
+              Upstream.Output: Encodable
+    {
 
         /// The kind of errors this publisher might publish.
         ///
@@ -36,32 +37,34 @@ extension Publishers {
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<Receiver: Subscriber>(subscriber: Receiver)
-            where Failure == Receiver.Failure, Output == Receiver.Input {
-                let encodeSubscriber = _Encode<Upstream, Receiver, Coder>(
-                    downstream: subscriber,
-                    encoder: encoder
-                )
-                upstream.receive(subscriber: encodeSubscriber)
+        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
+            where Failure == SubscriberType.Failure, Output == SubscriberType.Input
+        {
+            let encodeSubscriber = _Encode<Upstream, SubscriberType, Coder>(
+                downstream: subscriber,
+                encoder: encoder
+            )
+            upstream.receive(subscriber: encodeSubscriber)
         }
     }
 }
 
-// swiftlint:disable:next line_length
-private final class _Encode<Upstream: Publisher, Downstream: Subscriber, Coder: TopLevelEncoder>:
-    OperatorSubscription<Downstream>, Subscriber,
-    CustomStringConvertible, Subscription
-    where
-    Coder.Output == Downstream.Input,
-    Upstream.Output: Encodable,
-    Downstream.Failure == Error {
+private final class _Encode<Upstream: Publisher,
+                            Downstream: Subscriber,
+                            Coder: TopLevelEncoder>
+    : OperatorSubscription<Downstream>,
+      Subscriber,
+      CustomStringConvertible,
+      Subscription
+    where Coder.Output == Downstream.Input,
+          Upstream.Output: Encodable,
+          Downstream.Failure == Error {
 
     typealias Input = Upstream.Output
     typealias Failure = Upstream.Failure
     typealias Output = Downstream.Input
 
     private let _encoder: Coder
-    private var _demand: Subscribers.Demand = .none
 
     var description: String { return "Encode" }
 
@@ -72,7 +75,6 @@ private final class _Encode<Upstream: Publisher, Downstream: Subscriber, Coder: 
 
     func receive(subscription: Subscription) {
         upstreamSubscription = subscription
-        subscription.request(.unlimited)
         downstream.receive(subscription: self)
     }
 
@@ -88,22 +90,20 @@ private final class _Encode<Upstream: Publisher, Downstream: Subscriber, Coder: 
     }
 
     func receive(completion: Subscribers.Completion<Failure>) {
-        switch completion {
-        case .finished:
-            downstream.receive(completion: .finished)
-        case .failure(let error):
-            downstream.receive(completion: .failure(error))
-        }
+        downstream.receive(completion: completion.eraseError())
     }
 
     func request(_ demand: Subscribers.Demand) {
-        _demand = demand
+        upstreamSubscription?.request(demand)
     }
 }
 
 extension Publisher {
-    public func encode<Coder>(encoder: Coder)
-        -> Publishers.Encode<Self, Coder> where Coder : TopLevelEncoder {
-            return Publishers.Encode(upstream: self, encoder: encoder)
+    public func encode<Coder>(
+        encoder: Coder
+    ) -> Publishers.Encode<Self, Coder>
+        where Coder: TopLevelEncoder
+    {
+        return Publishers.Encode(upstream: self, encoder: encoder)
     }
 }

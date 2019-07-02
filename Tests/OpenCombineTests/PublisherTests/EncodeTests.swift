@@ -16,24 +16,85 @@ import OpenCombine
 @available(macOS 10.15, *)
 final class EncodeTests: XCTestCase {
     static let allTests = [
-        ("testEncodeWorks", testEncodeWorks)
+        ("testEncodeWorks", testEncodeWorks),
+        ("testDemand", testDemand),
+        ("testEncodeSuccessHistory", testEncodeSuccessHistory)
     ]
 
-    private let jsonEncoder = JSONEncoder()
-    private let jsonDecoder = JSONDecoder()
+    private var encoder = TestEncoder()
+    private var decoder = TestDecoder()
 
-    func testEncodeWorks() {
-        let testValue = TestDecodable()
+    override func setUp() {
+        encoder = TestEncoder()
+        decoder = TestDecoder()
+    }
 
-        var data: Data?
-        _ = Publishers
-            .Just(testValue)
-            .encode(encoder: jsonEncoder)
-            .sink(receiveValue: { foundValue in
-                data = foundValue
-            })
+    func testEncodeWorks() throws {
+        // Given
+        let testValue = ["test": "TestDecodable"]
+        let subject = PassthroughSubject<[String: String], Error>()
+        let publisher = subject.encode(encoder: encoder)
+        let subscriber = TrackingSubscriberBase<Int, Error>(
+            receiveSubscription: { $0.request(.unlimited) }
+        )
 
-        let decoded = try! jsonDecoder.decode(TestDecodable.self, from: data!)
-        XCTAssert(decoded.identifier == testValue.identifier)
+        // When
+        publisher.subscribe(subscriber)
+        subject.send(testValue)
+
+        // Then
+        XCTAssert(encoder.encoded.first?.value as? [String: String] == testValue)
+    }
+
+    func testEncodeSuccessHistory() throws {
+        // Given
+        let testValue = ["test": "TestDecodable"]
+        let subject = PassthroughSubject<[String: String], Error>()
+        let publisher = subject.encode(encoder: encoder)
+        let subscriber = TrackingSubscriberBase<Int, Error>(
+            receiveSubscription: { $0.request(.unlimited) }
+        )
+
+        // When
+        publisher.subscribe(subscriber)
+        subject.send(testValue)
+
+        // Then
+        guard let testKey = encoder.encoded.first?.key, encoder.encoded.count == 1 else {
+            throw "Could not get testing data from encoding" as TestingError
+        }
+        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+                                            .value(testKey)])
+    }
+
+    func testDemand() {
+        // `CustomSubscription` tracks all the requests and cancellations
+        // in its `history` property
+        let subscription = CustomSubscription()
+
+        // `CustomPublisher` sends the subscription object it has been initialized with
+        // to whoever subscribed to the `CustomPublisher`.
+        let publisher = CustomPublisherBase<[String: String]>(subscription: subscription)
+
+        // `_Encode` helper will receive the `CustomSubscription `
+        let encode = publisher.encode(encoder: encoder)
+
+        // This is actually `_Decode`
+        var downstreamSubscription: Subscription?
+
+        // `TrackingSubscriber` records every event like "receiveSubscription",
+        // "receiveValue" and "receiveCompletion" into its `history` property,
+        // optionally executing the provided callbacks.
+        let tracking = TrackingSubscriberBase<Int, Error>(
+            receiveSubscription: {
+                $0.request(.max(37))
+                downstreamSubscription = $0
+            },
+            receiveValue: { _ in .max(2) }
+        )
+
+        encode.subscribe(tracking)
+        XCTAssertNotNil(downstreamSubscription) // Removes unused variable warning
+        XCTAssertEqual(subscription.history, [.requested(.max(37))])
     }
 }
