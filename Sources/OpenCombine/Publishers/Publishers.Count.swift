@@ -41,12 +41,13 @@ extension Publishers {
     }
 }
 
-private final class _Count<Upstream: Publisher, Downstream: Subscriber>:
-    OperatorSubscription<Downstream>, Subscriber,
-    CustomStringConvertible, Subscription
-    where
-    Downstream.Input == Int,
-    Upstream.Failure == Downstream.Failure {
+private final class _Count<Upstream: Publisher, Downstream: Subscriber>
+    : OperatorSubscription<Downstream>,
+      Subscriber,
+      CustomStringConvertible,
+      Subscription
+    where Downstream.Input == Int,
+          Upstream.Failure == Downstream.Failure {
 
     typealias Input = Upstream.Output
     typealias Output = Int
@@ -60,7 +61,6 @@ private final class _Count<Upstream: Publisher, Downstream: Subscriber>:
 
     func receive(subscription: Subscription) {
         upstreamSubscription = subscription
-        subscription.request(.unlimited)
         downstream.receive(subscription: self)
     }
 
@@ -78,6 +78,7 @@ private final class _Count<Upstream: Publisher, Downstream: Subscriber>:
 
     func request(_ demand: Subscribers.Demand) {
         _demand = demand
+        upstreamSubscription?.request(demand)
     }
 }
 

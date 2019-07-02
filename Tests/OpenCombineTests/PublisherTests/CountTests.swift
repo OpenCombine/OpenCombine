@@ -55,4 +55,50 @@ final class CountTests: XCTestCase {
         publisher.send(completion: .finished)
         XCTAssert(currentCount == 2)
     }
+
+    func testDemand() {
+        let subscription = CustomSubscription()
+        let publisher = CustomPublisher(subscription: subscription)
+        let drop = publisher.count()
+        var downstreamSubscription: Subscription?
+        let tracking = TrackingSubscriber(
+            receiveSubscription: {
+                $0.request(.max(42))
+                downstreamSubscription = $0
+            },
+            receiveValue: { _ in .max(4) }
+        )
+
+        drop.subscribe(tracking)
+
+        XCTAssertNotNil(downstreamSubscription)
+        dump(type(of: downstreamSubscription!))
+
+        XCTAssertEqual(subscription.history, [.requested(.max(42))])
+
+        XCTAssertEqual(publisher.send(0), .max(42))
+        XCTAssertEqual(subscription.history, [.requested(.max(42))])
+
+        XCTAssertEqual(publisher.send(2), .max(42))
+        XCTAssertEqual(subscription.history, [.requested(.max(42))])
+
+        downstreamSubscription?.request(.max(95))
+        downstreamSubscription?.request(.max(5))
+        XCTAssertEqual(subscription.history, [.requested(.max(42)),
+                                              .requested(.max(95)),
+                                              .requested(.max(5))])
+
+        downstreamSubscription?.cancel()
+        downstreamSubscription?.cancel()
+        XCTAssertEqual(subscription.history, [.requested(.max(42)),
+                                              .requested(.max(95)),
+                                              .requested(.max(5)),
+                                              .canceled])
+
+        downstreamSubscription?.request(.max(50))
+        XCTAssertEqual(subscription.history, [.requested(.max(42)),
+                                              .requested(.max(95)),
+                                              .requested(.max(5)),
+                                              .canceled])
+    }
 }
