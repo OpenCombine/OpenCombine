@@ -25,6 +25,7 @@ final class DecodeTests: XCTestCase {
     var jsonDecoder: TestDecoder = TestDecoder()
 
     override func setUp() {
+        super.setUp()
         jsonEncoder = TestEncoder()
         jsonDecoder = TestDecoder()
     }
