@@ -23,7 +23,7 @@ import OpenCombine
 /// is considered equal to any other subscription no matter what the subscription object
 /// actually is.
 @available(macOS 10.15, *)
-typealias TrackingSubscriber = TrackingSubscriberBase<TestingError>
+typealias TrackingSubscriber = TrackingSubscriberBase<Int, TestingError>
 
 /// `TrackingSubscriber` records every event like "receiveSubscription",
 /// "receiveValue" and "receiveCompletion" into its `history` property,
@@ -37,11 +37,15 @@ typealias TrackingSubscriber = TrackingSubscriberBase<TestingError>
 /// is considered equal to any other subscription no matter what the subscription object
 /// actually is.
 @available(macOS 10.15, *)
-final class TrackingSubscriberBase<Failure: Error>: Subscriber, CustomStringConvertible {
+final class TrackingSubscriberBase<Value: Equatable,
+                                   Failure: Error>
+    : Subscriber,
+      CustomStringConvertible
+{
 
     enum Event: Equatable, CustomStringConvertible {
         case subscription(Subscription)
-        case value(Int)
+        case value(Value)
         case completion(Subscribers.Completion<Failure>)
 
         static func == (lhs: Event, rhs: Event) -> Bool {
@@ -101,7 +105,7 @@ final class TrackingSubscriberBase<Failure: Error>: Subscriber, CustomStringConv
 
     /// A lazy view on `history` with all events except receiving input filtered out
     var inputs: LazyMapSequence<
-        LazyFilterSequence<LazyMapSequence<[Event], Int?>>, Int
+        LazyFilterSequence<LazyMapSequence<[Event], Value?>>, Value
     > {
         return history.lazy.compactMap {
             if case .value(let v) = $0 {
@@ -143,7 +147,7 @@ final class TrackingSubscriberBase<Failure: Error>: Subscriber, CustomStringConv
         _receiveSubscription?(subscription)
     }
 
-    func receive(_ input: Int) -> Subscribers.Demand {
+    func receive(_ input: Value) -> Subscribers.Demand {
         history.append(.value(input))
         return _receiveValue?(input) ?? .none
     }
@@ -163,15 +167,15 @@ final class TrackingSubscriberBase<Failure: Error>: Subscriber, CustomStringConv
 }
 
 @available(macOS 10.15, *)
-final class TrackingSubject: Subject {
+final class TrackingSubject<Value: Equatable>: Subject {
 
     typealias Failure = TestingError
 
-    typealias Output = Int
+    typealias Output = Value
 
     enum Event: Equatable {
         case subscriber(CombineIdentifier)
-        case value(Int)
+        case value(Value)
         case completion(Subscribers.Completion<TestingError>)
 
         static func == (lhs: Event, rhs: Event) -> Bool {
@@ -197,7 +201,7 @@ final class TrackingSubject: Subject {
 
     private(set) var history: [Event] = []
 
-    func send(_ value: Int) {
+    func send(_ value: Value) {
         history.append(.value(value))
     }
 

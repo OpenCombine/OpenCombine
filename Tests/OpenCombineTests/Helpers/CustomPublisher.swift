@@ -31,12 +31,15 @@ import OpenCombine
 ///
 ///     assert(subscription.history == [.requested(.max(42)), .cancelled])
 @available(macOS 10.15, *)
-final class CustomPublisher: Publisher {
+typealias CustomPublisher = CustomPublisherBase<Int>
 
-    typealias Output = Int
+@available(macOS 10.15, *)
+final class CustomPublisherBase<Value: Equatable>: Publisher {
+
+    typealias Output = Value
     typealias Failure = TestingError
 
-    private var subscriber: AnySubscriber<Int, TestingError>?
+    private var subscriber: AnySubscriber<Value, TestingError>?
     private let subscription: Subscription?
 
     init(subscription: Subscription?) {
@@ -50,7 +53,7 @@ final class CustomPublisher: Publisher {
         subscription.map(subscriber.receive(subscription:))
     }
 
-    func send(_ value: Int) -> Subscribers.Demand {
+    func send(_ value: Value) -> Subscribers.Demand {
         return subscriber!.receive(value)
     }
 

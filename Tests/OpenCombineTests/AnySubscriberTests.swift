@@ -61,7 +61,7 @@ final class AnySubscriberTests: XCTestCase {
         let subscriber = TrackingSubscriber()
         let erasingSubscriber = Sut(subscriber)
         XCTAssertEqual(erasingSubscriber.description,
-                       "TrackingSubscriberBase<TestingError>: []")
+                       "TrackingSubscriberBase<Int, TestingError>: []")
         XCTAssertEqual(erasingSubscriber.description,
                        erasingSubscriber.playgroundDescription as? String)
     }
@@ -87,7 +87,7 @@ final class AnySubscriberTests: XCTestCase {
         let erasingSubscriber = Sut(subscriber)
         XCTAssertEqual(
             String(describing: Mirror(reflecting: erasingSubscriber).subjectType),
-            "TrackingSubscriberBase<TestingError>"
+            "TrackingSubscriberBase<Int, TestingError>"
         )
     }
 
@@ -129,7 +129,7 @@ final class AnySubscriberTests: XCTestCase {
 
     func testErasingSubject() {
 
-        let subject = TrackingSubject()
+        let subject = TrackingSubject<Int>()
         XCTAssert(subject.history.isEmpty)
 
         let erased = Sut(subject)
@@ -157,7 +157,7 @@ final class AnySubscriberTests: XCTestCase {
 
     func testErasingSubjectSubscription() {
 
-        let subject = TrackingSubject()
+        let subject = TrackingSubject<Int>()
         XCTAssert(subject.history.isEmpty)
 
         let erased = Sut(subject)
@@ -223,7 +223,7 @@ private func publishEvents(
 @available(OSX 10.15, *)
 private func subscriberEventToSubjectEvent(
     _ from: TrackingSubscriber.Event
-) -> TrackingSubject.Event? {
+) -> TrackingSubject<Int>.Event? {
     switch from {
     case .subscription:
         return nil
