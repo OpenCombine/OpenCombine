@@ -83,7 +83,6 @@ private final class Inner<Upstream: Publisher, Downstream: Subscriber>
 
     func cancel() {
         _upstreamSubscription?.cancel()
-        _upstreamSubscription = nil
     }
 }
 

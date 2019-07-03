@@ -27,8 +27,8 @@ extension Subscribers.Completion: Hashable where Failure: Hashable {}
 extension Subscribers.Completion: Codable where Failure: Decodable, Failure: Encodable {
 
     private enum CodingKeys: String, CodingKey {
-        case success
-        case error
+        case success = "success"
+        case error = "error"
     }
 
     public init(from decoder: Decoder) throws {

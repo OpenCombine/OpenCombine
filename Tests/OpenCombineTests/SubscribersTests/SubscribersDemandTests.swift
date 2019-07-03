@@ -48,8 +48,8 @@ final class SubscribersDemandTests: XCTestCase {
         demand += Int.min
         XCTAssertEqual(demand, .unlimited)
         demand = .max(Int.max)
-        XCTAssertEqual(demand + 1, .unlimited)
-        demand += 1
+        XCTAssertEqual(demand + 10, .unlimited)
+        demand += 10
         XCTAssertEqual(demand, .unlimited)
     }
 
