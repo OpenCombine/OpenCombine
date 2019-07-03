@@ -28,6 +28,13 @@ final class MapTests: XCTestCase {
         ("testCancel", testCancel),
         ("testCancelAlreadyCancelled", testCancelAlreadyCancelled),
         ("testLifecycle", testLifecycle),
+        ("testMapOperatorSpecializationForMap", testMapOperatorSpecializationForMap),
+        ("testTryMapOperatorSpecializationForMap",
+         testTryMapOperatorSpecializationForMap),
+        ("testMapOperatorSpecializationForTryMap",
+         testMapOperatorSpecializationForTryMap),
+        ("testTryMapOperatorSpecializationForTryMap",
+         testTryMapOperatorSpecializationForTryMap)
     ]
 
     func testEmpty() {
@@ -280,5 +287,126 @@ final class MapTests: XCTestCase {
         XCTAssertEqual(deinitCounter, 0)
         try XCTUnwrap(subscription).cancel()
         XCTAssertEqual(deinitCounter, 0)
+    }
+
+    func testMapOperatorSpecializationForMap() {
+
+        let tracking = TrackingSubscriberBase<Int, Never>(
+            receiveSubscription: { $0.request(.unlimited) }
+        )
+        let publisher = PassthroughSubject<Int, Never>()
+
+        let map1 = publisher.map { $0 * 2 }
+        let map2 = map1.map { $0 + 1 }
+
+        map2.subscribe(tracking)
+        publisher.send(2)
+        publisher.send(3)
+        publisher.send(5)
+
+        XCTAssert(map1.upstream === map2.upstream)
+        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+                                          .value(5),
+                                          .value(7),
+                                          .value(11)])
+    }
+
+    func testTryMapOperatorSpecializationForMap() {
+        let tracking = TrackingSubscriberBase<Int, Error>(
+            receiveSubscription: { $0.request(.unlimited) }
+        )
+        let publisher = PassthroughSubject<Int, Never>()
+
+        let map1 = publisher.map { $0 * 2 }
+
+        let tryMap2 = map1.tryMap { input -> Int in
+            if input == 12 { throw TestingError.oops }
+            return input + 1
+        }
+
+        tryMap2.subscribe(tracking)
+        publisher.send(2)
+        publisher.send(3)
+        publisher.send(5)
+
+        XCTAssert(map1.upstream === tryMap2.upstream)
+        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+                                          .value(5),
+                                          .value(7),
+                                          .value(11)])
+
+        publisher.send(6)
+
+        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+                                          .value(5),
+                                          .value(7),
+                                          .value(11),
+                                          .completion(.failure(TestingError.oops))])
+    }
+
+    func testMapOperatorSpecializationForTryMap() {
+        let tracking = TrackingSubscriberBase<Int, Error>(
+            receiveSubscription: { $0.request(.unlimited) }
+        )
+        let publisher = PassthroughSubject<Int, Never>()
+
+        let tryMap1 = publisher.tryMap { input -> Int in
+            if input == 6 { throw TestingError.oops }
+            return input * 2
+        }
+
+        let tryMap2 = tryMap1.map { $0 + 1 }
+
+        tryMap2.subscribe(tracking)
+        publisher.send(2)
+        publisher.send(3)
+        publisher.send(5)
+
+        XCTAssert(tryMap1.upstream === tryMap2.upstream)
+        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+                                          .value(5),
+                                          .value(7),
+                                          .value(11)])
+
+        publisher.send(6)
+
+        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+                                          .value(5),
+                                          .value(7),
+                                          .value(11),
+                                          .completion(.failure(TestingError.oops))])
+    }
+
+    func testTryMapOperatorSpecializationForTryMap() {
+        let tracking = TrackingSubscriberBase<Int, Error>(
+            receiveSubscription: { $0.request(.unlimited) }
+        )
+        let publisher = PassthroughSubject<Int, Never>()
+
+        let tryMap1 = publisher.tryMap { input -> Int in
+            if input == 6 { throw TestingError.oops }
+            return input * 2
+        }
+
+        let tryMap2 = tryMap1.tryMap { $0 + 1 }
+
+        tryMap2.subscribe(tracking)
+        publisher.send(2)
+        publisher.send(3)
+        publisher.send(5)
+
+        XCTAssert(tryMap1.upstream === tryMap2.upstream)
+        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+                                          .value(5),
+                                          .value(7),
+                                          .value(11)])
+
+        publisher.send(6)
+
+        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+                                          .value(5),
+                                          .value(7),
+                                          .value(11),
+                                          .completion(.failure(TestingError.oops))])
     }
 }
