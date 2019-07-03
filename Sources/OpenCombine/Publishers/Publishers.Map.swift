@@ -66,21 +66,45 @@ extension Publishers {
 }
 
 extension Publishers.Map {
-    public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-        where Output == SubscriberType.Input, SubscriberType.Failure == Upstream.Failure
+    public func receive<Downstream: Subscriber>(subscriber: Downstream)
+        where Output == Downstream.Input, Downstream.Failure == Upstream.Failure
     {
         let inner = Inner(downstream: subscriber, transform: catching(transform))
         upstream.receive(subscriber: inner)
+    }
+
+    public func map<Result>(
+        _ transform: @escaping (Output) -> Result
+    ) -> Publishers.Map<Upstream, Result> {
+        return .init(upstream: upstream) { transform(self.transform($0)) }
+    }
+
+    public func tryMap<Result>(
+        _ transform: @escaping (Output) throws -> Result
+    ) -> Publishers.TryMap<Upstream, Result> {
+        return .init(upstream: upstream) { try transform(self.transform($0)) }
     }
 }
 
 extension Publishers.TryMap {
 
-    public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-        where Output == SubscriberType.Input, SubscriberType.Failure == Error
+    public func receive<Downstream: Subscriber>(subscriber: Downstream)
+        where Output == Downstream.Input, Downstream.Failure == Error
     {
         let inner = Inner(downstream: subscriber, transform: catching(transform))
         upstream.receive(subscriber: inner)
+    }
+
+    public func map<Result>(
+        _ transform: @escaping (Output) -> Result
+    ) -> Publishers.TryMap<Upstream, Result> {
+        return .init(upstream: upstream) { try transform(self.transform($0)) }
+    }
+
+    public func tryMap<Result>(
+        _ transform: @escaping (Output) throws -> Result
+    ) -> Publishers.TryMap<Upstream, Result> {
+        return .init(upstream: upstream) { try transform(self.transform($0)) }
     }
 }
 

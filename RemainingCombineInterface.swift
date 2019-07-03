@@ -3687,20 +3687,6 @@ extension Publishers.Last : Equatable where Upstream : Equatable {
     public static func == (lhs: Publishers.Last<Upstream>, rhs: Publishers.Last<Upstream>) -> Bool
 }
 
-extension Publishers.Map {
-
-    public func map<T>(_ transform: @escaping (Output) -> T) -> Publishers.Map<Upstream, T>
-
-    public func tryMap<T>(_ transform: @escaping (Output) throws -> T) -> Publishers.TryMap<Upstream, T>
-}
-
-extension Publishers.TryMap {
-
-    public func map<T>(_ transform: @escaping (Output) -> T) -> Publishers.TryMap<Upstream, T>
-
-    public func tryMap<T>(_ transform: @escaping (Output) throws -> T) -> Publishers.TryMap<Upstream, T>
-}
-
 extension Publishers.Sequence {
 
     public func allSatisfy(_ predicate: (Publishers.Sequence<Elements, Failure>.Output) -> Bool) -> Publishers.Once<Bool, Failure>
