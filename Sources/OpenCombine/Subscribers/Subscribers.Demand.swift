@@ -22,12 +22,20 @@ extension Subscribers {
     {
         private var rawValue: UInt
 
-        private init(_ rawValue: UInt) {
-            self.rawValue = rawValue
+        private static let _rawValueUnlimited = UInt(Int.max) + 1
+
+        private init<Integer: BinaryInteger>(_ rawValue: Integer) {
+            if rawValue < 0 {
+                self.rawValue = 0
+            } else if rawValue > Demand._rawValueUnlimited {
+                self.rawValue = Demand._rawValueUnlimited
+            } else {
+                self.rawValue = UInt(rawValue)
+            }
         }
 
         /// Requests as many values as the `Publisher` can produce.
-        public static let unlimited = Subscribers.Demand(UInt(Int.max) + 1)
+        public static let unlimited = Subscribers.Demand(_rawValueUnlimited)
 
         /// Limits the maximum number of values.
         /// The `Publisher` may send fewer than the requested number.
@@ -69,7 +77,11 @@ extension Subscribers {
 
         /// When adding any value to` .unlimited`, the result is `.unlimited`.
         public static func + (lhs: Demand, rhs: Int) -> Demand {
-            return lhs + .max(rhs)
+            if lhs == .unlimited {
+                return .unlimited
+            }
+
+            return Demand(lhs.rawValue.advanced(by: rhs))
         }
 
         /// When adding any value to `.unlimited`, the result is `.unlimited`.
@@ -122,7 +134,13 @@ extension Subscribers {
         /// A negative demand is not possible; any operation that would result in
         /// a negative value is clamped to .max(0)
         public static func - (lhs: Demand, rhs: Int) -> Demand {
-            return lhs - .max(rhs)
+            if lhs == .unlimited {
+                return .unlimited
+            }
+
+            let (difference, isOverflow) =
+                Int(lhs.rawValue).subtractingReportingOverflow(rhs)
+            return isOverflow ? .none : .init(difference)
         }
 
         /// When subtracting any value from .unlimited, the result is still .unlimited.
