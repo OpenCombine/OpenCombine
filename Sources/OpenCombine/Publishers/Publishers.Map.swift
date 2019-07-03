@@ -93,7 +93,11 @@ private class _Map<Upstream: Publisher, Downstream: Subscriber>
     typealias Failure = Upstream.Failure
     typealias Transform = (Input) -> Result<Downstream.Input, Downstream.Failure>
 
-    private let _transform: Transform
+    fileprivate var _transform: Transform?
+
+    var isCompleted: Bool {
+        return _transform == nil
+    }
 
     init(downstream: Downstream, transform: @escaping Transform) {
         _transform = transform
@@ -108,11 +112,14 @@ private class _Map<Upstream: Publisher, Downstream: Subscriber>
     }
 
     func receive(_ input: Input) -> Subscribers.Demand {
-        switch _transform(input) {
-        case .success(let output):
+        switch _transform?(input) {
+        case .success(let output)?:
             return downstream.receive(output)
-        case .failure(let error):
+        case .failure(let error)?:
             downstream.receive(completion: .failure(error))
+            _transform = nil
+            return .none
+        case nil:
             return .none
         }
     }
@@ -122,7 +129,8 @@ private class _Map<Upstream: Publisher, Downstream: Subscriber>
     }
 
     override func cancel() {
-        _upstreamSubscription?.cancel()
+        _transform = nil
+        upstreamSubscription?.cancel()
     }
 }
 
@@ -134,7 +142,10 @@ extension Publishers.Map {
         where Downstream.Failure == Upstream.Failure
     {
         func receive(completion: Subscribers.Completion<Failure>) {
-            downstream.receive(completion: completion)
+            if !isCompleted {
+                _transform = nil
+                downstream.receive(completion: completion)
+            }
         }
     }
 }
@@ -147,7 +158,10 @@ extension Publishers.TryMap {
         where Downstream.Failure == Error
     {
         func receive(completion: Subscribers.Completion<Failure>) {
-            downstream.receive(completion: completion.eraseError())
+            if !isCompleted {
+                _transform = nil
+                downstream.receive(completion: completion.eraseError())
+            }
         }
     }
 }
