@@ -11,7 +11,7 @@ extension Publishers {
 
     /// A publisher that publishes the number of elements received
     /// from the upstream publisher.
-    public struct Count<Upstream> : Publisher where Upstream : Publisher {
+    public struct Count<Upstream: Publisher>: Publisher {
 
         /// The kind of values published by this publisher.
         public typealias Output = Int
