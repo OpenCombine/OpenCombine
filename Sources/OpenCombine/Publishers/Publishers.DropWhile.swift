@@ -21,6 +21,11 @@ extension Publishers {
         /// The closure that indicates whether to drop the element.
         public let predicate: (Output) -> Bool
 
+        public init(upstream: Upstream, predicate: @escaping (Output) -> Bool) {
+            self.upstream = upstream
+            self.predicate = predicate
+        }
+
         public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
             where Failure == SubscriberType.Failure, Output == SubscriberType.Input
         {
@@ -42,6 +47,11 @@ extension Publishers {
 
         /// The error-throwing closure that indicates whether to drop the element.
         public let predicate: (Upstream.Output) throws -> Bool
+
+        public init(upstream: Upstream, predicate: @escaping (Output) throws -> Bool) {
+            self.upstream = upstream
+            self.predicate = predicate
+        }
 
         public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
             where Output == SubscriberType.Input, SubscriberType.Failure == Error

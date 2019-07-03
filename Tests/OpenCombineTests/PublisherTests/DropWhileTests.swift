@@ -149,11 +149,11 @@ final class DropWhileTests: XCTestCase {
         downstreamSubscription?.cancel()
         XCTAssertEqual(subscription.history, [.requested(.max(1)),
                                               .requested(.max(121)),
-                                              .canceled])
+                                              .cancelled])
         downstreamSubscription?.request(.max(50))
         XCTAssertEqual(subscription.history, [.requested(.max(1)),
                                               .requested(.max(121)),
-                                              .canceled])
+                                              .cancelled])
 
         XCTAssertEqual(publisher.send(8), .max(4))
     }
@@ -171,9 +171,9 @@ final class DropWhileTests: XCTestCase {
         drop.subscribe(tracking)
         XCTAssertEqual(subscription.history, [.requested(.max(1))])
         XCTAssertEqual(publisher.send(100), .none)
-        XCTAssertEqual(subscription.history, [.requested(.max(1)), .canceled])
+        XCTAssertEqual(subscription.history, [.requested(.max(1)), .cancelled])
         publisher.send(completion: .finished)
-        XCTAssertEqual(subscription.history, [.requested(.max(1)), .canceled])
+        XCTAssertEqual(subscription.history, [.requested(.max(1)), .cancelled])
         XCTAssertEqual(tracking.history,
                        [.subscription(Subscriptions.empty),
                         .completion(.failure("too much" as TestingError)),

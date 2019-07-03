@@ -17,15 +17,15 @@ extension Publishers {
 
         public typealias Failure = Upstream.Failure
 
-        private let _upstream: Upstream
+        public let upstream: Upstream
 
-        private let _creator: () -> SubjectType
+        public let createSubject: () -> SubjectType
 
-        private lazy var _subject: SubjectType = self._creator()
+        private lazy var _subject: SubjectType = self.createSubject()
 
-        internal init(upstream: Upstream, _ creator: @escaping () -> SubjectType) {
-            _upstream = upstream
-            _creator = creator
+        public init(upstream: Upstream, createSubject: @escaping () -> SubjectType) {
+            self.upstream = upstream
+            self.createSubject = createSubject
         }
 
         public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
@@ -39,7 +39,7 @@ extension Publishers {
 
             let subscriber = SubjectSubscriber(_subject)
 
-            _upstream.subscribe(subscriber)
+            upstream.subscribe(subscriber)
 
             return AnyCancellable {
                 subscriber.parent = nil
@@ -55,7 +55,7 @@ extension Publisher {
     ) -> Publishers.Multicast<Self, SubjectType>
         where Failure == SubjectType.Failure, Output == SubjectType.Output
     {
-        return Publishers.Multicast(upstream: self, createSubject)
+        return Publishers.Multicast(upstream: self, createSubject: createSubject)
     }
 
     public func multicast<SubjectType: Subject>(

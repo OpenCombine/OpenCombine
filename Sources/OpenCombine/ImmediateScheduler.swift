@@ -7,7 +7,7 @@
 
 /// A scheduler for performing synchronous actions.
 ///
-/// You can only use this scheduler for immediate actions. If you attempt to schedule
+/// You can use this scheduler for immediate actions. If you attempt to schedule
 /// actions after a specific date, the scheduler produces a fatal error.
 public struct ImmediateScheduler: Scheduler {
 

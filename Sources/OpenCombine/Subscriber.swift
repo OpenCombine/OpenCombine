@@ -39,9 +39,9 @@ public protocol Subscriber: CustomCombineIdentifierConvertible {
     func receive(completion: Subscribers.Completion<Failure>)
 }
 
-extension Subscriber {
+extension Subscriber where Input == Void {
 
-    public func eraseToAnySubscriber() -> AnySubscriber<Input, Failure> {
-        return AnySubscriber(self)
+    public func receive() -> Subscribers.Demand {
+        return receive(())
     }
 }

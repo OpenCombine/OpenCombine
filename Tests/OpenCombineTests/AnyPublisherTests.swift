@@ -18,7 +18,6 @@ final class AnyPublisherTests: XCTestCase {
 
     static let allTests = [
         ("testErasePublisher", testErasePublisher),
-        ("testClosureBasedPublisher", testClosureBasedPublisher),
     ]
 
     private typealias Sut = AnyPublisher<Int, TestingError>
@@ -31,17 +30,5 @@ final class AnyPublisherTests: XCTestCase {
 
         erased.receive(subscriber: subscriber)
         XCTAssertEqual(publisher.history, [.subscriber(subscriber.combineIdentifier)])
-    }
-
-    func testClosureBasedPublisher() {
-
-        var erasedSubscriber: AnySubscriber<Int, TestingError>?
-
-        let erased = AnyPublisher<Int, TestingError> { erasedSubscriber = $0 }
-        let subscriber = TrackingSubscriber()
-
-        erased.receive(subscriber: subscriber)
-
-        XCTAssertEqual(erasedSubscriber?.combineIdentifier, subscriber.combineIdentifier)
     }
 }

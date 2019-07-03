@@ -24,7 +24,7 @@ final class SinkTests: XCTestCase {
         ("testPublisherOperator", testPublisherOperator),
     ]
 
-    private typealias Sut = Subscribers.Sink<PassthroughSubject<Int, Never>>
+    private typealias Sut = Subscribers.Sink<Int, Never>
 
     func testDescription() {
         let sink = Sut(receiveValue: { _ in })

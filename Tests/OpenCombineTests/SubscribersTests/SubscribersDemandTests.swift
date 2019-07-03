@@ -24,6 +24,8 @@ final class SubscribersDemandTests: XCTestCase {
         ("testMultiplication", testMultiplication),
         ("testComparison", testComparison),
         ("testMax", testMax),
+        ("testDescription", testDescription),
+        ("testEncodeDecode", testEncodeDecode),
     ]
 
     func testAddition() {
@@ -49,10 +51,6 @@ final class SubscribersDemandTests: XCTestCase {
         XCTAssertEqual(demand + 1, .unlimited)
         demand += 1
         XCTAssertEqual(demand, .unlimited)
-        demand = .max(Int.min)
-        XCTAssertEqual(demand + (-1), .unlimited)
-        demand += -1
-        XCTAssertEqual(demand, .unlimited)
     }
 
     func testSubtraction() {
@@ -76,10 +74,6 @@ final class SubscribersDemandTests: XCTestCase {
         XCTAssertEqual(demand, .unlimited)
         demand -= .unlimited
         XCTAssertEqual(demand, .unlimited)
-        demand = .max(Int.min)
-        XCTAssertEqual(demand - 1, .none)
-        demand -= 1
-        XCTAssertEqual(demand, .none)
         demand = .max(Int.max)
         XCTAssertEqual(demand - (-1), .none)
         demand -= -1
@@ -88,7 +82,6 @@ final class SubscribersDemandTests: XCTestCase {
 
     func testMultiplication() {
         XCTAssertEqual(.max(42)   *  2, Subscribers.Demand.max(84))
-        XCTAssertEqual(.max(42)   * -10, Subscribers.Demand.max(-420))
         XCTAssertEqual(.unlimited * Int.max, Subscribers.Demand.unlimited)
 
         var demand = Subscribers.Demand.none
@@ -100,16 +93,8 @@ final class SubscribersDemandTests: XCTestCase {
         demand = .unlimited
         demand *= Int.max
         XCTAssertEqual(demand, .unlimited)
-
         demand = .max(Int.max)
         XCTAssertEqual(demand * 2, .unlimited)
-
-        demand *= 2
-        XCTAssertEqual(demand, .unlimited)
-
-        demand = .max(Int.min)
-        XCTAssertEqual(demand * 2, .unlimited)
-
         demand *= 2
         XCTAssertEqual(demand, .unlimited)
     }
@@ -209,7 +194,44 @@ final class SubscribersDemandTests: XCTestCase {
     func testMax() {
         XCTAssertEqual(Subscribers.Demand.none.max, 0)
         XCTAssertEqual(Subscribers.Demand.max(42).max, 42)
-        XCTAssertEqual(Subscribers.Demand.max(-10).max, -10)
         XCTAssertNil(Subscribers.Demand.unlimited.max)
+    }
+
+    func testDescription() {
+        XCTAssertEqual(Subscribers.Demand.none.description, "max(0)")
+        XCTAssertEqual(Subscribers.Demand.max(42).description, "max(42)")
+        XCTAssertEqual(Subscribers.Demand.unlimited.description, "unlimited")
+    }
+
+    func testEncodeDecode() throws {
+
+        let jsonMax = #"{"rawValue":42}"#
+        let jsonUnlimited = #"{"rawValue":\#(UInt(Int.max) + 1)}"#
+        let jsonIllFormedNegative = #"{"rawValue":-1}"#
+        let jsonIllFormedTooBig = #"{"rawValue":\#(UInt(Int.max) + 2)}"#
+
+        let encodedMax = try JSONEncoder().encode(Subscribers.Demand.max(42))
+        XCTAssertEqual(String(decoding: encodedMax, as: UTF8.self), jsonMax)
+
+        let encodedUnlimited = try JSONEncoder().encode(Subscribers.Demand.unlimited)
+        XCTAssertEqual(String(decoding: encodedUnlimited, as: UTF8.self), jsonUnlimited)
+
+        let decodedMax = try JSONDecoder().decode(Subscribers.Demand.self,
+                                                  from: Data(jsonMax.utf8))
+        XCTAssertEqual(decodedMax, .max(42))
+
+        let decodedUnlimited = try JSONDecoder().decode(Subscribers.Demand.self,
+                                                        from: Data(jsonUnlimited.utf8))
+        XCTAssertEqual(decodedUnlimited, .unlimited)
+
+        XCTAssertThrowsError(
+            try JSONDecoder().decode(Subscribers.Demand.self,
+                                     from: Data(jsonIllFormedNegative.utf8))
+        )
+
+        let decodedIllFormedTooBig = try JSONDecoder()
+            .decode(Subscribers.Demand.self, from: Data(jsonIllFormedTooBig.utf8))
+
+        XCTAssertEqual(decodedIllFormedTooBig.description, "max(\(UInt(Int.max) + 2))")
     }
 }

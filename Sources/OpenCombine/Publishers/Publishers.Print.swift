@@ -148,10 +148,9 @@ private final class Inner<Downstream: Subscriber>: Subscriber,
 
     private func _logDemand(_ demand: Subscribers.Demand, synchronous: Bool) {
         let synchronouslyStr = synchronous ? "synchronous" : ""
-        switch demand {
-        case .max(let max):
+        if let max = demand.max {
             _log("request max", value: max, additionalInfo: synchronouslyStr)
-        case .unlimited:
+        } else {
             _log("request unlimited", additionalInfo: synchronouslyStr)
         }
     }

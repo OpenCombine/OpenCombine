@@ -8,16 +8,13 @@
 extension Subscribers {
 
     /// A simple subscriber that requests an unlimited number of values upon subscription.
-    public final class Sink<Upstream: Publisher>: Subscriber,
-                                                  Cancellable,
-                                                  CustomStringConvertible,
-                                                  CustomReflectable,
-                                                  CustomPlaygroundDisplayConvertible
+    public final class Sink<Input, Failure: Error>
+        : Subscriber,
+          Cancellable,
+          CustomStringConvertible,
+          CustomReflectable,
+          CustomPlaygroundDisplayConvertible
     {
-        public typealias Input = Upstream.Output
-
-        public typealias Failure = Upstream.Failure
-
         /// The closure to execute on receipt of a value.
         public let receiveValue: (Input) -> Void
 
@@ -87,8 +84,8 @@ extension Publisher {
     public func sink(
         receiveCompletion: ((Subscribers.Completion<Failure>) -> Void)? = nil,
         receiveValue: @escaping ((Output) -> Void)
-    ) -> Subscribers.Sink<Self> {
-        let subscriber = Subscribers.Sink<Self>(
+    ) -> Subscribers.Sink<Output, Failure> {
+        let subscriber = Subscribers.Sink<Output, Failure>(
             receiveCompletion: receiveCompletion,
             receiveValue: receiveValue
         )

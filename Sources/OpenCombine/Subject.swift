@@ -24,14 +24,6 @@ public protocol Subject: AnyObject, Publisher {
     func send(completion: Subscribers.Completion<Failure>)
 }
 
-extension Subject {
-
-    @inlinable
-    public func eraseToAnySubject() -> AnySubject<Output, Failure> {
-        return AnySubject(self)
-    }
-}
-
 extension Subject where Output == Void {
 
     /// Signals subscribers.

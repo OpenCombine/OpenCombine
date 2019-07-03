@@ -24,15 +24,6 @@ public struct AnyPublisher<Output, Failure: Error> {
     {
         box = PublisherBox(base: publisher)
     }
-
-    /// Creates a type-erasing publisher implemented by the provided closure.
-    ///
-    /// - Parameters:
-    ///   - subscribe: A closure to invoke when a subscriber subscribes to the publisher.
-    @inlinable
-    public init(_ subscribe: @escaping (AnySubscriber<Output, Failure>) -> Void) {
-        box = PublisherBox(base: ClosureBasedPublisher(subscribe))
-    }
 }
 
 extension AnyPublisher: Publisher {
@@ -87,28 +78,5 @@ internal final class PublisherBox<PublisherType: Publisher>
         where Failure == SubscriberType.Failure, Output == SubscriberType.Input
     {
         base.receive(subscriber: subscriber)
-    }
-}
-
-@usableFromInline
-internal struct ClosureBasedPublisher<Output, Failure: Error>: Publisher {
-
-    @usableFromInline
-    internal let subscribe: (AnySubscriber<Output, Failure>) -> Void
-
-    @inlinable
-    internal init(_ subscribe: @escaping (AnySubscriber<Output, Failure>) -> Void) {
-        self.subscribe = subscribe
-    }
-
-    @inlinable
-    internal func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-        where Failure == SubscriberType.Failure, Output == SubscriberType.Input
-    {
-        if let anySubscriber = subscriber as? AnySubscriber<Output, Failure> {
-            subscribe(anySubscriber)
-        } else {
-            subscribe(AnySubscriber(subscriber))
-        }
     }
 }
