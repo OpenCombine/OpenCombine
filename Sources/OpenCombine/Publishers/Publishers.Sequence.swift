@@ -86,9 +86,13 @@ extension Publishers.Sequence {
 
             while demand > 0 {
                 if let nextValue = _nextValue {
-                    demand += downstream.receive(nextValue) - 1
-                    _nextValue = _iterator?.next()
-                } else {
+                    demand += downstream.receive(nextValue)
+                    demand -= 1
+                }
+
+                _nextValue = _iterator?.next()
+
+                if _nextValue == nil {
                     _downstream?.receive(completion: .finished)
                     cancel()
                     break
