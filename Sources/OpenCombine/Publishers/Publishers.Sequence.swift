@@ -366,7 +366,11 @@ extension Publishers.Sequence where Elements: RangeReplaceableCollection {
     ) -> Publishers.Sequence<Elements, Failure>
         where OtherSequence.Element == Elements.Element
     {
-        var result = Elements(elements)
+        var result = Elements()
+        result.reserveCapacity(
+            sequence.count + elements.underestimatedCount
+        )
+        result.append(contentsOf: elements)
         result.append(contentsOf: sequence)
         return .init(sequence: result)
     }
@@ -374,11 +378,13 @@ extension Publishers.Sequence where Elements: RangeReplaceableCollection {
     public func prepend(
         _ publisher: Publishers.Sequence<Elements, Failure>
     ) -> Publishers.Sequence<Elements, Failure> {
-        return prepend(publisher.sequence)
+        var result = publisher.sequence
+        result.append(contentsOf: sequence)
+        return .init(sequence: result)
     }
 
     public func append(
-        _ elements: Publishers.Sequence<Elements, Failure>.Output...
+        _ elements: Elements.Element...
     ) -> Publishers.Sequence<Elements, Failure> {
         return append(elements)
     }
