@@ -26,7 +26,8 @@ final class MapTests: XCTestCase {
         ("testDemandSend", testDemandSend),
         ("testCompletion", testCompletion),
         ("testCancel", testCancel),
-        ("testCancelAlreadyCancelled", testCancelAlreadyCancelled)
+        ("testCancelAlreadyCancelled", testCancelAlreadyCancelled),
+        ("testLifecycle", testLifecycle),
     ]
 
     func testEmpty() {
@@ -67,7 +68,7 @@ final class MapTests: XCTestCase {
             }
             return value * 2
         }
-        let tracking = TrackingSubscriberBase<Error>(
+        let tracking = TrackingSubscriberBase<Int, Error>(
             receiveSubscription: { $0.request(.unlimited) }
         )
 
@@ -83,11 +84,9 @@ final class MapTests: XCTestCase {
                        [.subscription(Subscriptions.empty),
                         .value(4),
                         .value(6),
-                        .completion(.failure("too much" as TestingError)),
-                        .value(18),
-                        .completion(.finished)])
+                        .completion(.failure("too much" as TestingError))])
 
-        XCTAssertEqual(counter, 4)
+        XCTAssertEqual(counter, 3)
     }
 
     func testTryMapFailureOnCompletion() {
@@ -95,7 +94,7 @@ final class MapTests: XCTestCase {
         let publisher = PassthroughSubject<Int, Error>()
         let map = publisher.tryMap { $0 * 2 }
 
-        let tracking = TrackingSubscriberBase<Error>()
+        let tracking = TrackingSubscriberBase<Int, Error>()
 
         publisher.send(1)
         map.subscribe(tracking)
@@ -224,5 +223,62 @@ final class MapTests: XCTestCase {
                                               .cancelled,
                                               .requested(.unlimited),
                                               .cancelled])
+    }
+
+    func testLifecycle() throws {
+
+        var deinitCounter = 0
+
+        let onDeinit = { deinitCounter += 1 }
+
+        do {
+            let passthrough = PassthroughSubject<Int, TestingError>()
+            let map = passthrough.map { $0 * 2 }
+            let emptySubscriber = TrackingSubscriber(onDeinit: onDeinit)
+            XCTAssertTrue(emptySubscriber.history.isEmpty)
+            map.subscribe(emptySubscriber)
+            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
+            passthrough.send(31)
+            XCTAssertEqual(emptySubscriber.inputs.count, 0)
+            passthrough.send(completion: .failure("failure"))
+            XCTAssertEqual(emptySubscriber.completions.count, 1)
+        }
+
+        XCTAssertEqual(deinitCounter, 0)
+
+        do {
+            let passthrough = PassthroughSubject<Int, TestingError>()
+            let map = passthrough.map { $0 * 2 }
+            let emptySubscriber = TrackingSubscriber(onDeinit: onDeinit)
+            XCTAssertTrue(emptySubscriber.history.isEmpty)
+            map.subscribe(emptySubscriber)
+            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
+            XCTAssertEqual(emptySubscriber.inputs.count, 0)
+            XCTAssertEqual(emptySubscriber.completions.count, 0)
+        }
+
+        XCTAssertEqual(deinitCounter, 0)
+
+        var subscription: Subscription?
+
+        do {
+            let passthrough = PassthroughSubject<Int, TestingError>()
+            let map = passthrough.map { $0 * 2 }
+            let emptySubscriber = TrackingSubscriber(
+                receiveSubscription: { subscription = $0; $0.request(.unlimited) },
+                onDeinit: onDeinit
+            )
+            XCTAssertTrue(emptySubscriber.history.isEmpty)
+            map.subscribe(emptySubscriber)
+            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
+            passthrough.send(31)
+            XCTAssertEqual(emptySubscriber.inputs.count, 1)
+            XCTAssertEqual(emptySubscriber.completions.count, 0)
+            XCTAssertNotNil(subscription)
+        }
+
+        XCTAssertEqual(deinitCounter, 0)
+        try XCTUnwrap(subscription).cancel()
+        XCTAssertEqual(deinitCounter, 0)
     }
 }
