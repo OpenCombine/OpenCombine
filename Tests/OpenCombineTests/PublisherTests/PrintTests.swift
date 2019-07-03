@@ -72,7 +72,7 @@ final class PrintTests: XCTestCase {
 
         XCTAssertEqual(subscription.history, [.requested(.unlimited),
                                               .requested(.max(30)),
-                                              .canceled])
+                                              .cancelled])
 
         let expectedOutput = """
         receive subscription: (OpenCombineTests.CustomSubscription)
@@ -159,7 +159,7 @@ final class PrintTests: XCTestCase {
 
         XCTAssertEqual(subscription.history, [.requested(.unlimited),
                                               .requested(.max(30)),
-                                              .canceled])
+                                              .cancelled])
 
         let expectedOutput = """
         👉: receive subscription: (OpenCombineTests.CustomSubscription)

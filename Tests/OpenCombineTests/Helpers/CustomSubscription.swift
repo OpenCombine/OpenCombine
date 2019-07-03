@@ -19,9 +19,18 @@ import OpenCombine
 @available(macOS 10.15, *)
 final class CustomSubscription: Subscription {
 
-    enum Event: Equatable {
+    enum Event: Equatable, CustomStringConvertible {
         case requested(Subscribers.Demand)
-        case canceled
+        case cancelled
+
+        var description: String {
+            switch self {
+            case .requested(let demand):
+                return "requested(\(demand))"
+            case .cancelled:
+                return "cancelled"
+            }
+        }
     }
 
     /// The history of requests and cancellations of this subscription.
@@ -41,7 +50,7 @@ final class CustomSubscription: Subscription {
             switch $0 {
             case .requested(let demand):
                 return demand
-            case .canceled:
+            case .cancelled:
                 return nil
             }
         }.last
@@ -55,7 +64,7 @@ final class CustomSubscription: Subscription {
     }
 
     func cancel() {
-        history.append(.canceled)
+        history.append(.cancelled)
         canceled = true
         _canceled?()
     }

@@ -78,7 +78,7 @@ final class JustTests: XCTestCase {
          testSetFailureTypeOperatorSpecialization),
     ]
 
-    private typealias Sut = Publishers.Just
+    private typealias Sut = Just
 
     func testJustNoInitialDemand() {
         let just = Sut(42)

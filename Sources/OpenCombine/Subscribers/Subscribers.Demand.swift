@@ -14,15 +14,35 @@ extension Subscribers {
     ///
     /// - `unlimited`: A request for an unlimited number of items.
     /// - `max`: A request for a maximum number of items.
-    public enum Demand: Comparable {
+    public struct Demand: Equatable,
+                          Comparable,
+                          Hashable,
+                          Codable,
+                          CustomStringConvertible
+    {
+        private var rawValue: UInt
+
+        private init(_ rawValue: UInt) {
+            self.rawValue = rawValue
+        }
 
         /// Requests as many values as the `Publisher` can produce.
-        case unlimited
+        public static let unlimited = Subscribers.Demand(UInt(Int.max) + 1)
 
         /// Limits the maximum number of values.
         /// The `Publisher` may send fewer than the requested number.
         /// Negative values will result in a `fatalError`.
-        case max(Int)
+        public static func max(_ value: Int) -> Subscribers.Demand {
+            return .init(UInt(value))
+        }
+
+        public var description: String {
+            if self == .unlimited {
+                return "unlimited"
+            } else {
+                return "max(\(rawValue))"
+            }
+        }
 
         /// When adding any value to `.unlimited`, the result is `.unlimited`.
         public static func + (lhs: Demand, rhs: Demand) -> Demand {
@@ -31,9 +51,9 @@ extension Subscribers {
                 return .unlimited
             case (_, .unlimited):
                 return .unlimited
-            case let (.max(i), .max(j)):
-                let (sum, isOverflow) = i.addingReportingOverflow(j)
-                return isOverflow ? .unlimited : .max(sum)
+            default:
+                let (sum, isOverflow) = lhs.rawValue.addingReportingOverflow(rhs.rawValue)
+                return isOverflow ? .unlimited : .init(sum)
             }
         }
 
@@ -58,53 +78,56 @@ extension Subscribers {
         }
 
         public static func * (lhs: Demand, rhs: Int) -> Demand {
-            switch lhs {
-            case .unlimited:
+            if lhs == .unlimited {
                 return .unlimited
-            case let .max(i):
-                let (product, isOverflow) = i.multipliedReportingOverflow(by: rhs)
-                return isOverflow ? .unlimited : .max(product)
             }
+
+            let (product, isOverflow) =
+                lhs.rawValue.multipliedReportingOverflow(by: UInt(rhs))
+
+            return isOverflow ? .unlimited : .init(product)
         }
 
         public static func *= (lhs: inout Demand, rhs: Int) {
             lhs = lhs * rhs
         }
 
-        /// When subtracting any value (including `.unlimited`) from `.unlimited`,
-        /// the result is still `.unlimited`. Subtracting `.unlimited` from any value
-        /// (except `.unlimited`) results in `.max(0)`. A negative demand is possible,
-        /// but be aware that it is not usable when requesting values in a subscription.
+        /// When subtracting any value (including .unlimited) from .unlimited,
+        /// the result is still .unlimited. Subtracting unlimited from any value
+        /// (except unlimited) results in .max(0). A negative demand is not possible;
+        /// any operation that would result in a negative value is clamped to .max(0).
         public static func - (lhs: Demand, rhs: Demand) -> Demand {
             switch (lhs, rhs) {
             case (.unlimited, _):
                 return .unlimited
             case (_, .unlimited):
-                return .max(0)
-            case let (.max(i), .max(j)):
-                let (difference, isOverflow) = i.subtractingReportingOverflow(j)
-                return isOverflow ? .none : .max(difference)
+                return .none
+            default:
+                let (difference, isOverflow) =
+                    lhs.rawValue.subtractingReportingOverflow(rhs.rawValue)
+                return isOverflow ? .none : .init(difference)
             }
         }
 
-        /// When subtracting any value (including `.unlimited`) from `.unlimited`,
-        /// the result is still `.unlimited`. Subtracting `.unlimited` from any value
-        /// (except `.unlimited`) results in `.max(0)`. A negative demand is possible,
+        /// When subtracting any value (including .unlimited) from .unlimited,
+        /// the result is still .unlimited. Subtracting unlimited from any value
+        /// (except unlimited) results in .max(0). A negative demand is not possible;
+        /// any operation that would result in a negative value is clamped to .max(0).
         /// but be aware that it is not usable when requesting values in a subscription.
         public static func -= (lhs: inout Demand, rhs: Demand) {
             lhs = lhs - rhs
         }
 
-        /// When subtracting any value from `.unlimited`, the result is still
-        /// `.unlimited`. A negative demand is possible, but be aware that it is
-        /// not usable when requesting values in a subscription.
+        /// When subtracting any value from .unlimited, the result is still .unlimited.
+        /// A negative demand is not possible; any operation that would result in
+        /// a negative value is clamped to .max(0)
         public static func - (lhs: Demand, rhs: Int) -> Demand {
             return lhs - .max(rhs)
         }
 
-        /// When subtracting any value from `.unlimited`, the result is still
-        /// `.unlimited`. A negative demand is possible, but be aware that it is
-        /// not usable when requesting values in a subscription.
+        /// When subtracting any value from .unlimited, the result is still .unlimited.
+        /// A negative demand is not possible; any operation that would result in
+        /// a negative value is clamped to .max(0)
         public static func -= (lhs: inout Demand, rhs: Int) {
             lhs = lhs - rhs
         }
@@ -145,14 +168,15 @@ extension Subscribers {
         /// If `rhs` is `.unlimited` then the result is `false` iff `lhs` is `.unlimited`
         /// Otherwise, the two `.max` values are compared.
         public static func < (lhs: Demand, rhs: Demand) -> Bool {
-            switch (lhs, rhs) {
-            case let (.max(i), .max(j)):
-                return i < j
-            case (.max, .unlimited):
-                return true
-            case (.unlimited, .unlimited), (.unlimited, .max):
+            if lhs == .unlimited {
                 return false
             }
+
+            if rhs == .unlimited {
+                return true
+            }
+
+            return lhs.rawValue < rhs.rawValue
         }
 
         /// Returns `true` if `lhs` and `rhs` are equal. `.unlimited` is not equal to any
@@ -181,11 +205,10 @@ extension Subscribers {
 
         /// Returns the number of requested values, or `nil` if `.unlimited`.
         public var max: Int? {
-            switch self {
-            case let .max(m):
-                return m
-            case .unlimited:
+            if self == .unlimited {
                 return nil
+            } else {
+                return Int(rawValue)
             }
         }
     }

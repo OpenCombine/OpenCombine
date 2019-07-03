@@ -267,7 +267,7 @@ final class PassthroughSubjectTests: XCTestCase {
         XCTAssertEqual(completions.count, 1)
     }
 
-    func testLifecycle() {
+    func testLifecycle() throws {
 
         var deinitCounter = 0
 
@@ -285,7 +285,7 @@ final class PassthroughSubjectTests: XCTestCase {
             XCTAssertEqual(emptySubscriber.completions.count, 1)
         }
 
-        XCTAssertEqual(deinitCounter, 1)
+        XCTAssertEqual(deinitCounter, 0)
 
         do {
             let passthrough = Sut()
@@ -297,12 +297,11 @@ final class PassthroughSubjectTests: XCTestCase {
             XCTAssertEqual(emptySubscriber.completions.count, 0)
         }
 
-        XCTAssertEqual(deinitCounter, 1) // We have a leak
+        XCTAssertEqual(deinitCounter, 0)
 
         var subscription: Subscription?
 
         do {
-
             let passthrough = Sut()
             let emptySubscriber = TrackingSubscriber(
                 receiveSubscription: { subscription = $0; $0.request(.unlimited) },
@@ -317,9 +316,9 @@ final class PassthroughSubjectTests: XCTestCase {
             XCTAssertNotNil(subscription)
         }
 
-        XCTAssertEqual(deinitCounter, 1)
-        subscription?.cancel()
-        XCTAssertEqual(deinitCounter, 2)
+        XCTAssertEqual(deinitCounter, 0)
+        try XCTUnwrap(subscription).cancel()
+        XCTAssertEqual(deinitCounter, 0)
     }
 
     func testSynchronization() {

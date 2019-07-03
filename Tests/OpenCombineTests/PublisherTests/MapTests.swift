@@ -148,7 +148,7 @@ final class MapTests: XCTestCase {
         map.subscribe(tracking)
         try XCTUnwrap(downstreamSubscription).cancel()
         // Then
-        XCTAssertEqual(subscription.history, [.requested(.unlimited), .canceled])
+        XCTAssertEqual(subscription.history, [.requested(.unlimited), .cancelled])
     }
 
     func testCancelAlreadyCancelled() throws {
@@ -167,6 +167,9 @@ final class MapTests: XCTestCase {
         downstreamSubscription?.request(.unlimited)
         try XCTUnwrap(downstreamSubscription).cancel()
         // Then
-        XCTAssertEqual(subscription.history, [.requested(.unlimited), .canceled])
+        XCTAssertEqual(subscription.history, [.requested(.unlimited),
+                                              .cancelled,
+                                              .requested(.unlimited),
+                                              .cancelled])
     }
 }
