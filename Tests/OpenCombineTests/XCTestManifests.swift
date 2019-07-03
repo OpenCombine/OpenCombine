@@ -11,6 +11,7 @@ import XCTest
 public func allTests() -> [XCTestCaseEntry] {
     return [
         testCase(SubscribersDemandTests.allTests),
+        testCase(CompletionTests.allTests),
         testCase(PassthroughSubjectTests.allTests),
         testCase(CurrentValueSubjectTests.allTests),
         testCase(ImmediateSchedulerTests.allTests),
@@ -23,6 +24,9 @@ public func allTests() -> [XCTestCaseEntry] {
         testCase(AssignTests.allTests),
         testCase(SinkTests.allTests),
         testCase(DropWhileTests.allTests),
+        testCase(DecodeTests.allTests),
+        testCase(EncodeTests.allTests),
+        testCase(MapTests.allTests),
         testCase(EmptyTests.allTests),
         testCase(JustTests.allTests),
         testCase(OnceTests.allTests),

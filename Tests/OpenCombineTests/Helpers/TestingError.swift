@@ -8,7 +8,7 @@
 import Foundation
 import XCTest
 
-struct TestingError: Error, Hashable, CustomStringConvertible {
+struct TestingError: Error, Hashable, Codable, CustomStringConvertible {
     let description: String
 
     static func == (lhs: TestingError, rhs: String) -> Bool {
