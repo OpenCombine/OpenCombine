@@ -7,31 +7,30 @@
 
 import Foundation
 
-
 extension Publishers {
-    
+
     /// A publisher that republishes all elements that match a provided closure.
     public struct Filter<Upstream: Publisher>: Publisher {
-        
+
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
-        
+
         /// The kind of errors this publisher might publish.
         ///
         /// Use `Never` if this `Publisher` does not publish errors.
         public typealias Failure = Upstream.Failure
-        
+
         /// The publisher from which this publisher receives elements.
         public let upstream: Upstream
-        
+
         /// A closure that indicates whether to republish an element.
         public let isIncluded: (Upstream.Output) -> Bool
-        
+
         public init(upstream: Upstream, isIncluded: @escaping (Output) -> Bool) {
             self.upstream = upstream
             self.isIncluded = isIncluded
         }
-        
+
         /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
@@ -47,30 +46,30 @@ extension Publishers {
             upstream.receive(subscriber: filter)
         }
     }
-    
+
     /// A publisher that republishes all elements that match a provided error-throwing closure.
     public struct TryFilter<Upstream> : Publisher where Upstream : Publisher {
-        
+
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
-        
+
         /// The kind of errors this publisher might publish.
         ///
         /// Use `Never` if this `Publisher` does not publish errors.
         public typealias Failure = Error
-        
+
         /// The publisher from which this publisher receives elements.
         public let upstream: Upstream
-        
+
         /// A error-throwing closure that indicates whether to republish an element.
         public let isIncluded: (Upstream.Output) throws -> Bool
-        
+
         public init(upstream: Upstream,
                     isIncluded: @escaping (Upstream.Output) throws -> Bool) {
             self.upstream = upstream
             self.isIncluded = isIncluded
         }
-        
+
         /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
@@ -89,7 +88,7 @@ extension Publishers {
 }
 
 extension Publisher {
-    
+
     /// Republishes all elements that match a provided closure.
     ///
     /// - Parameter isIncluded: A closure that takes one element and returns a Boolean value indicating whether to republish the element.
@@ -99,7 +98,7 @@ extension Publisher {
     ) -> Publishers.Filter<Self> {
         return Publishers.Filter(upstream: self, isIncluded: isIncluded)
     }
-    
+
     /// Republishes all elements that match a provided error-throwing closure.
     ///
     /// If the `isIncluded` closure throws an error, the publisher fails with that error.
@@ -113,7 +112,6 @@ extension Publisher {
     }
 }
 
-
 private final class _Filter<Upstream: Publisher, Downstream: Subscriber>
     : Subscriber,
       CustomStringConvertible,
@@ -124,27 +122,27 @@ private final class _Filter<Upstream: Publisher, Downstream: Subscriber>
     typealias Input = Upstream.Output
     typealias Output = Downstream.Input
     typealias Failure = Upstream.Failure
-    
+
     private var _downstream: Downstream
     private let _isIncluded: (Input) throws -> Bool
     private var _upstreamSubscription: Subscription?
     private var _demand: Subscribers.Demand = .none
-    
+
     init(downstream: Downstream, isIncluded: @escaping (Input) throws -> Bool) {
         self._isIncluded = isIncluded
         self._downstream = downstream
     }
-    
+
     var description: String { return "Filter" }
-    
+
     var customMirror: Mirror { return Mirror(self, children: EmptyCollection()) }
-    
+
     func receive(subscription: Subscription) {
         _upstreamSubscription = subscription
         subscription.request(.unlimited)
         _downstream.receive(subscription: self)
     }
-    
+
     func receive(_ input: Input) -> Subscribers.Demand {
         do {
             // input is filtered away, we just return the demand
@@ -160,7 +158,7 @@ private final class _Filter<Upstream: Publisher, Downstream: Subscriber>
             return .none
         }
     }
-    
+
     func receive(completion: Subscribers.Completion<Failure>) {
         switch completion {
         case .finished:
@@ -169,11 +167,11 @@ private final class _Filter<Upstream: Publisher, Downstream: Subscriber>
             _downstream.receive(completion: .failure(error as! Downstream.Failure))
         }
     }
-    
+
     func request(_ demand: Subscribers.Demand) {
         _demand = demand
     }
-    
+
     func cancel() {
         _upstreamSubscription?.cancel()
         _upstreamSubscription = nil

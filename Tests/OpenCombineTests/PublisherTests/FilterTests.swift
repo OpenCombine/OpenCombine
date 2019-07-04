@@ -22,10 +22,10 @@ final class FilterTests: XCTestCase {
         ("testTryFilterWorks", testTryFilterWorks),
         ("testTryFilterCanFilterOtherFilter", testTryFilterCanFilterOtherFilter)
     ]
-    
+
     func testFilterRemovesElements() {
         var results: [Int] = []
-        
+
         let subscription = CustomSubscription()
         let publisher = CustomPublisher(subscription: subscription)
         _ = publisher.filter {
@@ -36,13 +36,13 @@ final class FilterTests: XCTestCase {
         for i in 1...5 {
             _ = publisher.send(i)
         }
-        
+
         XCTAssertEqual(results, [2, 4])
     }
-    
+
     func testFilteringOtherFilters() {
         var results: [Int] = []
-        
+
         let subscription = CustomSubscription()
         let publisher = CustomPublisher(subscription: subscription)
         _ = publisher.filter {
@@ -55,13 +55,13 @@ final class FilterTests: XCTestCase {
         for i in 1...15 {
             _ = publisher.send(i)
         }
-        
+
         XCTAssertEqual(results, [15])
     }
-    
+
     func testTryFilterWorks() {
         var results: [Int] = []
-        
+
         let subscription = CustomSubscription()
         let publisher = CustomPublisher(subscription: subscription)
         _ = publisher.tryFilter {
@@ -72,13 +72,13 @@ final class FilterTests: XCTestCase {
         for i in 1...5 {
             _ = publisher.send(i)
         }
-        
+
         XCTAssertEqual(results, [2, 4])
     }
-    
+
     func testTryFilterCanFilterOtherFilter() {
         var results: [Int] = []
-        
+
         let subscription = CustomSubscription()
         let publisher = CustomPublisher(subscription: subscription)
         _ = publisher.tryFilter {
@@ -91,10 +91,10 @@ final class FilterTests: XCTestCase {
         for i in 1...9 {
             _ = publisher.send(i)
         }
-        
+
         XCTAssertEqual(results, [3, 6, 9])
     }
-    
+
     func testTryFilterCompletesWithErrorWhenThrown() {
         let subscription = CustomSubscription()
         let publisher = CustomPublisher(subscription: subscription)
