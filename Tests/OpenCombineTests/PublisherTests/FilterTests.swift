@@ -10,7 +10,6 @@ import XCTest
 #if OPENCOMBINE_COMPATIBILITY_TEST
 import Combine
 #else
-@testable
 import OpenCombine
 #endif
 
