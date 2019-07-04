@@ -28,7 +28,7 @@ final class FilterTests: XCTestCase {
         let subscription = CustomSubscription()
         let publisher = CustomPublisher(subscription: subscription)
         _ = publisher.filter {
-            $0 % 2 == 0
+            $0.isMultiple(of: 2)
         }.sink {
             results.append($0)
         }
@@ -45,9 +45,9 @@ final class FilterTests: XCTestCase {
         let subscription = CustomSubscription()
         let publisher = CustomPublisher(subscription: subscription)
         _ = publisher.filter {
-            $0 % 3 == 0
+            $0.isMultiple(of: 3)
         }.filter {
-            $0 % 5 == 0
+            $0.isMultiple(of: 5)
         }.sink {
             results.append($0)
         }
@@ -64,7 +64,7 @@ final class FilterTests: XCTestCase {
         let subscription = CustomSubscription()
         let publisher = CustomPublisher(subscription: subscription)
         _ = publisher.tryFilter {
-            try $0 % 2 == 0 && nonthrowingReturn($0)
+            try $0.isMultiple(of: 2) && nonthrowingReturn($0)
         }.sink {
             results.append($0)
         }
@@ -81,7 +81,7 @@ final class FilterTests: XCTestCase {
         let subscription = CustomSubscription()
         let publisher = CustomPublisher(subscription: subscription)
         _ = publisher.tryFilter {
-            $0 % 3 == 0
+            $0.isMultiple(of: 3)
         }.tryFilter {
             try nonthrowingReturn($0)
         }.sink {
