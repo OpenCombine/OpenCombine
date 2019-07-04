@@ -16,7 +16,7 @@ matrix:
     - name: "macOS 10.14 | Swift 5.0 | Tests"
       os: osx
       osx_image: xcode10.2
-      env: SWIFT_VERSION="5.0"
+      env: SWIFT_VERSION="5.0" CODE_COVERAGE="YES"
   # - name: "macOS 10.14 | Swift 5.1"
   #   os: osx
   #   osx_image: xcode10.2
@@ -33,14 +33,14 @@ before_install:
   - if [[ $TRAVIS_OS_NAME == "linux" ]]; then
       cat /proc/cpuinfo;
     fi
-  - if [[ $TRAVIS_OS_NAME == "osx" ]]; then
+  - if [[ $CODE_COVERAGE == "YES" ]]; then
       rvm use $RVM_RUBY_VERSION;
     fi
 install:
   - if [[ $TRAVIS_OS_NAME == "linux" ]]; then
       eval "$(curl -sL https://swiftenv.fuller.li/install.sh)";
     fi
-  - if [[ $TRAVIS_OS_NAME == "osx" ]]; then
+  - if [[ $CODE_COVERAGE == "YES" ]]; then
       bundle install --without=documentation --path ../travis_bundle_dir;
     fi
 script:
@@ -57,8 +57,8 @@ script:
       swiftlint lint --strict --reporter "emoji";
     fi
 after_success:
-  - if [[ $TRAVIS_OS_NAME == "osx" ]]; then
+  - if [[ $CODE_COVERAGE == "YES" ]]; then
       swift package generate-xcodeproj --enable-code-coverage;
-      slather;
+      bundle exec slather;
       bash <(curl -s https://codecov.io/bash) -t $CODECOV_TOKEN -f coverage_report/cobertura.xml -X coveragepy -X gcov -X xcode;
     fi
