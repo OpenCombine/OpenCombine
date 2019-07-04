@@ -42,5 +42,3 @@ DerivedData/
 # End of https://www.gitignore.io/api/Xcode
 
 .idea
-
-coverage_report
