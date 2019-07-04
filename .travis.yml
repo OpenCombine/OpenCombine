@@ -57,5 +57,5 @@ after_success:
   - if [[ $CODE_COVERAGE == "YES" ]]; then
       swift package generate-xcodeproj --enable-code-coverage;
       xcodebuild -scheme OpenCombine-Package build test | xcpretty;
-      bash <(curl -s https://codecov.io/bash) -t $CODECOV_TOKEN;
+      bash <(curl -s https://codecov.io/bash);
     fi
