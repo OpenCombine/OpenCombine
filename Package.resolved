@@ -5,9 +5,9 @@
         "package": "GottaGoFast",
         "repositoryURL": "https://github.com/broadwaylamb/GottaGoFast.git",
         "state": {
-          "branch": "master",
+          "branch": null,
           "revision": "85e1f5104fb1ede87d6f31acc0445555007c474c",
-          "version": null
+          "version": "0.1.0"
         }
       },
       {
