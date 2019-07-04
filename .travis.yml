@@ -33,9 +33,15 @@ before_install:
   - if [[ $TRAVIS_OS_NAME == "linux" ]]; then
       cat /proc/cpuinfo;
     fi
+  - if [[ $TRAVIS_OS_NAME == "osx" ]]; then
+      rvm use $RVM_RUBY_VERSION;
+    fi
 install:
   - if [[ $TRAVIS_OS_NAME == "linux" ]]; then
       eval "$(curl -sL https://swiftenv.fuller.li/install.sh)";
+    fi
+  - if [[ $TRAVIS_OS_NAME == "osx" ]]; then
+      bundle install --without=documentation --path ../travis_bundle_dir;
     fi
 script:
   - if [[ $SWIFT_LINT != "YES" ]]; then
@@ -49,4 +55,10 @@ script:
     fi
   - if [[ $SWIFT_LINT == "YES" ]]; then
       swiftlint lint --strict --reporter "emoji";
+    fi
+after_success:
+  - if [[ $TRAVIS_OS_NAME == "osx" ]]; then
+      swift package generate-xcodeproj --enable-code-coverage;
+      slather;
+      bash <(curl -s https://codecov.io/bash) -t $CODECOV_TOKEN -f coverage_report/cobertura.xml -X coveragepy -X gcov -X xcode;
     fi

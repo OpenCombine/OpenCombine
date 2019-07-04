@@ -1,0 +1,5 @@
+coverage_service: cobertura_xml
+xcodeproj: OpenCombine.xcodeproj
+scheme: OpenCombine-Package
+source_directory: Sources
+output_directory: coverage_report
