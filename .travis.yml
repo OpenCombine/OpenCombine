@@ -37,6 +37,9 @@ install:
   - if [[ $TRAVIS_OS_NAME == "linux" ]]; then
       eval "$(curl -sL https://swiftenv.fuller.li/install.sh)";
     fi
+  - if [[ $CODE_COVERAGE == "YES" ]]; then
+      gem install xcpretty;
+    fi
 script:
   - if [[ $SWIFT_LINT != "YES" ]]; then
       swift test -c debug --enable-code-coverage --sanitize thread;
@@ -53,6 +56,6 @@ script:
 after_success:
   - if [[ $CODE_COVERAGE == "YES" ]]; then
       swift package generate-xcodeproj --enable-code-coverage;
-      xcodebuild -scheme OpenCombine-Package build test;
+      xcodebuild -scheme OpenCombine-Package build test | xcpretty;
       bash <(curl -s https://codecov.io/bash) -t $CODECOV_TOKEN;
     fi

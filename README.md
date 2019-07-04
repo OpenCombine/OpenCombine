@@ -1,5 +1,6 @@
 # OpenCombine
 [![Build Status](https://travis-ci.org/broadwaylamb/OpenCombine.svg?branch=master)](https://travis-ci.org/broadwaylamb/OpenCombine)
+[![codecov](https://codecov.io/gh/broadwaylamb/OpenCombine/branch/master/graph/badge.svg)](https://codecov.io/gh/broadwaylamb/OpenCombine)
 ![Language](https://img.shields.io/badge/Swift-5.0-orange.svg)
 ![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20iOS%20%7C%20watchOS%20%7C%20tvOS-lightgrey.svg)
 
