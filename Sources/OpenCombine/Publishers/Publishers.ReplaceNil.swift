@@ -7,8 +7,6 @@
 
 import Foundation
 
-// We need to disable this linting rule to maintain the same public api that as
-// the original Combine interface
 extension Publisher {
 
     /// Replaces nil elements in the stream with the proviced element.
