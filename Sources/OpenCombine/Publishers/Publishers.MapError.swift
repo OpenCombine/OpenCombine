@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  Publishers.MapError.swift
 //  
 //
 //  Created by Joseph Spadafora on 7/4/19.
@@ -51,16 +51,16 @@ extension Publisher {
 
     /// Converts any failure from the upstream publisher into a new error.
     ///
-    /// Until the upstream publisher finishes normally or fails with an error
-    /// , the returned publisher republishes all the elements it receives.
+    /// Until the upstream publisher finishes normally or fails with an error,
+    /// the returned publisher republishes all the elements it receives.
     ///
     /// - Parameter transform: A closure that takes the upstream failure as a
     /// parameter and returns a new error for the publisher to terminate with.
     /// - Returns: A publisher that replaces any upstream failure with a
     /// new error produced by the `transform` closure.
-    public func mapError<ErrorType: Error>(
-        _ transform: @escaping (Self.Failure) -> ErrorType
-    ) -> Publishers.MapError<Self, ErrorType>
+    public func mapError<NewFailure: Error>(
+        _ transform: @escaping (Self.Failure) -> NewFailure
+    ) -> Publishers.MapError<Self, NewFailure>
     {
         return Publishers.MapError(upstream: self, transform)
     }
@@ -73,7 +73,7 @@ private final class _MapError<Upstream: Publisher,
       CustomStringConvertible,
       Subscription
     where Upstream.Output == Downstream.Input
-    {
+{
 
     typealias Input = Upstream.Output
     typealias Failure = Upstream.Failure
@@ -109,5 +109,9 @@ private final class _MapError<Upstream: Publisher,
 
     func request(_ demand: Subscribers.Demand) {
         upstreamSubscription?.request(demand)
+    }
+ 
+    override func cancel() {
+        upstreamSubscription?.cancel()
     }
 }

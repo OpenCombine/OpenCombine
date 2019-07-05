@@ -35,7 +35,7 @@ final class MapErrorTests: XCTestCase {
         )
         let publisher = PassthroughSubject<Int, TestingError>()
         // When
-        publisher.mapError { OtherError($0) }.subscribe(tracking)
+        publisher.mapError(OtherError.init).subscribe(tracking)
         // Then
         XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty)])
     }
@@ -48,7 +48,7 @@ final class MapErrorTests: XCTestCase {
         )
         let publisher = PassthroughSubject<Int, TestingError>()
         // When
-        publisher.mapError { OtherError($0) }.subscribe(tracking)
+        publisher.mapError(OtherError.init).subscribe(tracking)
         publisher.send(completion: .failure(expectedError))
         // Then
         XCTAssertEqual(tracking.history, [
@@ -60,7 +60,7 @@ final class MapErrorTests: XCTestCase {
     func testRange() {
         // Given
         let publisher = PassthroughSubject<Int, TestingError>()
-        let mapError = publisher.mapError { OtherError($0) }
+        let mapError = publisher.mapError(OtherError.init)
         let tracking = TrackingSubscriberBase<Int, OtherError>(
             receiveSubscription: { $0.request(.unlimited) }
         )
@@ -84,7 +84,7 @@ final class MapErrorTests: XCTestCase {
         // Given
         let subscription = CustomSubscription()
         let publisher = CustomPublisher(subscription: subscription)
-        let mapError = publisher.mapError { OtherError($0) }
+        let mapError = publisher.mapError(OtherError.init)
         let tracking = TrackingSubscriberBase<Int, OtherError>()
         // When
         mapError.subscribe(tracking)
@@ -97,7 +97,7 @@ final class MapErrorTests: XCTestCase {
         let expectedSubscribeDemand = 42
         let subscription = CustomSubscription()
         let publisher = CustomPublisher(subscription: subscription)
-        let mapError = publisher.mapError { OtherError($0) }
+        let mapError = publisher.mapError(OtherError.init)
         let tracking = TrackingSubscriberBase<Int, OtherError>(
             receiveSubscription: { $0.request(.max(expectedSubscribeDemand)) }
         )
@@ -112,7 +112,7 @@ final class MapErrorTests: XCTestCase {
         let expectedReceiveValueDemand = 4
         let subscription = CustomSubscription()
         let publisher = CustomPublisher(subscription: subscription)
-        let mapError = publisher.mapError { OtherError($0) }
+        let mapError = publisher.mapError(OtherError.init)
         let tracking = TrackingSubscriberBase<Int, OtherError>(
             receiveValue: { _ in .max(expectedReceiveValueDemand) }
         )
@@ -126,7 +126,7 @@ final class MapErrorTests: XCTestCase {
         // Given
         let subscription = CustomSubscription()
         let publisher = CustomPublisher(subscription: subscription)
-        let mapError = publisher.mapError { OtherError($0) }
+        let mapError = publisher.mapError(OtherError.init)
         let tracking = TrackingSubscriberBase<Int, OtherError>(
             receiveSubscription: { $0.request(.unlimited) }
         )
@@ -145,13 +145,14 @@ final class MapErrorTests: XCTestCase {
         // Given
         let subscription = CustomSubscription()
         let publisher = CustomPublisher(subscription: subscription)
-        let mapError = publisher.mapError { OtherError($0) }
+        let mapError = publisher.mapError(OtherError.init)
         var downstreamSubscription: Subscription?
         let tracking = TrackingSubscriberBase<Int, OtherError>(
             receiveSubscription: {
-            $0.request(.unlimited)
-            downstreamSubscription = $0
-            })
+                $0.request(.unlimited)
+                downstreamSubscription = $0
+            }
+        )
         // When
         mapError.subscribe(tracking)
         try XCTUnwrap(downstreamSubscription).cancel()
@@ -163,13 +164,14 @@ final class MapErrorTests: XCTestCase {
         // Given
         let subscription = CustomSubscription()
         let publisher = CustomPublisher(subscription: subscription)
-        let mapError = publisher.mapError { OtherError($0) }
+        let mapError = publisher.mapError(OtherError.init)
         var downstreamSubscription: Subscription?
         let tracking = TrackingSubscriberBase<Int, OtherError>(
             receiveSubscription: {
-            $0.request(.unlimited)
-            downstreamSubscription = $0
-            })
+                $0.request(.unlimited)
+                downstreamSubscription = $0
+            }
+        )
         // When
         mapError.subscribe(tracking)
         try XCTUnwrap(downstreamSubscription).cancel()
@@ -177,6 +179,8 @@ final class MapErrorTests: XCTestCase {
         try XCTUnwrap(downstreamSubscription).cancel()
         // Then
         XCTAssertEqual(subscription.history, [.requested(.unlimited),
+                                              .cancelled,
+                                              .requested(.unlimited),
                                               .cancelled])
     }
 
@@ -188,7 +192,7 @@ final class MapErrorTests: XCTestCase {
 
         do {
             let passthrough = PassthroughSubject<Int, TestingError>()
-            let mapError = passthrough.mapError { OtherError($0) }
+            let mapError = passthrough.mapError(OtherError.init)
             let emptySubscriber = TrackingSubscriberBase<Int, OtherError>(
                 onDeinit: onDeinit
             )
@@ -205,7 +209,7 @@ final class MapErrorTests: XCTestCase {
 
         do {
             let passthrough = PassthroughSubject<Int, TestingError>()
-            let mapError = passthrough.mapError { OtherError($0) }
+            let mapError = passthrough.mapError(OtherError.init)
             let emptySubscriber = TrackingSubscriberBase<Int, OtherError>(
                 onDeinit: onDeinit
             )
@@ -222,7 +226,7 @@ final class MapErrorTests: XCTestCase {
 
         do {
             let passthrough = PassthroughSubject<Int, TestingError>()
-            let mapError = passthrough.mapError { OtherError($0) }
+            let mapError = passthrough.mapError(OtherError.init)
             let emptySubscriber = TrackingSubscriberBase<Int, OtherError>(
                 receiveSubscription: { subscription = $0; $0.request(.unlimited) },
                 onDeinit: onDeinit
