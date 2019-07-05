@@ -239,7 +239,7 @@ final class TrackingSubject<Value: Equatable>: Subject, CustomStringConvertible 
         _passthrough.subscribe(subscriber)
     }
 
-    var description: String { "TrackingSubject" }
+    var description: String { return "TrackingSubject" }
 }
 
 @available(macOS 10.15, *)
