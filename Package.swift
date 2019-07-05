@@ -8,8 +8,7 @@ let package = Package(
         .library(name: "OpenCombine", targets: ["OpenCombine"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/broadwaylamb/GottaGoFast.git",
-                 .branch("master"))
+        .package(url: "https://github.com/broadwaylamb/GottaGoFast.git", from: "0.1.0")
     ],
     targets: [
         .target(name: "OpenCombine"),

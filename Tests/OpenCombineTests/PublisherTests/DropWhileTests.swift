@@ -48,7 +48,7 @@ final class DropWhileTests: XCTestCase {
         publisher.send(completion: .finished)
         publisher.send(10)
 
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(tracking.history, [.subscription("DropWhile"),
                                           .value(7),
                                           .value(8),
                                           .value(9),
@@ -82,7 +82,7 @@ final class DropWhileTests: XCTestCase {
         publisher.send(completion: .finished)
 
         XCTAssertEqual(tracking.history,
-                       [.subscription(Subscriptions.empty),
+                       [.subscription("DropWhile"),
                         .completion(.failure("too much" as TestingError))])
 
         XCTAssertEqual(counter, 3)
@@ -101,7 +101,7 @@ final class DropWhileTests: XCTestCase {
         publisher.send(2)
 
         XCTAssertEqual(tracking.history,
-                       [.subscription(Subscriptions.empty),
+                       [.subscription("DropWhile"),
                         .completion(.failure(TestingError.oops))])
     }
 
@@ -122,7 +122,6 @@ final class DropWhileTests: XCTestCase {
         drop.subscribe(tracking)
 
         XCTAssertNotNil(downstreamSubscription)
-        dump(type(of: downstreamSubscription!))
 
         XCTAssertEqual(subscription.history, [.requested(.max(1))])
 
@@ -175,7 +174,7 @@ final class DropWhileTests: XCTestCase {
         publisher.send(completion: .finished)
         XCTAssertEqual(subscription.history, [.requested(.max(1)), .cancelled])
         XCTAssertEqual(tracking.history,
-                       [.subscription(Subscriptions.empty),
+                       [.subscription("DropWhile"),
                         .completion(.failure("too much" as TestingError)),
                         .completion(.finished)])
     }
@@ -194,7 +193,7 @@ final class DropWhileTests: XCTestCase {
         publisher.send(completion: .finished)
         publisher.send(completion: .finished)
         XCTAssertEqual(subscription.history, [.requested(.max(1))])
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(tracking.history, [.subscription("DropWhile"),
                                           .completion(.finished),
                                           .completion(.finished)])
     }

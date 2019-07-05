@@ -89,7 +89,7 @@ final class SequenceTests: XCTestCase {
 
         publisher.subscribe(subscriber)
 
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(subscriber.history, [.subscription("Empty"),
                                             .completion(.finished)])
         XCTAssertEqual(emptyCounter.state, 1)
     }
@@ -115,18 +115,18 @@ final class SequenceTests: XCTestCase {
 
         publisher.subscribe(subscriber)
 
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty)])
+        XCTAssertEqual(subscriber.history, [.subscription("Counter")])
 
         subscriber.subscriptions.first?.request(.max(3))
 
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(subscriber.history, [.subscription("Counter"),
                                             .value(1),
                                             .value(2),
                                             .value(3)])
 
         subscriber.subscriptions.first?.request(.max(5))
 
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(subscriber.history, [.subscription("Counter"),
                                             .value(1),
                                             .value(2),
                                             .value(3),
@@ -138,7 +138,7 @@ final class SequenceTests: XCTestCase {
 
         subscriber.subscriptions.first?.request(.none)
 
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(subscriber.history, [.subscription("Counter"),
                                             .value(1),
                                             .value(2),
                                             .value(3),
@@ -150,7 +150,7 @@ final class SequenceTests: XCTestCase {
 
         subscriber.subscriptions.first?.request(.max(1))
 
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(subscriber.history, [.subscription("Sequence"),
                                             .value(1),
                                             .value(2),
                                             .value(3),
@@ -165,8 +165,9 @@ final class SequenceTests: XCTestCase {
         var reflected = ""
         try dump(XCTUnwrap(subscriber.subscriptions.first), to: &reflected)
         XCTAssertEqual(reflected, """
-        ▿ Sequence #0
-          - sequence: 0 elements
+        ▿ Sequence
+          ▿ subscription: Sequence #0
+            - sequence: 0 elements
 
         """)
     }
@@ -183,12 +184,12 @@ final class SequenceTests: XCTestCase {
 
         publisher.subscribe(subscriber)
 
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(subscriber.history, [.subscription("Counter"),
                                             .value(1)])
 
         subscriber.subscriptions.first?.request(.max(1))
 
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(subscriber.history, [.subscription("Counter"),
                                             .value(1),
                                             .value(2),
                                             .value(3),
@@ -207,12 +208,12 @@ final class SequenceTests: XCTestCase {
         )
         publisher.subscribe(subscriber)
 
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(subscriber.history, [.subscription("Sequence"),
                                             .value(1)])
 
         subscriber.subscriptions.first?.request(.max(1))
 
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(subscriber.history, [.subscription("Sequence"),
                                             .value(1)])
     }
 
@@ -231,10 +232,10 @@ final class SequenceTests: XCTestCase {
             XCTAssertTrue(subscriber.history.isEmpty)
 
             publisher.subscribe(subscriber)
-            XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty)])
+            XCTAssertEqual(subscriber.history, [.subscription("Counter")])
 
             subscriber.subscriptions.first?.request(.max(3))
-            XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+            XCTAssertEqual(subscriber.history, [.subscription("Sequence"),
                                                 .value(1),
                                                 .value(2),
                                                 .completion(.finished)])
@@ -253,7 +254,7 @@ final class SequenceTests: XCTestCase {
             )
             XCTAssertTrue(subscriber.history.isEmpty)
             publisher.subscribe(subscriber)
-            XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty)])
+            XCTAssertEqual(subscriber.history, [.subscription("Counter")])
             XCTAssertNotNil(subscription)
         }
 

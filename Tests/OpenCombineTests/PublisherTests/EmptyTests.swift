@@ -29,7 +29,7 @@ final class EmptyTests: XCTestCase {
         let subscriber = TrackingSubscriber()
         completesImmediately.subscribe(subscriber)
 
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(subscriber.history, [.subscription("Empty"),
                                             .completion(.finished)])
 
         let doesNotComplete = Publishers.Empty(completeImmediately: false,
@@ -38,9 +38,9 @@ final class EmptyTests: XCTestCase {
 
         doesNotComplete.subscribe(subscriber)
 
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(subscriber.history, [.subscription("Empty"),
                                             .completion(.finished),
-                                            .subscription(Subscriptions.empty)])
+                                            .subscription("Empty")])
     }
 
     func testImmediatelyCancel() {
@@ -50,7 +50,7 @@ final class EmptyTests: XCTestCase {
         let subscriber = TrackingSubscriber(receiveSubscription: { $0.cancel() })
         completesImmediately.subscribe(subscriber)
 
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(subscriber.history, [.subscription("Empty"),
                                             .completion(.finished)])
     }
 }
