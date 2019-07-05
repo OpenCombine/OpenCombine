@@ -88,12 +88,12 @@ final class OptionalTests: XCTestCase {
         let tracking = TrackingSubscriber()
         success.subscribe(tracking)
 
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty)])
+        XCTAssertEqual(tracking.history, [.subscription("Optional")])
 
         tracking.subscriptions.first?.request(.max(100))
         tracking.subscriptions.first?.request(.max(1))
 
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(tracking.history, [.subscription("Optional"),
                                           .value(42),
                                           .completion(.finished)])
     }
@@ -103,7 +103,7 @@ final class OptionalTests: XCTestCase {
         let tracking = TrackingSubscriber(receiveSubscription: { $0.request(.unlimited) })
         just.subscribe(tracking)
 
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(tracking.history, [.subscription("Optional"),
                                           .value(42),
                                           .completion(.finished)])
     }
@@ -115,7 +115,7 @@ final class OptionalTests: XCTestCase {
         )
         success.subscribe(tracking)
 
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(tracking.history, [.subscription("Optional"),
                                           .value(42),
                                           .completion(.finished)])
     }
@@ -125,7 +125,7 @@ final class OptionalTests: XCTestCase {
         let tracking = TrackingSubscriber()
         failure.subscribe(tracking)
 
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(tracking.history, [.subscription("Empty"),
                                           .completion(.failure("failure"))])
     }
 
@@ -136,7 +136,7 @@ final class OptionalTests: XCTestCase {
         )
         failure.subscribe(tracking)
 
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(tracking.history, [.subscription("Empty"),
                                           .completion(.failure("failure"))])
     }
 
@@ -145,7 +145,7 @@ final class OptionalTests: XCTestCase {
         let tracking = TrackingSubscriber()
         success.subscribe(tracking)
 
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(tracking.history, [.subscription("Empty"),
                                           .completion(.finished)])
     }
 

@@ -44,14 +44,14 @@ final class TrackingSubscriberBase<Value: Equatable,
 {
 
     enum Event: Equatable, CustomStringConvertible {
-        case subscription(Subscription)
+        case subscription(StringSubscription)
         case value(Value)
         case completion(Subscribers.Completion<Failure>)
 
         static func == (lhs: Event, rhs: Event) -> Bool {
             switch (lhs, rhs) {
-            case (.subscription, .subscription):
-                return true
+            case let (.subscription(lhs), .subscription(rhs)):
+                return lhs.description == rhs.description
             case let (.value(lhs), .value(rhs)):
                 return lhs == rhs
             case let (.completion(lhs), .completion(rhs)):
@@ -70,14 +70,14 @@ final class TrackingSubscriberBase<Value: Equatable,
 
         var description: String {
             switch self {
-            case .subscription:
-                return "subscription"
+            case .subscription(let subscription):
+                return ".subscription(\"\(subscription)\")"
             case .value(let value):
-                return "value(\(value))"
+                return ".value(\(value))"
             case .completion(.finished):
-                return "finished"
+                return ".completion(.finished)"
             case .completion(.failure(let error)):
-                return "failure(\(error))"
+                return ".completion(.failure(\(error)))"
             }
         }
     }
@@ -92,7 +92,8 @@ final class TrackingSubscriberBase<Value: Equatable,
 
     /// A lazy view on `history` with all events except subscriptions filtered out
     var subscriptions: LazyMapSequence<
-        LazyFilterSequence<LazyMapSequence<[Event], Subscription?>>, Subscription
+        LazyFilterSequence<LazyMapSequence<[Event], StringSubscription?>>,
+        StringSubscription
     > {
         return history.lazy.compactMap {
             if case .subscription(let s) = $0 {
@@ -143,7 +144,7 @@ final class TrackingSubscriberBase<Value: Equatable,
     }
 
     func receive(subscription: Subscription) {
-        history.append(.subscription(subscription))
+        history.append(.subscription(.init(subscription)))
         _receiveSubscription?(subscription)
     }
 
@@ -167,21 +168,21 @@ final class TrackingSubscriberBase<Value: Equatable,
 }
 
 @available(macOS 10.15, *)
-final class TrackingSubject<Value: Equatable>: Subject {
+final class TrackingSubject<Value: Equatable>: Subject, CustomStringConvertible {
 
     typealias Failure = TestingError
 
     typealias Output = Value
 
-    enum Event: Equatable {
-        case subscriber(CombineIdentifier)
+    enum Event: Equatable, CustomStringConvertible {
+        case subscriber
         case value(Value)
         case completion(Subscribers.Completion<TestingError>)
 
         static func == (lhs: Event, rhs: Event) -> Bool {
             switch (lhs, rhs) {
-            case let (.subscriber(lhs), .subscriber(rhs)):
-                return lhs == rhs
+            case (.subscriber, .subscriber):
+                return true
             case let (.value(lhs), .value(rhs)):
                 return lhs == rhs
             case let (.completion(lhs), .completion(rhs)):
@@ -197,21 +198,98 @@ final class TrackingSubject<Value: Equatable>: Subject {
                 return false
             }
         }
+
+        var description: String {
+            switch self {
+            case .subscriber:
+                return ".subscriber"
+            case .value(let value):
+                return ".value(\(value))"
+            case .completion(.finished):
+                return ".completion(.finished)"
+            case .completion(.failure(let error)):
+                return ".completion(.failure(\(error))"
+            }
+        }
     }
 
+    private let _passthrough = PassthroughSubject<Value, TestingError>()
     private(set) var history: [Event] = []
+    private let _receiveSubscriber: ((CustomCombineIdentifierConvertible) -> Void)?
+
+    init(receiveSubscriber: ((CustomCombineIdentifierConvertible) -> Void)? = nil) {
+        _receiveSubscriber = receiveSubscriber
+    }
 
     func send(_ value: Value) {
         history.append(.value(value))
+        _passthrough.send(value)
     }
 
     func send(completion: Subscribers.Completion<TestingError>) {
         history.append(.completion(completion))
+        _passthrough.send(completion: completion)
     }
 
     func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
         where Failure == SubscriberType.Failure, Output == SubscriberType.Input
     {
-        history.append(.subscriber(subscriber.combineIdentifier))
+        _receiveSubscriber?(subscriber)
+        history.append(.subscriber)
+        _passthrough.subscribe(subscriber)
+    }
+
+    var description: String { "TrackingSubject" }
+}
+
+@available(macOS 10.15, *)
+enum StringSubscription: Subscription,
+                         CustomStringConvertible,
+                         ExpressibleByStringLiteral {
+
+    case string(String)
+    case subscription(Subscription)
+
+    init(_ subscription: Subscription) {
+        self = .subscription(subscription)
+    }
+
+    init(stringLiteral value: String) {
+        self = .string(value)
+    }
+
+    var description: String {
+        switch self {
+        case .string(let string):
+            return string
+        case .subscription(let subscription):
+            return String(describing: subscription)
+        }
+    }
+
+    public func request(_ demand: Subscribers.Demand) {
+        underlying?.request(demand)
+    }
+
+    public var combineIdentifier: CombineIdentifier {
+        switch self {
+        case .subscription(let subscription):
+            return subscription.combineIdentifier
+        case .string:
+            fatalError("String has no combineIdentifier")
+        }
+    }
+
+    public func cancel() {
+        underlying?.cancel()
+    }
+
+    var underlying: Subscription? {
+        switch self {
+        case .string:
+            return nil
+        case .subscription(let underlying):
+            return underlying
+        }
     }
 }

@@ -63,7 +63,7 @@ final class PrintTests: XCTestCase {
         XCTAssertEqual(publisher.send(10), .unlimited)
         downstreamSubscription?.cancel()
 
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(tracking.history, [.subscription("Print"),
                                           .value(1),
                                           .value(2),
                                           .completion(.finished),
@@ -75,7 +75,7 @@ final class PrintTests: XCTestCase {
                                               .cancelled])
 
         let expectedOutput = """
-        receive subscription: (OpenCombineTests.CustomSubscription)
+        receive subscription: (CustomSubscription)
         callback subscription
         request unlimited
         callback request demand
@@ -150,7 +150,7 @@ final class PrintTests: XCTestCase {
         XCTAssertEqual(publisher.send(10), .unlimited)
         downstreamSubscription?.cancel()
 
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(tracking.history, [.subscription("Print"),
                                           .value(1),
                                           .value(2),
                                           .completion(.finished),
@@ -162,7 +162,7 @@ final class PrintTests: XCTestCase {
                                               .cancelled])
 
         let expectedOutput = """
-        👉: receive subscription: (OpenCombineTests.CustomSubscription)
+        👉: receive subscription: (CustomSubscription)
         callback subscription
         👉: request unlimited
         callback request demand

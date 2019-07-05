@@ -25,7 +25,8 @@ final class MapTests: XCTestCase {
         ("testDemandSubscribe", testDemandSubscribe),
         ("testDemandSend", testDemandSend),
         ("testCompletion", testCompletion),
-        ("testCancel", testCancel),
+        ("testMapCancel", testMapCancel),
+        ("testTryMapCancel", testTryMapCancel),
         ("testCancelAlreadyCancelled", testCancelAlreadyCancelled),
         ("testLifecycle", testLifecycle),
         ("testMapOperatorSpecializationForMap", testMapOperatorSpecializationForMap),
@@ -39,28 +40,34 @@ final class MapTests: XCTestCase {
 
     func testEmpty() {
         // Given
-        let tracking = TrackingSubscriberBase<Int, Never>(
+        let tracking = TrackingSubscriberBase<String, TestingError>(
             receiveSubscription: { $0.request(.unlimited) }
         )
-        let publisher = PassthroughSubject<Int, Never>()
+        let publisher = TrackingSubject<Int>(
+            receiveSubscriber: {
+                XCTAssertEqual(String(describing: $0), "Map")
+            }
+        )
         // When
-        publisher.map { $0 * 2 }.subscribe(tracking)
+        publisher.map(String.init).subscribe(tracking)
         // Then
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty)])
+        XCTAssertEqual(tracking.history, [.subscription("PassthroughSubject")])
     }
 
     func testError() {
         // Given
         let expectedError = TestingError.oops
         let tracking = TrackingSubscriber(receiveSubscription: { $0.request(.unlimited) })
-        let publisher = PassthroughSubject<Int, TestingError>()
+        let publisher = CustomPublisher(subscription: CustomSubscription())
         // When
         publisher.map { $0 * 2 }.subscribe(tracking)
         publisher.send(completion: .failure(expectedError))
+        publisher.send(completion: .failure(expectedError))
         // Then
         XCTAssertEqual(tracking.history, [
-            .subscription(Subscriptions.empty),
-            .completion(Subscribers.Completion<TestingError>.failure(expectedError))
+            .subscription("CustomSubscription"),
+            .completion(.failure(expectedError)),
+            .completion(.failure(expectedError))
         ])
     }
 
@@ -88,7 +95,7 @@ final class MapTests: XCTestCase {
         publisher.send(completion: .finished)
 
         XCTAssertEqual(tracking.history,
-                       [.subscription(Subscriptions.empty),
+                       [.subscription("TryMap"),
                         .value(4),
                         .value(6),
                         .completion(.failure("too much" as TestingError))])
@@ -109,7 +116,7 @@ final class MapTests: XCTestCase {
         publisher.send(2)
 
         XCTAssertEqual(tracking.history,
-                       [.subscription(Subscriptions.empty),
+                       [.subscription("TryMap"),
                         .completion(.failure(TestingError.oops))])
     }
 
@@ -127,7 +134,7 @@ final class MapTests: XCTestCase {
         publisher.send(5)
         // Then
         XCTAssertEqual(tracking.history, [
-            .subscription(Subscriptions.empty),
+            .subscription("PassthroughSubject"),
             .value(4),
             .value(6),
             .completion(.finished)
@@ -189,11 +196,11 @@ final class MapTests: XCTestCase {
         XCTAssertEqual(subscription.history, [.requested(.unlimited)])
         XCTAssertEqual(
             tracking.history,
-            [.subscription(Subscriptions.empty), .completion(.finished)]
+            [.subscription("CustomSubscription"), .completion(.finished)]
         )
     }
 
-    func testCancel() throws {
+    func testMapCancel() throws {
         // Given
         let subscription = CustomSubscription()
         let publisher = CustomPublisher(subscription: subscription)
@@ -206,6 +213,27 @@ final class MapTests: XCTestCase {
         // When
         map.subscribe(tracking)
         try XCTUnwrap(downstreamSubscription).cancel()
+        _ = publisher.send(1)
+        publisher.send(completion: .finished)
+        // Then
+        XCTAssertEqual(subscription.history, [.requested(.unlimited), .cancelled])
+    }
+
+    func testTryMapCancel() throws {
+        // Given
+        let subscription = CustomSubscription()
+        let publisher = CustomPublisher(subscription: subscription)
+        let map = publisher.tryMap { $0 * 2 }
+        var downstreamSubscription: Subscription?
+        let tracking = TrackingSubscriberBase<Int, Error>(receiveSubscription: {
+            $0.request(.unlimited)
+            downstreamSubscription = $0
+        })
+        // When
+        map.subscribe(tracking)
+        try XCTUnwrap(downstreamSubscription).cancel()
+        _ = publisher.send(1)
+        publisher.send(completion: .finished)
         // Then
         XCTAssertEqual(subscription.history, [.requested(.unlimited), .cancelled])
     }
@@ -305,7 +333,7 @@ final class MapTests: XCTestCase {
         publisher.send(5)
 
         XCTAssert(map1.upstream === map2.upstream)
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(tracking.history, [.subscription("PassthroughSubject"),
                                           .value(5),
                                           .value(7),
                                           .value(11)])
@@ -330,14 +358,14 @@ final class MapTests: XCTestCase {
         publisher.send(5)
 
         XCTAssert(map1.upstream === tryMap2.upstream)
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(tracking.history, [.subscription("TryMap"),
                                           .value(5),
                                           .value(7),
                                           .value(11)])
 
         publisher.send(6)
 
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(tracking.history, [.subscription("TryMap"),
                                           .value(5),
                                           .value(7),
                                           .value(11),
@@ -363,14 +391,14 @@ final class MapTests: XCTestCase {
         publisher.send(5)
 
         XCTAssert(tryMap1.upstream === tryMap2.upstream)
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(tracking.history, [.subscription("TryMap"),
                                           .value(5),
                                           .value(7),
                                           .value(11)])
 
         publisher.send(6)
 
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(tracking.history, [.subscription("TryMap"),
                                           .value(5),
                                           .value(7),
                                           .value(11),
@@ -396,14 +424,14 @@ final class MapTests: XCTestCase {
         publisher.send(5)
 
         XCTAssert(tryMap1.upstream === tryMap2.upstream)
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(tracking.history, [.subscription("TryMap"),
                                           .value(5),
                                           .value(7),
                                           .value(11)])
 
         publisher.send(6)
 
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(tracking.history, [.subscription("TryMap"),
                                           .value(5),
                                           .value(7),
                                           .value(11),

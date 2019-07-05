@@ -85,12 +85,12 @@ final class JustTests: XCTestCase {
         let tracking = TrackingSubscriberBase<Int, Never>()
         just.subscribe(tracking)
 
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty)])
+        XCTAssertEqual(tracking.history, [.subscription("Just")])
 
         tracking.subscriptions.first?.request(.max(100))
         tracking.subscriptions.first?.request(.max(1))
 
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(tracking.history, [.subscription("Just"),
                                           .value(42),
                                           .completion(.finished)])
     }
@@ -103,7 +103,7 @@ final class JustTests: XCTestCase {
             })
         just.subscribe(tracking)
 
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(tracking.history, [.subscription("Just"),
                                           .value(42),
                                           .completion(.finished)])
     }
@@ -115,7 +115,7 @@ final class JustTests: XCTestCase {
         )
         just.subscribe(tracking)
 
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(tracking.history, [.subscription("Just"),
                                           .value(42),
                                           .completion(.finished)])
     }

@@ -39,7 +39,7 @@ final class CustomPublisherBase<Value: Equatable>: Publisher {
     typealias Output = Value
     typealias Failure = TestingError
 
-    private var subscriber: AnySubscriber<Value, TestingError>?
+    private(set) var subscriber: AnySubscriber<Value, TestingError>?
     private let subscription: Subscription?
 
     init(subscription: Subscription?) {
@@ -54,7 +54,7 @@ final class CustomPublisherBase<Value: Equatable>: Publisher {
     }
 
     func send(_ value: Value) -> Subscribers.Demand {
-        return subscriber!.receive(value)
+        return subscriber?.receive(value) ?? .none
     }
 
     func send(completion: Subscribers.Completion<TestingError>) {

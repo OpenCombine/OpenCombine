@@ -17,7 +17,7 @@ import OpenCombine
 /// In order to inject `CustomSubscription` into the chain of subscriptions,
 /// use the `CustomSubscriber` class.
 @available(macOS 10.15, *)
-final class CustomSubscription: Subscription {
+final class CustomSubscription: Subscription, CustomStringConvertible {
 
     enum Event: Equatable, CustomStringConvertible {
         case requested(Subscribers.Demand)
@@ -26,9 +26,9 @@ final class CustomSubscription: Subscription {
         var description: String {
             switch self {
             case .requested(let demand):
-                return "requested(\(demand))"
+                return ".requested(.\(demand))"
             case .cancelled:
-                return "cancelled"
+                return ".cancelled"
             }
         }
     }
@@ -68,4 +68,6 @@ final class CustomSubscription: Subscription {
         canceled = true
         _canceled?()
     }
+
+    var description: String { return "CustomSubscription" }
 }

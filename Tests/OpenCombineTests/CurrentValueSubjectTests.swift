@@ -124,18 +124,18 @@ final class CurrentValueSubjectTests: XCTestCase {
 
         cvs.subscribe(subscriber)
 
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(subscriber.history, [.subscription("CurrentValueSubject"),
                                             .value(0)])
 
         cvs.value += 3
 
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(subscriber.history, [.subscription("CurrentValueSubject"),
                                             .value(0),
                                             .value(3)])
 
         cvs.send(completion: .failure(.oops))
 
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(subscriber.history, [.subscription("CurrentValueSubject"),
                                             .value(0),
                                             .value(3),
                                             .completion(.failure(.oops))])
@@ -180,50 +180,50 @@ final class CurrentValueSubjectTests: XCTestCase {
         cvs.subscribe(subscriber)
 
         XCTAssertEqual(subscriber.tracking.history, [.value(112),
-                                                     .subscription(Subscriptions.empty),
+                                                     .subscription("CurrentValueSubject"),
                                                      .value(112),
-                                                     .subscription(Subscriptions.empty),
+                                                     .subscription("CurrentValueSubject"),
                                                      .value(112),
-                                                     .subscription(Subscriptions.empty),
+                                                     .subscription("CurrentValueSubject"),
                                                      .value(112),
-                                                     .subscription(Subscriptions.empty),
+                                                     .subscription("CurrentValueSubject"),
                                                      .value(112),
-                                                     .subscription(Subscriptions.empty),
+                                                     .subscription("CurrentValueSubject"),
                                                      .value(112),
-                                                     .subscription(Subscriptions.empty),
+                                                     .subscription("CurrentValueSubject"),
                                                      .value(112),
-                                                     .subscription(Subscriptions.empty),
+                                                     .subscription("CurrentValueSubject"),
                                                      .value(112),
-                                                     .subscription(Subscriptions.empty),
+                                                     .subscription("CurrentValueSubject"),
                                                      .value(112),
-                                                     .subscription(Subscriptions.empty),
+                                                     .subscription("CurrentValueSubject"),
                                                      .value(112),
-                                                     .subscription(Subscriptions.empty)])
+                                                     .subscription("CurrentValueSubject")])
 
         cvs.subscribe(subscriber)
 
         XCTAssertEqual(subscriber.tracking.history, [.value(112),
-                                                     .subscription(Subscriptions.empty),
+                                                     .subscription("CurrentValueSubject"),
                                                      .value(112),
-                                                     .subscription(Subscriptions.empty),
+                                                     .subscription("CurrentValueSubject"),
                                                      .value(112),
-                                                     .subscription(Subscriptions.empty),
+                                                     .subscription("CurrentValueSubject"),
                                                      .value(112),
-                                                     .subscription(Subscriptions.empty),
+                                                     .subscription("CurrentValueSubject"),
                                                      .value(112),
-                                                     .subscription(Subscriptions.empty),
+                                                     .subscription("CurrentValueSubject"),
                                                      .value(112),
-                                                     .subscription(Subscriptions.empty),
+                                                     .subscription("CurrentValueSubject"),
                                                      .value(112),
-                                                     .subscription(Subscriptions.empty),
+                                                     .subscription("CurrentValueSubject"),
                                                      .value(112),
-                                                     .subscription(Subscriptions.empty),
+                                                     .subscription("CurrentValueSubject"),
                                                      .value(112),
-                                                     .subscription(Subscriptions.empty),
+                                                     .subscription("CurrentValueSubject"),
                                                      .value(112),
-                                                     .subscription(Subscriptions.empty),
+                                                     .subscription("CurrentValueSubject"),
                                                      .value(112),
-                                                     .subscription(Subscriptions.empty)])
+                                                     .subscription("CurrentValueSubject")])
     }
 
     // Reactive Streams Spec: Rule #6
@@ -241,24 +241,24 @@ final class CurrentValueSubjectTests: XCTestCase {
 
         cvs.subscribe(subscriber)
         cvs.value = 42
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(subscriber.history, [.subscription("CurrentValueSubject"),
                                             .value(112),
                                             .value(42)])
 
         cvs.send(completion: .finished)
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(subscriber.history, [.subscription("CurrentValueSubject"),
                                             .value(112),
                                             .value(42),
                                             .completion(.finished)])
 
         cvs.send(completion: .finished)
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(subscriber.history, [.subscription("CurrentValueSubject"),
                                             .value(112),
                                             .value(42),
                                             .completion(.finished)])
 
         cvs.send(completion: .failure("oops"))
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(subscriber.history, [.subscription("CurrentValueSubject"),
                                             .value(112),
                                             .value(42),
                                             .completion(.finished)])
@@ -279,18 +279,18 @@ final class CurrentValueSubjectTests: XCTestCase {
         cvs.subscribe(subscriber)
 
         cvs.value = 44
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(subscriber.history, [.subscription("CurrentValueSubject"),
                                             .value(112),
                                             .value(44)])
 
         cvs.send(completion: .finished)
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(subscriber.history, [.subscription("CurrentValueSubject"),
                                             .value(112),
                                             .value(44),
                                             .completion(.finished)])
 
         cvs.value = 1201
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(subscriber.history, [.subscription("CurrentValueSubject"),
                                             .value(112),
                                             .value(44),
                                             .completion(.finished)])
@@ -310,13 +310,13 @@ final class CurrentValueSubjectTests: XCTestCase {
             XCTAssertTrue(subscriber.history.isEmpty)
 
             cvs.subscribe(subscriber)
-            XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty)])
+            XCTAssertEqual(subscriber.history, [.subscription("CurrentValueSubject")])
 
             cvs.value += 1
-            XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty)])
+            XCTAssertEqual(subscriber.history, [.subscription("CurrentValueSubject")])
 
             cvs.send(completion: .failure(.oops))
-            XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+            XCTAssertEqual(subscriber.history, [.subscription("CurrentValueSubject"),
                                                 .completion(.failure(.oops))])
         }
 
@@ -332,10 +332,10 @@ final class CurrentValueSubjectTests: XCTestCase {
             )
             XCTAssertTrue(subscriber.history.isEmpty)
             cvs.subscribe(subscriber)
-            XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+            XCTAssertEqual(subscriber.history, [.subscription("CurrentValueSubject"),
                                                 .value(0)])
             cvs.send(31)
-            XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+            XCTAssertEqual(subscriber.history, [.subscription("CurrentValueSubject"),
                                                 .value(0),
                                                 .value(31)])
             XCTAssertNotNil(subscription)

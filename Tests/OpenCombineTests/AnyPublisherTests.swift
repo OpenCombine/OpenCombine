@@ -24,11 +24,15 @@ final class AnyPublisherTests: XCTestCase {
 
     func testErasePublisher() {
 
-        let publisher = TrackingSubject<Int>()
-        let erased = AnyPublisher(publisher)
         let subscriber = TrackingSubscriber()
+        let publisher = TrackingSubject<Int>(
+            receiveSubscriber: {
+                XCTAssertEqual($0.combineIdentifier, subscriber.combineIdentifier)
+            }
+        )
+        let erased = AnyPublisher(publisher)
 
         erased.receive(subscriber: subscriber)
-        XCTAssertEqual(publisher.history, [.subscriber(subscriber.combineIdentifier)])
+        XCTAssertEqual(publisher.history, [.subscriber])
     }
 }

@@ -23,13 +23,21 @@ public final class PassthroughSubject<Output, Failure: Error>: Subject  {
     public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
         where Output == SubscriberType.Input, Failure == SubscriberType.Failure
     {
-        let subscription = Conduit(parent: self, downstream: AnySubscriber(subscriber))
 
         _lock.do {
-            _subscriptions.append(subscription)
-        }
 
-        subscriber.receive(subscription: subscription)
+            if let completion = _completion {
+                subscriber.receive(subscription: Subscriptions.empty)
+                subscriber.receive(completion: completion)
+                return
+            } else {
+                let subscription = Conduit(parent: self,
+                                           downstream: AnySubscriber(subscriber))
+
+                _subscriptions.append(subscription)
+                subscriber.receive(subscription: subscription)
+            }
+        }
     }
 
     public func send(_ input: Output) {
@@ -45,8 +53,8 @@ public final class PassthroughSubject<Output, Failure: Error>: Subject  {
     }
 
     public func send(completion: Subscribers.Completion<Failure>) {
-        _completion = completion
         _lock.do {
+            _completion = completion
             for subscriber in _subscriptions {
                 subscriber._receive(completion: completion)
             }
@@ -56,7 +64,7 @@ public final class PassthroughSubject<Output, Failure: Error>: Subject  {
 
 extension PassthroughSubject {
 
-    fileprivate final class Conduit: Subscription {
+    internal final class Conduit: Subscription {
 
         fileprivate var _parent: PassthroughSubject?
 
@@ -91,4 +99,8 @@ extension PassthroughSubject {
             _parent = nil
         }
     }
+}
+
+extension PassthroughSubject.Conduit: CustomStringConvertible {
+    public var description: String { return "PassthroughSubject" }
 }

@@ -119,3 +119,7 @@ extension CurrentValueSubject {
         }
     }
 }
+
+extension CurrentValueSubject.Conduit: CustomStringConvertible {
+    public var description: String { return "CurrentValueSubject" }
+}

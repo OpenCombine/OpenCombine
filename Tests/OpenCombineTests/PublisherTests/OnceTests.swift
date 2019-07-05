@@ -87,12 +87,12 @@ final class OnceTests: XCTestCase {
         let tracking = TrackingSubscriber()
         success.subscribe(tracking)
 
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty)])
+        XCTAssertEqual(tracking.history, [.subscription("Once")])
 
         tracking.subscriptions.first?.request(.max(100))
         tracking.subscriptions.first?.request(.max(1))
 
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(tracking.history, [.subscription("Once"),
                                           .value(42),
                                           .completion(.finished)])
     }
@@ -102,7 +102,7 @@ final class OnceTests: XCTestCase {
         let tracking = TrackingSubscriber(receiveSubscription: { $0.request(.unlimited) })
         just.subscribe(tracking)
 
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(tracking.history, [.subscription("Once"),
                                           .value(42),
                                           .completion(.finished)])
     }
@@ -114,7 +114,7 @@ final class OnceTests: XCTestCase {
         )
         success.subscribe(tracking)
 
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(tracking.history, [.subscription("Once"),
                                           .value(42),
                                           .completion(.finished)])
     }
@@ -124,7 +124,7 @@ final class OnceTests: XCTestCase {
         let tracking = TrackingSubscriber()
         failure.subscribe(tracking)
 
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(tracking.history, [.subscription("Empty"),
                                           .completion(.failure("failure"))])
     }
 
@@ -135,7 +135,7 @@ final class OnceTests: XCTestCase {
         )
         failure.subscribe(tracking)
 
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(tracking.history, [.subscription("Empty"),
                                           .completion(.failure("failure"))])
     }
 

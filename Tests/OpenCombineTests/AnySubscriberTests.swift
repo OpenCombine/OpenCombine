@@ -123,7 +123,7 @@ final class AnySubscriberTests: XCTestCase {
 
         publishEvents(events, publisher)
 
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(subscriber.history, [.subscription("PassthroughSubject"),
                                             .completion(.finished)])
     }
 
@@ -177,9 +177,9 @@ final class AnySubscriberTests: XCTestCase {
 
 @available(OSX 10.15, *)
 private let events: [TrackingSubscriber.Event] = [
-    .subscription(Subscriptions.empty),
-    .subscription(Subscriptions.empty),
-    .subscription(Subscriptions.empty),
+    .subscription(""),
+    .subscription(""),
+    .subscription(""),
     .value(31),
     .value(42),
     .value(-1),

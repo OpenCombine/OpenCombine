@@ -27,7 +27,7 @@ final class FailTests: XCTestCase {
         let tracking = TrackingSubscriber()
         just.subscribe(tracking)
 
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(tracking.history, [.subscription("Empty"),
                                           .completion(.failure(.oops))])
     }
 }
