@@ -89,13 +89,13 @@ extension PassthroughSubject {
             }
         }
 
-        internal func request(_ demand: Subscribers.Demand) {
+        fileprivate func request(_ demand: Subscribers.Demand) {
             _parent?._lock.do {
                 _demand = demand
             }
         }
 
-        internal func cancel() {
+        fileprivate func cancel() {
             _parent = nil
         }
     }
