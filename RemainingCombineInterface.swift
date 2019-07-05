@@ -2295,15 +2295,6 @@ extension Publishers {
 
 extension Publisher {
 
-    /// Replaces nil elements in the stream with the proviced element.
-    ///
-    /// - Parameter output: The element to use when replacing `nil`.
-    /// - Returns: A publisher that replaces `nil` elements from the upstream publisher with the provided element.
-    public func replaceNil<T>(with output: T) -> Publishers.Map<Self, T> where Self.Output == T?
-}
-
-extension Publisher {
-
     /// Replaces any errors in the stream with the provided element.
     ///
     /// If the upstream publisher fails with an error, this publisher emits the provided element, then finishes normally.
