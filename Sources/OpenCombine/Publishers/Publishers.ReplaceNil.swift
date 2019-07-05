@@ -7,7 +7,6 @@
 
 import Foundation
 
-// swiftlint:disable generic_type_name
 // We need to disable this linting rule to maintain the same public api that as
 // the original Combine interface
 extension Publisher {
@@ -17,11 +16,11 @@ extension Publisher {
     /// - Parameter output: The element to use when replacing `nil`.
     /// - Returns: A publisher that replaces `nil` elements from
     /// the upstream publisher with the provided element.
-    public func replaceNil<T>(with output: T) -> Publishers.Map<Self, T>
-        where Self.Output == T?
+    public func replaceNil<ElementOfResult>(
+        with output: ElementOfResult
+    ) -> Publishers.Map<Self, ElementOfResult>
+        where Output == ElementOfResult?
     {
-        return Publishers.Map(upstream: self) { element -> T in
-            element ?? output
-        }
+        return Publishers.Map(upstream: self) { $0 ?? output }
     }
 }
