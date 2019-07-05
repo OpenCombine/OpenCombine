@@ -109,9 +109,7 @@ extension Publishers.TryMap {
 }
 
 private class _Map<Upstream: Publisher, Downstream: Subscriber>
-    : OperatorSubscription<Downstream>,
-      CustomStringConvertible,
-      Subscription
+    : OperatorSubscription<Downstream>
 {
     typealias Input = Upstream.Output
     typealias Failure = Upstream.Failure
@@ -128,13 +126,6 @@ private class _Map<Upstream: Publisher, Downstream: Subscriber>
         super.init(downstream: downstream)
     }
 
-    var description: String { return "Map" }
-
-    func receive(subscription: Subscription) {
-        upstreamSubscription = subscription
-        downstream.receive(subscription: self)
-    }
-
     func receive(_ input: Input) -> Subscribers.Demand {
         switch _transform?(input) {
         case .success(let output)?:
@@ -147,30 +138,26 @@ private class _Map<Upstream: Publisher, Downstream: Subscriber>
             return .none
         }
     }
-
-    func request(_ demand: Subscribers.Demand) {
-        upstreamSubscription?.request(demand)
-    }
-
-    override func cancel() {
-        _transform = nil
-        upstreamSubscription?.cancel()
-    }
 }
 
 extension Publishers.Map {
 
     private final class Inner<Downstream: Subscriber>
         : _Map<Upstream, Downstream>,
+          CustomStringConvertible,
           Subscriber
         where Downstream.Failure == Upstream.Failure
     {
-        func receive(completion: Subscribers.Completion<Failure>) {
-            if !isCompleted {
-                _transform = nil
-                downstream.receive(completion: completion)
-            }
+
+        func receive(subscription: Subscription) {
+            downstream.receive(subscription: subscription)
         }
+
+        func receive(completion: Subscribers.Completion<Failure>) {
+            downstream.receive(completion: completion)
+        }
+
+        var description: String { return "Map" }
     }
 }
 
@@ -178,14 +165,32 @@ extension Publishers.TryMap {
 
     private final class Inner<Downstream: Subscriber>
         : _Map<Upstream, Downstream>,
+          Subscription,
+          CustomStringConvertible,
           Subscriber
         where Downstream.Failure == Error
     {
+        func receive(subscription: Subscription) {
+            upstreamSubscription = subscription
+            downstream.receive(subscription: self)
+        }
+
         func receive(completion: Subscribers.Completion<Failure>) {
             if !isCompleted {
                 _transform = nil
                 downstream.receive(completion: completion.eraseError())
             }
         }
+
+        func request(_ demand: Subscribers.Demand) {
+            upstreamSubscription?.request(demand)
+        }
+
+        override func cancel() {
+            _transform = nil
+            upstreamSubscription?.cancel()
+        }
+
+        var description: String { return "TryMap" }
     }
 }

@@ -22,6 +22,7 @@ final class PassthroughSubjectTests: XCTestCase {
         ("testMultipleSubscriptions", testMultipleSubscriptions),
         ("testMultipleCompletions", testMultipleCompletions),
         ("testValuesAfterCompletion", testValuesAfterCompletion),
+        ("testSubscriptionAfterCompletion", testSubscriptionAfterCompletion),
         ("testLifecycle", testLifecycle),
         ("testSynchronization", testSynchronization),
     ]
@@ -114,11 +115,11 @@ final class PassthroughSubjectTests: XCTestCase {
 
         cvs.subscribe(subscriber)
 
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty)])
+        XCTAssertEqual(subscriber.history, [.subscription("PassthroughSubject")])
 
         cvs.send(completion: .failure(.oops))
 
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(subscriber.history, [.subscription("PassthroughSubject"),
                                             .completion(.failure(.oops))])
     }
 
@@ -265,6 +266,17 @@ final class PassthroughSubjectTests: XCTestCase {
         XCTAssertEqual(subscriptions.count, 1)
         XCTAssertEqual(inputs.count, 1)
         XCTAssertEqual(completions.count, 1)
+    }
+
+    func testSubscriptionAfterCompletion() {
+        let passthrough = Sut()
+        passthrough.send(completion: .finished)
+
+        let subscriber = TrackingSubscriber()
+        passthrough.subscribe(subscriber)
+
+        XCTAssertEqual(subscriber.history, [.subscription("Empty"),
+                                            .completion(.finished)])
     }
 
     func testLifecycle() throws {

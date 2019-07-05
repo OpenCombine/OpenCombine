@@ -50,7 +50,7 @@ final class DecodeTests: XCTestCase {
         subject.send(data)
 
         // Then
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(subscriber.history, [.subscription("Decode"),
                                             .value(testValue)])
     }
 
@@ -68,7 +68,7 @@ final class DecodeTests: XCTestCase {
         subject.send(failData)
 
         // Then
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(subscriber.history, [.subscription("Decode"),
                                             .completion(.failure(TestDecoder.error))])
     }
 

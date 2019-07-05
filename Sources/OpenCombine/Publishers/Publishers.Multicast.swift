@@ -5,6 +5,25 @@
 //  Created by Sergej Jaskiewicz on 14.06.2019.
 //
 
+extension Publisher {
+
+    public func multicast<SubjectType: Subject>(
+        _ createSubject: @escaping () -> SubjectType
+        ) -> Publishers.Multicast<Self, SubjectType>
+        where Failure == SubjectType.Failure, Output == SubjectType.Output
+    {
+        return Publishers.Multicast(upstream: self, createSubject: createSubject)
+    }
+
+    public func multicast<SubjectType: Subject>(
+        subject: SubjectType
+        ) -> Publishers.Multicast<Self, SubjectType>
+        where Failure == SubjectType.Failure, Output == SubjectType.Output
+    {
+        return multicast { subject }
+    }
+}
+
 extension Publishers {
 
     public final class Multicast<Upstream: Publisher, SubjectType: Subject>
@@ -28,11 +47,11 @@ extension Publishers {
             self.createSubject = createSubject
         }
 
-        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-            where SubjectType.Failure == SubscriberType.Failure,
-                  SubjectType.Output == SubscriberType.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where SubjectType.Failure == Downstream.Failure,
+                  SubjectType.Output == Downstream.Input
         {
-            _subject.subscribe(subscriber)
+            _subject.subscribe(Inner(downstream: subscriber))
         }
 
         public func connect() -> Cancellable {
@@ -48,21 +67,35 @@ extension Publishers {
     }
 }
 
-extension Publisher {
+extension Publishers.Multicast {
 
-    public func multicast<SubjectType: Subject>(
-        _ createSubject: @escaping () -> SubjectType
-    ) -> Publishers.Multicast<Self, SubjectType>
-        where Failure == SubjectType.Failure, Output == SubjectType.Output
+    private final class Inner<Downstream: Subscriber>
+        : OperatorSubscription<Downstream>,
+          Subscriber,
+          CustomStringConvertible,
+          Subscription
+        where Upstream.Output == Downstream.Input, Upstream.Failure == Downstream.Failure
     {
-        return Publishers.Multicast(upstream: self, createSubject: createSubject)
-    }
+        typealias Input = Upstream.Output
+        typealias Failure = Upstream.Failure
 
-    public func multicast<SubjectType: Subject>(
-        subject: SubjectType
-    ) -> Publishers.Multicast<Self, SubjectType>
-        where Failure == SubjectType.Failure, Output == SubjectType.Output
-    {
-        return multicast { subject }
+        var description: String { return "Multicast" }
+
+        func receive(subscription: Subscription) {
+            upstreamSubscription = subscription
+            downstream.receive(subscription: self)
+        }
+
+        func receive(_ input: Input) -> Subscribers.Demand {
+            return downstream.receive(input)
+        }
+
+        func receive(completion: Subscribers.Completion<Failure>) {
+            downstream.receive(completion: completion)
+        }
+
+        func request(_ demand: Subscribers.Demand) {
+            upstreamSubscription?.request(demand)
+        }
     }
 }

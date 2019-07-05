@@ -65,7 +65,7 @@ final class EncodeTests: XCTestCase {
             XCTFail("Could not get testing data from encoding")
             return
         }
-        XCTAssertEqual(subscriber.history, [.subscription(Subscriptions.empty),
+        XCTAssertEqual(subscriber.history, [.subscription("Encode"),
                                             .value(testKey)])
     }
 

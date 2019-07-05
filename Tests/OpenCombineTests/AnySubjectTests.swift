@@ -25,9 +25,13 @@ final class AnySubjectTests: XCTestCase {
 
     func testEraseSubject() {
 
-        let subject = TrackingSubject<Int>()
-        let erased = AnySubject(subject)
         let subscriber = TrackingSubscriber()
+        let subject = TrackingSubject<Int>(
+            receiveSubscriber: {
+                XCTAssertEqual($0.combineIdentifier, subscriber.combineIdentifier)
+            }
+        )
+        let erased = AnySubject(subject)
 
         erased.receive(subscriber: subscriber)
         erased.send(42)
@@ -36,12 +40,12 @@ final class AnySubjectTests: XCTestCase {
         erased.send(12)
         erased.receive(subscriber: subscriber)
 
-        XCTAssertEqual(subject.history, [.subscriber(subscriber.combineIdentifier),
+        XCTAssertEqual(subject.history, [.subscriber,
                                          .value(42),
                                          .completion(.finished),
                                          .completion(.failure("f")),
                                          .value(12),
-                                         .subscriber(subscriber.combineIdentifier)])
+                                         .subscriber])
     }
 
     func testClosureBasedSubject() {
@@ -49,7 +53,7 @@ final class AnySubjectTests: XCTestCase {
         var events: [TrackingSubject<Int>.Event] = []
 
         let erased = AnySubject<Int, TestingError>(
-            { events.append(.subscriber($0.combineIdentifier)) },
+            { _ in events.append(.subscriber) },
             { events.append(.value($0)) },
             { events.append(.completion($0)) }
         )
@@ -62,11 +66,11 @@ final class AnySubjectTests: XCTestCase {
         erased.send(12)
         erased.receive(subscriber: subscriber)
 
-        XCTAssertEqual(events, [.subscriber(subscriber.combineIdentifier),
+        XCTAssertEqual(events, [.subscriber,
                                 .value(42),
                                 .completion(.finished),
                                 .completion(.failure("f")),
                                 .value(12),
-                                .subscriber(subscriber.combineIdentifier)])
+                                .subscriber])
     }
 }

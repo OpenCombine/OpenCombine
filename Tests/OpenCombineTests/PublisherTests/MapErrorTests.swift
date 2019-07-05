@@ -33,11 +33,15 @@ final class MapErrorTests: XCTestCase {
         let tracking = TrackingSubscriberBase<Int, OtherError>(
             receiveSubscription: { $0.request(.unlimited) }
         )
-        let publisher = PassthroughSubject<Int, TestingError>()
+        let publisher = TrackingSubject<Int>(
+            receiveSubscriber: {
+                XCTAssertEqual(String(describing: $0), "MapError")
+            }
+        )
         // When
         publisher.mapError(OtherError.init).subscribe(tracking)
         // Then
-        XCTAssertEqual(tracking.history, [.subscription(Subscriptions.empty)])
+        XCTAssertEqual(tracking.history, [.subscription("PassthroughSubject")])
     }
 
     func testError() {
@@ -54,7 +58,7 @@ final class MapErrorTests: XCTestCase {
         publisher.send(completion: .failure(expectedError))
         // Then
         XCTAssertEqual(tracking.history, [
-            .subscription(Subscriptions.empty),
+            .subscription("CustomSubscription"),
             .completion(.failure(OtherError(expectedError))),
             .completion(.failure(OtherError(expectedError)))
         ])
@@ -76,7 +80,7 @@ final class MapErrorTests: XCTestCase {
         publisher.send(5)
         // Then
         XCTAssertEqual(tracking.history, [
-            .subscription(Subscriptions.empty),
+            .subscription("PassthroughSubject"),
             .value(2),
             .value(3),
             .completion(.finished)
@@ -140,7 +144,7 @@ final class MapErrorTests: XCTestCase {
         XCTAssertEqual(subscription.history, [.requested(.unlimited)])
         XCTAssertEqual(
             tracking.history,
-            [.subscription(Subscriptions.empty), .completion(.finished)]
+            [.subscription("CustomSubscription"), .completion(.finished)]
         )
     }
 

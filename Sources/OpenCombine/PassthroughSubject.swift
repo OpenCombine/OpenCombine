@@ -23,19 +23,27 @@ public final class PassthroughSubject<Output, Failure: Error>: Subject  {
     public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
         where Output == SubscriberType.Input, Failure == SubscriberType.Failure
     {
-        let subscription = Conduit(parent: self, downstream: AnySubscriber(subscriber))
 
         _lock.do {
-            _subscriptions.append(subscription)
-        }
 
-        subscriber.receive(subscription: subscription)
+            if let completion = _completion {
+                subscriber.receive(subscription: Subscriptions.empty)
+                subscriber.receive(completion: completion)
+                return
+            } else {
+                let subscription = Conduit(parent: self,
+                                           downstream: AnySubscriber(subscriber))
+
+                _subscriptions.append(subscription)
+                subscriber.receive(subscription: subscription)
+            }
+        }
     }
 
     public func send(_ input: Output) {
         _lock.do {
             for subscription in _subscriptions
-                where !subscription.isCompleted && subscription._demand > 0
+                where !subscription._isCompleted && subscription._demand > 0
             {
                 let newDemand = subscription._downstream?.receive(input) ?? .none
                 subscription._demand += newDemand
@@ -45,8 +53,8 @@ public final class PassthroughSubject<Output, Failure: Error>: Subject  {
     }
 
     public func send(completion: Subscribers.Completion<Failure>) {
-        _completion = completion
         _lock.do {
+            _completion = completion
             for subscriber in _subscriptions {
                 subscriber._receive(completion: completion)
             }
@@ -64,7 +72,7 @@ extension PassthroughSubject {
 
         fileprivate var _demand: Subscribers.Demand = .none
 
-        var isCompleted: Bool {
+        fileprivate var _isCompleted: Bool {
             return _parent == nil
         }
 
@@ -75,20 +83,24 @@ extension PassthroughSubject {
         }
 
         fileprivate func _receive(completion: Subscribers.Completion<Failure>) {
-            if !isCompleted {
+            if !_isCompleted {
                 _parent = nil
                 _downstream?.receive(completion: completion)
             }
         }
 
-        func request(_ demand: Subscribers.Demand) {
+        fileprivate func request(_ demand: Subscribers.Demand) {
             _parent?._lock.do {
                 _demand = demand
             }
         }
 
-        func cancel() {
+        fileprivate func cancel() {
             _parent = nil
         }
     }
+}
+
+extension PassthroughSubject.Conduit: CustomStringConvertible {
+    fileprivate var description: String { return "PassthroughSubject" }
 }

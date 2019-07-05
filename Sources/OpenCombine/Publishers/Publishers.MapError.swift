@@ -66,12 +66,10 @@ extension Publisher {
     }
 }
 
-private final class _MapError<Upstream: Publisher,
-                              Downstream: Subscriber>
+private final class _MapError<Upstream: Publisher, Downstream: Subscriber>
     : OperatorSubscription<Downstream>,
       Subscriber,
-      CustomStringConvertible,
-      Subscription
+      CustomStringConvertible
     where Upstream.Output == Downstream.Input
 {
 
@@ -79,7 +77,7 @@ private final class _MapError<Upstream: Publisher,
     typealias Failure = Upstream.Failure
     typealias Output = Downstream.Input
 
-    private let _transform: ((Upstream.Failure) -> Downstream.Failure)?
+    private let _transform: (Upstream.Failure) -> Downstream.Failure
 
     var description: String { return "MapError" }
 
@@ -91,7 +89,7 @@ private final class _MapError<Upstream: Publisher,
 
     func receive(subscription: Subscription) {
         upstreamSubscription = subscription
-        downstream.receive(subscription: self)
+        downstream.receive(subscription: subscription)
     }
 
     func receive(_ input: Input) -> Subscribers.Demand {
@@ -103,17 +101,7 @@ private final class _MapError<Upstream: Publisher,
         case .finished:
             downstream.receive(completion: .finished)
         case .failure(let error):
-            if let transform = _transform {
-                downstream.receive(completion: .failure(transform(error)))
-            }
+            downstream.receive(completion: .failure(_transform(error)))
         }
-    }
-
-    func request(_ demand: Subscribers.Demand) {
-        upstreamSubscription?.request(demand)
-    }
-
-    override func cancel() {
-        upstreamSubscription?.cancel()
     }
 }
