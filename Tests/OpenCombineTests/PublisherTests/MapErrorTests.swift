@@ -50,10 +50,12 @@ final class MapErrorTests: XCTestCase {
         // When
         publisher.mapError(OtherError.init).subscribe(tracking)
         publisher.send(completion: .failure(expectedError))
+        publisher.send(completion: .failure(expectedError))
         // Then
         XCTAssertEqual(tracking.history, [
             .subscription(Subscriptions.empty),
-            .completion(.failure(OtherError(expectedError)))
+            .completion(.failure(OtherError(expectedError))),
+//            .completion(.failure(OtherError(expectedError)))
         ])
     }
 
