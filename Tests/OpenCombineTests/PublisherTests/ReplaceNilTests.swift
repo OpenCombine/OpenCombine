@@ -16,24 +16,10 @@ import OpenCombine
 @available(macOS 10.15, *)
 final class ReplaceNilTests: XCTestCase {
     static let allTests = [
-        ("testReturnsMapPublisher", testReturnsMapPublisher),
         ("testReplacesNilElement", testReplacesNilElement),
         ("testExistingElementIsPreserved", testExistingElementIsPreserved),
         ("testMultipleReplacements", testMultipleReplacements)
     ]
-
-    func testReturnsMapPublisher() {
-        // Given
-        let nilPublisher = PassthroughSubject<Int?, Never>()
-
-        // When
-        let replaceNil = nilPublisher.replaceNil(with: 42)
-
-        // Then
-        let mirror = Mirror(reflecting: replaceNil)
-        let expected = "Mirror for Map<PassthroughSubject<Optional<Int>, Never>, Int>"
-        XCTAssertEqual(mirror.description, expected)
-    }
 
     func testReplacesNilElement() {
         // Given
