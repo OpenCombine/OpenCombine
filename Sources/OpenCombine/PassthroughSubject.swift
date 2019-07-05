@@ -43,7 +43,7 @@ public final class PassthroughSubject<Output, Failure: Error>: Subject  {
     public func send(_ input: Output) {
         _lock.do {
             for subscription in _subscriptions
-                where !subscription.isCompleted && subscription._demand > 0
+                where !subscription._isCompleted && subscription._demand > 0
             {
                 let newDemand = subscription._downstream?.receive(input) ?? .none
                 subscription._demand += newDemand
@@ -72,7 +72,7 @@ extension PassthroughSubject {
 
         fileprivate var _demand: Subscribers.Demand = .none
 
-        var isCompleted: Bool {
+        fileprivate var _isCompleted: Bool {
             return _parent == nil
         }
 
@@ -83,19 +83,19 @@ extension PassthroughSubject {
         }
 
         fileprivate func _receive(completion: Subscribers.Completion<Failure>) {
-            if !isCompleted {
+            if !_isCompleted {
                 _parent = nil
                 _downstream?.receive(completion: completion)
             }
         }
 
-        func request(_ demand: Subscribers.Demand) {
+        internal func request(_ demand: Subscribers.Demand) {
             _parent?._lock.do {
                 _demand = demand
             }
         }
 
-        func cancel() {
+        internal func cancel() {
             _parent = nil
         }
     }

@@ -139,7 +139,7 @@ final class MulticastTests: XCTestCase {
 
         XCTAssertNil(publisher.subscriber)
         XCTAssertEqual(earlySubscriber.history, [.subscription("Multicast")])
-    
+
         XCTAssertEqual(subject.history, [.subscriber])
 
         let connection = multicast.connect()

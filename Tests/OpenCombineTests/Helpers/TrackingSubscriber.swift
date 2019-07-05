@@ -267,11 +267,11 @@ enum StringSubscription: Subscription,
         }
     }
 
-    public func request(_ demand: Subscribers.Demand) {
+    func request(_ demand: Subscribers.Demand) {
         underlying?.request(demand)
     }
 
-    public var combineIdentifier: CombineIdentifier {
+    var combineIdentifier: CombineIdentifier {
         switch self {
         case .subscription(let subscription):
             return subscription.combineIdentifier
@@ -280,7 +280,7 @@ enum StringSubscription: Subscription,
         }
     }
 
-    public func cancel() {
+    func cancel() {
         underlying?.cancel()
     }
 

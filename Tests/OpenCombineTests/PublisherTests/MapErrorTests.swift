@@ -36,7 +36,7 @@ final class MapErrorTests: XCTestCase {
         let publisher = TrackingSubject<Int>(
             receiveSubscriber: {
                 XCTAssertEqual(String(describing: $0), "MapError")
-        }
+            }
         )
         // When
         publisher.mapError(OtherError.init).subscribe(tracking)
