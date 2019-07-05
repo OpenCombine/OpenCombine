@@ -110,7 +110,7 @@ private final class _MapError<Upstream: Publisher,
     func request(_ demand: Subscribers.Demand) {
         upstreamSubscription?.request(demand)
     }
- 
+
     override func cancel() {
         upstreamSubscription?.cancel()
     }
