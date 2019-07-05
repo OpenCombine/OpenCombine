@@ -64,7 +64,7 @@ public final class PassthroughSubject<Output, Failure: Error>: Subject  {
 
 extension PassthroughSubject {
 
-    internal final class Conduit: Subscription {
+    fileprivate final class Conduit: Subscription {
 
         fileprivate var _parent: PassthroughSubject?
 
@@ -102,5 +102,5 @@ extension PassthroughSubject {
 }
 
 extension PassthroughSubject.Conduit: CustomStringConvertible {
-    public var description: String { return "PassthroughSubject" }
+    fileprivate var description: String { return "PassthroughSubject" }
 }

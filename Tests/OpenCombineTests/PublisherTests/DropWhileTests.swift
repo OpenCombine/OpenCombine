@@ -122,7 +122,6 @@ final class DropWhileTests: XCTestCase {
         drop.subscribe(tracking)
 
         XCTAssertNotNil(downstreamSubscription)
-        dump(type(of: downstreamSubscription!))
 
         XCTAssertEqual(subscription.history, [.requested(.max(1))])
 

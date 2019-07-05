@@ -33,13 +33,20 @@ public final class CurrentValueSubject<Output, Failure: Error>: Subject {
     public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
         where Output == SubscriberType.Input, Failure == SubscriberType.Failure
     {
-        let subscription = Conduit(parent: self, downstream: AnySubscriber(subscriber))
-
         _lock.do {
-            _subscriptions.append(subscription)
-        }
 
-        subscriber.receive(subscription: subscription)
+            if let completion = _completion {
+                subscriber.receive(subscription: Subscriptions.empty)
+                subscriber.receive(completion: completion)
+                return
+            } else {
+                let subscription = Conduit(parent: self,
+                                           downstream: AnySubscriber(subscriber))
+
+                _subscriptions.append(subscription)
+                subscriber.receive(subscription: subscription)
+            }
+        }
     }
 
     public func send(_ input: Output) {

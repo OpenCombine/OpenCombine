@@ -24,6 +24,7 @@ final class CurrentValueSubjectTests: XCTestCase {
         ("testMultipleSubscriptions", testMultipleSubscriptions),
         ("testMultipleCompletions", testMultipleCompletions),
         ("testValuesAfterCompletion", testValuesAfterCompletion),
+        ("testSubscriptionAfterCompletion", testSubscriptionAfterCompletion),
         ("testLifecycle", testLifecycle),
         ("testSynchronization", testSynchronization),
     ]
@@ -295,6 +296,17 @@ final class CurrentValueSubjectTests: XCTestCase {
         XCTAssertEqual(subscriber.history, [.subscription("CurrentValueSubject"),
                                             .value(112),
                                             .value(44),
+                                            .completion(.finished)])
+    }
+
+    func testSubscriptionAfterCompletion() {
+        let passthrough = Sut(0)
+        passthrough.send(completion: .finished)
+
+        let subscriber = TrackingSubscriber()
+        passthrough.subscribe(subscriber)
+
+        XCTAssertEqual(subscriber.history, [.subscription("Empty"),
                                             .completion(.finished)])
     }
 
