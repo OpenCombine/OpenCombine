@@ -70,7 +70,7 @@ private final class _Count<Upstream: Publisher, Downstream: Subscriber>
     typealias Failure = Downstream.Failure
 
     private var _demand: Subscribers.Demand?
-    private var _completed = false
+    private var _completion: Subscribers.Completion<Upstream.Failure>?
 
     private var _count = 0
 
@@ -86,14 +86,14 @@ private final class _Count<Upstream: Publisher, Downstream: Subscriber>
         if _demand == nil {
             return .none
         } else {
-            return _completed ? .unlimited : .none
+            return _completion != nil ? .unlimited : .none
         }
     }
 
     func receive(completion: Subscribers.Completion<Upstream.Failure>) {
         if case .finished = completion {
             _demand = downstream.receive(_count)
-            _completed = true
+            _completion = .finished// = true
         }
         downstream.receive(completion: completion)
     }
