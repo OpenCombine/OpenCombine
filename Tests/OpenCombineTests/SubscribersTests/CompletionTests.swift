@@ -26,7 +26,11 @@ final class CompletionTests: XCTestCase {
 
     let encoder: JSONEncoder = {
         let encoder = JSONEncoder()
-        encoder.outputFormatting = .sortedKeys
+        if #available(iOS 11.0, *) {
+            encoder.outputFormatting = .sortedKeys
+        } else {
+            // Fallback on earlier versions
+        }
         return encoder
     }()
 

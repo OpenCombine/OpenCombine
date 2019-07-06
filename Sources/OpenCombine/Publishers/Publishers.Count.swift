@@ -69,9 +69,8 @@ private final class _Count<Upstream: Publisher, Downstream: Subscriber>
     typealias Output = Int
     typealias Failure = Downstream.Failure
 
-    private var _demand: Subscribers.Demand?
-    private var _completion: Subscribers.Completion<Upstream.Failure>?
-
+    private var _hasDemand = false
+    private var _isFinished = false
     private var _count = 0
 
     var description: String { return "Count" }
@@ -83,24 +82,24 @@ private final class _Count<Upstream: Publisher, Downstream: Subscriber>
 
     func receive(_ input: Input) -> Subscribers.Demand {
         _count += 1
-        if _demand == nil {
+        if !_hasDemand {
             return .none
         } else {
-            return _completion != nil ? .unlimited : .none
+            return _isFinished ? .unlimited : .none
         }
     }
 
     func receive(completion: Subscribers.Completion<Upstream.Failure>) {
         if case .finished = completion {
-            _demand = downstream.receive(_count)
-            _completion = .finished// = true
+            _ = downstream.receive(_count)
+            _isFinished = true
         }
         downstream.receive(completion: completion)
     }
 
     func request(_ demand: Subscribers.Demand) {
-        guard _demand == nil else { return }
-        _demand = demand
+        guard !_hasDemand else { return }
+        _hasDemand = true
         if demand > 0 {
             upstreamSubscription?.request(.unlimited)
         } else {
