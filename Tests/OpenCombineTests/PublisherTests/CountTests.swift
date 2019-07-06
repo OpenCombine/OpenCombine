@@ -18,7 +18,8 @@ final class CountTests: XCTestCase {
 
     static let allTests = [
         ("testSendsCorrectCount", testSendsCorrectCount),
-        ("testCountWaitsUntilFinishedToSend", testCountWaitsUntilFinishedToSend)
+        ("testCountWaitsUntilFinishedToSend", testCountWaitsUntilFinishedToSend),
+        ("testDemand", testDemand)
     ]
 
     func testSendsCorrectCount() {
@@ -74,31 +75,25 @@ final class CountTests: XCTestCase {
         XCTAssertNotNil(downstreamSubscription)
         dump(type(of: downstreamSubscription!))
 
-        XCTAssertEqual(subscription.history, [.requested(.max(42))])
+        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
 
-        XCTAssertEqual(publisher.send(0), .max(42))
-        XCTAssertEqual(subscription.history, [.requested(.max(42))])
+        XCTAssertEqual(publisher.send(0), .max(0))
+        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
 
-        XCTAssertEqual(publisher.send(2), .max(42))
-        XCTAssertEqual(subscription.history, [.requested(.max(42))])
+        XCTAssertEqual(publisher.send(2), .max(0))
+        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
 
         downstreamSubscription?.request(.max(95))
         downstreamSubscription?.request(.max(5))
-        XCTAssertEqual(subscription.history, [.requested(.max(42)),
-                                              .requested(.max(95)),
-                                              .requested(.max(5))])
+        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
 
         downstreamSubscription?.cancel()
         downstreamSubscription?.cancel()
-        XCTAssertEqual(subscription.history, [.requested(.max(42)),
-                                              .requested(.max(95)),
-                                              .requested(.max(5)),
+        XCTAssertEqual(subscription.history, [.requested(.unlimited),
                                               .cancelled])
 
         downstreamSubscription?.request(.max(50))
-        XCTAssertEqual(subscription.history, [.requested(.max(42)),
-                                              .requested(.max(95)),
-                                              .requested(.max(5)),
+        XCTAssertEqual(subscription.history, [.requested(.unlimited),
                                               .cancelled])
     }
 }
