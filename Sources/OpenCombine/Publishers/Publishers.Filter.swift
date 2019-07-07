@@ -43,6 +43,7 @@ extension Publishers {
                   Upstream.Output == SubscriberType.Input
         {
             let filter = _Filter<Upstream, SubscriberType>(downstream: subscriber,
+                                                           description: "Filter",
                                                            isIncluded: isIncluded)
             upstream.receive(subscriber: filter)
         }
@@ -84,6 +85,7 @@ extension Publishers {
                   SubscriberType.Failure == Failure
         {
             let filter = _Filter<Upstream, SubscriberType>(downstream: subscriber,
+                                                           description: "TryFilter",
                                                            isIncluded: isIncluded)
             upstream.receive(subscriber: filter)
         }
@@ -117,7 +119,7 @@ extension Publisher {
     }
 }
 
-private final class _Filter<Upstream: Publisher, Downstream: Subscriber>
+private class _Filter<Upstream: Publisher, Downstream: Subscriber>
     : OperatorSubscription<Downstream>,
       Subscriber,
       CustomStringConvertible,
@@ -131,12 +133,16 @@ private final class _Filter<Upstream: Publisher, Downstream: Subscriber>
     private let _isIncluded: (Input) throws -> Bool
     private var _demand: Subscribers.Demand = .none
 
-    init(downstream: Downstream, isIncluded: @escaping (Input) throws -> Bool) {
+    init(downstream: Downstream,
+         description: String,
+         isIncluded: @escaping (Input) throws -> Bool)
+    {
+        self.description = description
         self._isIncluded = isIncluded
         super.init(downstream: downstream)
     }
 
-    var description: String { return "Filter" }
+    let description: String
 
     func receive(subscription: Subscription) {
         upstreamSubscription = subscription

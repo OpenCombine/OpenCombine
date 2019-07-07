@@ -23,93 +23,88 @@ final class FilterTests: XCTestCase {
     ]
 
     func testFilterRemovesElements() {
-        var results: [Int] = []
-
-        let subscription = CustomSubscription()
-        let publisher = CustomPublisher(subscription: subscription)
-        _ = publisher.filter {
-            $0.isMultiple(of: 2)
-        }.sink {
-            results.append($0)
+        let helper = TestHelper(publisherType: CustomPublisher.self) {
+            $0.filter { $0.isMultiple(of: 2) }
         }
+
         for i in 1...5 {
-            _ = publisher.send(i)
+            _ = helper.publisher.send(i)
         }
 
-        XCTAssertEqual(results, [2, 4])
+        XCTAssertEqual(helper.tracking.history, [.subscription("Filter"),
+                                                 .value(2),
+                                                 .value(4)])
     }
 
     func testFilteringOtherFilters() {
-        var results: [Int] = []
-
-        let subscription = CustomSubscription()
-        let publisher = CustomPublisher(subscription: subscription)
-        _ = publisher.filter {
-            $0.isMultiple(of: 3)
-        }.filter {
-            $0.isMultiple(of: 5)
-        }.sink {
-            results.append($0)
+        let helper = TestHelper(publisherType: CustomPublisher.self) {
+            $0.filter {
+                $0.isMultiple(of: 3)
+            }.filter {
+                $0.isMultiple(of: 5)
+            }
         }
+
         for i in 1...15 {
-            _ = publisher.send(i)
+            _ = helper.publisher.send(i)
         }
 
-        XCTAssertEqual(results, [15])
+        XCTAssertEqual(helper.tracking.history, [.subscription("Filter"), .value(15)])
     }
 
     func testTryFilterWorks() {
-        var results: [Int] = []
-
-        let subscription = CustomSubscription()
-        let publisher = CustomPublisher(subscription: subscription)
-        _ = publisher.tryFilter {
-            try $0.isMultiple(of: 2) && nonthrowingReturn($0)
-        }.sink {
-            results.append($0)
+        let helper = TestHelper(publisherType: CustomPublisher.self) {
+            $0.tryFilter {
+                try $0.isMultiple(of: 2) && nonthrowingReturn($0)
+            }
         }
+
         for i in 1...5 {
-            _ = publisher.send(i)
+            _ = helper.publisher.send(i)
         }
 
-        XCTAssertEqual(results, [2, 4])
+        XCTAssertEqual(helper.tracking.history, [.subscription("TryFilter"),
+                                                 .value(2),
+                                                 .value(4)])
     }
 
     func testTryFilterCanFilterOtherFilter() {
-        var results: [Int] = []
-
-        let subscription = CustomSubscription()
-        let publisher = CustomPublisher(subscription: subscription)
-        _ = publisher.tryFilter {
-            $0.isMultiple(of: 3)
-        }.tryFilter {
-            try nonthrowingReturn($0)
-        }.sink {
-            results.append($0)
+        let helper = TestHelper(publisherType: CustomPublisher.self) {
+            $0.tryFilter {
+                $0.isMultiple(of: 3)
+            }.tryFilter {
+                try nonthrowingReturn($0)
+            }
         }
+
         for i in 1...9 {
-            _ = publisher.send(i)
+            _ = helper.publisher.send(i)
         }
 
-        XCTAssertEqual(results, [3, 6, 9])
+        XCTAssertEqual(helper.tracking.history, [.subscription("TryFilter"),
+                                                 .value(3),
+                                                 .value(6),
+                                                 .value(9)])
     }
 
     func testTryFilterCompletesWithErrorWhenThrown() {
-        let subscription = CustomSubscription()
-        let publisher = CustomPublisher(subscription: subscription)
-        var error: TestingError?
-        _ = publisher.tryFilter {
-            try failOnFive(value: $0)
-        }.sink(receiveCompletion: { completion in
-            if case let .failure(completionError) = completion {
-                error = completionError as? TestingError
+        let helper = TestHelper(publisherType: CustomPublisher.self) {
+            $0.tryFilter {
+                try failOnFive(value: $0)
             }
-        }, receiveValue: { _ in })
-        for i in 1...5 {
-            _ = publisher.send(i)
         }
-        XCTAssertEqual(subscription.history, [.requested(.unlimited), .cancelled])
-        XCTAssertEqual(error, TestingError.oops)
+
+        for i in 1...5 {
+            _ = helper.publisher.send(i)
+        }
+
+        XCTAssertEqual(helper.tracking.history, [.subscription("TryFilter"),
+                                                 .value(1),
+                                                 .value(2),
+                                                 .value(3),
+                                                 .value(4),
+                                                 .completion(.failure(TestingError.oops))
+        ])
     }
 }
 
