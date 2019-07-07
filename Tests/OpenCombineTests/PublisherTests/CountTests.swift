@@ -19,7 +19,10 @@ final class CountTests: XCTestCase {
     static let allTests = [
         ("testSendsCorrectCount", testSendsCorrectCount),
         ("testCountWaitsUntilFinishedToSend", testCountWaitsUntilFinishedToSend),
-        ("testDemand", testDemand)
+        ("testDemand", testDemand),
+        ("testNoDemand", testNoDemand),
+        ("testAddingSubscriberRequestsUnlimitedDemand",
+            testAddingSubscriberRequestsUnlimitedDemand)
     ]
 
     func testSendsCorrectCount() {
@@ -60,7 +63,7 @@ final class CountTests: XCTestCase {
     func testDemand() {
         let subscription = CustomSubscription()
         let publisher = CustomPublisher(subscription: subscription)
-        let drop = publisher.count()
+        let countPublisher = publisher.count()
         var downstreamSubscription: Subscription?
         let tracking = TrackingSubscriber(
             receiveSubscription: {
@@ -70,7 +73,59 @@ final class CountTests: XCTestCase {
             receiveValue: { _ in .max(4) }
         )
 
-        drop.subscribe(tracking)
+        countPublisher.subscribe(tracking)
+
+        XCTAssertNotNil(downstreamSubscription)
+        dump(type(of: downstreamSubscription!))
+
+        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
+
+        XCTAssertEqual(publisher.send(0), .max(0))
+        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
+
+        XCTAssertEqual(publisher.send(2), .max(0))
+        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
+
+        downstreamSubscription?.request(.max(95))
+        downstreamSubscription?.request(.max(5))
+        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
+
+        downstreamSubscription?.cancel()
+        downstreamSubscription?.cancel()
+        XCTAssertEqual(subscription.history, [.requested(.unlimited),
+                                              .cancelled])
+
+        downstreamSubscription?.request(.max(50))
+        XCTAssertEqual(subscription.history, [.requested(.unlimited),
+                                              .cancelled])
+    }
+
+    func testAddingSubscriberRequestsUnlimitedDemand() {
+        // When
+        let subscription = CustomSubscription()
+        let publisher = CustomPublisher(subscription: subscription)
+        let countPublisher = publisher.count()
+        let tracking = TrackingSubscriber()
+
+        // Given
+        XCTAssertEqual(subscription.history, [])
+        countPublisher.subscribe(tracking)
+
+        // Then
+        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
+    }
+
+    func testNoDemand() {
+        let subscription = CustomSubscription()
+        let publisher = CustomPublisher(subscription: subscription)
+        let countPublisher = publisher.count()
+        var downstreamSubscription: Subscription?
+        let tracking = TrackingSubscriber(
+            receiveSubscription: { downstreamSubscription = $0 },
+            receiveValue: { _ in .max(4) }
+        )
+
+        countPublisher.subscribe(tracking)
 
         XCTAssertNotNil(downstreamSubscription)
         dump(type(of: downstreamSubscription!))
