@@ -19,24 +19,30 @@ final class FilterTests: XCTestCase {
         ("testFilterRemovesElements", testFilterRemovesElements),
         ("testFilteringOtherFilters", testFilteringOtherFilters),
         ("testTryFilterWorks", testTryFilterWorks),
-        ("testTryFilterCanFilterOtherFilter", testTryFilterCanFilterOtherFilter)
+        ("testTryFilterCanFilterOtherFilter", testTryFilterCanFilterOtherFilter),
+        ("testTryFilterCompletesWithErrorWhenThrown",
+            testTryFilterCompletesWithErrorWhenThrown),
     ]
 
     func testFilterRemovesElements() {
+        // Given
         let helper = TestHelper(publisherType: CustomPublisher.self) {
             $0.filter { $0.isMultiple(of: 2) }
         }
 
+        // When
         for i in 1...5 {
             _ = helper.publisher.send(i)
         }
 
+        // Then
         XCTAssertEqual(helper.tracking.history, [.subscription("Filter"),
                                                  .value(2),
                                                  .value(4)])
     }
 
     func testFilteringOtherFilters() {
+        // Given
         let helper = TestHelper(publisherType: CustomPublisher.self) {
             $0.filter {
                 $0.isMultiple(of: 3)
@@ -45,30 +51,36 @@ final class FilterTests: XCTestCase {
             }
         }
 
+        // When
         for i in 1...15 {
             _ = helper.publisher.send(i)
         }
 
+        // Then
         XCTAssertEqual(helper.tracking.history, [.subscription("Filter"), .value(15)])
     }
 
     func testTryFilterWorks() {
+        // Given
         let helper = TestHelper(publisherType: CustomPublisher.self) {
             $0.tryFilter {
                 try $0.isMultiple(of: 2) && nonthrowingReturn($0)
             }
         }
 
+        // When
         for i in 1...5 {
             _ = helper.publisher.send(i)
         }
 
+        // Then
         XCTAssertEqual(helper.tracking.history, [.subscription("TryFilter"),
                                                  .value(2),
                                                  .value(4)])
     }
 
     func testTryFilterCanFilterOtherFilter() {
+        // Given
         let helper = TestHelper(publisherType: CustomPublisher.self) {
             $0.tryFilter {
                 $0.isMultiple(of: 3)
@@ -77,10 +89,12 @@ final class FilterTests: XCTestCase {
             }
         }
 
+        // When
         for i in 1...9 {
             _ = helper.publisher.send(i)
         }
 
+        // Then
         XCTAssertEqual(helper.tracking.history, [.subscription("TryFilter"),
                                                  .value(3),
                                                  .value(6),
@@ -88,16 +102,19 @@ final class FilterTests: XCTestCase {
     }
 
     func testTryFilterCompletesWithErrorWhenThrown() {
+        // Given
         let helper = TestHelper(publisherType: CustomPublisher.self) {
             $0.tryFilter {
                 try failOnFive(value: $0)
             }
         }
 
+        // When
         for i in 1...5 {
             _ = helper.publisher.send(i)
         }
 
+        // Then
         XCTAssertEqual(helper.tracking.history, [.subscription("TryFilter"),
                                                  .value(1),
                                                  .value(2),
