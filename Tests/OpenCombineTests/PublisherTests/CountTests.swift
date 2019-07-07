@@ -26,38 +26,53 @@ final class CountTests: XCTestCase {
     ]
 
     func testSendsCorrectCount() {
-        var currentCount = 0
+        let subscription = CustomSubscription()
+        let publisher = CustomPublisher(subscription: subscription)
+        let countPublisher = publisher.count()
+        let tracking = TrackingSubscriber(
+            receiveSubscription: { $0.request(.max(42)) }
+        )
 
-        let publisher = PassthroughSubject<Void, Never>()
-        _ = publisher
-            .count()
-            .sink(receiveValue: { currentCount = $0 })
+        XCTAssertEqual(tracking.history, [])
+
+        countPublisher.subscribe(tracking)
+        XCTAssertEqual(tracking.history, [.subscription("Count")])
 
         let sendAmount = Int.random(in: 1...1000)
         for _ in 0..<sendAmount {
-            publisher.send()
+            _ = publisher.send(3)
         }
+        XCTAssertEqual(tracking.history, [.subscription("Count")])
 
         publisher.send(completion: .finished)
-        XCTAssert(currentCount == sendAmount)
+        XCTAssertEqual(tracking.history, [.subscription("Count"),
+                                          .value(sendAmount),
+                                          .completion(.finished)])
     }
 
     func testCountWaitsUntilFinishedToSend() {
-        var currentCount = 0
+        let subscription = CustomSubscription()
+        let publisher = CustomPublisher(subscription: subscription)
+        let countPublisher = publisher.count()
+        let tracking = TrackingSubscriber(
+            receiveSubscription: { $0.request(.max(42)) }
+        )
 
-        let publisher = PassthroughSubject<Void, Never>()
-        _ = publisher
-            .count()
-            .sink(receiveValue: { currentCount = $0 })
+        countPublisher.subscribe(tracking)
 
-        publisher.send()
-        XCTAssert(currentCount == 0)
+        _ = publisher.send(1)
+        XCTAssertEqual(tracking.history, [.subscription("Count")])
 
-        publisher.send()
-        XCTAssert(currentCount == 0)
+        _ = publisher.send(2)
+        XCTAssertEqual(tracking.history, [.subscription("Count")])
+
+        _ = publisher.send(0)
+        XCTAssertEqual(tracking.history, [.subscription("Count")])
 
         publisher.send(completion: .finished)
-        XCTAssert(currentCount == 2)
+        XCTAssertEqual(tracking.history, [.subscription("Count"),
+                                          .value(3),
+                                          .completion(.finished)])
     }
 
     func testDemand() {
