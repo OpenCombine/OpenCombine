@@ -22,7 +22,9 @@ final class CountTests: XCTestCase {
         ("testDemand", testDemand),
         ("testNoDemand", testNoDemand),
         ("testAddingSubscriberRequestsUnlimitedDemand",
-            testAddingSubscriberRequestsUnlimitedDemand)
+            testAddingSubscriberRequestsUnlimitedDemand),
+        ("testReceivesSubscriptionBeforeRequestingUpstream",
+            testReceivesSubscriptionBeforeRequestingUpstream)
     ]
 
     func testSendsCorrectCount() {
@@ -91,7 +93,6 @@ final class CountTests: XCTestCase {
         countPublisher.subscribe(tracking)
 
         XCTAssertNotNil(downstreamSubscription)
-        dump(type(of: downstreamSubscription!))
 
         XCTAssertEqual(subscription.history, [.requested(.unlimited)])
 
@@ -165,5 +166,24 @@ final class CountTests: XCTestCase {
         downstreamSubscription?.request(.max(50))
         XCTAssertEqual(subscription.history, [.requested(.unlimited),
                                               .cancelled])
+    }
+
+    func testReceivesSubscriptionBeforeRequestingUpstream() {
+        let upstreamRequest = "Requested upstream subscription"
+        let receiveDownstream = "Receive downstream"
+        var receiveOrder: [String] = []
+
+        let subscription = CustomSubscription(onRequest: { _ in
+            receiveOrder.append(upstreamRequest)
+        })
+        let publisher = CustomPublisher(subscription: subscription)
+        let countPublisher = publisher.count()
+        let tracking = TrackingSubscriber(receiveSubscription: { _ in
+            receiveOrder.append(receiveDownstream)
+        })
+
+        countPublisher.subscribe(tracking)
+
+        XCTAssertEqual(receiveOrder, [receiveDownstream, upstreamRequest])
     }
 }

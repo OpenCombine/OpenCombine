@@ -37,7 +37,7 @@ extension Publishers {
         ///                   once attached it can begin to receive values.
         public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
             where Upstream.Failure == SubscriberType.Failure,
-                  SubscriberType.Input == Publishers.Count<Upstream>.Output
+                  SubscriberType.Input == Output
         {
             let count = _Count<Upstream, SubscriberType>(downstream: subscriber)
             upstream.receive(subscriber: count)
@@ -58,9 +58,9 @@ extension Publisher {
 
 private final class _Count<Upstream: Publisher, Downstream: Subscriber>
     : OperatorSubscription<Downstream>,
-    Subscriber,
-    CustomStringConvertible,
-    Subscription
+      Subscriber,
+      CustomStringConvertible,
+      Subscription
     where Downstream.Input == Int,
           Upstream.Failure == Downstream.Failure
 {
@@ -92,7 +92,5 @@ private final class _Count<Upstream: Publisher, Downstream: Subscriber>
     }
 
     func request(_ demand: Subscribers.Demand) {
-        guard upstreamSubscription == nil else { return }
-        upstreamSubscription?.request(.unlimited)
     }
 }
