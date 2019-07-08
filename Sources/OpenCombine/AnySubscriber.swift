@@ -190,9 +190,9 @@ internal final class SubjectSubscriber<SubjectType: Subject>
         return Mirror(self, children: children)
     }
 
-    func request(_ demand: Subscribers.Demand) {}
+    internal func request(_ demand: Subscribers.Demand) {}
 
-    func cancel() {
+    internal func cancel() {
         upstreamSubscription?.cancel()
         upstreamSubscription = nil
         parent = nil

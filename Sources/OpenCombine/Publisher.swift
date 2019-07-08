@@ -68,4 +68,3 @@ extension Publisher {
         return AnyCancellable(subscriber)
     }
 }
-
