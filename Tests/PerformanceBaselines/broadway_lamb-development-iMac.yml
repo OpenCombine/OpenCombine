@@ -1,12 +1,3 @@
-AnyCancellableTests:
-  testDestructionPerformance:
-    maxPercentRelativeStandardDeviation: 1e+1
-    measurement: 9.71271139045712e-3
-    strategy: minimum
-  testDestructionPerformance | OPENCOMBINE_COMPATIBILITY_TEST:
-    maxPercentRelativeStandardDeviation: 1e+1
-    measurement: 3.24062062427402e-3
-    strategy: minimum
 CombineIdentifierTests:
   testDefaultInitializedPerformance:
     maxPercentRelativeStandardDeviation: 1e+1

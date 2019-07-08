@@ -14,7 +14,7 @@ import OpenCombine
 #endif
 
 @available(macOS 10.15, *)
-final class AnyCancellableTests: PerformanceTestCase {
+final class AnyCancellableTests: XCTestCase {
 
     static let allTests = [
         ("testClosureInitialized", testClosureInitialized),
@@ -22,7 +22,7 @@ final class AnyCancellableTests: PerformanceTestCase {
         ("testCancelTwice", testCancelTwice),
         ("testStoreInArbitraryCollection", testStoreInArbitraryCollection),
         ("testStoreInSet", testStoreInSet),
-        ("testDestructionPerformance", testDestructionPerformance),
+        ("testIndirectCancellation", testIndirectCancellation),
     ]
 
     func testClosureInitialized() {
@@ -125,15 +125,16 @@ final class AnyCancellableTests: PerformanceTestCase {
         XCTAssertEqual(disposeBag, [cancellable1, cancellable2])
     }
 
-    func testDestructionPerformance() throws {
-        try benchmark(executionCount: 100) {
+    func testIndirectCancellation() {
+        let subscription = CustomSubscription()
+        let cancellable1 = AnyCancellable(subscription)
+        let cancellable2 = AnyCancellable(cancellable1)
+        XCTAssert(subscription.history.isEmpty)
 
-            // Create a chain of AnyCancellables
-            var anyCancellable = AnyCancellable({})
+        cancellable2.cancel()
+        XCTAssertEqual(subscription.history, [.cancelled])
 
-            for _ in 0 ..< 10000 {
-                anyCancellable = AnyCancellable(anyCancellable)
-            }
-        }
+        cancellable1.cancel()
+        XCTAssertEqual(subscription.history, [.cancelled])
     }
 }

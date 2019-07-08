@@ -22,11 +22,7 @@ public final class AnyCancellable: Cancellable, Hashable {
     }
 
     public init<OtherCancellable: Cancellable>(_ canceller: OtherCancellable) {
-        if let anyCanceller = canceller as? AnyCancellable {
-            _cancel = anyCanceller._cancel
-        } else {
-            _cancel = canceller.cancel
-        }
+        _cancel = canceller.cancel
     }
 
     public func cancel() {
