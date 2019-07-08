@@ -123,6 +123,38 @@ final class FilterTests: XCTestCase {
                                                  .completion(.failure(TestingError.oops))
         ])
     }
+
+    func testCanCompleteWithFinished() {
+        // Given
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self) {
+            $0.filter { _ in true }
+        }
+
+        // When
+        _ = helper.publisher.send(1)
+        helper.publisher.send(completion: .finished)
+
+        // Then
+        XCTAssertEqual(helper.tracking.history, [.subscription("Filter"),
+                                                 .value(1),
+                                                 .completion(.finished)])
+    }
+
+    func testCanCompleteWithError() {
+        // Given
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self) {
+            $0.filter { _ in true }
+        }
+
+        // When
+        _ = helper.publisher.send(1)
+        helper.publisher.send(completion: .failure(.oops))
+
+        // Then
+        XCTAssertEqual(helper.tracking.history, [.subscription("Filter"),
+                                                 .value(1),
+                                                 .completion(.failure(.oops))])
+    }
 }
 
 private func nonthrowingReturn(_ value: Int) throws -> Bool {

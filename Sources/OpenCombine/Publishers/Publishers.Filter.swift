@@ -155,9 +155,8 @@ private class _Filter<Upstream: Publisher, Downstream: Subscriber>
             // input is filtered away, we just return the demand
             if try _isIncluded(input) {
                 return downstream.receive(input)
-            } else {
-                return _demand
             }
+            return _demand
         } catch {
             // We can force cast here because the regular filter never fails, so
             downstream.receive(completion: .failure(error as! Downstream.Failure))
