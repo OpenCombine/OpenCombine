@@ -156,7 +156,8 @@ internal final class ClosureBasedSubscriber<Input, Failure: Error>
 }
 
 internal final class SubjectSubscriber<SubjectType: Subject>
-    : SubscriberBoxBase<SubjectType.Output, SubjectType.Failure>
+    : SubscriberBoxBase<SubjectType.Output, SubjectType.Failure>,
+      Subscription
 {
     internal var parent: SubjectType?
     internal var upstreamSubscription: Subscription?
@@ -187,5 +188,13 @@ internal final class SubjectSubscriber<SubjectType: Subject>
             (label: "upstreamSubscription", value: upstreamSubscription as Any)
         ]
         return Mirror(self, children: children)
+    }
+
+    internal func request(_ demand: Subscribers.Demand) {}
+
+    internal func cancel() {
+        upstreamSubscription?.cancel()
+        upstreamSubscription = nil
+        parent = nil
     }
 }

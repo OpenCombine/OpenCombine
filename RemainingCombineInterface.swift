@@ -1124,11 +1124,6 @@ extension Publisher {
     public func prefix<P>(untilOutputFrom publisher: P) -> Publishers.PrefixUntilOutput<Self, P> where P : Publisher
 }
 
-extension Publisher {
-
-    public func subscribe<S>(_ subject: S) -> AnyCancellable where S : Subject, Self.Failure == S.Failure, Self.Output == S.Output
-}
-
 extension Publishers {
 
     /// A publisher that applies a closure to all received elements and produces an accumulated value when the upstream publisher finishes.

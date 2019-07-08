@@ -40,6 +40,7 @@ final class CustomPublisherBase<Value: Equatable>: Publisher {
     typealias Failure = TestingError
 
     private(set) var subscriber: AnySubscriber<Value, TestingError>?
+    private(set) var erasedSubscriber: Any?
     private let subscription: Subscription?
 
     init(subscription: Subscription?) {
@@ -50,6 +51,7 @@ final class CustomPublisherBase<Value: Equatable>: Publisher {
         where Failure == SubscriberType.Failure, Output == SubscriberType.Input
     {
         self.subscriber = AnySubscriber(subscriber)
+        erasedSubscriber = subscriber
         subscription.map(subscriber.receive(subscription:))
     }
 

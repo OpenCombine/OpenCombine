@@ -216,9 +216,16 @@ final class TrackingSubject<Value: Equatable>: Subject, CustomStringConvertible 
     private let _passthrough = PassthroughSubject<Value, TestingError>()
     private(set) var history: [Event] = []
     private let _receiveSubscriber: ((CustomCombineIdentifierConvertible) -> Void)?
+    private let _onDeinit: (() -> Void)?
 
-    init(receiveSubscriber: ((CustomCombineIdentifierConvertible) -> Void)? = nil) {
+    init(receiveSubscriber: ((CustomCombineIdentifierConvertible) -> Void)? = nil,
+         onDeinit: (() -> Void)? = nil) {
         _receiveSubscriber = receiveSubscriber
+        _onDeinit = onDeinit
+    }
+
+    deinit {
+        _onDeinit?()
     }
 
     func send(_ value: Value) {

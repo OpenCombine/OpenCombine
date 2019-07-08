@@ -33,7 +33,7 @@ final class ReplaceNilTests: XCTestCase {
         )
 
         // When
-        sut.receive(subscriber: subscriber)
+        sut.subscribe(subscriber)
         nilPublisher.send(nil)
 
         // Then
@@ -53,7 +53,7 @@ final class ReplaceNilTests: XCTestCase {
         )
 
         // When
-        sut.receive(subscriber: subscriber)
+        sut.subscribe(subscriber)
         nilPublisher.send(output)
 
         // Then
