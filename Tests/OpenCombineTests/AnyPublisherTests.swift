@@ -32,7 +32,7 @@ final class AnyPublisherTests: XCTestCase {
         )
         let erased = AnyPublisher(publisher)
 
-        erased.receive(subscriber: subscriber)
+        erased.subscribe(subscriber)
         XCTAssertEqual(publisher.history, [.subscriber])
     }
 }

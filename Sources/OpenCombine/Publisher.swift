@@ -36,8 +36,8 @@ public protocol Publisher {
     /// - Parameters:
     ///     - subscriber: The subscriber to attach to this `Publisher`.
     ///                   once attached it can begin to receive values.
-    func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-        where Failure == SubscriberType.Failure, Output == SubscriberType.Input
+    func receive<Subscriber: OpenCombine.Subscriber>(subscriber: Subscriber)
+        where Failure == Subscriber.Failure, Output == Subscriber.Input
 }
 
 extension Publisher {
@@ -52,9 +52,20 @@ extension Publisher {
     /// - Parameters:
     ///     - subscriber: The subscriber to attach to this `Publisher`. After attaching,
     ///       the subscriber can start to receive values.
-    public func subscribe<SubscriberType: Subscriber>(_ subscriber: SubscriberType)
-        where Failure == SubscriberType.Failure, Output == SubscriberType.Input
+    public func subscribe<Subscriber: OpenCombine.Subscriber>(_ subscriber: Subscriber)
+        where Failure == Subscriber.Failure, Output == Subscriber.Input
     {
         receive(subscriber: subscriber)
     }
+
+    public func subscribe<Subject: OpenCombine.Subject>(
+        _ subject: Subject
+    ) -> AnyCancellable
+        where Failure == Subject.Failure, Output == Subject.Output
+    {
+        let subscriber = SubjectSubscriber(subject)
+        self.subscribe(subscriber)
+        return AnyCancellable(subscriber)
+    }
 }
+

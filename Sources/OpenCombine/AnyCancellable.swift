@@ -21,8 +21,12 @@ public final class AnyCancellable: Cancellable, Hashable {
         _cancel = cancel
     }
 
-    public init<CancellableType: Cancellable>(_ canceller: CancellableType) {
-        _cancel = canceller.cancel
+    public init<OtherCancellable: Cancellable>(_ canceller: OtherCancellable) {
+        if let anyCanceller = canceller as? AnyCancellable {
+            _cancel = anyCanceller._cancel
+        } else {
+            _cancel = canceller.cancel
+        }
     }
 
     public func cancel() {
@@ -39,7 +43,7 @@ public final class AnyCancellable: Cancellable, Hashable {
     }
 
     deinit {
-        cancel()
+        _cancel?()
     }
 }
 

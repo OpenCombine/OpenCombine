@@ -21,6 +21,7 @@ final class AnyCancellableTests: XCTestCase {
         ("testCancelableInitialized", testCancelableInitialized),
         ("testCancelTwice", testCancelTwice),
         ("testStoreInArbitraryCollection", testStoreInArbitraryCollection),
+        ("testStoreInSet", testStoreInSet),
     ]
 
     func testClosureInitialized() {
@@ -97,11 +98,29 @@ final class AnyCancellableTests: XCTestCase {
 
         XCTAssertEqual(disposeBag.history, [.emptyInit, .append])
 
-        let cancellable2 = AnyCancellable({})
+        let cancellable2 = AnyCancellable(cancellable1)
         cancellable2.store(in: &disposeBag)
 
         XCTAssertEqual(disposeBag.history, [.emptyInit, .append, .append])
 
         XCTAssertEqual(disposeBag.storage, [cancellable1, cancellable2])
+    }
+
+    func testStoreInSet() {
+
+        var disposeBag = Set<AnyCancellable>()
+
+        let cancellable1 = AnyCancellable({})
+        cancellable1.store(in: &disposeBag)
+
+        XCTAssertEqual(disposeBag, [cancellable1])
+
+        let cancellable2 = AnyCancellable(cancellable1)
+        cancellable2.store(in: &disposeBag)
+
+        XCTAssertEqual(disposeBag, [cancellable1, cancellable2])
+
+        cancellable2.store(in: &disposeBag)
+        XCTAssertEqual(disposeBag, [cancellable1, cancellable2])
     }
 }
