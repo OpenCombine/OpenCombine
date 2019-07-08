@@ -26,7 +26,7 @@ public final class AnySubject<Output, Failure: Error>: Subject {
     public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
         where Output == SubscriberType.Input, Failure == SubscriberType.Failure
     {
-        _box.receive(subscriber: subscriber)
+        _box.subscribe(subscriber)
     }
 
     public func send(_ value: Output) {
@@ -78,7 +78,7 @@ private final class SubjectBox<SubjectType: Subject>
     override func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
         where Failure == SubscriberType.Failure, Output == SubscriberType.Input
     {
-        base.receive(subscriber: subscriber)
+        base.subscribe(subscriber)
     }
 }
 

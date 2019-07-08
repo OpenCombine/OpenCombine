@@ -79,7 +79,7 @@ final class DecodeTests: XCTestCase {
 
         // `CustomPublisher` sends the subscription object it has been initialized with
         // to whoever subscribed to the `CustomPublisher`.
-        let publisher = CustomPublisherBase<Int>(subscription: subscription)
+        let publisher = CustomPublisherBase<Int, TestingError>(subscription: subscription)
 
         // `_Decode` helper will receive the `CustomSubscription `
         let decode = publisher.decode(type: [String : String].self,

@@ -76,7 +76,9 @@ final class EncodeTests: XCTestCase {
 
         // `CustomPublisher` sends the subscription object it has been initialized with
         // to whoever subscribed to the `CustomPublisher`.
-        let publisher = CustomPublisherBase<[String: String]>(subscription: subscription)
+        let publisher = CustomPublisherBase<[String: String], TestingError>(
+            subscription: subscription
+        )
 
         // `_Encode` helper will receive the `CustomSubscription `
         let encode = publisher.encode(encoder: encoder)

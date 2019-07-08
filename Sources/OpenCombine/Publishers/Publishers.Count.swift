@@ -40,7 +40,7 @@ extension Publishers {
                   SubscriberType.Input == Output
         {
             let count = _Count<Upstream, SubscriberType>(downstream: subscriber)
-            upstream.receive(subscriber: count)
+            upstream.subscribe(count)
         }
     }
 }
