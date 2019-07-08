@@ -26,7 +26,7 @@ final class FilterTests: XCTestCase {
 
     func testFilterRemovesElements() {
         // Given
-        let helper = TestHelper(publisherType: CustomPublisher.self) {
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self) {
             $0.filter { $0.isMultiple(of: 2) }
         }
 
@@ -43,7 +43,7 @@ final class FilterTests: XCTestCase {
 
     func testFilteringOtherFilters() {
         // Given
-        let helper = TestHelper(publisherType: CustomPublisher.self) {
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self) {
             $0.filter {
                 $0.isMultiple(of: 3)
             }.filter {
@@ -62,7 +62,7 @@ final class FilterTests: XCTestCase {
 
     func testTryFilterWorks() {
         // Given
-        let helper = TestHelper(publisherType: CustomPublisher.self) {
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self) {
             $0.tryFilter {
                 try $0.isMultiple(of: 2) && nonthrowingReturn($0)
             }
@@ -81,7 +81,7 @@ final class FilterTests: XCTestCase {
 
     func testTryFilterCanFilterOtherFilter() {
         // Given
-        let helper = TestHelper(publisherType: CustomPublisher.self) {
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self) {
             $0.tryFilter {
                 $0.isMultiple(of: 3)
             }.tryFilter {
@@ -103,7 +103,7 @@ final class FilterTests: XCTestCase {
 
     func testTryFilterCompletesWithErrorWhenThrown() {
         // Given
-        let helper = TestHelper(publisherType: CustomPublisher.self) {
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self) {
             $0.tryFilter {
                 try failOnFive(value: $0)
             }
