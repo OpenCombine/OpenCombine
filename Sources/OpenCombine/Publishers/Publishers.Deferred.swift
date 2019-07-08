@@ -23,17 +23,20 @@ extension Publishers {
 
         /// The closure to execute when it receives a subscription.
         ///
-        /// The publisher returned by this closure immediately receives the incoming subscription.
+        /// The publisher returned by this closure immediately
+        /// receives the incoming subscription.
         public let createPublisher: () -> DeferredPublisher
 
         /// Creates a deferred publisher.
         ///
-        /// - Parameter createPublisher: The closure to execute when calling `subscribe(_:)`.
+        /// - Parameter createPublisher: The closure to execute
+        /// when calling `subscribe(_:)`.
         public init(createPublisher: @escaping () -> DeferredPublisher) {
             self.createPublisher = createPublisher
         }
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
