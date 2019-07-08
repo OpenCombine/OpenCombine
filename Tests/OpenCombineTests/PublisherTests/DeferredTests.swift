@@ -18,43 +18,37 @@ import OpenCombine
 final class DeferredTests: XCTestCase {
 
     static let allTests = [
-        ("testDeferredNotCalledBeforeSubscription",
-            testDeferredNotCalledBeforeSubscription),
         ("testDeferredCreatedAfterSubscription",
             testDeferredCreatedAfterSubscription)
     ]
 
-    func testDeferredNotCalledBeforeSubscription() {
-        let subscription = CustomSubscription()
-        let publisher = CustomPublisher(subscription: subscription)
-
-        _ = Publishers.Deferred {
-            publisher
-        }
-
-        XCTAssertEqual(subscription.history, [])
-    }
-
     func testDeferredCreatedAfterSubscription() {
-        var deferredCalled = false
+        var deferredPublisherCreatedCount = 0
 
         let subscription = CustomSubscription()
         let publisher = CustomPublisher(subscription: subscription)
         let sut: Publishers.Deferred = Publishers.Deferred { () -> CustomPublisher in
-            deferredCalled = true
+            deferredPublisherCreatedCount += 1
             return publisher
         }
 
         let tracking = TrackingSubscriber()
 
-        XCTAssertEqual(subscription.history, [])
-        XCTAssertFalse(deferredCalled)
+        XCTAssertEqual(deferredPublisherCreatedCount, 0)
+        XCTAssertEqual(tracking.history, [])
 
         sut.subscribe(tracking)
 
-        XCTAssertEqual(subscription.history, [])
-        XCTAssertTrue(deferredCalled)
+        XCTAssertEqual(tracking.history, [.subscription("CustomSubscription")])
+        XCTAssertEqual(deferredPublisherCreatedCount, 1)
+
+        sut.subscribe(tracking)
+
+        XCTAssertEqual(deferredPublisherCreatedCount, 2)
 
         subscription.request(.unlimited)
+
+        XCTAssertEqual(tracking.history, [.subscription("CustomSubscription"),
+                                          .subscription("CustomSubscription")])
     }
 }

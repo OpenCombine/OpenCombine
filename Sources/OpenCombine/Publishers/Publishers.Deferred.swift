@@ -47,7 +47,7 @@ extension Publishers {
                   Output == SubscriberType.Input
         {
             let deferredPublisher = createPublisher()
-            deferredPublisher.receive(subscriber: subscriber)
+            deferredPublisher.subscribe(subscriber)
         }
     }
 }
