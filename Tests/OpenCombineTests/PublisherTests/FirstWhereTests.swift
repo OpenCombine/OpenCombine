@@ -123,9 +123,8 @@ final class FirstWhereTests: XCTestCase {
     static let allTests = [
         ("testFirstFinishesAndReturnsFirstMatchingItem",
             testFirstFinishesAndReturnsFirstMatchingItem),
-//        ("testFirstFinishesWithError",
-//         testFirstFinishesWithError),
-//        ("testFirstFinishesFinishesImmediately", testFirstFinishesFinishesImmediately)
+        ("testFirstWhereFinishesWithError",
+            testFirstWhereFinishesWithError)
     ]
     
     func testFirstFinishesAndReturnsFirstMatchingItem() {
@@ -133,92 +132,66 @@ final class FirstWhereTests: XCTestCase {
         let publisher = CustomPublisher(subscription: subscription)
         let tracking = TrackingSubscriber(receiveSubscription: { $0.request(.unlimited) })
         
-        let sut = publisher.first()
+        let sut = publisher.first(where: { $0.isMultiple(of: 2) })
         
         XCTAssertEqual(tracking.history, [])
         XCTAssertEqual(subscription.history, [])
         
         sut.subscribe(tracking)
-        XCTAssertEqual(tracking.history, [.subscription("First")])
+        XCTAssertEqual(tracking.history, [.subscription("TryFirst")])
         XCTAssertEqual(subscription.history, [.requested(.unlimited)])
         
-        let sentDemand = publisher.send(25)
-        XCTAssertEqual(sentDemand, .none)
-        XCTAssertEqual(tracking.history, [.subscription("First"),
-                                          .value(25),
+        let demand1 = publisher.send(3)
+        XCTAssertEqual(demand1, .none)
+        XCTAssertEqual(tracking.history, [.subscription("TryFirst")])
+        
+        let demand2 = publisher.send(2)
+        XCTAssertEqual(demand2, .none)
+        XCTAssertEqual(tracking.history, [.subscription("TryFirst"),
+                                          .value(2),
                                           .completion(.finished)])
         
         publisher.send(completion: .finished)
-        XCTAssertEqual(tracking.history, [.subscription("First"),
-                                          .value(25),
+        XCTAssertEqual(tracking.history, [.subscription("TryFirst"),
+                                          .value(2),
                                           .completion(.finished)])
         
-        let afterFinishSentDemand = publisher.send(73)
+        let afterFinishSentDemand = publisher.send(4)
         XCTAssertEqual(afterFinishSentDemand, .none)
-        XCTAssertEqual(tracking.history, [.subscription("First"),
-                                          .value(25),
+        XCTAssertEqual(tracking.history, [.subscription("TryFirst"),
+                                          .value(2),
                                           .completion(.finished)])
         
     }
     
-//    func testFirstFinishesWithError() {
-//        let subscription = CustomSubscription()
-//        let publisher = CustomPublisher(subscription: subscription)
-//        let tracking = TrackingSubscriber(receiveSubscription: { $0.request(.unlimited) })
-//        
-//        let sut = publisher.first()
-//        
-//        XCTAssertEqual(tracking.history, [])
-//        XCTAssertEqual(subscription.history, [])
-//        
-//        sut.subscribe(tracking)
-//        XCTAssertEqual(tracking.history, [.subscription("First")])
-//        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
-//        
-//        publisher.send(completion: .failure(.oops))
-//        XCTAssertEqual(tracking.history, [.subscription("First"),
-//                                          .completion(.failure(.oops))])
-//        
-//        publisher.send(completion: .failure(.oops))
-//        XCTAssertEqual(tracking.history, [.subscription("First"),
-//                                          .completion(.failure(.oops))])
-//        
-//        let afterFinishSentDemand = publisher.send(73)
-//        XCTAssertEqual(afterFinishSentDemand, .none)
-//        XCTAssertEqual(tracking.history, [.subscription("First"),
-//                                          .completion(.failure(.oops))])
-//        
-//    }
-//    
-//    
-//    func testFirstFinishesFinishesImmediately() {
-//        let subscription = CustomSubscription()
-//        let publisher = CustomPublisher(subscription: subscription)
-//        let tracking = TrackingSubscriber(receiveSubscription: { $0.request(.unlimited) })
-//        
-//        let sut = publisher.first()
-//        
-//        XCTAssertEqual(tracking.history, [])
-//        XCTAssertEqual(subscription.history, [])
-//        
-//        sut.subscribe(tracking)
-//        XCTAssertEqual(tracking.history, [.subscription("First")])
-//        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
-//        
-//        publisher.send(completion: .finished)
-//        XCTAssertEqual(tracking.history, [.subscription("First"),
-//                                          .completion(.finished)])
-//        
-//        publisher.send(completion: .failure(.oops))
-//        XCTAssertEqual(tracking.history, [.subscription("First"),
-//                                          .completion(.finished)])
-//        
-//        let afterFinishSentDemand = publisher.send(73)
-//        XCTAssertEqual(afterFinishSentDemand, .none)
-//        XCTAssertEqual(tracking.history, [.subscription("First"),
-//                                          .completion(.finished)])
-//        
-//    }
+    func testFirstWhereFinishesWithError() {
+        let subscription = CustomSubscription()
+        let publisher = CustomPublisher(subscription: subscription)
+        let tracking = TrackingSubscriber(receiveSubscription: { $0.request(.unlimited) })
+
+        let sut = publisher.first { $0.isMultiple(of: 2) }
+
+        XCTAssertEqual(tracking.history, [])
+        XCTAssertEqual(subscription.history, [])
+
+        sut.subscribe(tracking)
+        XCTAssertEqual(tracking.history, [.subscription("TryFirst")])
+        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
+
+        publisher.send(completion: .failure(.oops))
+        XCTAssertEqual(tracking.history, [.subscription("TryFirst"),
+                                          .completion(.failure(.oops))])
+
+        publisher.send(completion: .failure(.oops))
+        XCTAssertEqual(tracking.history, [.subscription("TryFirst"),
+                                          .completion(.failure(.oops))])
+
+        let afterFinishSentDemand = publisher.send(73)
+        XCTAssertEqual(afterFinishSentDemand, .none)
+        XCTAssertEqual(tracking.history, [.subscription("TryFirst"),
+                                          .completion(.failure(.oops))])
+
+    }
 }
 
 //@available(macOS 10.15, *)

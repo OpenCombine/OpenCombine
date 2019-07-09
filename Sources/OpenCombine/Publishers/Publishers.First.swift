@@ -42,6 +42,7 @@ extension Publishers {
                 predicate: { _ in
                     return .success(true)
                 },
+                description: "First",
                 errorConversion: { return $0 }
             )
             upstream.receive(subscriber: firstSubscriber)
@@ -85,6 +86,7 @@ extension Publishers {
                 predicate: { input in
                     return .success(self.predicate(input))
                 },
+                description: "TryFirst",
                 errorConversion: { return $0 }
             )
             upstream.receive(subscriber: firstWhereSubscriber)
@@ -134,13 +136,14 @@ extension Publishers {
                         return .failure(error)
                     }
                 },
+                description: "TryFirstWhere",
                 errorConversion: { $0 as Error })
             upstream.receive(subscriber: firstWhereSubscriber)
         }
     }
 }
 
-class _FirstWhere<Upstream: Publisher, Downstream: Subscriber>
+private final class _FirstWhere<Upstream: Publisher, Downstream: Subscriber>
     : OperatorSubscription<Downstream>,
       CustomStringConvertible,
       Subscription,
@@ -154,15 +157,17 @@ class _FirstWhere<Upstream: Publisher, Downstream: Subscriber>
     
     var predicate: Predicate
     var isActive = true
-    var description: String { return "First" }
+    let description: String
     var first: Input?
     
     let _errorConversion: (Upstream.Failure) -> Downstream.Failure
     
     init(downstream: Downstream,
          predicate: @escaping Predicate,
+         description: String,
          errorConversion: @escaping (Upstream.Failure) -> Downstream.Failure) {
         self.predicate = predicate
+        self.description = description
         self._errorConversion = errorConversion
         super.init(downstream: downstream)
     }
@@ -175,18 +180,17 @@ class _FirstWhere<Upstream: Publisher, Downstream: Subscriber>
     func receive(_ input: Input) -> Subscribers.Demand {
         guard isActive else { return .none }
         switch predicate(input) {
-        case .success(true):
-            _ = downstream.receive(input)
-            downstream.receive(completion: .finished)
-            isActive = false
-            return .none
-        case .success(false):
-            return .max(1)
+        case .success(let isMatch):
+            if isMatch {
+                _ = downstream.receive(input)
+                downstream.receive(completion: .finished)
+                isActive = false
+            }
         case .failure(let error):
             downstream.receive(completion: .failure(error))
             cancel()
-            return .none
         }
+        return .none
     }
     
     func receive(completion: Subscribers.Completion<Failure>) {
