@@ -17,8 +17,9 @@ import OpenCombine
 final class TryFirstWhereTests: XCTestCase {
 
     static let allTests = [
-        ("testReturnsFirstMatchingElement",
-         testReturnsFirstMatchingElement),
+        ("testReturnsFirstMatchingElement", testReturnsFirstMatchingElement),
+        ("testTryFirstWhereFinishesWithError", testTryFirstWhereFinishesWithError),
+        ("testFirstWhereFinishesWhenErrorThrown", testFirstWhereFinishesWhenErrorThrown)
     ]
 
     // swiftlint:disable implicitly_unwrapped_optional
