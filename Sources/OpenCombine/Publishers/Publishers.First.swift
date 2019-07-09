@@ -37,12 +37,14 @@ extension Publishers {
             where Failure == SubscriberType.Failure,
                   Output == SubscriberType.Input
         {
-            let firstSubscriber = _FirstWhere<Upstream, SubscriberType>(downstream: subscriber) { _ in
-                return .success(true)
-            }
+            let firstSubscriber = _FirstWhere<Upstream, SubscriberType>(
+                downstream: subscriber,
+                predicate: { _ in
+                    return .success(true)
+                },
+                errorConversion: { return $0 }
+            )
             upstream.receive(subscriber: firstSubscriber)
-            
-            fatalError("Not implemented")
         }
     }
     
@@ -78,9 +80,13 @@ extension Publishers {
             where Failure == SubscriberType.Failure,
                   Output == SubscriberType.Input
         {
-            let firstWhereSubscriber = _FirstWhere<Upstream, SubscriberType>(downstream: subscriber) { input in
-                return .success(self.predicate(input))
-            }
+            let firstWhereSubscriber = _FirstWhere<Upstream, SubscriberType>(
+                downstream: subscriber,
+                predicate: { input in
+                    return .success(self.predicate(input))
+                },
+                errorConversion: { return $0 }
+            )
             upstream.receive(subscriber: firstWhereSubscriber)
         }
     }
@@ -117,52 +123,62 @@ extension Publishers {
             where Failure == SubscriberType.Failure,
                   Output == SubscriberType.Input
         {
-//            let firstWhereSubscriber = _FirstWhere<Upstream, SubscriberType>(downstream: subscriber) { input in
-//                do {
-//                    let isMatch = try self.predicate(input)
-//                    return .success(isMatch)
-//                } catch {
-//                    return .failure(error)
-//                }
-//            }
-//            upstream.receive(subscriber: firstWhereSubscriber)
+            let firstWhereSubscriber = _FirstWhere<Upstream, SubscriberType>(
+                downstream: subscriber,
+                predicate:
+                { input in
+                    do {
+                        let isMatch = try self.predicate(input)
+                        return .success(isMatch)
+                    } catch {
+                        return .failure(error)
+                    }
+                },
+                errorConversion: { $0 as Error })
+            upstream.receive(subscriber: firstWhereSubscriber)
         }
     }
 }
 
-private class _FirstWhere<Upstream: Publisher, Downstream: Subscriber>
+class _FirstWhere<Upstream: Publisher, Downstream: Subscriber>
     : OperatorSubscription<Downstream>,
       CustomStringConvertible,
       Subscription,
       Subscriber
-    where Downstream.Input == Upstream.Output, Downstream.Failure == Upstream.Failure
+    where Downstream.Input == Upstream.Output
 {
     
     typealias Input = Upstream.Output
-    typealias Output = Downstream.Input
     typealias Failure = Upstream.Failure
-    typealias Predicate = (Input) -> Result<Bool, Upstream.Failure>
+    typealias Predicate = (Input) -> Result<Bool, Downstream.Failure>
     
     var predicate: Predicate
-    var demand: Subscribers.Demand = .none
-    var description: String { return "FirstWhere" }
+    var isActive = true
+    var description: String { return "First" }
+    var first: Input?
     
-    init(downstream: Downstream, predicate: @escaping Predicate) {
+    let _errorConversion: (Upstream.Failure) -> Downstream.Failure
+    
+    init(downstream: Downstream,
+         predicate: @escaping Predicate,
+         errorConversion: @escaping (Upstream.Failure) -> Downstream.Failure) {
         self.predicate = predicate
+        self._errorConversion = errorConversion
         super.init(downstream: downstream)
     }
     
     func receive(subscription: Subscription) {
         upstreamSubscription = subscription
-        subscription.request(.max(1))
         downstream.receive(subscription: self)
     }
     
     func receive(_ input: Input) -> Subscribers.Demand {
+        guard isActive else { return .none }
         switch predicate(input) {
         case .success(true):
             _ = downstream.receive(input)
             downstream.receive(completion: .finished)
+            isActive = false
             return .none
         case .success(false):
             return .max(1)
@@ -174,11 +190,19 @@ private class _FirstWhere<Upstream: Publisher, Downstream: Subscriber>
     }
     
     func receive(completion: Subscribers.Completion<Failure>) {
-        downstream.receive(completion: completion)
+        guard isActive else { return }
+        switch completion {
+        case .failure(let upstreamError):
+            let converted = _errorConversion(upstreamError)
+            downstream.receive(completion: .failure(converted))
+        case .finished:
+            downstream.receive(completion: .finished)
+        }
+        isActive = false
     }
     
     func request(_ demand: Subscribers.Demand) {
-
+        upstreamSubscription?.request(.unlimited)
     }
 }
 
@@ -189,24 +213,36 @@ extension Publisher {
     /// If this publisher doesn’t receive any elements, it finishes without publishing.
     /// - Returns: A publisher that only publishes the first element of a stream.
     public func first() -> Publishers.First<Self> {
-        fatalError("Not implmented")
+        return Publishers.First(upstream: self)
     }
     
     /// Publishes the first element of a stream to satisfy a predicate closure, then finishes.
     ///
-    /// The publisher ignores all elements after the first. If this publisher doesn’t receive any elements, it finishes without publishing.
-    /// - Parameter predicate: A closure that takes an element as a parameter and returns a Boolean value that indicates whether to publish the element.
-    /// - Returns: A publisher that only publishes the first element of a stream that satifies the predicate.
-    public func first(where predicate: @escaping (Output) -> Bool) -> Publishers.FirstWhere<Self> {
-        fatalError("Not implmented")
+    /// The publisher ignores all elements after the first. If this publisher doesn’t receive
+    /// any elements, it finishes without publishing.
+    /// - Parameter predicate: A closure that takes an element as a parameter and
+    /// returns a Boolean value that indicates whether to publish the element.
+    /// - Returns: A publisher that only publishes the first element of a stream
+    /// that satifies the predicate.
+    public func first(where predicate: @escaping (Output) -> Bool)
+        -> Publishers.FirstWhere<Self>
+    {
+        return Publishers.FirstWhere(upstream: self, predicate: predicate)
     }
     
     /// Publishes the first element of a stream to satisfy a throwing predicate closure, then finishes.
     ///
-    /// The publisher ignores all elements after the first. If this publisher doesn’t receive any elements, it finishes without publishing. If the predicate closure throws, the publisher fails with an error.
-    /// - Parameter predicate: A closure that takes an element as a parameter and returns a Boolean value that indicates whether to publish the element.
-    /// - Returns: A publisher that only publishes the first element of a stream that satifies the predicate.
-    public func tryFirst(where predicate: @escaping (Output) throws -> Bool) -> Publishers.TryFirstWhere<Self> {
-        fatalError("Not implmented")
+    /// The publisher ignores all elements after the first. If this publisher doesn’t receive
+    /// any elements, it finishes without publishing. If the predicate closure throws, the
+    /// publisher fails with an error.
+    /// - Parameter predicate: A closure that takes an element as a parameter and
+    /// returns a Boolean value that indicates whether to publish the element.
+    /// - Returns: A publisher that only publishes the first element of a stream
+    /// that satifies the predicate.
+    public func tryFirst(
+        where predicate: @escaping (Output) throws -> Bool
+    ) -> Publishers.TryFirstWhere<Self>
+    {
+        return Publishers.TryFirstWhere(upstream: self, predicate: predicate)
     }
 }
