@@ -57,6 +57,6 @@ internal func catching<Input, Output, Failure: Error>(
 /// an error but returns `Result`.
 internal func catching<Input, Output>(
     _ transform: @escaping (Input) throws -> Output
-    ) -> (Input) -> Result<Output, Error> {
+) -> (Input) -> Result<Output, Error> {
     return { input in Result { try transform(input) } }
 }
