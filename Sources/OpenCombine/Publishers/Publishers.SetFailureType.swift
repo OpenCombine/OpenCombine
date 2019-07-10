@@ -43,6 +43,8 @@ extension Publishers {
     }
 }
 
+extension Publishers.SetFailureType: Equatable where Upstream: Equatable {}
+
 extension Publisher where Failure == Never {
 
     /// Changes the failure type declared by the upstream publisher.
@@ -72,7 +74,7 @@ extension Publishers.SetFailureType {
         }
 
         func receive(_ input: Upstream.Output) -> Subscribers.Demand {
-            downstream.receive(input)
+            return downstream.receive(input)
         }
 
         func receive(completion: Subscribers.Completion<Never>) {

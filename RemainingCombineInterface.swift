@@ -3259,19 +3259,6 @@ extension Publishers.CombineLatest4 : Equatable where A : Equatable, B : Equatab
     public static func == (lhs: Publishers.CombineLatest4<A, B, C, D>, rhs: Publishers.CombineLatest4<A, B, C, D>) -> Bool
 }
 
-extension Publishers.SetFailureType : Equatable where Upstream : Equatable {
-
-    /// Returns a Boolean value indicating whether two values are equal.
-    ///
-    /// Equality is the inverse of inequality. For any values `a` and `b`,
-    /// `a == b` implies that `a != b` is `false`.
-    ///
-    /// - Parameters:
-    ///   - lhs: A value to compare.
-    ///   - rhs: Another value to compare.
-    public static func == (lhs: Publishers.SetFailureType<Upstream, Failure>, rhs: Publishers.SetFailureType<Upstream, Failure>) -> Bool
-}
-
 extension Publishers.Collect : Equatable where Upstream : Equatable {
 
     /// Returns a Boolean value indicating whether two values are equal.

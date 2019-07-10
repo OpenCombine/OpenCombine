@@ -37,7 +37,10 @@ final class SetFailureTypeTests: XCTestCase {
             }
         )
 
-        publisher.setFailureType(to: TestingError.self).subscribe(tracking)
+        publisher
+            .setFailureType(to: Never.self)
+            .setFailureType(to: TestingError.self)
+            .subscribe(tracking)
 
         XCTAssertEqual(tracking.history, [.subscription("PassthroughSubject")])
     }
