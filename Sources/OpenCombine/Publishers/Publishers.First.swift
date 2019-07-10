@@ -38,14 +38,7 @@ extension Publishers {
             where Failure == SubscriberType.Failure,
                   Output == SubscriberType.Input
         {
-            let firstSubscriber = _FirstWhere<Upstream, SubscriberType>(
-                downstream: subscriber,
-                predicate: { _ in
-                    .success(true)
-                },
-                description: "First",
-                errorConversion: { $0 }
-            )
+            let firstSubscriber = _First<Upstream, SubscriberType>(downstream: subscriber)
             upstream.receive(subscriber: firstSubscriber)
         }
     }
@@ -86,11 +79,7 @@ extension Publishers {
         {
             let firstWhereSubscriber = _FirstWhere<Upstream, SubscriberType>(
                 downstream: subscriber,
-                predicate: { input in
-                    .success(self.predicate(input))
-                },
-                description: "TryFirst",
-                errorConversion: { $0 }
+                isIncluded: predicate
             )
             upstream.receive(subscriber: firstWhereSubscriber)
         }
@@ -130,27 +119,68 @@ extension Publishers {
             where Failure == SubscriberType.Failure,
                   Output == SubscriberType.Input
         {
-            let firstWhereSubscriber = _FirstWhere<Upstream, SubscriberType>(
+            let tryFirstWhere = _TryFirstWhere<Upstream, SubscriberType>(
                 downstream: subscriber,
-                predicate:
-                { input in
-                    do {
-                        let isMatch = try self.predicate(input)
-                        return .success(isMatch)
-                    } catch {
-                        return .failure(error)
-                    }
-                },
-                description: "TryFirstWhere",
-                errorConversion: { $0 as Error })
-            upstream.receive(subscriber: firstWhereSubscriber)
+                isIncluded: predicate
+            )
+            upstream.receive(subscriber: tryFirstWhere)
         }
     }
 }
 
-private final class _FirstWhere<Upstream: Publisher, Downstream: Subscriber>
+// MARK: - Inner Classes
+private class _First<Upstream: Publisher, Downstream: Subscriber>
+    : _FirstWhereBase<Upstream, Downstream>,
+      CustomStringConvertible
+    where Upstream.Output == Downstream.Input,
+          Upstream.Failure == Downstream.Failure
+{
+    var description: String { "First" }
+
+    init(downstream: Downstream) {
+        super.init(downstream: downstream,
+                   predicate: { _ in .success(true) },
+                   errorConversion: { $0 }
+        )
+    }
+}
+
+private class _FirstWhere<Upstream: Publisher, Downstream: Subscriber>
+    : _FirstWhereBase<Upstream, Downstream>,
+      CustomStringConvertible
+    where Upstream.Output == Downstream.Input,
+          Upstream.Failure == Downstream.Failure
+{
+    var description: String { "TryFirst" }
+
+    init(downstream: Downstream, isIncluded: @escaping (Upstream.Output) -> Bool) {
+        super.init(downstream: downstream,
+                   predicate: { .success(isIncluded($0)) },
+                   errorConversion: { $0 })
+    }
+}
+
+private class _TryFirstWhere<Upstream: Publisher, Downstream: Subscriber>
+    : _FirstWhereBase<Upstream, Downstream>,
+      CustomStringConvertible
+    where Upstream.Output == Downstream.Input,
+          Downstream.Failure == Error
+{
+    typealias Input = Upstream.Output
+    typealias Output = Input
+
+    var description: String { "TryFirstWhere" }
+
+    init(downstream: Downstream, isIncluded: @escaping (Input) throws -> Bool) {
+        super.init(downstream: downstream,
+                   predicate: { input in Result { try isIncluded(input) } },
+                   errorConversion: { $0 as Error }
+        )
+    }
+}
+
+private class _FirstWhereBase<Upstream: Publisher, Downstream: Subscriber>
     : OperatorSubscription<Downstream>,
-      CustomStringConvertible,
       Subscription,
       Subscriber
     where Downstream.Input == Upstream.Output
@@ -162,17 +192,14 @@ private final class _FirstWhere<Upstream: Publisher, Downstream: Subscriber>
 
     var predicate: Predicate
     var isActive = true
-    let description: String
     var first: Input?
 
     let _errorConversion: (Upstream.Failure) -> Downstream.Failure
 
     init(downstream: Downstream,
          predicate: @escaping Predicate,
-         description: String,
          errorConversion: @escaping (Upstream.Failure) -> Downstream.Failure) {
         self.predicate = predicate
-        self.description = description
         self._errorConversion = errorConversion
         super.init(downstream: downstream)
     }
@@ -215,6 +242,7 @@ private final class _FirstWhere<Upstream: Publisher, Downstream: Subscriber>
     }
 }
 
+// MARK: - Publisher extensions
 extension Publisher {
 
     /// Publishes the first element of a stream, then finishes.
