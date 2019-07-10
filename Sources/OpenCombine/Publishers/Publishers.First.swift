@@ -135,7 +135,7 @@ private class _First<Upstream: Publisher, Downstream: Subscriber>
     where Upstream.Output == Downstream.Input,
           Upstream.Failure == Downstream.Failure
 {
-    var description: String { "First" }
+    var description: String { return "First" }
 
     init(downstream: Downstream) {
         super.init(downstream: downstream,
@@ -151,7 +151,7 @@ private class _FirstWhere<Upstream: Publisher, Downstream: Subscriber>
     where Upstream.Output == Downstream.Input,
           Upstream.Failure == Downstream.Failure
 {
-    var description: String { "TryFirst" }
+    var description: String { return "TryFirst" }
 
     init(downstream: Downstream, isIncluded: @escaping (Upstream.Output) -> Bool) {
         super.init(downstream: downstream,
@@ -169,7 +169,7 @@ private class _TryFirstWhere<Upstream: Publisher, Downstream: Subscriber>
     typealias Input = Upstream.Output
     typealias Output = Input
 
-    var description: String { "TryFirstWhere" }
+    var description: String { return "TryFirstWhere" }
 
     init(downstream: Downstream, isIncluded: @escaping (Input) throws -> Bool) {
         super.init(downstream: downstream,
