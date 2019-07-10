@@ -43,7 +43,6 @@ extension Publishers {
                   Upstream.Output == SubscriberType.Input
         {
             let filter = _Filter<Upstream, SubscriberType>(downstream: subscriber,
-                                                           description: "Filter",
                                                            isIncluded: isIncluded)
             upstream.receive(subscriber: filter)
         }
@@ -84,9 +83,8 @@ extension Publishers {
             where Upstream.Output == SubscriberType.Input,
                   SubscriberType.Failure == Failure
         {
-            let filter = _Filter<Upstream, SubscriberType>(downstream: subscriber,
-                                                           description: "TryFilter",
-                                                           isIncluded: isIncluded)
+            let filter = _TryFilter<Upstream, SubscriberType>(downstream: subscriber,
+                                                              isIncluded: isIncluded)
             upstream.receive(subscriber: filter)
         }
     }
@@ -119,10 +117,41 @@ extension Publisher {
     }
 }
 
-private class _Filter<Upstream: Publisher, Downstream: Subscriber>
-    : OperatorSubscription<Downstream>,
+private final class _Filter<Upstream: Publisher, Downstream: Subscriber>
+    : _BaseFilter<Upstream, Downstream>,
       Subscriber,
-      CustomStringConvertible,
+      CustomStringConvertible
+    where Upstream.Output == Downstream.Input,
+          Upstream.Failure == Downstream.Failure {
+
+    var description: String { return "Filter" }
+
+    init(downstream: Downstream, isIncluded: @escaping (Input) -> Bool) {
+        super.init(downstream: downstream,
+                   errorTransform: { $0 },
+                   isIncluded: { .success(isIncluded($0))
+        })
+    }
+}
+
+private final class _TryFilter<Upstream: Publisher, Downstream: Subscriber>
+    : _BaseFilter<Upstream, Downstream>,
+    Subscriber,
+    CustomStringConvertible
+    where Upstream.Output == Downstream.Input, Downstream.Failure == Error {
+
+    init(downstream: Downstream, isIncluded: @escaping (Input) throws -> Bool) {
+        super.init(downstream: downstream,
+                   errorTransform: { $0 as Error },
+                   isIncluded: { input in Result { try isIncluded(input) }
+        })
+    }
+
+    var description: String { return "TryFilter" }
+}
+
+private class _BaseFilter<Upstream: Publisher, Downstream: Subscriber>
+    : OperatorSubscription<Downstream>,
       Subscription
     where Upstream.Output == Downstream.Input
 {
@@ -130,19 +159,18 @@ private class _Filter<Upstream: Publisher, Downstream: Subscriber>
     typealias Output = Downstream.Input
     typealias Failure = Upstream.Failure
 
-    private let _isIncluded: (Input) throws -> Bool
+    private let _isIncluded: (Input) -> Result<Bool, Downstream.Failure>
     private var _demand: Subscribers.Demand = .none
 
+    var errorTransform: (Upstream.Failure) -> Downstream.Failure
+
     init(downstream: Downstream,
-         description: String,
-         isIncluded: @escaping (Input) throws -> Bool)
-    {
-        self.description = description
+         errorTransform: @escaping (Upstream.Failure) -> Downstream.Failure,
+         isIncluded: @escaping (Input) -> Result<Bool, Downstream.Failure>) {
         self._isIncluded = isIncluded
+        self.errorTransform = errorTransform
         super.init(downstream: downstream)
     }
-
-    let description: String
 
     func receive(subscription: Subscription) {
         upstreamSubscription = subscription
@@ -151,17 +179,16 @@ private class _Filter<Upstream: Publisher, Downstream: Subscriber>
     }
 
     func receive(_ input: Input) -> Subscribers.Demand {
-        do {
-            // input is filtered away, we just return the demand
-            if try _isIncluded(input) {
+        switch _isIncluded(input) {
+        case .failure(let error):
+            downstream.receive(completion: .failure(error))
+            cancel()
+            return .none
+        case .success(let isIncluded):
+            if isIncluded {
                 return downstream.receive(input)
             }
             return _demand
-        } catch {
-            // We can force cast here because the regular filter never fails, so
-            downstream.receive(completion: .failure(error as! Downstream.Failure))
-            cancel()
-            return .none
         }
     }
 
@@ -170,7 +197,8 @@ private class _Filter<Upstream: Publisher, Downstream: Subscriber>
         case .finished:
             downstream.receive(completion: .finished)
         case .failure(let error):
-            downstream.receive(completion: .failure(error as! Downstream.Failure))
+            let transformedError = errorTransform(error)
+            downstream.receive(completion: .failure(transformedError))
         }
     }
 
