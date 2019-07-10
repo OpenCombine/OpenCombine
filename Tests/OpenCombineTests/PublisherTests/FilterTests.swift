@@ -22,6 +22,8 @@ final class FilterTests: XCTestCase {
         ("testTryFilterCanFilterOtherFilter", testTryFilterCanFilterOtherFilter),
         ("testTryFilterCompletesWithErrorWhenThrown",
             testTryFilterCompletesWithErrorWhenThrown),
+        ("testFilterSubscriptionDemand", testFilterSubscriptionDemand),
+        ("testTryFilterSubscriptionDemand", testTryFilterSubscriptionDemand)
     ]
 
     func testFilterRemovesElements() {
@@ -154,6 +156,22 @@ final class FilterTests: XCTestCase {
         XCTAssertEqual(helper.tracking.history, [.subscription("Filter"),
                                                  .value(1),
                                                  .completion(.failure(.oops))])
+    }
+
+    func testFilterSubscriptionDemand() {
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self) {
+            $0.filter { _ in true }
+        }
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+    }
+
+    func testTryFilterSubscriptionDemand() {
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self) {
+            $0.tryFilter { _ in true }
+        }
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
     }
 }
 
