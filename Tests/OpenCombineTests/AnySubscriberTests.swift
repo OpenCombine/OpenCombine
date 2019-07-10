@@ -136,7 +136,7 @@ final class AnySubscriberTests: XCTestCase {
 
         publishEvents(events, erased)
 
-        let expectedEvents: [TrackingSubject.Event] =
+        let expectedEvents: [TrackingSubject<Int>.Event] =
             events.compactMap(subscriberEventToSubjectEvent)
 
         XCTAssertEqual(subject.history, expectedEvents)

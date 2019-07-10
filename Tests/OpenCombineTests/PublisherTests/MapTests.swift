@@ -169,18 +169,22 @@ final class MapTests: XCTestCase {
     }
 
     func testDemandSend() {
-        // Given
-        let expectedReceiveValueDemand = 4
+        var expectedReceiveValueDemand = 4
         let subscription = CustomSubscription()
         let publisher = CustomPublisher(subscription: subscription)
         let map = publisher.map { $0 * 2 }
         let tracking = TrackingSubscriber(
+            receiveSubscription: { $0.request(.unlimited) },
             receiveValue: { _ in .max(expectedReceiveValueDemand) }
         )
-        // When
+
         map.subscribe(tracking)
-        // Then
-        XCTAssertEqual(publisher.send(0), .max(expectedReceiveValueDemand))
+
+        XCTAssertEqual(publisher.send(0), .max(4))
+
+        expectedReceiveValueDemand = 120
+
+        XCTAssertEqual(publisher.send(0), .max(120))
     }
 
     func testCompletion() {

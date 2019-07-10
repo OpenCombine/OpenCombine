@@ -30,7 +30,7 @@ extension Publishers {
             where Failure == SubscriberType.Failure, Output == SubscriberType.Input
         {
             let inner = Inner(downstream: subscriber, predicate: catching(predicate))
-            upstream.receive(subscriber: inner)
+            upstream.subscribe(inner)
         }
     }
 
@@ -57,7 +57,7 @@ extension Publishers {
             where Output == SubscriberType.Input, SubscriberType.Failure == Error
         {
             let inner = Inner(downstream: subscriber, predicate: catching(predicate))
-            upstream.receive(subscriber: inner)
+            upstream.subscribe(inner)
         }
     }
 }

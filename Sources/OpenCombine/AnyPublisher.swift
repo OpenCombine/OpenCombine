@@ -39,7 +39,7 @@ extension AnyPublisher: Publisher {
     public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
         where Output == SubscriberType.Input, Failure == SubscriberType.Failure
     {
-        box.receive(subscriber: subscriber)
+        box.subscribe(subscriber)
     }
 }
 
@@ -77,6 +77,6 @@ internal final class PublisherBox<PublisherType: Publisher>
     override internal func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
         where Failure == SubscriberType.Failure, Output == SubscriberType.Input
     {
-        base.receive(subscriber: subscriber)
+        base.subscribe(subscriber)
     }
 }

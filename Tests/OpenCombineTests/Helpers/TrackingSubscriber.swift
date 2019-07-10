@@ -37,8 +37,7 @@ typealias TrackingSubscriber = TrackingSubscriberBase<Int, TestingError>
 /// is considered equal to any other subscription no matter what the subscription object
 /// actually is.
 @available(macOS 10.15, *)
-final class TrackingSubscriberBase<Value: Equatable,
-                                   Failure: Error>
+final class TrackingSubscriberBase<Value: Equatable, Failure: Error>
     : Subscriber,
       CustomStringConvertible
 {
@@ -168,16 +167,17 @@ final class TrackingSubscriberBase<Value: Equatable,
 }
 
 @available(macOS 10.15, *)
-final class TrackingSubject<Value: Equatable>: Subject, CustomStringConvertible {
+typealias TrackingSubject<Output: Equatable> = TrackingSubjectBase<Output, TestingError>
 
-    typealias Failure = TestingError
-
-    typealias Output = Value
-
+@available(macOS 10.15, *)
+final class TrackingSubjectBase<Output: Equatable, Failure: Error>
+    : Subject,
+      CustomStringConvertible
+{
     enum Event: Equatable, CustomStringConvertible {
         case subscriber
-        case value(Value)
-        case completion(Subscribers.Completion<TestingError>)
+        case value(Output)
+        case completion(Subscribers.Completion<Failure>)
 
         static func == (lhs: Event, rhs: Event) -> Bool {
             switch (lhs, rhs) {
@@ -190,7 +190,7 @@ final class TrackingSubject<Value: Equatable>: Subject, CustomStringConvertible 
                 case (.finished, .finished):
                     return true
                 case let (.failure(lhs), .failure(rhs)):
-                    return lhs == rhs
+                    return (lhs as? TestingError) == (rhs as? TestingError)
                 default:
                     return false
                 }
@@ -213,7 +213,7 @@ final class TrackingSubject<Value: Equatable>: Subject, CustomStringConvertible 
         }
     }
 
-    private let _passthrough = PassthroughSubject<Value, TestingError>()
+    private let _passthrough = PassthroughSubject<Output, Failure>()
     private(set) var history: [Event] = []
     private let _receiveSubscriber: ((CustomCombineIdentifierConvertible) -> Void)?
     private let _onDeinit: (() -> Void)?
@@ -228,12 +228,12 @@ final class TrackingSubject<Value: Equatable>: Subject, CustomStringConvertible 
         _onDeinit?()
     }
 
-    func send(_ value: Value) {
+    func send(_ value: Output) {
         history.append(.value(value))
         _passthrough.send(value)
     }
 
-    func send(completion: Subscribers.Completion<TestingError>) {
+    func send(completion: Subscribers.Completion<Failure>) {
         history.append(.completion(completion))
         _passthrough.send(completion: completion)
     }

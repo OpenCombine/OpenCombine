@@ -44,7 +44,7 @@ extension Publishers {
                 downstream: subscriber,
                 encoder: encoder
             )
-            upstream.receive(subscriber: encodeSubscriber)
+            upstream.subscribe(encodeSubscriber)
         }
     }
 }
