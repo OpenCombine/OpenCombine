@@ -41,13 +41,16 @@ extension Publishers {
 
         public init(upstream: Upstream, scheduler: Context, options: Context.SchedulerOptions?)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where SubjectType.Failure == Downstream.Failure,
+                  SubjectType.Output == Downstream.Input
     }
 }
 
@@ -93,7 +96,8 @@ extension Publishers {
 
         public init(upstream: Upstream, scheduler: Context)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -118,7 +122,7 @@ extension Publisher {
 extension Publishers {
 
     /// A publisher that republishes all elements that match a provided closure.
-    public struct Filter<Upstream> : Publisher where Upstream : Publisher {
+    public struct Filter<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
@@ -136,17 +140,20 @@ extension Publishers {
 
         public init(upstream: Upstream, isIncluded: @escaping (Output) -> Bool)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where SubjectType.Failure == Downstream.Failure,
+                  SubjectType.Output == Downstream.Input
     }
 
     /// A publisher that republishes all elements that match a provided error-throwing closure.
-    public struct TryFilter<Upstream> : Publisher where Upstream : Publisher {
+    public struct TryFilter<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
@@ -164,7 +171,8 @@ extension Publishers {
 
         public init(upstream: Upstream, isIncluded: @escaping (Upstream.Output) throws -> Bool)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -197,7 +205,7 @@ extension Publishers {
     ///
     /// When any of the provided closures returns `true`, this publisher raises the `SIGTRAP` signal to stop the process in the debugger.
     /// Otherwise, this publisher passes through values and completions as-is.
-    public struct Breakpoint<Upstream> : Publisher where Upstream : Publisher {
+    public struct Breakpoint<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
@@ -228,13 +236,16 @@ extension Publishers {
         ///   - receiveCompletion: A closure that executes when the publisher receives completion, and can raise a debugger signal by returning a true Boolean value.
         public init(upstream: Upstream, receiveSubscription: ((Subscription) -> Bool)? = nil, receiveOutput: ((Upstream.Output) -> Bool)? = nil, receiveCompletion: ((Subscribers.Completion<Publishers.Breakpoint<Upstream>.Failure>) -> Bool)? = nil)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where SubjectType.Failure == Downstream.Failure,
+                  SubjectType.Output == Downstream.Input
     }
 }
 
@@ -263,7 +274,7 @@ extension Publisher {
 extension Publishers {
 
     /// A publisher that publishes a single Boolean value that indicates whether all received elements pass a given predicate.
-    public struct AllSatisfy<Upstream> : Publisher where Upstream : Publisher {
+    public struct AllSatisfy<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Bool
@@ -283,7 +294,8 @@ extension Publishers {
 
         public init(upstream: Upstream, predicate: @escaping (Upstream.Output) -> Bool)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -293,7 +305,7 @@ extension Publishers {
     }
 
     /// A publisher that publishes a single Boolean value that indicates whether all received elements pass a given error-throwing predicate.
-    public struct TryAllSatisfy<Upstream> : Publisher where Upstream : Publisher {
+    public struct TryAllSatisfy<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Bool
@@ -313,7 +325,8 @@ extension Publishers {
 
         public init(upstream: Upstream, predicate: @escaping (Upstream.Output) throws -> Bool)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -346,7 +359,7 @@ extension Publisher {
 
 extension Publishers {
 
-    public struct RemoveDuplicates<Upstream> : Publisher where Upstream : Publisher {
+    public struct RemoveDuplicates<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
@@ -362,16 +375,19 @@ extension Publishers {
 
         public init(upstream: Upstream, predicate: @escaping (Publishers.RemoveDuplicates<Upstream>.Output, Publishers.RemoveDuplicates<Upstream>.Output) -> Bool)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where SubjectType.Failure == Downstream.Failure,
+                  SubjectType.Output == Downstream.Input
     }
 
-    public struct TryRemoveDuplicates<Upstream> : Publisher where Upstream : Publisher {
+    public struct TryRemoveDuplicates<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
@@ -387,7 +403,8 @@ extension Publishers {
 
         public init(upstream: Upstream, predicate: @escaping (Publishers.TryRemoveDuplicates<Upstream>.Output, Publishers.TryRemoveDuplicates<Upstream>.Output) throws -> Bool)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -415,7 +432,7 @@ extension Publisher {
 extension Publishers {
 
     /// A publisher that emits a Boolean value when a specified element is received from its upstream publisher.
-    public struct Contains<Upstream> : Publisher where Upstream : Publisher, Upstream.Output : Equatable {
+    public struct Contains<Upstream: Publisher>, Upstream.Output : Equatable {
 
         /// The kind of values published by this publisher.
         public typealias Output = Bool
@@ -433,7 +450,8 @@ extension Publishers {
 
         public init(upstream: Upstream, output: Upstream.Output)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -472,7 +490,8 @@ extension Publishers {
 
         public init(_ a: A, _ b: B)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -500,7 +519,8 @@ extension Publishers {
 
         public init(_ a: A, _ b: B, _ c: C)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -530,7 +550,8 @@ extension Publishers {
 
         public init(_ a: A, _ b: B, _ c: C, _ d: D)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -630,20 +651,23 @@ extension Publishers {
 
         public init(upstream: Upstream)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where SubjectType.Failure == Downstream.Failure,
+                  SubjectType.Output == Downstream.Input
     }
 }
 
 extension Publishers {
 
     /// A publisher that republishes elements while a predicate closure indicates publishing should continue.
-    public struct PrefixWhile<Upstream> : Publisher where Upstream : Publisher {
+    public struct PrefixWhile<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
@@ -661,17 +685,20 @@ extension Publishers {
 
         public init(upstream: Upstream, predicate: @escaping (Publishers.PrefixWhile<Upstream>.Output) -> Bool)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where SubjectType.Failure == Downstream.Failure,
+                  SubjectType.Output == Downstream.Input
     }
 
     /// A publisher that republishes elements while an error-throwing predicate closure indicates publishing should continue.
-    public struct TryPrefixWhile<Upstream> : Publisher where Upstream : Publisher {
+    public struct TryPrefixWhile<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
@@ -689,7 +716,8 @@ extension Publishers {
 
         public init(upstream: Upstream, predicate: @escaping (Publishers.TryPrefixWhile<Upstream>.Output) throws -> Bool)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -733,7 +761,8 @@ final public class Future<Output, Failure> : Publisher where Failure : Error {
 
     public init(_ attemptToFulfill: @escaping (@escaping Future<Output, Failure>.Promise) -> Void)
 
-    /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+    /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
     ///
     /// - SeeAlso: `subscribe(_:)`
     /// - Parameters:
@@ -761,7 +790,8 @@ extension Publishers {
         /// - Parameter upstream: The publisher from which this publisher receives elements.
         public init(upstream: Upstream)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -787,7 +817,7 @@ extension Publisher where Self.Failure == Never {
 extension Publishers {
 
     /// A publisher that emits a Boolean value upon receiving an element that satisfies the predicate closure.
-    public struct ContainsWhere<Upstream> : Publisher where Upstream : Publisher {
+    public struct ContainsWhere<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Bool
@@ -805,7 +835,8 @@ extension Publishers {
 
         public init(upstream: Upstream, predicate: @escaping (Upstream.Output) -> Bool)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -815,7 +846,7 @@ extension Publishers {
     }
 
     /// A publisher that emits a Boolean value upon receiving an element that satisfies the throwing predicate closure.
-    public struct TryContainsWhere<Upstream> : Publisher where Upstream : Publisher {
+    public struct TryContainsWhere<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Bool
@@ -833,7 +864,8 @@ extension Publishers {
 
         public init(upstream: Upstream, predicate: @escaping (Upstream.Output) throws -> Bool)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -874,13 +906,16 @@ extension Publishers {
 
         public init(upstream: Upstream)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where SubjectType.Failure == Downstream.Failure,
+                  SubjectType.Output == Downstream.Input
 
         /// Connects to the publisher and returns a `Cancellable` instance with which to cancel publishing.
         ///
@@ -932,7 +967,8 @@ extension Publishers {
 
         public init(upstream: Upstream, strategy: Publishers.TimeGroupingStrategy<Context>, options: Context.SchedulerOptions?)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -942,7 +978,7 @@ extension Publishers {
     }
 
     /// A publisher that buffers items.
-    public struct Collect<Upstream> : Publisher where Upstream : Publisher {
+    public struct Collect<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = [Upstream.Output]
@@ -957,7 +993,8 @@ extension Publishers {
 
         public init(upstream: Upstream)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -967,7 +1004,7 @@ extension Publishers {
     }
 
     /// A publisher that buffers a maximum number of items.
-    public struct CollectByCount<Upstream> : Publisher where Upstream : Publisher {
+    public struct CollectByCount<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = [Upstream.Output]
@@ -985,7 +1022,8 @@ extension Publishers {
 
         public init(upstream: Upstream, count: Int)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -1051,13 +1089,16 @@ extension Publishers {
 
         public init(upstream: Upstream, scheduler: Context, options: Context.SchedulerOptions?)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where SubjectType.Failure == Downstream.Failure,
+                  SubjectType.Output == Downstream.Input
     }
 }
 
@@ -1103,13 +1144,16 @@ extension Publishers {
 
         public init(upstream: Upstream, other: Other)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where SubjectType.Failure == Downstream.Failure,
+                  SubjectType.Output == Downstream.Input
     }
 }
 
@@ -1145,7 +1189,8 @@ extension Publishers {
 
         public init(upstream: Upstream, initial: Output, nextPartialResult: @escaping (Output, Upstream.Output) -> Output)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -1175,7 +1220,8 @@ extension Publishers {
 
         public init(upstream: Upstream, initial: Output, nextPartialResult: @escaping (Output, Upstream.Output) throws -> Output)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -1223,7 +1269,8 @@ extension Publishers {
 
         public init(upstream: Upstream, transform: @escaping (Upstream.Output) -> Output?)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -1250,7 +1297,8 @@ extension Publishers {
 
         public init(upstream: Upstream, transform: @escaping (Upstream.Output) throws -> Output?)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -1295,7 +1343,8 @@ extension Publishers {
 
         public init(_ a: A, _ b: B)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -1335,7 +1384,8 @@ extension Publishers {
 
         public init(_ a: A, _ b: B, _ c: C)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -1375,7 +1425,8 @@ extension Publishers {
 
         public init(_ a: A, _ b: B, _ c: C, _ d: D)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -1415,7 +1466,8 @@ extension Publishers {
 
         public init(_ a: A, _ b: B, _ c: C, _ d: D, _ e: E)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -1455,7 +1507,8 @@ extension Publishers {
 
         public init(_ a: A, _ b: B, _ c: C, _ d: D, _ e: E, _ f: F)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -1495,7 +1548,8 @@ extension Publishers {
 
         public init(_ a: A, _ b: B, _ c: C, _ d: D, _ e: E, _ f: F, _ g: G)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -1535,7 +1589,8 @@ extension Publishers {
 
         public init(_ a: A, _ b: B, _ c: C, _ d: D, _ e: E, _ f: F, _ g: G, _ h: H)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -1544,7 +1599,7 @@ extension Publishers {
         public func receive<S>(subscriber: S) where S : Subscriber, H.Failure == S.Failure, H.Output == S.Input
     }
 
-    public struct MergeMany<Upstream> : Publisher where Upstream : Publisher {
+    public struct MergeMany<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
@@ -1560,13 +1615,16 @@ extension Publishers {
 
         public init<S>(_ upstream: S) where Upstream == S.Element, S : Sequence
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where SubjectType.Failure == Downstream.Failure,
+                  SubjectType.Output == Downstream.Input
 
         public func merge(with other: Upstream) -> Publishers.MergeMany<Upstream>
     }
@@ -1683,7 +1741,8 @@ extension Publishers {
 
         public init(upstream: Upstream, initialResult: Output, nextPartialResult: @escaping (Output, Upstream.Output) -> Output)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -1707,7 +1766,8 @@ extension Publishers {
 
         public init(upstream: Upstream, initialResult: Output, nextPartialResult: @escaping (Output, Upstream.Output) throws -> Output)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -1747,7 +1807,7 @@ extension Publisher {
 extension Publishers {
 
     /// A publisher that only publishes the last element of a stream that satisfies a predicate closure, once the stream finishes.
-    public struct LastWhere<Upstream> : Publisher where Upstream : Publisher {
+    public struct LastWhere<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
@@ -1765,17 +1825,20 @@ extension Publishers {
 
         public init(upstream: Upstream, predicate: @escaping (Publishers.LastWhere<Upstream>.Output) -> Bool)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where SubjectType.Failure == Downstream.Failure,
+                  SubjectType.Output == Downstream.Input
     }
 
     /// A publisher that only publishes the last element of a stream that satisfies a error-throwing predicate closure, once the stream finishes.
-    public struct TryLastWhere<Upstream> : Publisher where Upstream : Publisher {
+    public struct TryLastWhere<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
@@ -1793,7 +1856,8 @@ extension Publishers {
 
         public init(upstream: Upstream, predicate: @escaping (Publishers.TryLastWhere<Upstream>.Output) throws -> Bool)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -1821,7 +1885,7 @@ extension Publisher {
 extension Publishers {
 
     /// A publisher that ignores all upstream elements, but passes along a completion state (finish or failed).
-    public struct IgnoreOutput<Upstream> : Publisher where Upstream : Publisher {
+    public struct IgnoreOutput<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Never
@@ -1836,7 +1900,8 @@ extension Publishers {
 
         public init(upstream: Upstream)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -1879,7 +1944,8 @@ extension Publishers {
         /// - Parameter upstream: The publisher from which this publisher receives elements.
         public init(upstream: Upstream)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -1901,7 +1967,7 @@ extension Publisher where Self.Failure == Self.Output.Failure, Self.Output : Pub
 extension Publishers {
 
     /// A publisher that attempts to recreate its subscription to a failed upstream publisher.
-    public struct Retry<Upstream> : Publisher where Upstream : Publisher {
+    public struct Retry<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
@@ -1926,13 +1992,16 @@ extension Publishers {
         ///   - retries: The maximum number of retry attempts to perform. If `nil`, this publisher attempts to reconnect with the upstream publisher an unlimited number of times.
         public init(upstream: Upstream, retries: Int?)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where SubjectType.Failure == Downstream.Failure,
+                  SubjectType.Output == Downstream.Input
     }
 }
 
@@ -1985,13 +2054,16 @@ extension Publishers {
 
         public init(upstream: Upstream, interval: Context.SchedulerTimeType.Stride, scheduler: Context, latest: Bool)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where SubjectType.Failure == Downstream.Failure,
+                  SubjectType.Output == Downstream.Input
     }
 }
 
@@ -2024,13 +2096,16 @@ extension Publishers {
 
         public init(upstream: Upstream)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        final public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
+        final public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where SubjectType.Failure == Downstream.Failure,
+                  SubjectType.Output == Downstream.Input
 
         /// Returns a Boolean value indicating whether two values are equal.
         ///
@@ -2057,7 +2132,7 @@ extension Publisher {
 extension Publishers {
 
     /// A publisher that republishes items from another publisher only if each new item is in increasing order from the previously-published item.
-    public struct Comparison<Upstream> : Publisher where Upstream : Publisher {
+    public struct Comparison<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
@@ -2075,17 +2150,20 @@ extension Publishers {
 
         public init(upstream: Upstream, areInIncreasingOrder: @escaping (Upstream.Output, Upstream.Output) -> Bool)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where SubjectType.Failure == Downstream.Failure,
+                  SubjectType.Output == Downstream.Input
     }
 
     /// A publisher that republishes items from another publisher only if each new item is in increasing order from the previously-published item, and fails if the ordering logic throws an error.
-    public struct TryComparison<Upstream> : Publisher where Upstream : Publisher {
+    public struct TryComparison<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
@@ -2103,7 +2181,8 @@ extension Publishers {
 
         public init(upstream: Upstream, areInIncreasingOrder: @escaping (Upstream.Output, Upstream.Output) throws -> Bool)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -2162,7 +2241,7 @@ extension Publisher {
 extension Publishers {
 
     /// A publisher that replaces an empty stream with a provided element.
-    public struct ReplaceEmpty<Upstream> : Publisher where Upstream : Publisher {
+    public struct ReplaceEmpty<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
@@ -2180,17 +2259,20 @@ extension Publishers {
 
         public init(upstream: Upstream, output: Publishers.ReplaceEmpty<Upstream>.Output)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where SubjectType.Failure == Downstream.Failure,
+                  SubjectType.Output == Downstream.Input
     }
 
     /// A publisher that replaces any errors in the stream with a provided element.
-    public struct ReplaceError<Upstream> : Publisher where Upstream : Publisher {
+    public struct ReplaceError<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
@@ -2208,7 +2290,8 @@ extension Publishers {
 
         public init(upstream: Upstream, output: Publishers.ReplaceError<Upstream>.Output)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -2240,7 +2323,7 @@ extension Publishers {
     /// A publisher that raises a fatal error upon receiving any failure, and otherwise republishes all received input.
     ///
     /// Use this function for internal sanity checks that are active during testing but do not impact performance of shipping code.
-    public struct AssertNoFailure<Upstream> : Publisher where Upstream : Publisher {
+    public struct AssertNoFailure<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
@@ -2264,7 +2347,8 @@ extension Publishers {
 
         public init(upstream: Upstream, prefix: String, file: StaticString, line: UInt)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -2314,7 +2398,8 @@ extension Publishers {
         ///   - other: A publisher to monitor for its first emitted element.
         public init(upstream: Upstream, other: Other)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -2339,7 +2424,7 @@ extension Publisher {
 extension Publishers {
 
     /// A publisher that performs the specified closures when publisher events occur.
-    public struct HandleEvents<Upstream> : Publisher where Upstream : Publisher {
+    public struct HandleEvents<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
@@ -2369,13 +2454,16 @@ extension Publishers {
 
         public init(upstream: Upstream, receiveSubscription: ((Subscription) -> Void)? = nil, receiveOutput: ((Publishers.HandleEvents<Upstream>.Output) -> Void)? = nil, receiveCompletion: ((Subscribers.Completion<Publishers.HandleEvents<Upstream>.Failure>) -> Void)? = nil, receiveCancel: (() -> Void)? = nil, receiveRequest: ((Subscribers.Demand) -> Void)?)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where SubjectType.Failure == Downstream.Failure,
+                  SubjectType.Output == Downstream.Input
     }
 }
 
@@ -2414,7 +2502,8 @@ extension Publishers {
 
         public init(prefix: Prefix, suffix: Suffix)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -2484,13 +2573,16 @@ extension Publishers {
 
         public init(upstream: Upstream, dueTime: Context.SchedulerTimeType.Stride, scheduler: Context, options: Context.SchedulerOptions?)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where SubjectType.Failure == Downstream.Failure,
+                  SubjectType.Output == Downstream.Input
     }
 }
 
@@ -2510,7 +2602,7 @@ extension Publisher {
 extension Publishers {
 
     /// A publisher that only publishes the last element of a stream, after the stream finishes.
-    public struct Last<Upstream> : Publisher where Upstream : Publisher {
+    public struct Last<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
@@ -2525,13 +2617,16 @@ extension Publishers {
 
         public init(upstream: Upstream)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where SubjectType.Failure == Downstream.Failure,
+                  SubjectType.Output == Downstream.Input
     }
 }
 
@@ -2566,13 +2661,16 @@ extension Publishers {
 
         public init(upstream: Upstream, interval: Context.SchedulerTimeType.Stride, scheduler: Context, options: Context.SchedulerOptions?, customError: (() -> Publishers.Timeout<Upstream, Context>.Failure)?)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where SubjectType.Failure == Downstream.Failure,
+                  SubjectType.Output == Downstream.Input
     }
 }
 
@@ -2641,7 +2739,7 @@ extension Publishers {
         case customError(() -> Failure)
     }
 
-    public struct Buffer<Upstream> : Publisher where Upstream : Publisher {
+    public struct Buffer<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
@@ -2661,13 +2759,16 @@ extension Publishers {
 
         public init(upstream: Upstream, size: Int, prefetch: Publishers.PrefetchStrategy, whenFull: Publishers.BufferingStrategy<Publishers.Buffer<Upstream>.Failure>)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where SubjectType.Failure == Downstream.Failure,
+                  SubjectType.Output == Downstream.Input
     }
 }
 
@@ -2695,7 +2796,8 @@ extension Publishers {
 
         public init(_ a: A, _ b: B)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -2723,7 +2825,8 @@ extension Publishers {
 
         public init(_ a: A, _ b: B, _ c: C)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -2753,7 +2856,8 @@ extension Publishers {
 
         public init(_ a: A, _ b: B, _ c: C, _ d: D)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -2843,7 +2947,7 @@ extension Publisher {
 extension Publishers {
 
     /// A publisher that publishes elements specified by a range in the sequence of published elements.
-    public struct Output<Upstream> : Publisher where Upstream : Publisher {
+    public struct Output<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
@@ -2866,13 +2970,16 @@ extension Publishers {
         ///   - range: The range of elements to publish.
         public init(upstream: Upstream, range: CountableRange<Int>)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where SubjectType.Failure == Downstream.Failure,
+                  SubjectType.Output == Downstream.Input
     }
 }
 
@@ -2920,7 +3027,8 @@ extension Publishers {
         ///   - handler: A closure that accepts the upstream failure as input and returns a publisher to replace the upstream publisher.
         public init(upstream: Upstream, handler: @escaping (Upstream.Failure) -> NewPublisher)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -2946,7 +3054,8 @@ extension Publishers {
 
         public init(upstream: Upstream, handler: @escaping (Upstream.Failure) throws -> NewPublisher)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -3007,7 +3116,8 @@ extension Publishers {
 
         public init(upstream: Upstream, maxPublishers: Subscribers.Demand, transform: @escaping (Upstream.Output) -> NewPublisher)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -3059,13 +3169,16 @@ extension Publishers {
 
         public init(upstream: Upstream, interval: Context.SchedulerTimeType.Stride, tolerance: Context.SchedulerTimeType.Stride, scheduler: Context)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where SubjectType.Failure == Downstream.Failure,
+                  SubjectType.Output == Downstream.Input
     }
 }
 
@@ -3084,7 +3197,7 @@ public func delay<S>(for interval: S.SchedulerTimeType.Stride, tolerance: S.Sche
 extension Publishers {
 
     /// A publisher that omits a specified number of elements before republishing later elements.
-    public struct Drop<Upstream> : Publisher where Upstream : Publisher {
+    public struct Drop<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
@@ -3102,13 +3215,16 @@ extension Publishers {
 
         public init(upstream: Upstream, count: Int)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where SubjectType.Failure == Downstream.Failure,
+                  SubjectType.Output == Downstream.Input
     }
 }
 
@@ -3124,7 +3240,7 @@ extension Publisher {
 extension Publishers {
 
     /// A publisher that publishes the first element of a stream, then finishes.
-    public struct First<Upstream> : Publisher where Upstream : Publisher {
+    public struct First<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
@@ -3139,17 +3255,20 @@ extension Publishers {
 
         public init(upstream: Upstream)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where SubjectType.Failure == Downstream.Failure,
+                  SubjectType.Output == Downstream.Input
     }
 
     /// A publisher that only publishes the first element of a stream to satisfy a predicate closure.
-    public struct FirstWhere<Upstream> : Publisher where Upstream : Publisher {
+    public struct FirstWhere<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
@@ -3167,17 +3286,20 @@ extension Publishers {
 
         public init(upstream: Upstream, predicate: @escaping (Publishers.FirstWhere<Upstream>.Output) -> Bool)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where SubjectType.Failure == Downstream.Failure,
+                  SubjectType.Output == Downstream.Input
     }
 
     /// A publisher that only publishes the first element of a stream to satisfy a throwing predicate closure.
-    public struct TryFirstWhere<Upstream> : Publisher where Upstream : Publisher {
+    public struct TryFirstWhere<Upstream: Publisher> {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
@@ -3195,7 +3317,8 @@ extension Publishers {
 
         public init(upstream: Upstream, predicate: @escaping (Publishers.TryFirstWhere<Upstream>.Output) throws -> Bool)
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
@@ -3641,7 +3764,8 @@ extension Publishers.First : Equatable where Upstream : Equatable {
         /// Use `Never` if this `Publisher` does not publish errors.
         public typealias Failure = Never
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
