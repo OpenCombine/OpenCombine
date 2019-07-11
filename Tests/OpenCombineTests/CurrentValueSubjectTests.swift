@@ -15,7 +15,7 @@ import OpenCombine
 
 // swiftlint:disable explicit_top_level_acl
 
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 final class CurrentValueSubjectTests: XCTestCase {
 
     static let allTests = [

@@ -30,10 +30,10 @@ import OpenCombine
 ///     publisher.subscribe(subscriber)
 ///
 ///     assert(subscription.history == [.requested(.max(42)), .cancelled])
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 typealias CustomPublisher = CustomPublisherBase<Int, TestingError>
 
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 final class CustomPublisherBase<Output: Equatable, Failure: Error>: Publisher {
 
     private(set) var subscriber: AnySubscriber<Output, Failure>?

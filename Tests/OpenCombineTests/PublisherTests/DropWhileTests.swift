@@ -15,7 +15,7 @@ import OpenCombine
 
 // TODO: add tests from https://github.com/ReactiveX/RxJava/blob/83f2bd771ee172a2154e0fb30c5ffcaf8f71433c/src/test/java/io/reactivex/internal/operators/observable/ObservableSkipWhileTest.java
 
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 final class DropWhileTests: XCTestCase {
 
     static let allTests = [

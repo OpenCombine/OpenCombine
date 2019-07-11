@@ -16,7 +16,7 @@ import OpenCombine
 ///
 /// In order to inject `CustomSubscription` into the chain of subscriptions,
 /// use the `CustomSubscriber` class.
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 final class CustomSubscription: Subscription, CustomStringConvertible {
 
     enum Event: Equatable, CustomStringConvertible {

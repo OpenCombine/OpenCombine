@@ -13,7 +13,7 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 final class EncodeTests: XCTestCase {
     static let allTests = [
         ("testEncodeWorks", testEncodeWorks),

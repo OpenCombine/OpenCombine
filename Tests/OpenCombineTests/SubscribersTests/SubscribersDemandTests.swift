@@ -15,7 +15,7 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 final class SubscribersDemandTests: XCTestCase {
 
     static let allTests = [
