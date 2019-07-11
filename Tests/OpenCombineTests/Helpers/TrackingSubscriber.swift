@@ -22,7 +22,7 @@ import OpenCombine
 /// `TrackingSubscriber.Event.subscription(Subscription.empty)`
 /// is considered equal to any other subscription no matter what the subscription object
 /// actually is.
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 typealias TrackingSubscriber = TrackingSubscriberBase<Int, TestingError>
 
 /// `TrackingSubscriber` records every event like "receiveSubscription",
@@ -36,7 +36,7 @@ typealias TrackingSubscriber = TrackingSubscriberBase<Int, TestingError>
 /// `TrackingSubscriber.Event.subscription(Subscription.empty)`
 /// is considered equal to any other subscription no matter what the subscription object
 /// actually is.
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 final class TrackingSubscriberBase<Value: Equatable, Failure: Error>
     : Subscriber,
       CustomStringConvertible
@@ -166,10 +166,10 @@ final class TrackingSubscriberBase<Value: Equatable, Failure: Error>
     }
 }
 
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 typealias TrackingSubject<Output: Equatable> = TrackingSubjectBase<Output, TestingError>
 
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 final class TrackingSubjectBase<Output: Equatable, Failure: Error>
     : Subject,
       CustomStringConvertible
@@ -249,7 +249,7 @@ final class TrackingSubjectBase<Output: Equatable, Failure: Error>
     var description: String { return "TrackingSubject" }
 }
 
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 enum StringSubscription: Subscription,
                          CustomStringConvertible,
                          ExpressibleByStringLiteral {

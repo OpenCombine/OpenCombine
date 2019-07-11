@@ -13,10 +13,10 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 private typealias Sut = AnySubscriber<Int, TestingError>
 
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 final class AnySubscriberTests: XCTestCase {
 
     static let allTests = [
@@ -175,7 +175,7 @@ final class AnySubscriberTests: XCTestCase {
     }
 }
 
-@available(OSX 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 private let events: [TrackingSubscriber.Event] = [
     .subscription(""),
     .subscription(""),
@@ -189,7 +189,7 @@ private let events: [TrackingSubscriber.Event] = [
     .completion(.failure("failure"))
 ]
 
-@available(OSX 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 private func publishEvents(_ events: [TrackingSubscriber.Event], _ erased: Sut) {
     for event in events {
         switch event {
@@ -203,7 +203,7 @@ private func publishEvents(_ events: [TrackingSubscriber.Event], _ erased: Sut) 
     }
 }
 
-@available(OSX 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 private func publishEvents(
     _ events: [TrackingSubscriber.Event],
     _ publisher: PassthroughSubject<Int, TestingError>
@@ -220,7 +220,7 @@ private func publishEvents(
     }
 }
 
-@available(OSX 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 private func subscriberEventToSubjectEvent(
     _ from: TrackingSubscriber.Event
 ) -> TrackingSubject<Int>.Event? {
