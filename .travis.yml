@@ -12,19 +12,15 @@ matrix:
       os: linux
       dist: xenial
       sudo: required
-      env: SWIFT_VERSION="swift-5.1-DEVELOPMENT-SNAPSHOT-2019-06-16-a"
+      env: SWIFT_VERSION="swift-5.1-DEVELOPMENT-SNAPSHOT-2019-06-16-a" OPENCOMBINE_TEST="YES"
     - name: "macOS 10.14 | Swift 5.0 | Tests"
       os: osx
       osx_image: xcode10.2
-      env: SWIFT_VERSION="5.0" CODE_COVERAGE="YES"
-  # - name: "macOS 10.14 | Swift 5.1"
-  #   os: osx
-  #   osx_image: xcode10.2
-  #   env: SWIFT_VERSION="swift-5.1-DEVELOPMENT-SNAPSHOT-2019-06-16-a"
-  # - name: "macOS 10.15 | Swift 5.1"
-  #   os: osx
-  #   osx_image: xcode11.0
-  #   env: SWIFT_VERSION="swift-5.1-DEVELOPMENT-SNAPSHOT-2019-06-16-a" OPENCOMBINE_COMPATIBILITY_TEST="YES"
+      env: SWIFT_VERSION="5.0" CODE_COVERAGE="YES" OPENCOMBINE_TEST="YES"
+    - name: "macOS 10.14 | Swift 5.1 | Compatibility Tests"
+      os: osx
+      osx_image: xcode11
+      env: SWIFT_VERSION="5.1" OPENCOMBINE_COMPATIBILITY_TEST="YES"
     - name: "macOS 10.14 | Swift 5.0 | SwiftLint"
       os: osx
       osx_image: xcode10.2
@@ -41,10 +37,10 @@ install:
       gem install xcpretty;
     fi
 script:
-  - if [[ $SWIFT_LINT != "YES" ]]; then
+  - if [[ $OPENCOMBINE_TEST == "YES" ]]; then
       swift test -c debug --enable-code-coverage --sanitize thread;
     fi
-  - if [[ $SWIFT_LINT != "YES" ]]; then
+  - if [[ $OPENCOMBINE_TEST == "YES" ]]; then
       swift test -c release;
     fi
   - if [[ $OPENCOMBINE_COMPATIBILITY_TEST == "YES" ]]; then
