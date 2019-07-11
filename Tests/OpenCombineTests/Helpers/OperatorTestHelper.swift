@@ -21,7 +21,7 @@ class OperatorTestHelper<SourceValue: Equatable,
                          SourcePublisher,
                          Sut: Publisher>
     where Sut.Output: Equatable,
-          SourcePublisher: CustomPublisherBase<SourceValue>
+          SourcePublisher: CustomPublisherBase<SourceValue, TestingError>
 {
     typealias Value = Sut.Output
     typealias Failure = Sut.Failure
