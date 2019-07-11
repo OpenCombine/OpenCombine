@@ -186,39 +186,6 @@ extension Publisher {
 
 extension Publishers {
 
-    /// A publisher that awaits subscription before running the supplied closure to create a publisher for the new subscriber.
-    public struct Deferred<DeferredPublisher> : Publisher where DeferredPublisher : Publisher {
-
-        /// The kind of values published by this publisher.
-        public typealias Output = DeferredPublisher.Output
-
-        /// The kind of errors this publisher might publish.
-        ///
-        /// Use `Never` if this `Publisher` does not publish errors.
-        public typealias Failure = DeferredPublisher.Failure
-
-        /// The closure to execute when it receives a subscription.
-        ///
-        /// The publisher returned by this closure immediately receives the incoming subscription.
-        public let createPublisher: () -> DeferredPublisher
-
-        /// Creates a deferred publisher.
-        ///
-        /// - Parameter createPublisher: The closure to execute when calling `subscribe(_:)`.
-        public init(createPublisher: @escaping () -> DeferredPublisher)
-
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
-        ///
-        /// - SeeAlso: `subscribe(_:)`
-        /// - Parameters:
-        ///     - subscriber: The subscriber to attach to this `Publisher`.
-        ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, DeferredPublisher.Failure == S.Failure, DeferredPublisher.Output == S.Input
-    }
-}
-
-extension Publishers {
-
     /// A publisher that publishes a single Boolean value that indicates whether all received elements pass a given predicate.
     public struct AllSatisfy<Upstream> : Publisher where Upstream : Publisher {
 
@@ -699,48 +666,6 @@ final public class Future<Output, Failure> : Publisher where Failure : Error {
     final public func receive<S>(subscriber: S) where Output == S.Input, Failure == S.Failure, S : Subscriber
 }
 
-
-extension Publishers {
-
-    /// A publisher that appears to send a specified failure type.
-    ///
-    /// The publisher cannot actually fail with the specified type and instead just finishes normally. Use this publisher type when you need to match the error types for two mismatched publishers.
-    public struct SetFailureType<Upstream, Failure> : Publisher where Upstream : Publisher, Failure : Error, Upstream.Failure == Never {
-
-        /// The kind of values published by this publisher.
-        public typealias Output = Upstream.Output
-
-        /// The publisher from which this publisher receives elements.
-        public let upstream: Upstream
-
-        /// Creates a publisher that appears to send a specified failure type.
-        ///
-        /// - Parameter upstream: The publisher from which this publisher receives elements.
-        public init(upstream: Upstream)
-
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
-        ///
-        /// - SeeAlso: `subscribe(_:)`
-        /// - Parameters:
-        ///     - subscriber: The subscriber to attach to this `Publisher`.
-        ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where Failure == S.Failure, S : Subscriber, Upstream.Output == S.Input
-
-        public func setFailureType<E>(to failure: E.Type) -> Publishers.SetFailureType<Upstream, E> where E : Error
-    }
-}
-
-extension Publisher where Self.Failure == Never {
-
-    /// Changes the failure type declared by the upstream publisher.
-    ///
-    /// The publisher returned by this method cannot actually fail with the specified type and instead just finishes normally. Instead, you use this method when you need to match the error types of two mismatched publishers.
-    ///
-    /// - Parameter failureType: The `Failure` type presented by this publisher.
-    /// - Returns: A publisher that appears to send the specified failure type.
-    public func setFailureType<E>(to failureType: E.Type) -> Publishers.SetFailureType<Self, E> where E : Error
-}
-
 extension Publishers {
 
     /// A publisher that emits a Boolean value upon receiving an element that satisfies the predicate closure.
@@ -1079,11 +1004,6 @@ extension Publisher {
     /// - Parameter publisher: A second publisher.
     /// - Returns: A publisher that republishes elements until the second publisher publishes an element.
     public func prefix<P>(untilOutputFrom publisher: P) -> Publishers.PrefixUntilOutput<Self, P> where P : Publisher
-}
-
-extension Publisher {
-
-    public func subscribe<S>(_ subject: S) -> AnyCancellable where S : Subject, Self.Failure == S.Failure, Self.Output == S.Output
 }
 
 extension Publishers {
@@ -1704,43 +1624,6 @@ extension Publisher {
     ///   - nextPartialResult: An error-throwing closure that takes as its arguments the previous value returned by the closure and the next element emitted from the upstream publisher.
     /// - Returns: A publisher that transforms elements by applying a closure that receives its previous return value and the next element from the upstream publisher.
     public func tryScan<T>(_ initialResult: T, _ nextPartialResult: @escaping (T, Self.Output) throws -> T) -> Publishers.TryScan<Self, T>
-}
-
-extension Publishers {
-
-    /// A publisher that publishes the number of elements received from the upstream publisher.
-    public struct Count<Upstream> : Publisher where Upstream : Publisher {
-
-        /// The kind of values published by this publisher.
-        public typealias Output = Int
-
-        /// The kind of errors this publisher might publish.
-        ///
-        /// Use `Never` if this `Publisher` does not publish errors.
-        public typealias Failure = Upstream.Failure
-
-        /// The publisher from which this publisher receives elements.
-        public let upstream: Upstream
-
-        public init(upstream: Upstream)
-
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
-        ///
-        /// - SeeAlso: `subscribe(_:)`
-        /// - Parameters:
-        ///     - subscriber: The subscriber to attach to this `Publisher`.
-        ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, S.Input == Publishers.Count<Upstream>.Output
-    }
-}
-
-extension Publisher {
-
-    /// Publishes the number of elements received from the upstream publisher.
-    ///
-    /// - Returns: A publisher that consumes all elements until the upstream publisher finishes, then emits a single
-    /// value with the total number of elements received.
-    public func count() -> Publishers.Count<Self>
 }
 
 extension Publishers {
@@ -3298,19 +3181,6 @@ extension Publishers.CombineLatest4 : Equatable where A : Equatable, B : Equatab
     ///   - lhs: A value to compare.
     ///   - rhs: Another value to compare.
     public static func == (lhs: Publishers.CombineLatest4<A, B, C, D>, rhs: Publishers.CombineLatest4<A, B, C, D>) -> Bool
-}
-
-extension Publishers.SetFailureType : Equatable where Upstream : Equatable {
-
-    /// Returns a Boolean value indicating whether two values are equal.
-    ///
-    /// Equality is the inverse of inequality. For any values `a` and `b`,
-    /// `a == b` implies that `a != b` is `false`.
-    ///
-    /// - Parameters:
-    ///   - lhs: A value to compare.
-    ///   - rhs: Another value to compare.
-    public static func == (lhs: Publishers.SetFailureType<Upstream, Failure>, rhs: Publishers.SetFailureType<Upstream, Failure>) -> Bool
 }
 
 extension Publishers.Collect : Equatable where Upstream : Equatable {

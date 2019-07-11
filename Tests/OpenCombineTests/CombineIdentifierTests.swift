@@ -14,7 +14,7 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 final class CombineIdentifierTests: PerformanceTestCase {
 
     static let allTests = [

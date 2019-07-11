@@ -13,7 +13,7 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 final class AnyPublisherTests: XCTestCase {
 
     static let allTests = [
@@ -32,7 +32,7 @@ final class AnyPublisherTests: XCTestCase {
         )
         let erased = AnyPublisher(publisher)
 
-        erased.receive(subscriber: subscriber)
+        erased.subscribe(subscriber)
         XCTAssertEqual(publisher.history, [.subscriber])
     }
 }

@@ -21,7 +21,7 @@ public final class AnyCancellable: Cancellable, Hashable {
         _cancel = cancel
     }
 
-    public init<CancellableType: Cancellable>(_ canceller: CancellableType) {
+    public init<OtherCancellable: Cancellable>(_ canceller: OtherCancellable) {
         _cancel = canceller.cancel
     }
 
@@ -39,7 +39,7 @@ public final class AnyCancellable: Cancellable, Hashable {
     }
 
     deinit {
-        cancel()
+        _cancel?()
     }
 }
 

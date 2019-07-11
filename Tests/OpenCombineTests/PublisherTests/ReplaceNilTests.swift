@@ -13,7 +13,7 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 final class ReplaceNilTests: XCTestCase {
     static let allTests = [
         ("testReplacesNilElement", testReplacesNilElement),
@@ -33,7 +33,7 @@ final class ReplaceNilTests: XCTestCase {
         )
 
         // When
-        sut.receive(subscriber: subscriber)
+        sut.subscribe(subscriber)
         nilPublisher.send(nil)
 
         // Then
@@ -53,7 +53,7 @@ final class ReplaceNilTests: XCTestCase {
         )
 
         // When
-        sut.receive(subscriber: subscriber)
+        sut.subscribe(subscriber)
         nilPublisher.send(output)
 
         // Then

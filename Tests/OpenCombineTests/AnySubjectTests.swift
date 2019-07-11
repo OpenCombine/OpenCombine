@@ -13,7 +13,7 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 final class AnySubjectTests: XCTestCase {
 
     static let allTests = [
@@ -33,12 +33,12 @@ final class AnySubjectTests: XCTestCase {
         )
         let erased = AnySubject(subject)
 
-        erased.receive(subscriber: subscriber)
+        erased.subscribe(subscriber)
         erased.send(42)
         erased.send(completion: .finished)
         erased.send(completion: .failure("f"))
         erased.send(12)
-        erased.receive(subscriber: subscriber)
+        erased.subscribe(subscriber)
 
         XCTAssertEqual(subject.history, [.subscriber,
                                          .value(42),
@@ -59,12 +59,12 @@ final class AnySubjectTests: XCTestCase {
         )
         let subscriber = TrackingSubscriber()
 
-        erased.receive(subscriber: subscriber)
+        erased.subscribe(subscriber)
         erased.send(42)
         erased.send(completion: .finished)
         erased.send(completion: .failure("f"))
         erased.send(12)
-        erased.receive(subscriber: subscriber)
+        erased.subscribe(subscriber)
 
         XCTAssertEqual(events, [.subscriber,
                                 .value(42),

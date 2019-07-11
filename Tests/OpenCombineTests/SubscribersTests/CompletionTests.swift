@@ -15,7 +15,7 @@ import OpenCombine
 
 import Foundation
 
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 final class CompletionTests: XCTestCase {
 
     static let allTests = [

@@ -24,9 +24,7 @@ private final class Empty: Subscription, CustomStringConvertible, CustomReflecta
 
     func cancel() {}
 
-    var combineIdentifier: CombineIdentifier { return CombineIdentifier() }
-
-    static let shared = Empty()
+    fileprivate static let shared = Empty()
 
     var description: String { return "Empty" }
 

@@ -13,7 +13,7 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 final class EncodeTests: XCTestCase {
     static let allTests = [
         ("testEncodeWorks", testEncodeWorks),
@@ -76,7 +76,9 @@ final class EncodeTests: XCTestCase {
 
         // `CustomPublisher` sends the subscription object it has been initialized with
         // to whoever subscribed to the `CustomPublisher`.
-        let publisher = CustomPublisherBase<[String: String]>(subscription: subscription)
+        let publisher = CustomPublisherBase<[String: String], TestingError>(
+            subscription: subscription
+        )
 
         // `_Encode` helper will receive the `CustomSubscription `
         let encode = publisher.encode(encoder: encoder)

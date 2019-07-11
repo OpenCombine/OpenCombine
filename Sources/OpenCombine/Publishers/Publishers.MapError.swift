@@ -42,7 +42,7 @@ extension Publishers {
                 downstream: subscriber,
                 transform: transform
             )
-            upstream.receive(subscriber: mapErrorSubscriber)
+            upstream.subscribe(mapErrorSubscriber)
         }
     }
 }
