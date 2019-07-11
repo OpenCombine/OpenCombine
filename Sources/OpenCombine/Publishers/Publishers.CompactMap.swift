@@ -125,8 +125,7 @@ extension Publishers.TryCompactMap {
 
 private class _CompactMap<Upstream: Publisher, Downstream: Subscriber>
     : OperatorSubscription<Downstream>,
-      Subscription,
-      CustomStringConvertible
+      Subscription
 {
     typealias Input = Upstream.Output
     typealias Failure = Upstream.Failure
@@ -140,16 +139,10 @@ private class _CompactMap<Upstream: Publisher, Downstream: Subscriber>
         return _transform == nil
     }
 
-    var _isDemandSatified: Bool {
-        return _unsatisfiedDemand.description == .none
-    }
-
     init(downstream: Downstream, transform: @escaping Transform) {
         _transform = transform
         super.init(downstream: downstream)
     }
-
-    var description: String { return "CompactMap" }
 
     func receive(subscription: Subscription) {
         upstreamSubscription = subscription
@@ -158,14 +151,14 @@ private class _CompactMap<Upstream: Publisher, Downstream: Subscriber>
 
     func receive(_ input: Input) -> Subscribers.Demand {
         switch _transform?(input) {
-        case let .success(output?)?:
+        case .success(let output?)?:
             _unsatisfiedDemand -= 1
             let newDemand = downstream.receive(output)
             _unsatisfiedDemand += newDemand
             return newDemand
         case .success(nil)?:
             return .max(1)
-        case let .failure(error)?:
+        case .failure(let error)?:
             downstream.receive(completion: .failure(error))
             _transform = nil
             return .none
@@ -179,29 +172,46 @@ private class _CompactMap<Upstream: Publisher, Downstream: Subscriber>
         _unsatisfiedDemand += demand
         upstreamSubscription?.request(demand)
     }
+
+    override func cancel() {
+        _transform = nil
+        upstreamSubscription?.cancel()
+        upstreamSubscription = nil
+    }
 }
 
 extension Publishers.CompactMap {
     private final class Inner<Downstream: Subscriber>
         : _CompactMap<Upstream, Downstream>,
-          Subscriber
+          Subscriber,
+          CustomStringConvertible
         where Downstream.Failure == Upstream.Failure
     {
         func receive(completion: Subscribers.Completion<Upstream.Failure>) {
-            downstream.receive(completion: completion)
+            if !_isCompleted {
+                _transform = nil
+                downstream.receive(completion: completion)
+            }
         }
+
+        var description: String { return "CompactMap" }
     }
 }
 
 extension Publishers.TryCompactMap {
     private final class Inner<Downstream: Subscriber>
         : _CompactMap<Upstream, Downstream>,
-          Subscriber
+          Subscriber,
+          CustomStringConvertible
         where Downstream.Failure == Error
     {
         func receive(completion: Subscribers.Completion<Upstream.Failure>) {
-            downstream.receive(completion: completion.eraseError())
+            if !_isCompleted {
+                _transform = nil
+                downstream.receive(completion: completion.eraseError())
+            }
         }
+
+        var description: String { return "TryCompactMap" }
     }
 }
-

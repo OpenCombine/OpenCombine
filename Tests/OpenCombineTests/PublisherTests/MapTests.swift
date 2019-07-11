@@ -234,7 +234,7 @@ final class MapTests: XCTestCase {
         // When
         map.subscribe(tracking)
         try XCTUnwrap(downstreamSubscription).cancel()
-        _ = publisher.send(1)
+        XCTAssertEqual(publisher.send(1), .none)
         publisher.send(completion: .finished)
         // Then
         XCTAssertEqual(subscription.history, [.requested(.unlimited), .cancelled])
@@ -253,7 +253,7 @@ final class MapTests: XCTestCase {
         // When
         map.subscribe(tracking)
         try XCTUnwrap(downstreamSubscription).cancel()
-        _ = publisher.send(1)
+        XCTAssertEqual(publisher.send(1), .none)
         publisher.send(completion: .finished)
         // Then
         XCTAssertEqual(subscription.history, [.requested(.unlimited), .cancelled])
@@ -352,12 +352,14 @@ final class MapTests: XCTestCase {
         publisher.send(2)
         publisher.send(3)
         publisher.send(5)
+        publisher.send(completion: .finished)
 
         XCTAssert(map1.upstream === map2.upstream)
         XCTAssertEqual(tracking.history, [.subscription("PassthroughSubject"),
                                           .value(5),
                                           .value(7),
-                                          .value(11)])
+                                          .value(11),
+                                          .completion(.finished)])
     }
 
     func testTryMapOperatorSpecializationForMap() {
