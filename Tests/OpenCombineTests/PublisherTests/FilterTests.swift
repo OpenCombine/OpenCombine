@@ -159,19 +159,39 @@ final class FilterTests: XCTestCase {
     }
 
     func testFilterSubscriptionDemand() {
-        let helper = OperatorTestHelper(publisherType: CustomPublisher.self) {
-            $0.filter { _ in true }
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        trackingDemand: .max(3),
+                                        receiveValueDemand: .none) {
+                                            $0.filter { $0.isMultiple(of: 2) }
         }
 
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+        XCTAssertEqual(helper.publisher.send(1), .max(1))
+        XCTAssertEqual(helper.publisher.send(2), .max(0))
+        XCTAssertEqual(helper.publisher.send(3), .max(1))
+        XCTAssertEqual(helper.publisher.send(4), .max(0))
+        XCTAssertEqual(helper.publisher.send(5), .max(1))
+        XCTAssertEqual(helper.publisher.send(6), .max(0))
+        XCTAssertEqual(helper.publisher.send(7), .max(1))
+        XCTAssertEqual(helper.publisher.send(8), .max(0))
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(3))])
     }
 
     func testTryFilterSubscriptionDemand() {
-        let helper = OperatorTestHelper(publisherType: CustomPublisher.self) {
-            $0.tryFilter { _ in true }
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        trackingDemand: .max(3),
+                                        receiveValueDemand: .none) {
+                                            $0.tryFilter { $0.isMultiple(of: 2) }
         }
 
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+        XCTAssertEqual(helper.publisher.send(1), .max(1))
+        XCTAssertEqual(helper.publisher.send(2), .max(0))
+        XCTAssertEqual(helper.publisher.send(3), .max(1))
+        XCTAssertEqual(helper.publisher.send(4), .max(0))
+        XCTAssertEqual(helper.publisher.send(5), .max(1))
+        XCTAssertEqual(helper.publisher.send(6), .max(0))
+        XCTAssertEqual(helper.publisher.send(7), .max(1))
+        XCTAssertEqual(helper.publisher.send(8), .max(0))
     }
 }
 

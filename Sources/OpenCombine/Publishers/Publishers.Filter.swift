@@ -160,7 +160,8 @@ private class _BaseFilter<Upstream: Publisher, Downstream: Subscriber>
     typealias Failure = Upstream.Failure
 
     private let _isIncluded: (Input) -> Result<Bool, Downstream.Failure>
-    private var _demand: Subscribers.Demand = .none
+    private var _unsatisfiedDemand: Subscribers.Demand = .none
+    private var _isFinished = false
 
     var errorTransform: (Upstream.Failure) -> Downstream.Failure
 
@@ -174,7 +175,6 @@ private class _BaseFilter<Upstream: Publisher, Downstream: Subscriber>
 
     func receive(subscription: Subscription) {
         upstreamSubscription = subscription
-        subscription.request(.unlimited)
         downstream.receive(subscription: self)
     }
 
@@ -183,12 +183,15 @@ private class _BaseFilter<Upstream: Publisher, Downstream: Subscriber>
         case .failure(let error):
             downstream.receive(completion: .failure(error))
             cancel()
+            _isFinished = true
             return .none
         case .success(let isIncluded):
             if isIncluded {
-                return downstream.receive(input)
+                let newDemand = downstream.receive(input)
+                _unsatisfiedDemand += newDemand - 1
+                return newDemand
             }
-            return _demand
+            return .max(1)
         }
     }
 
@@ -203,6 +206,8 @@ private class _BaseFilter<Upstream: Publisher, Downstream: Subscriber>
     }
 
     func request(_ demand: Subscribers.Demand) {
-        _demand = demand
+        guard !_isFinished else { return }
+        _unsatisfiedDemand += demand
+        upstreamSubscription?.request(demand)
     }
 }
