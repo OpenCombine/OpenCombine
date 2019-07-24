@@ -17,10 +17,10 @@ matrix:
       os: osx
       osx_image: xcode10.2
       env: SWIFT_VERSION="5.0" CODE_COVERAGE="YES" OPENCOMBINE_TEST="YES"
-    - name: "iOS 13.0 | Swift 5.1 | Compatibility Tests"
-      os: osx
-      osx_image: xcode11
-      env: SWIFT_VERSION="5.1" OPENCOMBINE_COMPATIBILITY_TEST="YES"
+    # - name: "iOS 13.0 | Swift 5.1 | Compatibility Tests"
+    #   os: osx
+    #   osx_image: xcode11
+    #   env: SWIFT_VERSION="5.1" OPENCOMBINE_COMPATIBILITY_TEST="YES"
     - name: "macOS 10.14 | Swift 5.0 | SwiftLint"
       os: osx
       osx_image: xcode10.2
