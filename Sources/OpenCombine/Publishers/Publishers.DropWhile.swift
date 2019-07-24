@@ -64,7 +64,6 @@ extension Publishers {
 
 private class _DropWhile<Upstream: Publisher, Downstream: Subscriber>
     : OperatorSubscription<Downstream>,
-      CustomStringConvertible,
       Subscription
     where Upstream.Output == Downstream.Input
 {
@@ -74,22 +73,30 @@ private class _DropWhile<Upstream: Publisher, Downstream: Subscriber>
 
     /// The predicate is reset to `nil` as soon as it returns `false`.
     var predicate: Predicate?
-
-    var demand: Subscribers.Demand = .none
+    var isCompleted = false
 
     init(downstream: Downstream, predicate: @escaping Predicate) {
         self.predicate = predicate
         super.init(downstream: downstream)
     }
 
-    var description: String { return "DropWhile" }
-
     func receive(subscription: Subscription) {
         upstreamSubscription = subscription
+        downstream.receive(subscription: self)
+    }
+
+    func receive(_ input: Input) -> Subscribers.Demand {
+
+        guard upstreamSubscription != nil else {
+            return .none
+        }
+
+        guard let predicate = self.predicate else {
+            return downstream.receive(input)
+        }
 
         // NOTE: until the predicate returns false, we will ask the upstream publisher
-        // for elements one by one, no matter how much elements the downstream subscriber
-        // requests.
+        // for elements one by one.
         //
         // However, IF the downstream requests anything, we accumulate this demand in the
         // `demand` property so that later we can provide the downstream with the correct
@@ -97,49 +104,24 @@ private class _DropWhile<Upstream: Publisher, Downstream: Subscriber>
         //
         // As soon as the predicate returns false, we switch to the mode where
         // we just forward all the requests from the downstream to the upstream.
-        subscription.request(.max(1))
-
-        downstream.receive(subscription: self)
-    }
-
-    func receive(_ input: Input) -> Subscribers.Demand {
-
-        guard let predicate = self.predicate else {
-            return downstream.receive(input)
-        }
-
         switch predicate(input) {
         case .success(true):
-            // See the NOTE above to understand why we return .max(1)
             return .max(1)
         case .success(false):
             // Okay, we hit the first element not satisfying the predicate,
             // from now on we just republish the values to the downstream.
             self.predicate = nil
-
-            // The demand that the downstream has requested has been accumulated in the
-            // `demand` property. Now it's time to pay the debt.
-            //
-            // Subtracting 1 for the current value.
-            return demand + downstream.receive(input) - 1
+            return downstream.receive(input)
         case .failure(let error):
             downstream.receive(completion: .failure(error))
+            isCompleted = true
             cancel()
             return .none
         }
     }
 
     func request(_ demand: Subscribers.Demand) {
-        if predicate == nil {
-            // If predicate is nil, that means that we have already received a value
-            // that doesn't satisfy the predicate, hence we're in the state where we
-            // just forward each request to the upstream.
-            upstreamSubscription?.request(demand)
-        } else {
-            // Otherwise, as mentioned in the NOTE above, we accumulate all the demand
-            // requested by the downstream until the predicate returns false.
-            self.demand += demand
-        }
+        upstreamSubscription?.request(demand)
     }
 }
 
@@ -147,10 +129,14 @@ extension Publishers.DropWhile {
 
     private final class Inner<Downstream: Subscriber>
         : _DropWhile<Upstream, Downstream>,
+          CustomStringConvertible,
           Subscriber
         where Upstream.Output == Downstream.Input, Downstream.Failure == Upstream.Failure
     {
+        var description: String { return "DropWhile" }
+
         func receive(completion: Subscribers.Completion<Failure>) {
+            guard !isCompleted else { return }
             downstream.receive(completion: completion)
         }
     }
@@ -160,10 +146,14 @@ extension Publishers.TryDropWhile {
 
     private final class Inner<Downstream: Subscriber>
         : _DropWhile<Upstream, Downstream>,
-           Subscriber
+          CustomStringConvertible,
+          Subscriber
         where Upstream.Output == Downstream.Input, Downstream.Failure == Error
     {
+        var description: String { return "TryDropWhile" }
+
         func receive(completion: Subscribers.Completion<Failure>) {
+            guard !isCompleted else { return }
             downstream.receive(completion: completion.eraseError())
         }
     }

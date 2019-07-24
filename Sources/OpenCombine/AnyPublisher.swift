@@ -9,7 +9,10 @@
 ///
 /// Use `AnyPublisher` to wrap a publisher whose type has details you don’t want to expose
 /// to subscribers or other publishers.
-public struct AnyPublisher<Output, Failure: Error> {
+public struct AnyPublisher<Output, Failure: Error>
+  : CustomStringConvertible,
+    CustomPlaygroundDisplayConvertible
+{
 
     @usableFromInline
     internal let box: PublisherBoxBase<Output, Failure>
@@ -23,6 +26,14 @@ public struct AnyPublisher<Output, Failure: Error> {
         where Output == PublisherType.Output, Failure == PublisherType.Failure
     {
         box = PublisherBox(base: publisher)
+    }
+
+    public var description: String {
+        return "AnyPublisher"
+    }
+
+    public var playgroundDescription: Any {
+        return description
     }
 }
 
@@ -61,9 +72,8 @@ internal class PublisherBoxBase<Output, Failure: Error>: Publisher {
 
 @usableFromInline
 internal final class PublisherBox<PublisherType: Publisher>
-    : PublisherBoxBase<PublisherType.Output,
-      PublisherType.Failure> {
-
+    : PublisherBoxBase<PublisherType.Output, PublisherType.Failure>
+{
     @usableFromInline
     internal let base: PublisherType
 

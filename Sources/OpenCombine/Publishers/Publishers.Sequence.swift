@@ -110,21 +110,42 @@ extension Publishers.Sequence {
 
 extension Publishers.Sequence: Equatable where Elements: Equatable {}
 
+extension Publishers.Sequence where Failure == Never {
+
+    public func min(
+        by areInIncreasingOrder: (Elements.Element, Elements.Element) -> Bool
+    ) -> Optional<Elements.Element>.OCombine.Publisher {
+        return .init(sequence.min(by: areInIncreasingOrder))
+    }
+
+    public func max(
+        by areInIncreasingOrder: (Elements.Element, Elements.Element) -> Bool
+    ) -> Optional<Elements.Element>.OCombine.Publisher {
+        return .init(sequence.max(by: areInIncreasingOrder))
+    }
+
+    public func first(
+        where predicate: (Elements.Element) -> Bool
+    ) -> Optional<Elements.Element>.OCombine.Publisher {
+        return .init(sequence.first(where: predicate))
+    }
+}
+
 extension Publishers.Sequence {
 
     public func allSatisfy(
         _ predicate: (Elements.Element) -> Bool
-    ) -> Publishers.Once<Bool, Failure> {
+    ) -> Result<Bool, Failure>.OCombine.Publisher {
         return .init(sequence.allSatisfy(predicate))
     }
 
     public func tryAllSatisfy(
         _ predicate: (Elements.Element) throws -> Bool
-    ) -> Publishers.Once<Bool, Error> {
+    ) -> Result<Bool, Error>.OCombine.Publisher {
         return .init(Result { try sequence.allSatisfy(predicate) })
     }
 
-    public func collect() -> Publishers.Once<[Elements.Element], Failure> {
+    public func collect() -> Result<[Elements.Element], Failure>.OCombine.Publisher {
         return .init(Array(sequence))
     }
 
@@ -134,39 +155,15 @@ extension Publishers.Sequence {
         return .init(sequence: sequence.compactMap(transform))
     }
 
-    public func min(
-        by areInIncreasingOrder: (Elements.Element, Elements.Element) -> Bool
-    ) -> Publishers.Optional<Elements.Element, Failure> {
-        return .init(sequence.min(by: areInIncreasingOrder))
-    }
-
-    public func tryMin(
-        by areInIncreasingOrder: (Elements.Element, Elements.Element) throws -> Bool
-    ) -> Publishers.Optional<Elements.Element, Error> {
-        return .init(Result { try sequence.min(by: areInIncreasingOrder) })
-    }
-
-    public func max(
-        by areInIncreasingOrder: (Elements.Element, Elements.Element) -> Bool
-    ) -> Publishers.Optional<Elements.Element, Failure> {
-        return .init(sequence.max(by: areInIncreasingOrder))
-    }
-
-    public func tryMax(
-        by areInIncreasingOrder: (Elements.Element, Elements.Element) throws -> Bool
-    ) -> Publishers.Optional<Elements.Element, Error> {
-        return .init(Result { try sequence.max(by: areInIncreasingOrder) })
-    }
-
     public func contains(
         where predicate: (Elements.Element) -> Bool
-    ) -> Publishers.Once<Bool, Failure> {
+    ) -> Result<Bool, Failure>.OCombine.Publisher {
         return .init(sequence.contains(where: predicate))
     }
 
     public func tryContains(
         where predicate: (Elements.Element) throws -> Bool
-    ) -> Publishers.Once<Bool, Error> {
+    ) -> Result<Bool, Error>.OCombine.Publisher {
         return .init(Result { try sequence.contains(where: predicate) })
     }
 
@@ -182,26 +179,14 @@ extension Publishers.Sequence {
         return .init(sequence: sequence.dropFirst(count))
     }
 
-    public func first(
-        where predicate: (Elements.Element) -> Bool
-    ) -> Publishers.Optional<Elements.Element, Failure> {
-        return .init(sequence.first(where: predicate))
-    }
-
-    public func tryFirst(
-        where predicate: (Elements.Element) throws -> Bool
-    ) -> Publishers.Optional<Elements.Element, Error> {
-        return .init(Result { try sequence.first(where: predicate) })
-    }
-
     public func filter(
         _ isIncluded: (Elements.Element) -> Bool
     ) -> Publishers.Sequence<[Elements.Element], Failure> {
         return .init(sequence: sequence.filter(isIncluded))
     }
 
-    public func ignoreOutput() -> Publishers.Empty<Elements.Element, Failure> {
-        return .init(completeImmediately: true)
+    public func ignoreOutput() -> Empty<Elements.Element, Failure> {
+        return .init()
     }
 
     public func map<ElementOfResult>(
@@ -225,7 +210,7 @@ extension Publishers.Sequence {
     public func reduce<Accumulator>(
         _ initialResult: Accumulator,
         _ nextPartialResult: @escaping (Accumulator, Elements.Element) -> Accumulator
-    ) -> Publishers.Once<Accumulator, Failure> {
+    ) -> Result<Accumulator, Failure>.OCombine.Publisher {
         return .init(sequence.reduce(initialResult, nextPartialResult))
     }
 
@@ -233,7 +218,7 @@ extension Publishers.Sequence {
         _ initialResult: Accumulator,
         _ nextPartialResult:
             @escaping (Accumulator, Elements.Element) throws -> Accumulator
-    ) -> Publishers.Once<Accumulator, Error> {
+    ) -> Result<Accumulator, Error>.OCombine.Publisher {
         return .init(Result { try sequence.reduce(initialResult, nextPartialResult) })
     }
 
@@ -276,36 +261,41 @@ extension Publishers.Sequence where Elements.Element: Equatable {
         return .init(sequence: result)
     }
 
-    public func contains(_ output: Elements.Element) -> Publishers.Once<Bool, Failure> {
+    public func contains(
+        _ output: Elements.Element
+    ) -> Result<Bool, Failure>.OCombine.Publisher {
         return .init(sequence.contains(output))
     }
 }
 
-extension Publishers.Sequence where Elements.Element: Comparable {
+extension Publishers.Sequence where Failure == Never, Elements.Element: Comparable {
 
-    public func min() -> Publishers.Optional<Elements.Element, Failure> {
+    public func min() -> Optional<Elements.Element>.OCombine.Publisher {
         return .init(sequence.min())
     }
 
-    public func max() -> Publishers.Optional<Elements.Element, Failure> {
+    public func max() -> Optional<Elements.Element>.OCombine.Publisher {
         return .init(sequence.max())
+    }
+}
+
+extension Publishers.Sequence where Elements: Collection, Failure == Never {
+
+    public func first() -> Optional<Elements.Element>.OCombine.Publisher {
+        return .init(sequence.first)
+    }
+
+    public func output(
+        at index: Elements.Index
+    ) -> Optional<Elements.Element>.OCombine.Publisher {
+        return .init(sequence.indices.contains(index) ? sequence[index] : nil)
     }
 }
 
 extension Publishers.Sequence where Elements: Collection {
 
-    public func first() -> Publishers.Optional<Elements.Element, Failure> {
-        return .init(sequence.first)
-    }
-
-    public func count() -> Publishers.Once<Int, Failure> {
+    public func count() -> Result<Int, Failure>.OCombine.Publisher {
         return .init(sequence.count)
-    }
-
-    public func output(
-        at index: Elements.Index
-    ) -> Publishers.Optional<Elements.Element, Failure> {
-        return .init(sequence.indices.contains(index) ? sequence[index] : nil)
     }
 
     public func output(
@@ -315,40 +305,41 @@ extension Publishers.Sequence where Elements: Collection {
     }
 }
 
-extension Publishers.Sequence where Elements: BidirectionalCollection {
+extension Publishers.Sequence where Elements: BidirectionalCollection, Failure == Never {
 
-    public func last() -> Publishers.Optional<Elements.Element, Failure> {
+    public func last() -> Optional<Elements.Element>.OCombine.Publisher {
         return .init(sequence.last)
     }
 
     public func last(
         where predicate: (Elements.Element) -> Bool
-    ) -> Publishers.Optional<Elements.Element, Failure> {
+    ) -> Optional<Elements.Element>.OCombine.Publisher {
         return .init(sequence.last(where: predicate))
     }
+}
 
-    public func tryLast(
-        where predicate: (Elements.Element) throws -> Bool
-    ) -> Publishers.Optional<Elements.Element, Error> {
-        return .init(Result { try sequence.last(where: predicate) })
+extension Publishers.Sequence where Elements: RandomAccessCollection, Failure == Never {
+
+    public func output(
+        at index: Elements.Index
+    ) -> Optional<Elements.Element>.OCombine.Publisher {
+        return .init(sequence.indices.contains(index) ? sequence[index] : nil)
+    }
+
+    public func count() -> Just<Int> {
+        return .init(sequence.count)
     }
 }
 
 extension Publishers.Sequence where Elements: RandomAccessCollection {
 
     public func output(
-        at index: Elements.Index
-    ) -> Publishers.Optional<Elements.Element, Failure> {
-        return .init(sequence.indices.contains(index) ? sequence[index] : nil)
-    }
-
-    public func output(
         in range: Range<Elements.Index>
     ) -> Publishers.Sequence<[Elements.Element], Failure> {
         return .init(sequence: Array(sequence[range]))
     }
 
-    public func count() -> Publishers.Optional<Int, Failure> {
+    public func count() -> Result<Int, Failure>.OCombine.Publisher {
         return .init(sequence.count)
     }
 }
@@ -408,7 +399,7 @@ extension Publishers.Sequence where Elements: RangeReplaceableCollection {
 
 extension Sequence {
 
-    public func publisher() -> Publishers.Sequence<Self, Never> {
-        return Publishers.Sequence(sequence: self)
+    public var publisher: Publishers.Sequence<Self, Never> {
+        return .init(sequence: self)
     }
 }

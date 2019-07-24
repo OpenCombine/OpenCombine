@@ -727,6 +727,7 @@ extension Publisher {
     public func tryPrefix(while predicate: @escaping (Self.Output) throws -> Bool) -> Publishers.TryPrefixWhile<Self>
 }
 
+/// A publisher that eventually produces one value and then finishes or fails.
 final public class Future<Output, Failure> : Publisher where Failure : Error {
 
     public typealias Promise = (Result<Output, Failure>) -> Void
@@ -1680,7 +1681,7 @@ extension Publisher {
     /// Transforms elements from the upstream publisher by providing the current element to a closure along with the last value returned by the closure.
     ///
     ///     let pub = (0...5)
-    ///         .publisher()
+    ///         .publisher
     ///         .scan(0, { return $0 + $1 })
     ///         .sink(receiveValue: { print ("\($0)", terminator: " ") })
     ///      // Prints "0 1 3 6 10 15 ".
@@ -2629,6 +2630,12 @@ extension Publishers {
     }
 }
 
+extension Publishers.PrefetchStrategy : Equatable {
+}
+
+extension Publishers.PrefetchStrategy : Hashable {
+}
+
 extension Publisher {
 
     public func buffer(size: Int, prefetch: Publishers.PrefetchStrategy, whenFull: Publishers.BufferingStrategy<Self.Failure>) -> Publishers.Buffer<Self>
@@ -2921,7 +2928,7 @@ extension Publisher {
     /// The following example replaces any error from the upstream publisher and replaces the upstream with a `Just` publisher. This continues the stream by publishing a single value and completing normally.
     /// ```
     /// enum SimpleError: Error { case error }
-    /// let errorPublisher = (0..<10).publisher().tryMap { v -> Int in
+    /// let errorPublisher = (0..<10).publisher.tryMap { v -> Int in
     ///     if v < 5 {
     ///         return v
     ///     } else {
@@ -3015,7 +3022,9 @@ extension Publishers {
         /// The scheduler to deliver the delayed events.
         public let scheduler: Context
 
-        public init(upstream: Upstream, interval: Context.SchedulerTimeType.Stride, tolerance: Context.SchedulerTimeType.Stride, scheduler: Context)
+        public let options: Context.SchedulerOptions?
+
+        public init(upstream: Upstream, interval: Context.SchedulerTimeType.Stride, tolerance: Context.SchedulerTimeType.Stride, scheduler: Context, options: Context.SchedulerOptions? = nil)
 
         /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
         ///
@@ -3027,16 +3036,17 @@ extension Publishers {
     }
 }
 
-/// Delays delivery of all output to the downstream receiver by a specified amount of time on a particular scheduler.
-///
-/// The delay affects the delivery of elements and completion, but not of the original subscription.
-/// - Parameters:
-///   - interval: The amount of time to delay.
-///   - tolerance: The allowed tolerance in firing delayed events.
-///   - scheduler: The scheduler to deliver the delayed events.
-///   - options: Options relevant to the scheduler’s behavior.
-/// - Returns: A publisher that delays delivery of elements and completion to the downstream receiver.
-public func delay<S>(for interval: S.SchedulerTimeType.Stride, tolerance: S.SchedulerTimeType.Stride? = nil, scheduler: S, options: S.SchedulerOptions? = nil) -> Publishers.Delay<Self, S> where S : Scheduler
+extension Publisher {
+
+    /// Delays delivery of all output to the downstream receiver by a specified amount of time on a particular scheduler.
+    ///
+    /// The delay affects the delivery of elements and completion, but not of the original subscription.
+    /// - Parameters:
+    ///   - interval: The amount of time to delay.
+    ///   - tolerance: The allowed tolerance in firing delayed events.
+    ///   - scheduler: The scheduler to deliver the delayed events.
+    /// - Returns: A publisher that delays delivery of elements and completion to the downstream receiver.
+    public func delay<S>(for interval: S.SchedulerTimeType.Stride, tolerance: S.SchedulerTimeType.Stride? = nil, scheduler: S, options: S.SchedulerOptions? = nil) -> Publishers.Delay<Self, S> where S : Scheduler
 }
 
 extension Publishers {
@@ -3574,6 +3584,8 @@ extension Publishers.First : Equatable where Upstream : Equatable {
     public init(initialValue: Value)
 
     /// The current value of the property.
+    public var wrappedValue: Value
+
     public var value: Value
 
     public class Publisher : Publisher {
@@ -3595,5 +3607,120 @@ extension Publishers.First : Equatable where Upstream : Equatable {
         public func receive<S>(subscriber: S) where Value == S.Input, S : Subscriber, S.Failure == Published<Value>.Publisher.Failure
     }
 
+    public var wrapperValue: Published<Value>.Publisher { mutating get }
+
     public var delegateValue: Published<Value>.Publisher { mutating get }
+}
+
+extension Publishers {
+
+    /// A publisher that publishes the value of a key path.
+    public struct MapKeyPath<Upstream, Output> : Publisher where Upstream : Publisher {
+
+        /// The kind of errors this publisher might publish.
+        ///
+        /// Use `Never` if this `Publisher` does not publish errors.
+        public typealias Failure = Upstream.Failure
+
+        /// The publisher from which this publisher receives elements.
+        public let upstream: Upstream
+
+        /// The key path of a property to publish.
+        public let keyPath: KeyPath<Upstream.Output, Output>
+
+        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        ///
+        /// - SeeAlso: `subscribe(_:)`
+        /// - Parameters:
+        ///     - subscriber: The subscriber to attach to this `Publisher`.
+        ///                   once attached it can begin to receive values.
+        public func receive<S>(subscriber: S) where Output == S.Input, S : Subscriber, Upstream.Failure == S.Failure
+    }
+
+    /// A publisher that publishes the values of two key paths as a tuple.
+    public struct MapKeyPath2<Upstream, Output0, Output1> : Publisher where Upstream : Publisher {
+
+        /// The kind of values published by this publisher.
+        public typealias Output = (Output0, Output1)
+
+        /// The kind of errors this publisher might publish.
+        ///
+        /// Use `Never` if this `Publisher` does not publish errors.
+        public typealias Failure = Upstream.Failure
+
+        /// The publisher from which this publisher receives elements.
+        public let upstream: Upstream
+
+        /// The key path of a property to publish.
+        public let keyPath0: KeyPath<Upstream.Output, Output0>
+
+        /// The key path of a second property to publish.
+        public let keyPath1: KeyPath<Upstream.Output, Output1>
+
+        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        ///
+        /// - SeeAlso: `subscribe(_:)`
+        /// - Parameters:
+        ///     - subscriber: The subscriber to attach to this `Publisher`.
+        ///                   once attached it can begin to receive values.
+        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, S.Input == (Output0, Output1)
+    }
+
+    /// A publisher that publishes the values of three key paths as a tuple.
+    public struct MapKeyPath3<Upstream, Output0, Output1, Output2> : Publisher where Upstream : Publisher {
+
+        /// The kind of values published by this publisher.
+        public typealias Output = (Output0, Output1, Output2)
+
+        /// The kind of errors this publisher might publish.
+        ///
+        /// Use `Never` if this `Publisher` does not publish errors.
+        public typealias Failure = Upstream.Failure
+
+        /// The publisher from which this publisher receives elements.
+        public let upstream: Upstream
+
+        /// The key path of a property to publish.
+        public let keyPath0: KeyPath<Upstream.Output, Output0>
+
+        /// The key path of a second property to publish.
+        public let keyPath1: KeyPath<Upstream.Output, Output1>
+
+        /// The key path of a third property to publish.
+        public let keyPath2: KeyPath<Upstream.Output, Output2>
+
+        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        ///
+        /// - SeeAlso: `subscribe(_:)`
+        /// - Parameters:
+        ///     - subscriber: The subscriber to attach to this `Publisher`.
+        ///                   once attached it can begin to receive values.
+        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, S.Input == (Output0, Output1, Output2)
+    }
+}
+
+extension Publisher {
+
+    /// Returns a publisher that publishes the value of a key path.
+    ///
+    /// - Parameter keyPath: The key path of a property on `Output`
+    /// - Returns: A publisher that publishes the value of the key path.
+    public func map<T>(_ keyPath: KeyPath<Self.Output, T>) -> Publishers.MapKeyPath<Self, T>
+
+    /// Returns a publisher that publishes the values of two key paths as a tuple.
+    ///
+    /// - Parameters:
+    ///   - keyPath0: The key path of a property on `Output`
+    ///   - keyPath1: The key path of another property on `Output`
+    /// - Returns: A publisher that publishes the values of two key paths as a tuple.
+    public func map<T0, T1>(_ keyPath0: KeyPath<Self.Output, T0>, _ keyPath1: KeyPath<Self.Output, T1>) -> Publishers.MapKeyPath2<Self, T0, T1>
+
+    /// Returns a publisher that publishes the values of three key paths as a tuple.
+    ///
+    /// - Parameters:
+    ///   - keyPath0: The key path of a property on `Output`
+    ///   - keyPath1: The key path of another property on `Output`
+    ///   - keyPath2: The key path of a third  property on `Output`
+    /// - Returns: A publisher that publishes the values of three key paths as a tuple.
+    public func map<T0, T1, T2>(_ keyPath0: KeyPath<Self.Output, T0>, _ keyPath1: KeyPath<Self.Output, T1>, _ keyPath2: KeyPath<Self.Output, T2>) -> Publishers.MapKeyPath3<Self, T0, T1, T2>
 }

@@ -69,13 +69,13 @@ extension Subscribers {
 
 extension Publisher where Self.Failure == Never {
 
-    /// Assigns the value of a KVO-compliant property from a publisher.
+    /// Assigns each element from a Publisher to a property on an object.
     ///
     /// - Parameters:
     ///   - keyPath: The key path of the property to assign.
     ///   - object: The object on which to assign the value.
-    /// - Returns: A cancellable instance; used when you end KVO-based assignment of
-    ///   the key path’s value.
+    /// - Returns: A cancellable instance; used when you end assignment
+    ///   of the received value. Deallocation of the result will tear down the subscription stream.
     public func assign<Root>(to keyPath: ReferenceWritableKeyPath<Root, Output>,
                              on object: Root) -> AnyCancellable {
         let subscriber = Subscribers.Assign(object: object, keyPath: keyPath)

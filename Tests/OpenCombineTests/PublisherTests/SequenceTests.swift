@@ -28,16 +28,12 @@ final class SequenceTests: XCTestCase {
         ("testCollectOperatorSpecialization", testCollectOperatorSpecialization),
         ("testCompactMapOperatorSpecialization", testCompactMapOperatorSpecialization),
         ("testMinOperatorSpecialization", testMinOperatorSpecialization),
-        ("tesTryMinOperatorSpecialization", testTryMinOperatorSpecialization),
         ("testMaxOperatorSpecialization", testMaxOperatorSpecialization),
-        ("tesTryMaxOperatorSpecialization", testTryMaxOperatorSpecialization),
         ("testContainsOperatorSpecialization", testContainsOperatorSpecialization),
         ("testTryContainsOperatorSpecialization", testTryContainsOperatorSpecialization),
         ("testDropWhileOperatorSpecialization", testDropWhileOperatorSpecialization),
         ("testDropFirstOperatorSpecialization", testDropFirstOperatorSpecialization),
         ("testFirstWhereOperatorSpecializtion", testFirstWhereOperatorSpecializtion),
-        ("testTryFirstWhereOperatorSpecializtion",
-         testTryFirstWhereOperatorSpecializtion),
         ("testFilterOperatorSpecialization", testFilterOperatorSpecialization),
         ("testIgnoreOutputOperatorSpecialization",
          testIgnoreOutputOperatorSpecialization),
@@ -60,7 +56,6 @@ final class SequenceTests: XCTestCase {
          testOutputInRangeOperatorSpecialization),
         ("testLastOperatorSpecialization", testLastOperatorSpecialization),
         ("testLastWhereOperatorSpecializtion", testLastWhereOperatorSpecializtion),
-        ("testTryLastWhereOperatorSpecializtion", testTryLastWhereOperatorSpecializtion),
         ("testPrependVariadicOperatorSpezialization",
          testPrependVariadicOperatorSpezialization),
         ("testPrependSequenceOperatorSpecialization",
@@ -299,32 +294,10 @@ final class SequenceTests: XCTestCase {
         XCTAssertEqual(makePublisher([3, 4, 5, -1, 2]).min(by: >), .init(5))
     }
 
-    func testTryMinOperatorSpecialization() {
-        XCTAssertEqual(try makePublisher([3, 4, 5, -1, 2]).tryMin(by: <).result.get(), -1)
-        XCTAssertEqual(try makePublisher([3, 4, 5, -1, 2]).tryMin(by: >).result.get(), 5)
-        XCTAssertNil(
-            try makePublisher(EmptyCollection<Int>()).tryMin(by: throwing).result.get()
-        )
-        XCTAssertEqual(try makePublisher([10]).tryMin(by: throwing).result.get(), 10)
-        assertThrowsError(try makePublisher([10, 20]).tryMin(by: throwing).result.get(),
-                          .oops)
-    }
-
     func testMaxOperatorSpecialization() {
         XCTAssertEqual(makePublisher(EmptyCollection<Int>()).max(), .init(nil))
         XCTAssertEqual(makePublisher([3, 4, 5, -1, 2]).max(), .init(5))
         XCTAssertEqual(makePublisher([3, 4, 5, -1, 2]).max(by: >), .init(-1))
-    }
-
-    func testTryMaxOperatorSpecialization() {
-        XCTAssertEqual(try makePublisher([3, 4, 5, -1, 2]).tryMax(by: <).result.get(), 5)
-        XCTAssertEqual(try makePublisher([3, 4, 5, -1, 2]).tryMax(by: >).result.get(), -1)
-        XCTAssertNil(
-            try makePublisher(EmptyCollection<Int>()).tryMax(by: throwing).result.get()
-        )
-        XCTAssertEqual(try makePublisher([10]).tryMax(by: throwing).result.get(), 10)
-        assertThrowsError(try makePublisher([10, 20]).tryMax(by: throwing).result.get(),
-                          .oops)
     }
 
     func testContainsOperatorSpecialization() {
@@ -372,28 +345,6 @@ final class SequenceTests: XCTestCase {
         XCTAssertEqual(
             makePublisher(EmptyCollection<Int>()).first { $0.isMultiple(of: 13) },
             .init(nil)
-        )
-    }
-
-    func testTryFirstWhereOperatorSpecializtion() {
-        XCTAssertEqual(
-            try makePublisher(1 ..< 9).tryFirst { $0.isMultiple(of: 4) }.result.get(),
-            4
-        )
-        XCTAssertNil(
-            try makePublisher(1 ..< 9).tryFirst { $0.isMultiple(of: 13) }.result.get()
-        )
-        XCTAssertNil(
-            try makePublisher(EmptyCollection<Int>())
-                .tryFirst { $0.isMultiple(of: 13) }.result.get()
-        )
-        XCTAssertNil(
-            try makePublisher(EmptyCollection<Int>())
-                .tryFirst(where: throwing).result.get()
-        )
-        assertThrowsError(
-            try makePublisher(0 ..< 9).tryFirst(where: throwing).result.get(),
-            .oops
         )
     }
 
@@ -484,10 +435,10 @@ final class SequenceTests: XCTestCase {
     }
 
     func testCountOperatorSpecialization() {
-        XCTAssertEqual(makePublisher(0 ..< .max).count(), Publishers.Once(.max))
-        XCTAssertEqual(makePublisher(EmptyCollection<Int>()).count(), Publishers.Once(0))
-        XCTAssertEqual(makePublisher([1, 1, 1, 1, 1, 1]).count(), Publishers.Optional(6))
-        XCTAssertEqual(makePublisher([]).count(), Publishers.Optional(0))
+        XCTAssertEqual(makePublisher(0 ..< .max).count(), Just(.max))
+        XCTAssertEqual(makePublisher(EmptyCollection<Int>()).count(), Just(0))
+        XCTAssertEqual(makePublisher([1, 1, 1, 1, 1, 1]).count(), Just(6))
+        XCTAssertEqual(makePublisher([]).count(), Just(0))
     }
 
     func testOutputAtIndexOperatorSpecialization() {
@@ -552,28 +503,6 @@ final class SequenceTests: XCTestCase {
         XCTAssertEqual(
             makePublisher(EmptyCollection<Int>()).last { $0.isMultiple(of: 13) },
             .init(nil)
-        )
-    }
-
-    func testTryLastWhereOperatorSpecializtion() {
-        XCTAssertEqual(
-            try makePublisher(1 ..< 9).tryLast { $0.isMultiple(of: 4) }.result.get(),
-            8
-        )
-        XCTAssertNil(
-            try makePublisher(1 ..< 9).tryLast { $0.isMultiple(of: 13) }.result.get()
-        )
-        XCTAssertNil(
-            try makePublisher(EmptyCollection<Int>())
-                .tryLast { $0.isMultiple(of: 13) }.result.get()
-        )
-        XCTAssertNil(
-            try makePublisher(EmptyCollection<Int>())
-                .tryLast(where: throwing).result.get()
-        )
-        assertThrowsError(
-            try makePublisher(0 ..< 9).tryLast(where: throwing).result.get(),
-            .oops
         )
     }
 
@@ -772,5 +701,5 @@ private final class Counter: Sequence, IteratorProtocol, CustomStringConvertible
 private func makePublisher<Elements: Sequence>(
     _ elements: Elements
 ) -> Publishers.Sequence<Elements, Never> {
-    return elements.publisher()
+    return elements.publisher
 }

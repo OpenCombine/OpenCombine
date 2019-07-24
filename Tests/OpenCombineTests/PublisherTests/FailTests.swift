@@ -20,7 +20,7 @@ final class FailTests: XCTestCase {
         ("testSubscription", testSubscription),
     ]
 
-    private typealias Sut = Publishers.Fail<Int, TestingError>
+    private typealias Sut = Fail<Int, TestingError>
 
     func testSubscription() {
         let just = Sut(error: .oops)

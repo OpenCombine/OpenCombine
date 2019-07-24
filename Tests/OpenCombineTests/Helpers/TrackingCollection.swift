@@ -224,3 +224,32 @@ extension TrackingCollection: RangeReplaceableCollection {
         try storage.removeAll(where: shouldBeRemoved)
     }
 }
+
+final class TrackingRangeExpression<R: RangeExpression>: RangeExpression
+    where R.Bound == Int
+{
+
+    enum Event: Equatable {
+        case contains(Int)
+        case relativeTo(Range<Int>?)
+    }
+
+    typealias Bound = Int
+
+    private let underlying: R
+    private(set) var history: [Event] = []
+
+    init(_ underlying: R) {
+        self.underlying = underlying
+    }
+
+    func relative<C: Collection>(to collection: C) -> Range<Int> where C.Index == Int {
+        history.append(.relativeTo(collection as? Range<Int>))
+        return underlying.relative(to: collection)
+    }
+
+    func contains(_ element: Int) -> Bool {
+        history.append(.contains(element))
+        return underlying.contains(element)
+    }
+}
