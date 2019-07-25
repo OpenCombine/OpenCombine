@@ -53,10 +53,26 @@ internal func catching<Input, Output, Failure: Error>(
     return { input in .success(transform(input)) }
 }
 
+/// An overload of `catching` that takes a non-thowing function with
+/// two arguments and returns a function that returns an always succeeding `Result.`
+internal func catching2<Input, Output, Failure: Error>(
+    _ transform: @escaping (Input, Input) -> Output
+) -> (Input, Input) -> Result<Output, Failure> {
+    return { input1, input2 in .success(transform(input1, input2)) }
+}
+
 /// Takes a function that may throw an error and returns a function that doesn't throw
 /// an error but returns `Result`.
 internal func catching<Input, Output>(
     _ transform: @escaping (Input) throws -> Output
     ) -> (Input) -> Result<Output, Error> {
     return { input in Result { try transform(input) } }
+}
+
+/// Takes a function with two arguments  that may throw an error and returns a
+/// function that doesn't throw an error but returns `Result`.
+internal func catching2<Input, Output>(
+    _ transform: @escaping (Input, Input) throws -> Output
+    ) -> (Input, Input) -> Result<Output, Error> {
+    return { input1, input2 in Result { try transform(input1, input2) } }
 }
