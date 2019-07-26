@@ -70,6 +70,14 @@ final class SequenceTests: XCTestCase {
          testAppendPublisherOperatorSpecialization),
     ]
 
+#if OPENCOMBINE_COMPATIBILITY_TEST || !canImport(Combine)
+    private typealias ResultPublisher<Output, Failure: Error> =
+        Result<Output, Failure>.Publisher
+#else
+    private typealias ResultPublisher<Output, Failure: Error> =
+        Result<Output, Failure>.OCombine.Publisher
+#endif
+
     func testEmptySequence() {
 
         let emptyCounter = Counter(upperBound: 0)
@@ -438,6 +446,17 @@ final class SequenceTests: XCTestCase {
         XCTAssertEqual(makePublisher(0 ..< .max).count(), Just(.max))
         XCTAssertEqual(makePublisher(EmptyCollection<Int>()).count(), Just(0))
         XCTAssertEqual(makePublisher([1, 1, 1, 1, 1, 1]).count(), Just(6))
+        XCTAssertEqual(
+            makePublisher([1, 1, 1, 1, 1, 1])
+                .setFailureType(to: TestingError.self)
+                .count(),
+            ResultPublisher(.success(6))
+        )
+        XCTAssertEqual(
+            makePublisher([1, 2, 3, 4, 5, 6].lazy.filter { $0.isMultiple(of: 2) })
+                .count(),
+            ResultPublisher(.success(3))
+        )
         XCTAssertEqual(makePublisher([]).count(), Just(0))
     }
 
@@ -676,21 +695,21 @@ private final class Counter: Sequence, IteratorProtocol, CustomStringConvertible
 /// If both Foundation and OpenCombine are imported, Apple's Combine
 /// extensions leak through Foundation, which results in the following error:
 ///
-///     let publisher = [1, 2, 3, 4].publisher()
+///     let publisher = [1, 2, 3, 4].publisher
 ///                     ^
-///                     error: ambiguous use of 'publisher()'
+///                     error: ambiguous use of 'publisher'
 ///
 /// This could be fixed by explicitly specifying a type:
 ///
-///     let publisher: OpenCombine.Publishers.Sequence = [1, 2, 3, 4].publisher()
+///     let publisher: OpenCombine.Publishers.Sequence = [1, 2, 3, 4].publisher
 ///
 /// But this won't compile when testing compatibility, since compatibility tests
 /// don't import OpenCombine. This could be fixed as well like this:
 ///
 ///     #if OPENCOMBINE_COMPATIBILITY_TEST
-///     let publisher: Combine.Publishers.Sequence = [1, 2, 3, 4].publisher()
+///     let publisher: Combine.Publishers.Sequence = [1, 2, 3, 4].publisher
 ///     #else
-///     let publisher: OpenCombine.Publishers.Sequence = [1, 2, 3, 4].publisher()
+///     let publisher: OpenCombine.Publishers.Sequence = [1, 2, 3, 4].publisher
 ///     #endif
 ///
 /// But this is too verbose. This function provides a more concise way:

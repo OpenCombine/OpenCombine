@@ -34,18 +34,6 @@ extension Result {
     internal func unwrapOr(_ handleError: @autoclosure () -> Success) -> Success {
         return unwrapOr { _ in handleError() }
     }
-
-    /// Erases the `Failure` type to `Swift.Error`. This function exists
-    /// because in Swift user-defined generic types are always
-    /// [invariant](https://en.wikipedia.org/wiki/Covariance_and_contravariance_(computer_science)).
-    internal func eraseError() -> Result<Success, Error> {
-        switch self {
-        case .success(let success):
-            return .success(success)
-        case .failure(let error):
-            return .failure(error)
-        }
-    }
 }
 
 extension Result where Failure == Never {

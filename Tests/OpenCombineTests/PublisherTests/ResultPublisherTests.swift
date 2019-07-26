@@ -23,6 +23,7 @@ final class ResultPublisherTests: XCTestCase {
         ("testOnceFailure", testOnceFailure),
         ("testFailureCancelOnSubscription", testFailureCancelOnSubscription),
         ("testLifecycle", testLifecycle),
+        ("testCustomMirror", testCustomMirror),
         ("testMinOperatorSpecialization", testMinOperatorSpecialization),
         ("testTryMinOperatorSpecialization", testTryMinOperatorSpecialization),
         ("testMaxOperatorSpecialization", testMaxOperatorSpecialization),
@@ -61,14 +62,32 @@ final class ResultPublisherTests: XCTestCase {
 #if OPENCOMBINE_COMPATIBILITY_TEST || !canImport(Combine)
     private typealias ResultPublisher<Output, Failure: Error> =
         Result<Output, Failure>.Publisher
+
+    private func makePublisher<Output, Failure: Error>(
+        _ result: Result<Output, Failure>
+    ) -> ResultPublisher<Output, Failure> {
+        return result.publisher
+    }
 #else
     private typealias ResultPublisher<Output, Failure: Error> =
         Result<Output, Failure>.OCombine.Publisher
+
+    private func makePublisher<Output, Failure: Error>(
+        _ result: Result<Output, Failure>
+    ) -> ResultPublisher<Output, Failure> {
+        return result.ocombine.publisher
+    }
 #endif
     private typealias Sut<Output> = ResultPublisher<Output, TestingError>
 
+    private func makePublisher<Output>(
+        _ output: Output
+    ) -> ResultPublisher<Output, TestingError> {
+        return makePublisher(.success(output))
+    }
+
     func testOnceSuccessNoInitialDemand() {
-        let success = Sut(42)
+        let success = makePublisher(42)
         let tracking = TrackingSubscriber()
         success.subscribe(tracking)
 
@@ -83,7 +102,7 @@ final class ResultPublisherTests: XCTestCase {
     }
 
     func testOnceSuccessWithInitialDemand() {
-        let just = Sut(42)
+        let just = makePublisher(42)
         let tracking = TrackingSubscriber(receiveSubscription: { $0.request(.unlimited) })
         just.subscribe(tracking)
 
@@ -93,7 +112,7 @@ final class ResultPublisherTests: XCTestCase {
     }
 
     func testSuccessCancelOnSubscription() {
-        let success = Sut(42)
+        let success = makePublisher(42)
         let tracking = TrackingSubscriber(
             receiveSubscription: { $0.request(.max(1)); $0.cancel() }
         )
@@ -127,12 +146,30 @@ final class ResultPublisherTests: XCTestCase {
     func testLifecycle() {
         var deinitCount = 0
         do {
-            let once = Sut(42)
+            let once = makePublisher(42)
             let tracking = TrackingSubscriber(onDeinit: { deinitCount += 1 })
             once.subscribe(tracking)
             tracking.subscriptions.first?.cancel()
         }
         XCTAssertEqual(deinitCount, 1)
+    }
+
+    func testCustomMirror() throws {
+        let publisher = makePublisher(42)
+        var downstreamSubscription: Subscription?
+        let tracking = TrackingSubscriber(
+            receiveSubscription: { downstreamSubscription = $0 }
+        )
+        publisher.subscribe(tracking)
+
+        var reflected = ""
+        try dump(XCTUnwrap(downstreamSubscription), to: &reflected)
+
+        XCTAssertEqual(reflected, """
+        ▿ Once #0
+          - 42
+
+        """)
     }
 
     // MARK: - Operator specializations for Once

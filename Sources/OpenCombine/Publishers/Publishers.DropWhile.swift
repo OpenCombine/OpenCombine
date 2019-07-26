@@ -136,7 +136,10 @@ extension Publishers.DropWhile {
         var description: String { return "DropWhile" }
 
         func receive(completion: Subscribers.Completion<Failure>) {
-            guard !isCompleted else { return }
+            guard !isCompleted else {
+                assertionFailure("unreachable")
+                return
+            }
             downstream.receive(completion: completion)
         }
     }

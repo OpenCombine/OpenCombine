@@ -18,6 +18,7 @@ final class JustTests: XCTestCase {
 
     static let allTests = [
         ("testJustNoInitialDemand", testJustNoInitialDemand),
+        ("testCustomMirror", testCustomMirror),
         ("testJustWithInitialDemand", testJustWithInitialDemand),
         ("testLifecycle", testLifecycle),
         ("testCancelOnSubscription", testCancelOnSubscription),
@@ -81,6 +82,24 @@ final class JustTests: XCTestCase {
         XCTAssertEqual(tracking.history, [.subscription("Just"),
                                           .value(42),
                                           .completion(.finished)])
+    }
+
+    func testCustomMirror() throws {
+        let just = Sut(42)
+        var downstreamSubscription: Subscription?
+        let tracking = TrackingSubscriberBase<Int, Never>(
+            receiveSubscription: { downstreamSubscription = $0 }
+        )
+        just.subscribe(tracking)
+
+        var reflected = ""
+        try dump(XCTUnwrap(downstreamSubscription), to: &reflected)
+
+        XCTAssertEqual(reflected, """
+        ▿ Just #0
+          - 42
+
+        """)
     }
 
     func testJustWithInitialDemand() {

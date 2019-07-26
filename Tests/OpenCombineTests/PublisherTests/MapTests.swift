@@ -20,6 +20,7 @@ final class MapTests: XCTestCase {
         ("testError", testError),
         ("testTryMapFailureBecauseOfThrow", testTryMapFailureBecauseOfThrow),
         ("testTryMapFailureOnCompletion", testTryMapFailureOnCompletion),
+        ("testTryMapSuccess", testTryMapSuccess),
         ("testRange", testRange),
         ("testNoDemand", testNoDemand),
         ("testDemandSubscribe", testDemandSubscribe),
@@ -118,6 +119,22 @@ final class MapTests: XCTestCase {
         XCTAssertEqual(tracking.history,
                        [.subscription("TryMap"),
                         .completion(.failure(TestingError.oops))])
+    }
+
+    func testTryMapSuccess() {
+        let publisher = PassthroughSubject<Int, Error>()
+        let map = publisher.tryMap { $0 * 2 }
+
+        let tracking = TrackingSubscriberBase<Int, Error>()
+
+        publisher.send(1)
+        map.subscribe(tracking)
+        publisher.send(completion: .finished)
+        publisher.send(2)
+
+        XCTAssertEqual(tracking.history,
+                       [.subscription("TryMap"),
+                        .completion(.finished)])
     }
 
     func testRange() {

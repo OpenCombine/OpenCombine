@@ -13,8 +13,6 @@ import Combine
 import OpenCombine
 #endif
 
-// TODO: add tests from https://github.com/ReactiveX/RxJava/blob/83f2bd771ee172a2154e0fb30c5ffcaf8f71433c/src/test/java/io/reactivex/internal/operators/observable/ObservableSkipWhileTest.java
-
 @available(macOS 10.15, iOS 13.0, *)
 final class DropWhileTests: XCTestCase {
 
@@ -22,6 +20,7 @@ final class DropWhileTests: XCTestCase {
         ("testDropWhile", testDropWhile),
         ("testTryDropWhileFailureBecauseOfThrow", testTryDropWhileFailureBecauseOfThrow),
         ("testTryDropWhileFailureOnCompletion", testTryDropWhileFailureOnCompletion),
+        ("testTryDropWhileSuccess", testTryDropWhileSuccess),
         ("testDemand", testDemand),
         ("testTryDropWhileCancelsUpstreamOnThrow",
          testTryDropWhileCancelsUpstreamOnThrow),
@@ -103,6 +102,32 @@ final class DropWhileTests: XCTestCase {
         XCTAssertEqual(tracking.history,
                        [.subscription("TryDropWhile"),
                         .completion(.failure(TestingError.oops))])
+    }
+
+    func testTryDropWhileSuccess() {
+
+        let publisher = PassthroughSubject<Int, Error>()
+        let drop = publisher.tryDrop { $0.isMultiple(of: 2) }
+
+        let tracking = TrackingSubscriberBase<Int, Error>(
+            receiveSubscription: { $0.request(.max(2)) }
+        )
+
+        publisher.send(1)
+        drop.subscribe(tracking)
+        publisher.send(0)
+        publisher.send(2)
+        publisher.send(3)
+        publisher.send(4)
+        publisher.send(5)
+        publisher.send(completion: .finished)
+        publisher.send(8)
+
+        XCTAssertEqual(tracking.history,
+                       [.subscription("TryDropWhile"),
+                        .value(3),
+                        .value(4),
+                        .completion(.finished)])
     }
 
     func testDemand() {
