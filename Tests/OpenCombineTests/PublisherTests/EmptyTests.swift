@@ -19,22 +19,23 @@ final class EmptyTests: XCTestCase {
     static let allTests = [
         ("testEmpty", testEmpty),
         ("testImmediatelyCancel", testImmediatelyCancel),
+        ("testEquatable", testEquatable),
     ]
 
     func testEmpty() {
 
-        let completesImmediately = Publishers.Empty(completeImmediately: true,
-                                                    outputType: Int.self,
-                                                    failureType: TestingError.self)
+        let completesImmediately = Empty(completeImmediately: true,
+                                         outputType: Int.self,
+                                         failureType: TestingError.self)
         let subscriber = TrackingSubscriber()
         completesImmediately.subscribe(subscriber)
 
         XCTAssertEqual(subscriber.history, [.subscription("Empty"),
                                             .completion(.finished)])
 
-        let doesNotComplete = Publishers.Empty(completeImmediately: false,
-                                               outputType: Int.self,
-                                               failureType: TestingError.self)
+        let doesNotComplete = Empty(completeImmediately: false,
+                                    outputType: Int.self,
+                                    failureType: TestingError.self)
 
         doesNotComplete.subscribe(subscriber)
 
@@ -44,13 +45,34 @@ final class EmptyTests: XCTestCase {
     }
 
     func testImmediatelyCancel() {
-        let completesImmediately = Publishers.Empty(outputType: Int.self,
-                                                    failureType: TestingError.self)
+        let completesImmediately = Empty(outputType: Int.self,
+                                         failureType: TestingError.self)
 
         let subscriber = TrackingSubscriber(receiveSubscription: { $0.cancel() })
         completesImmediately.subscribe(subscriber)
 
         XCTAssertEqual(subscriber.history, [.subscription("Empty"),
                                             .completion(.finished)])
+    }
+
+    func testEquatable() {
+        XCTAssertEqual(Empty(completeImmediately: true,
+                             outputType: Int.self,
+                             failureType: Error.self),
+                       Empty(completeImmediately: true,
+                             outputType: Int.self,
+                             failureType: Error.self))
+        XCTAssertEqual(Empty(completeImmediately: false,
+                             outputType: Int.self,
+                             failureType: Error.self),
+                       Empty(completeImmediately: false,
+                             outputType: Int.self,
+                             failureType: Error.self))
+        XCTAssertNotEqual(Empty(completeImmediately: true,
+                                outputType: Int.self,
+                                failureType: Error.self),
+                          Empty(completeImmediately: false,
+                                outputType: Int.self,
+                                failureType: Error.self))
     }
 }

@@ -16,8 +16,8 @@ import OpenCombine
 @available(macOS 10.15, iOS 13.0, *)
 final class DecodeTests: XCTestCase {
     static let allTests = [
-        ("testDecodeWorks", testDecodeWorks),
-        ("testDownstraemReceivesFailure", testDownstreamReceivesFailure),
+        ("testDecodingSuccess", testDecodingSuccess),
+        ("testDecodingFailure", testDecodingFailure),
         ("testDemand", testDemand)
     ]
 
@@ -30,11 +30,10 @@ final class DecodeTests: XCTestCase {
         jsonDecoder = TestDecoder()
     }
 
-    func testDecodeWorks() throws {
-        // Given
-        let data = 78 // Represents decodable data
+    func testDecodingSuccess() throws {
+        let data = 78
         let subject = PassthroughSubject<Int, Error>()
-        let publisher = subject.decode(type: [String: String].self, decoder: jsonDecoder)
+        let publisher = subject.decode(type: [String : String].self, decoder: jsonDecoder)
         let subscriber = TrackingSubscriberBase<[String: String], Error>(
             receiveSubscription: { $0.request(.unlimited) }
         )
@@ -45,53 +44,41 @@ final class DecodeTests: XCTestCase {
             return nil
         }
 
-        // When
         publisher.subscribe(subscriber)
         subject.send(data)
+        subject.send(completion: .finished)
 
-        // Then
         XCTAssertEqual(subscriber.history, [.subscription("Decode"),
-                                            .value(testValue)])
+                                            .value(testValue),
+                                            .completion(.finished)])
     }
 
-    func testDownstreamReceivesFailure() {
-        // Given
+    func testDecodingFailure() {
         let failData = 95
         let subject = PassthroughSubject<Int, Error>()
-        let publisher = subject.decode(type: [String: String].self, decoder: jsonDecoder)
+        let publisher = subject.decode(type: [String : String].self, decoder: jsonDecoder)
         let subscriber =  TrackingSubscriberBase<[String: String], Error>(
             receiveSubscription: { $0.request(.unlimited) }
         )
 
-        // When
         publisher.subscribe(subscriber)
         subject.send(failData)
 
-        // Then
         XCTAssertEqual(subscriber.history, [.subscription("Decode"),
                                             .completion(.failure(TestDecoder.error))])
     }
 
     func testDemand() {
-        // `CustomSubscription` tracks all the requests and cancellations
-        // in its `history` property
         let subscription = CustomSubscription()
 
-        // `CustomPublisher` sends the subscription object it has been initialized with
-        // to whoever subscribed to the `CustomPublisher`.
         let publisher = CustomPublisherBase<Int, TestingError>(subscription: subscription)
 
-        // `_Decode` helper will receive the `CustomSubscription `
         let decode = publisher.decode(type: [String : String].self,
                                       decoder: jsonDecoder)
 
-        // This is actually `_Decode`
         var downstreamSubscription: Subscription?
 
-        // `TrackingSubscriber` records every event like "receiveSubscription",
-        // "receiveValue" and "receiveCompletion" into its `history` property,
-        // optionally executing the provided callbacks.
-        let tracking = TrackingSubscriberBase<[String: String], Error>(
+        let tracking = TrackingSubscriberBase<[String : String], Error>(
             receiveSubscription: {
                 $0.request(.max(42))
                 downstreamSubscription = $0
@@ -100,8 +87,10 @@ final class DecodeTests: XCTestCase {
         )
 
         decode.subscribe(tracking)
-        XCTAssertNotNil(downstreamSubscription) // Removes unused variable warning
-        XCTAssertEqual(subscription.history, [.requested(.max(42))])
+        XCTAssertNotNil(downstreamSubscription)
+
+        XCTAssertEqual(publisher.send(10), .none)
+        XCTAssertEqual(subscription.history, [.requested(.max(42)), .cancelled])
     }
 }
 

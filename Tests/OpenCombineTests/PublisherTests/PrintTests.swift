@@ -199,7 +199,7 @@ final class PrintTests: XCTestCase {
     func testSynchronization() {
 
         let stream = StringStream()
-        let publisher = CustomPublisher(subscription: nil)
+        let publisher = CustomPublisherBase<Int, Never>(subscription: nil)
         let printer = publisher.print(to: stream)
 
         let counter = Atomic(0)

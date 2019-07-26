@@ -72,12 +72,6 @@ line_length:
 generic_type_name:
   min_length: 3
 
-file_types_order:
-  order:
-    - main_type
-    - extension
-    - supporting_type
-
 attributes:
   always_on_line_above:
     - "@usableFromInline"
