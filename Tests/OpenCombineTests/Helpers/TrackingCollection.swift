@@ -225,10 +225,10 @@ extension TrackingCollection: RangeReplaceableCollection {
     }
 }
 
-final class TrackingRangeExpression<R: RangeExpression>: RangeExpression
-    where R.Bound == Int
+final class TrackingRangeExpression<RangeExpression: Swift.RangeExpression>
+    : Swift.RangeExpression
+    where RangeExpression.Bound == Int
 {
-
     enum Event: Equatable {
         case contains(Int)
         case relativeTo(Range<Int>?)
@@ -236,14 +236,16 @@ final class TrackingRangeExpression<R: RangeExpression>: RangeExpression
 
     typealias Bound = Int
 
-    private let underlying: R
+    private let underlying: RangeExpression
     private(set) var history: [Event] = []
 
-    init(_ underlying: R) {
+    init(_ underlying: RangeExpression) {
         self.underlying = underlying
     }
 
-    func relative<C: Collection>(to collection: C) -> Range<Int> where C.Index == Int {
+    func relative<Elements: Collection>(
+        to collection: Elements
+    ) -> Range<Int> where Elements.Index == Int {
         history.append(.relativeTo(collection as? Range<Int>))
         return underlying.relative(to: collection)
     }

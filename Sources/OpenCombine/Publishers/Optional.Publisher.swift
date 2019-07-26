@@ -11,8 +11,9 @@ extension Optional {
     ///
     /// Combine extends `Optional` with a nested type `Publisher`.
     /// If you import both OpenCombine and Combine (either explicitly or implicitly,
-    /// e. g. when importing Foundation), you will not be able to write `Optional<Int>.Publisher`,
-    /// because Swift is unable to understand which `Publisher` you're referring to.
+    /// e. g. when importing Foundation), you will not be able to write
+    /// `Optional<Int>.Publisher`, because Swift is unable to understand
+    /// which `Publisher` you're referring to.
     ///
     /// So you have to write `Optional<Int>.OCombine.Publisher`.
     ///
@@ -41,8 +42,8 @@ extension Optional {
             /// The result to deliver to each subscriber.
             public let output: Wrapped?
 
-            /// Creates a publisher to emit the optional value of a successful result, or fail
-            /// with an error.
+            /// Creates a publisher to emit the optional value of a successful result,
+            /// or fail with an error.
             ///
             /// - Parameter result: The result to deliver to each subscriber.
             public init(_ output: Output?) {

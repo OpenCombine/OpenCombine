@@ -137,7 +137,6 @@ final class OptionalPublisherTests: XCTestCase {
         XCTAssertEqual(count, 0, "comparator should not be called for min(by:)")
     }
 
-
     func testMaxOperatorSpecialization() {
         XCTAssertEqual(Sut<Int>(341).max(), Sut(341))
         XCTAssertEqual(Sut<Int>(nil).max(), Sut(nil))
