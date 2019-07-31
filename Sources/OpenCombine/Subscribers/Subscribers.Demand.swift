@@ -142,7 +142,8 @@ extension Subscribers {
             lhs = lhs - rhs
         }
 
-        /// When subtracting any value from `.unlimited`, the result is still `.unlimited`.
+        /// When subtracting any value from `.unlimited`, the result is still
+        /// `.unlimited`.
         /// A negative demand is not possible; any operation that would result in
         /// a negative value is clamped to `.max(0)`
         @inline(__always)
@@ -157,7 +158,8 @@ extension Subscribers {
             return isOverflow ? .none : .max(difference)
         }
 
-        /// When subtracting any value from `.unlimited,` the result is still `.unlimited`.
+        /// When subtracting any value from `.unlimited,` the result is still
+        /// `.unlimited`.
         /// A negative demand is not possible; any operation that would result in
         /// a negative value is clamped to `.max(0)`
         @inline(__always)

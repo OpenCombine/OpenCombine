@@ -49,9 +49,7 @@ public struct AnySubscriber<Input, Failure: Error>: Subscriber,
         box = AnySubscriberBox(subscriber)
 
         if let description = subscriber as? CustomStringConvertible {
-            descriptionThunk = {
-                return description.description
-            }
+            descriptionThunk = { description.description }
         } else {
             let fixedDescription = String(describing: type(of: subscriber))
             descriptionThunk = { fixedDescription }
@@ -175,7 +173,7 @@ internal final class AnySubscriberBox<Base: Subscriber>
 
     @inlinable
     override internal func receive(_ input: Base.Input) -> Subscribers.Demand {
-        base.receive(input)
+        return base.receive(input)
     }
 
     @inlinable
@@ -216,10 +214,11 @@ internal final class ClosureBasedAnySubscriber<Input, Failure: Error>
 
     @inlinable
     override internal func receive(_ input: Input) -> Subscribers.Demand {
-        receiveValueThunk(input)
+        return receiveValueThunk(input)
     }
+
     @inlinable
-    override final internal func receive(completion: Subscribers.Completion<Failure>) {
+    override internal func receive(completion: Subscribers.Completion<Failure>) {
         receiveCompletionThunk(completion)
     }
 }

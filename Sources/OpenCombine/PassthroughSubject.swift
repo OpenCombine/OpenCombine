@@ -77,6 +77,16 @@ public final class PassthroughSubject<Output, Failure: Error>: Subject  {
             }
         }
     }
+
+    private func _acknowledgeDownstreamDemand() {
+        _lock.do {
+            guard !hasAnyDownstreamDemand else { return }
+            hasAnyDownstreamDemand = true
+            for subscription in upstreamSubscriptions {
+                subscription.request(.unlimited)
+            }
+        }
+    }
 }
 
 extension PassthroughSubject {
@@ -110,8 +120,8 @@ extension PassthroughSubject {
             precondition(demand > 0, "demand must not be zero")
             _parent?._lock.do {
                 _demand = demand
-                _parent?.hasAnyDownstreamDemand = true
             }
+            _parent?._acknowledgeDownstreamDemand()
         }
 
         fileprivate func cancel() {
