@@ -63,9 +63,12 @@ final class MulticastTests: XCTestCase {
 
     func testMulticastConnectTwice() {
 
-        let publisher = PassthroughSubject<Int, TestingError>()
-        let multicast = publisher.multicast(PassthroughSubject.init)
-        let tracking = TrackingSubscriber(receiveSubscription: { $0.request(.unlimited) })
+        let publisher = TrackingSubject<Int>()
+        let multicastSubject = TrackingSubject<Int>()
+        let multicast = publisher.multicast(subject: multicastSubject)
+        let tracking = TrackingSubscriber(
+            receiveSubscription: { $0.request(.max(10)) }
+        )
 
         multicast.subscribe(tracking)
 
@@ -148,7 +151,7 @@ final class MulticastTests: XCTestCase {
         XCTAssertNotNil(publisher.subscriber)
         XCTAssertEqual(subscription.history, [.requested(.unlimited)])
         XCTAssertEqual(earlySubscriber.history, [.subscription("Multicast")])
-        XCTAssertEqual(subject.history, [.subscriber])
+        XCTAssertEqual(subject.history, [.subscriber, .subscription("Subject")])
 
         XCTAssertEqual(publisher.send(1), .none)
         XCTAssertEqual(publisher.send(2), .none)
@@ -161,6 +164,7 @@ final class MulticastTests: XCTestCase {
                                                  .value(2),
                                                  .value(3)])
         XCTAssertEqual(subject.history, [.subscriber,
+                                         .subscription("Subject"),
                                          .value(1),
                                          .value(2),
                                          .value(3),
@@ -187,6 +191,7 @@ final class MulticastTests: XCTestCase {
                                                 .value(5),
                                                 .value(6)])
         XCTAssertEqual(subject.history, [.subscriber,
+                                         .subscription("Subject"),
                                          .value(1),
                                          .value(2),
                                          .value(3),
@@ -219,6 +224,7 @@ final class MulticastTests: XCTestCase {
         XCTAssertEqual(latestSubscriber.history, [.subscription("Multicast"),
                                                   .completion(.finished)])
         XCTAssertEqual(subject.history, [.subscriber,
+                                         .subscription("Subject"),
                                          .value(1),
                                          .value(2),
                                          .value(3),
@@ -246,6 +252,10 @@ final class MulticastTests: XCTestCase {
             {
                 subscriber.receive(subscription: CustomSubscription())
                 self.subscriber = AnySubscriber(subscriber)
+            }
+
+            func send(subscription: Subscription) {
+                subscriber?.receive(subscription: subscription)
             }
 
             func send(_ value: Int) {

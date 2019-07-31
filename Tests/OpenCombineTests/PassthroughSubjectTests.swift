@@ -32,8 +32,10 @@ final class PassthroughSubjectTests: XCTestCase {
     // Reactive Streams Spec: Rules #1, #2, #9
     func testRequestingDemand() {
 
-        let initialDemands: [Subscribers.Demand] = [
-            .max(0),
+        let initialDemands: [Subscribers.Demand?] = [
+            nil,
+            // Combine's PassthroughSubject crashes when requesting .max(0)
+            // .max(0),
             .max(1),
             .max(2),
             .max(10),
@@ -67,7 +69,7 @@ final class PassthroughSubjectTests: XCTestCase {
                 let subscriber = AnySubscriber<Int, TestingError>(
                     receiveSubscription: { subscription in
                         subscriptions.append(subscription)
-                        subscription.request(initialDemand)
+                        initialDemand.map(subscription.request)
                     },
                     receiveValue: { value in
                         defer { i += 1 }
@@ -297,7 +299,7 @@ final class PassthroughSubjectTests: XCTestCase {
             XCTAssertEqual(emptySubscriber.completions.count, 1)
         }
 
-        XCTAssertEqual(deinitCounter, 0)
+        XCTAssertEqual(deinitCounter, 1)
 
         do {
             let passthrough = Sut()
@@ -309,7 +311,7 @@ final class PassthroughSubjectTests: XCTestCase {
             XCTAssertEqual(emptySubscriber.completions.count, 0)
         }
 
-        XCTAssertEqual(deinitCounter, 0)
+        XCTAssertEqual(deinitCounter, 1)
 
         var subscription: Subscription?
 
@@ -328,9 +330,9 @@ final class PassthroughSubjectTests: XCTestCase {
             XCTAssertNotNil(subscription)
         }
 
-        XCTAssertEqual(deinitCounter, 0)
+        XCTAssertEqual(deinitCounter, 1)
         try XCTUnwrap(subscription).cancel()
-        XCTAssertEqual(deinitCounter, 0)
+        XCTAssertEqual(deinitCounter, 2)
     }
 
     func testSynchronization() {

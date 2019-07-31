@@ -325,7 +325,6 @@ final class DropWhileTests: XCTestCase {
             passthrough.send(31)
             XCTAssertEqual(emptySubscriber.inputs.count, 0)
             XCTAssertEqual(emptySubscriber.completions.count, 0)
-            XCTAssertNotNil(subscription)
         }
 
         XCTAssertEqual(deinitCounter, 0)

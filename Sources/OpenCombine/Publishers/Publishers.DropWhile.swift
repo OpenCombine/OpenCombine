@@ -123,6 +123,12 @@ private class _DropWhile<Upstream: Publisher, Downstream: Subscriber>
     func request(_ demand: Subscribers.Demand) {
         upstreamSubscription?.request(demand)
     }
+
+    override func cancel() {
+        upstreamSubscription?.cancel()
+        upstreamSubscription = nil
+        // Don't zero out downstream, that's what Combine does (probably a bug)
+    }
 }
 
 extension Publishers.DropWhile {
