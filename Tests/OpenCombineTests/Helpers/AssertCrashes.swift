@@ -5,8 +5,8 @@
 //  Created by Sergej Jaskiewicz on 31.07.2019.
 //
 
-import XCTest
 import Foundation
+import XCTest
 
 extension XCTest {
 
@@ -27,9 +27,9 @@ extension XCTest {
     }
 
     // Taken from swift-corelibs-foundation and slightly modified for OpenCombine
-    @available(macOS 10.13, *)
+    @available(macOS 10.13, iOS 8.0, *)
     func assertCrashes(within block: () throws -> Void) rethrows {
-#if !Xcode
+#if !Xcode && !os(iOS) && !os(watchOS) && !os(tvOS)
         let childProcessEnvVariable = "OPENCOMBINE_TEST_PERFORM_ASSERT_CRASHES_BLOCKS"
         let childProcessEnvVariableOnValue = "YES"
 
@@ -43,11 +43,18 @@ extension XCTest {
             var arguments = ProcessInfo.processInfo.arguments
             let xctestUtilityPath = URL(fileURLWithPath: arguments[0])
 
+            print("Parent process args:", arguments)
+
             let childProcess = Process()
             childProcess.executableURL = xctestUtilityPath
-            arguments[0] = "\(testcaseName)/\(testName)"
+
+            arguments.removeFirst()
+            arguments.removeAll { $0.hasPrefix("OpenCombineTests.") || $0 == "-XCTest" }
+            arguments.insert("-XCTest", at: 0)
+            arguments.insert("OpenCombineTests.\(testcaseName)/\(testName)", at: 1)
             childProcess.arguments = arguments
-            print(arguments)
+
+            print("Child process args:", arguments)
 
             var environment = ProcessInfo.processInfo.environment
             environment[childProcessEnvVariable] = childProcessEnvVariableOnValue
@@ -63,7 +70,6 @@ extension XCTest {
                 Couldn't start child process for testing crash: \(childProcess) - \(error)
                 """)
             }
-
         }
 #endif
     }

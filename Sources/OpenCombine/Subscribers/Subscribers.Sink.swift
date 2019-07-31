@@ -79,7 +79,8 @@ extension Publisher {
     /// - parameter receiveComplete: The closure to execute on completion.
     /// - parameter receiveValue: The closure to execute on receipt of a value.
     /// - Returns: A cancellable instance; used when you end assignment of
-    ///   the received value. Deallocation of the result will tear down the subscription stream.
+    ///   the received value. Deallocation of the result will tear down
+    ///   the subscription stream.
     public func sink(
         receiveCompletion: @escaping (Subscribers.Completion<Failure>) -> Void,
         receiveValue: @escaping ((Output) -> Void)
@@ -102,7 +103,8 @@ extension Publisher where Failure == Never {
     ///
     /// - parameter receiveValue: The closure to execute on receipt of a value.
     /// - Returns: A cancellable instance; used when you end assignment of
-    ///   the received value. Deallocation of the result will tear down the subscription stream.
+    ///   the received value. Deallocation of the result will tear down
+    ///   the subscription stream.
     public func sink(
         receiveValue: @escaping (Output) -> Void
     ) -> AnyCancellable {
