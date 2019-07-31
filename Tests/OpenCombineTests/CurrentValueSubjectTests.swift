@@ -310,6 +310,39 @@ final class CurrentValueSubjectTests: XCTestCase {
                                             .completion(.finished)])
     }
 
+
+    func testSubscriptionAfterSend() {
+        // Given
+        let passthrough = Sut(0)
+        let subscriber = TrackingSubscriber(receiveSubscription: { subscription in
+            subscription.request(.unlimited)
+        })
+
+        // When
+        passthrough.send(2)
+        print(passthrough.value)
+        passthrough.subscribe(subscriber)
+
+        XCTAssertEqual(subscriber.history, [.subscription("CurrentValueSubject"),
+                                            .value(2)])
+    }
+
+    func testSubscriptionAfterSet() {
+        // Given
+        let passthrough = Sut(0)
+        let subscriber = TrackingSubscriber(receiveSubscription: { subscription in
+            subscription.request(.unlimited)
+        })
+
+        // When
+        passthrough.value = 3
+        print(passthrough.value)
+        passthrough.subscribe(subscriber)
+
+        XCTAssertEqual(subscriber.history, [.subscription("CurrentValueSubject"),
+                                            .value(3)])
+    }
+
     func testLifecycle() throws {
 
         var deinitCounter = 0
@@ -400,7 +433,6 @@ final class CurrentValueSubjectTests: XCTestCase {
                 cvs.value -= 1
             }
         )
-
         XCTAssertEqual(inputs.value.count, 40200)
         XCTAssertEqual(cvs.value, 112)
 

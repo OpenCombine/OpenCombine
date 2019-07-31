@@ -14,12 +14,25 @@ public final class CurrentValueSubject<Output, Failure: Error>: Subject {
     // TODO: Combine uses bag data structure
     private var _subscriptions: [Conduit] = []
 
+    private var _value: Output
+
     private var _completion: Subscribers.Completion<Failure>?
 
     /// The value wrapped by this subject, published as a new element whenever it changes.
     public var value: Output {
-        didSet {
-            send(value)
+        get {
+            defer {
+                _lock._unlock()
+            }
+            _lock._lock()
+            return _value
+        }
+        set {
+            defer {
+                _lock._unlock()
+            }
+            _lock._lock()
+            send(newValue)
         }
     }
 
@@ -27,7 +40,7 @@ public final class CurrentValueSubject<Output, Failure: Error>: Subject {
     ///
     /// - Parameter value: The initial value to publish.
     public init(_ value: Output) {
-        self.value = value
+        self._value = value
     }
 
     public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
@@ -51,6 +64,7 @@ public final class CurrentValueSubject<Output, Failure: Error>: Subject {
 
     public func send(_ input: Output) {
         _lock.do {
+            _value = input
             for subscription in _subscriptions where !subscription.isCompleted {
                 if subscription._demand > 0 {
                     subscription._offer(input)
