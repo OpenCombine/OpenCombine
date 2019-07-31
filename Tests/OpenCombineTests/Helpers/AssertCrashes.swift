@@ -43,32 +43,43 @@ extension XCTest {
             var arguments = ProcessInfo.processInfo.arguments
             let xctestUtilityPath = URL(fileURLWithPath: arguments[0])
 
-            print("Parent process args:", arguments)
-
             let childProcess = Process()
             childProcess.executableURL = xctestUtilityPath
 
             arguments.removeFirst()
             arguments.removeAll { $0.hasPrefix("OpenCombineTests.") || $0 == "-XCTest" }
+            arguments.insert("OpenCombineTests.\(testcaseName)/\(testName)", at: 0)
+#if os(macOS)
             arguments.insert("-XCTest", at: 0)
-            arguments.insert("OpenCombineTests.\(testcaseName)/\(testName)", at: 1)
+#endif
             childProcess.arguments = arguments
-
-            print("Child process args:", arguments)
 
             var environment = ProcessInfo.processInfo.environment
             environment[childProcessEnvVariable] = childProcessEnvVariableOnValue
             childProcess.environment = environment
 
+            func printDiagostics() {
+                print("Parent process invocation:")
+                print(ProcessInfo.processInfo.arguments.joined(separator: " "))
+                print("Child process invocation:")
+                print(
+                    ([ProcessInfo.processInfo.arguments[0]] + arguments)
+                        .joined(separator: " ")
+                )
+            }
+
             do {
                 try childProcess.run()
                 childProcess.waitUntilExit()
-                XCTAssert(childProcess.terminationReason == .uncaughtSignal,
-                          "Child process should have crashed: \(childProcess)")
+                if childProcess.terminationReason != .uncaughtSignal {
+                    XCTFail("Child process should have crashed: \(childProcess)")
+                    printDiagostics()
+                }
             } catch {
                 XCTFail("""
                 Couldn't start child process for testing crash: \(childProcess) - \(error)
                 """)
+                printDiagostics()
             }
         }
 #endif
