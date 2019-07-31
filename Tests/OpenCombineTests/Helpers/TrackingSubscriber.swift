@@ -50,7 +50,7 @@ final class TrackingSubscriberBase<Value: Equatable, Failure: Error>
         static func == (lhs: Event, rhs: Event) -> Bool {
             switch (lhs, rhs) {
             case let (.subscription(lhs), .subscription(rhs)):
-                return lhs.description == rhs.description
+                return lhs == rhs
             case let (.value(lhs), .value(rhs)):
                 return lhs == rhs
             case let (.completion(lhs), .completion(rhs)):
@@ -176,6 +176,7 @@ final class TrackingSubjectBase<Output: Equatable, Failure: Error>
 {
     enum Event: Equatable, CustomStringConvertible {
         case subscriber
+        case subscription(StringSubscription)
         case value(Output)
         case completion(Subscribers.Completion<Failure>)
 
@@ -183,6 +184,8 @@ final class TrackingSubjectBase<Output: Equatable, Failure: Error>
             switch (lhs, rhs) {
             case (.subscriber, .subscriber):
                 return true
+            case let (.subscription(lhs), .subscription(rhs)):
+                return lhs == rhs
             case let (.value(lhs), .value(rhs)):
                 return lhs == rhs
             case let (.completion(lhs), .completion(rhs)):
@@ -203,6 +206,8 @@ final class TrackingSubjectBase<Output: Equatable, Failure: Error>
             switch self {
             case .subscriber:
                 return ".subscriber"
+            case .subscription(let description):
+                return ".subscription(\"\(description)\")"
             case .value(let value):
                 return ".value(\(value))"
             case .completion(.finished):
@@ -226,6 +231,11 @@ final class TrackingSubjectBase<Output: Equatable, Failure: Error>
 
     deinit {
         _onDeinit?()
+    }
+
+    func send(subscription: Subscription) {
+        history.append(.subscription(.subscription(subscription)))
+        _passthrough.send(subscription: subscription)
     }
 
     func send(_ value: Output) {
@@ -298,5 +308,12 @@ enum StringSubscription: Subscription,
         case .subscription(let underlying):
             return underlying
         }
+    }
+}
+
+@available(macOS 10.15, iOS 13.0, *)
+extension StringSubscription: Equatable {
+    static func == (lhs: StringSubscription, rhs: StringSubscription) -> Bool {
+        return lhs.description == rhs.description
     }
 }

@@ -300,7 +300,7 @@ final class MapTests: XCTestCase {
             XCTAssertEqual(emptySubscriber.completions.count, 1)
         }
 
-        XCTAssertEqual(deinitCounter, 0)
+        XCTAssertEqual(deinitCounter, 1)
 
         do {
             let passthrough = PassthroughSubject<Int, TestingError>()
@@ -313,7 +313,7 @@ final class MapTests: XCTestCase {
             XCTAssertEqual(emptySubscriber.completions.count, 0)
         }
 
-        XCTAssertEqual(deinitCounter, 0)
+        XCTAssertEqual(deinitCounter, 1)
 
         var subscription: Subscription?
 
@@ -333,9 +333,9 @@ final class MapTests: XCTestCase {
             XCTAssertNotNil(subscription)
         }
 
-        XCTAssertEqual(deinitCounter, 0)
+        XCTAssertEqual(deinitCounter, 1)
         try XCTUnwrap(subscription).cancel()
-        XCTAssertEqual(deinitCounter, 0)
+        XCTAssertEqual(deinitCounter, 2)
     }
 
     func testMapOperatorSpecializationForMap() {

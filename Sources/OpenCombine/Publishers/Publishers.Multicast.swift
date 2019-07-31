@@ -9,7 +9,7 @@ extension Publisher {
 
     public func multicast<SubjectType: Subject>(
         _ createSubject: @escaping () -> SubjectType
-        ) -> Publishers.Multicast<Self, SubjectType>
+    ) -> Publishers.Multicast<Self, SubjectType>
         where Failure == SubjectType.Failure, Output == SubjectType.Output
     {
         return Publishers.Multicast(upstream: self, createSubject: createSubject)
@@ -17,7 +17,7 @@ extension Publisher {
 
     public func multicast<SubjectType: Subject>(
         subject: SubjectType
-        ) -> Publishers.Multicast<Self, SubjectType>
+    ) -> Publishers.Multicast<Self, SubjectType>
         where Failure == SubjectType.Failure, Output == SubjectType.Output
     {
         return multicast { subject }
@@ -61,7 +61,7 @@ extension Publishers {
             upstream.subscribe(subscriber)
 
             return AnyCancellable {
-                subscriber.parent = nil
+                subscriber.downstreamSubject = nil
             }
         }
     }

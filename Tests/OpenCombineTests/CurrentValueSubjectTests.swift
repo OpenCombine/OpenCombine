@@ -36,6 +36,7 @@ final class CurrentValueSubjectTests: XCTestCase {
 
         let initialDemands: [Subscribers.Demand?] = [
             nil,
+            // Combine's PassthroughSubject crashes when requesting .max(0)
             .max(1),
             .max(2),
             .max(10),
@@ -334,7 +335,7 @@ final class CurrentValueSubjectTests: XCTestCase {
                                                 .completion(.failure(.oops))])
         }
 
-        XCTAssertEqual(deinitCounter, 0)
+        XCTAssertEqual(deinitCounter, 1)
 
         var subscription: Subscription?
 
@@ -355,9 +356,9 @@ final class CurrentValueSubjectTests: XCTestCase {
             XCTAssertNotNil(subscription)
         }
 
-        XCTAssertEqual(deinitCounter, 0)
+        XCTAssertEqual(deinitCounter, 1)
         try XCTUnwrap(subscription).cancel()
-        XCTAssertEqual(deinitCounter, 0)
+        XCTAssertEqual(deinitCounter, 2)
     }
 
     func testSynchronization() {

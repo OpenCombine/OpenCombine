@@ -15,32 +15,67 @@ public struct AnySubscriber<Input, Failure: Error>: Subscriber,
                                                     CustomReflectable,
                                                     CustomPlaygroundDisplayConvertible
 {
-    private let _box: SubscriberBoxBase<Input, Failure>
+    @usableFromInline
+    internal let box: AnySubscriberBase<Input, Failure>
+
+    @usableFromInline
+    internal let descriptionThunk: () -> String
+
+    @usableFromInline
+    internal let customMirrorThunk: () -> Mirror
+
+    @usableFromInline
+    internal let playgroundDescriptionThunk: () -> Any
 
     public let combineIdentifier: CombineIdentifier
 
-    public var description: String { return _box.description }
+    public var description: String { return descriptionThunk() }
 
-    public var customMirror: Mirror { return _box.customMirror }
+    public var customMirror: Mirror { return customMirrorThunk() }
 
     /// A custom playground description for this instance.
-    public var playgroundDescription: Any { return description }
+    public var playgroundDescription: Any { return playgroundDescriptionThunk() }
 
     /// Creates a type-erasing subscriber to wrap an existing subscriber.
     ///
     /// - Parameter s: The subscriber to type-erase.
-    public init<SubscriberType: Subscriber>(_ subscriber: SubscriberType)
-        where Input == SubscriberType.Input, Failure == SubscriberType.Failure
+    @inline(__always)
+    @inlinable
+    public init<Subscriber: OpenCombine.Subscriber>(_ subscriber: Subscriber)
+        where Input == Subscriber.Input, Failure == Subscriber.Failure
     {
-        _box = SubscriberBox(base: subscriber)
         combineIdentifier = subscriber.combineIdentifier
+
+        box = AnySubscriberBox(subscriber)
+
+        if let description = subscriber as? CustomStringConvertible {
+            descriptionThunk = {
+                return description.description
+            }
+        } else {
+            let fixedDescription = String(describing: type(of: subscriber))
+            descriptionThunk = { fixedDescription }
+        }
+
+        customMirrorThunk = {
+            (subscriber as? CustomReflectable)?.customMirror
+                ?? Mirror(subscriber, children: EmptyCollection())
+        }
+
+        if let playgroundDescription = subscriber as? CustomPlaygroundDisplayConvertible {
+            playgroundDescriptionThunk = { playgroundDescription.playgroundDescription }
+        } else if let desccription = subscriber as? CustomStringConvertible {
+            playgroundDescriptionThunk = { desccription.description }
+        } else {
+            let fixedDescription = String(describing: type(of: subscriber))
+            playgroundDescriptionThunk = { fixedDescription }
+        }
     }
 
-    public init<SubjectType: Subject>(_ subject: SubjectType)
-        where Input == SubjectType.Output, Failure == SubjectType.Failure
+    public init<Subject: OpenCombine.Subject>(_ subject: Subject)
+        where Input == Subject.Output, Failure == Subject.Failure
     {
-        _box = SubjectSubscriber(subject)
-        combineIdentifier = CombineIdentifier(_box)
+        self.init(SubjectSubscriber(subject))
     }
 
     /// Creates a type-erasing subscriber that executes the provided closures.
@@ -52,149 +87,188 @@ public struct AnySubscriber<Input, Failure: Error>: Subscriber,
     ///     the publisher.
     ///   - receiveCompletion: A closure to execute when the subscriber receives
     ///     a completion callback from the publisher.
+    @inline(__always)
+    @inlinable
     public init(receiveSubscription: ((Subscription) -> Void)? = nil,
                 receiveValue: ((Input) -> Subscribers.Demand)? = nil,
                 receiveCompletion: ((Subscribers.Completion<Failure>) -> Void)? = nil) {
-        _box = ClosureBasedSubscriber(receiveSubscription: receiveSubscription,
-                                      receiveValue: receiveValue,
-                                      receiveCompletion: receiveCompletion)
+
+        box = ClosureBasedAnySubscriber(
+            receiveSubscription ?? { _ in },
+            receiveValue ?? { _ in .none },
+            receiveCompletion ?? { _ in }
+        )
+
         combineIdentifier = CombineIdentifier()
+        descriptionThunk = { "Anonymous AnySubscriber" }
+        customMirrorThunk = { Mirror(reflecting: "Anonymous AnySubscriber") }
+        playgroundDescriptionThunk = { "Anonymous AnySubscriber" }
     }
 
+    @inline(__always)
+    @inlinable
     public func receive(subscription: Subscription) {
-        _box.receive(subscription: subscription)
+        box.receive(subscription: subscription)
     }
 
+    @inline(__always)
+    @inlinable
     public func receive(_ value: Input) -> Subscribers.Demand {
-        return _box.receive(value)
+        return box.receive(value)
     }
 
+    @inline(__always)
+    @inlinable
     public func receive(completion: Subscribers.Completion<Failure>) {
-        _box.receive(completion: completion)
+        box.receive(completion: completion)
     }
 }
 
 /// A type-erasing base class. Its concrete subclass is generic over the underlying
-/// publisher.
-internal class SubscriberBoxBase<Input, Failure: Error>: Subscriber,
-                                                         CustomStringConvertible,
-                                                         CustomReflectable {
+/// subscriber.
+@usableFromInline
+internal class AnySubscriberBase<Input, Failure: Error>: Subscriber {
 
+    @inline(__always)
+    @inlinable
+    internal init() {}
+
+    @inline(__always)
+    @inlinable
+    deinit {}
+
+    @usableFromInline
     internal func receive(subscription: Subscription) {
         fatalError()
     }
 
+    @usableFromInline
     internal func receive(_ input: Input) -> Subscribers.Demand {
         fatalError()
     }
 
+    @usableFromInline
     internal func receive(completion: Subscribers.Completion<Failure>) {
         fatalError()
     }
-
-    internal var description: String { return "AnySubscriber" }
-
-    internal var customMirror: Mirror {
-        return Mirror(combineIdentifier, children: EmptyCollection())
-    }
 }
 
-internal final class SubscriberBox<SubscriberType: Subscriber>
-    : SubscriberBoxBase<SubscriberType.Input, SubscriberType.Failure>
+@usableFromInline
+internal final class AnySubscriberBox<Base: Subscriber>
+    : AnySubscriberBase<Base.Input, Base.Failure>
 {
+    @usableFromInline
+    internal let base: Base
 
-    private let base: SubscriberType
-
-    internal init(base: SubscriberType) {
+    @inlinable
+    internal init(_ base: Base) {
         self.base = base
     }
 
+    @inlinable
+    deinit {}
+
+    @inlinable
     override internal func receive(subscription: Subscription) {
         base.receive(subscription: subscription)
     }
 
-    override internal func receive(_ input: Input) -> Subscribers.Demand {
-        return base.receive(input)
+    @inlinable
+    override internal func receive(_ input: Base.Input) -> Subscribers.Demand {
+        base.receive(input)
     }
 
-    override internal func receive(completion: Subscribers.Completion<Failure>) {
+    @inlinable
+    override internal func receive(completion: Subscribers.Completion<Base.Failure>) {
         base.receive(completion: completion)
     }
-
-    override internal var customMirror: Mirror { return Mirror(reflecting: base) }
-
-    override internal var description: String { return String(describing: base) }
 }
 
-internal final class ClosureBasedSubscriber<Input, Failure: Error>
-    : SubscriberBoxBase<Input, Failure>
+@usableFromInline
+internal final class ClosureBasedAnySubscriber<Input, Failure: Error>
+    : AnySubscriberBase<Input, Failure>
 {
+    @usableFromInline
+    internal let receiveSubscriptionThunk: (Subscription) -> Void
 
-    private let _receiveSubscription: ((Subscription) -> Void)?
-    private let _receiveValue: ((Input) -> Subscribers.Demand)?
-    private let _receiveCompletion: ((Subscribers.Completion<Failure>) -> Void)?
+    @usableFromInline
+    internal let receiveValueThunk: (Input) -> Subscribers.Demand
 
-    internal init(receiveSubscription: ((Subscription) -> Void)? = nil,
-                  receiveValue: ((Input) -> Subscribers.Demand)? = nil,
-                  receiveCompletion: ((Subscribers.Completion<Failure>) -> Void)? = nil) {
-        _receiveSubscription = receiveSubscription
-        _receiveValue = receiveValue
-        _receiveCompletion = receiveCompletion
+    @usableFromInline
+    internal let receiveCompletionThunk: (Subscribers.Completion<Failure>) -> Void
+
+    @inlinable
+    internal init(_ rcvSubscription: @escaping (Subscription) -> Void,
+                  _ rcvValue: @escaping (Input) -> Subscribers.Demand,
+                  _ rcvCompletion: @escaping (Subscribers.Completion<Failure>) -> Void) {
+        receiveSubscriptionThunk = rcvSubscription
+        receiveValueThunk = rcvValue
+        receiveCompletionThunk = rcvCompletion
     }
 
+    @inlinable
+    deinit {}
+
+    @inlinable
     override internal func receive(subscription: Subscription) {
-        _receiveSubscription?(subscription)
+        receiveSubscriptionThunk(subscription)
     }
 
+    @inlinable
     override internal func receive(_ input: Input) -> Subscribers.Demand {
-        return _receiveValue?(input) ?? .none
+        receiveValueThunk(input)
     }
-
-    override internal func receive(completion: Subscribers.Completion<Failure>) {
-        _receiveCompletion?(completion)
+    @inlinable
+    override final internal func receive(completion: Subscribers.Completion<Failure>) {
+        receiveCompletionThunk(completion)
     }
 }
 
-internal final class SubjectSubscriber<SubjectType: Subject>
-    : SubscriberBoxBase<SubjectType.Output, SubjectType.Failure>,
+internal final class SubjectSubscriber<Downstream: Subject>
+    : Subscriber,
+      CustomStringConvertible,
+      CustomReflectable,
       Subscription
 {
-    internal var parent: SubjectType?
+    internal var downstreamSubject: Downstream?
     internal var upstreamSubscription: Subscription?
 
-    internal init(_ parent: SubjectType) {
-        self.parent = parent
+    internal init(_ parent: Downstream) {
+        self.downstreamSubject = parent
     }
 
-    override internal func receive(subscription: Subscription) {
+    internal func receive(subscription: Subscription) {
+        guard upstreamSubscription == nil else { return }
         upstreamSubscription = subscription
-        subscription.request(.unlimited)
+        downstreamSubject?.send(subscription: self)
     }
 
-    override internal func receive(_ input: Input) -> Subscribers.Demand {
-        parent?.send(input)
+    internal func receive(_ input: Downstream.Output) -> Subscribers.Demand {
+        downstreamSubject?.send(input)
         return .none
     }
 
-    override internal func receive(completion: Subscribers.Completion<Failure>) {
-        parent?.send(completion: completion)
+    internal func receive(completion: Subscribers.Completion<Downstream.Failure>) {
+        downstreamSubject?.send(completion: completion)
     }
 
-    override internal var description: String { return "Subject" }
+    internal var description: String { return "Subject" }
 
-    override internal var customMirror: Mirror {
+    internal var customMirror: Mirror {
         let children: [(label: String?, value: Any)] = [
-            (label: "parent", value: parent as Any),
+            (label: "downstreamSubject", value: downstreamSubject as Any),
             (label: "upstreamSubscription", value: upstreamSubscription as Any)
         ]
         return Mirror(self, children: children)
     }
 
-    internal func request(_ demand: Subscribers.Demand) {}
+    internal func request(_ demand: Subscribers.Demand) {
+        upstreamSubscription?.request(demand)
+    }
 
     internal func cancel() {
         upstreamSubscription?.cancel()
         upstreamSubscription = nil
-        parent = nil
+        downstreamSubject = nil
     }
 }

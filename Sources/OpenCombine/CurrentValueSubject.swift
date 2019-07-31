@@ -30,8 +30,18 @@ public final class CurrentValueSubject<Output, Failure: Error>: Subject {
         self.value = value
     }
 
-    public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-        where Output == SubscriberType.Input, Failure == SubscriberType.Failure
+    deinit {
+        for subscription in _subscriptions {
+            subscription._downstream = nil
+        }
+    }
+
+    public func send(subscription: Subscription) {
+        
+    }
+
+    public func receive<Subscriber: OpenCombine.Subscriber>(subscriber: Subscriber)
+        where Output == Subscriber.Input, Failure == Subscriber.Failure
     {
         _lock.do {
 
@@ -109,7 +119,7 @@ extension CurrentValueSubject {
         }
 
         func request(_ demand: Subscribers.Demand) {
-            guard demand > 0 else { return }
+            precondition(demand > 0)
             _parent?._lock.do {
                 if !_delivered, let value = _parent?.value {
                     _offer(value)

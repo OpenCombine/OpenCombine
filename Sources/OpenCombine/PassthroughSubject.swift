@@ -18,14 +18,31 @@ public final class PassthroughSubject<Output, Failure: Error>: Subject  {
     // TODO: Combine uses bag data structure
     private var _subscriptions: [Conduit] = []
 
+    internal var upstreamSubscriptions: [Subscription] = []
+
+    internal var hasAnyDownstreamDemand = false
+
     public init() {}
+
+    deinit {
+        for subscription in _subscriptions {
+            subscription._downstream = nil
+        }
+    }
+
+    public func send(subscription: Subscription) {
+        _lock.do {
+            upstreamSubscriptions.append(subscription)
+            if hasAnyDownstreamDemand {
+                subscription.request(.unlimited)
+            }
+        }
+    }
 
     public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
         where Output == SubscriberType.Input, Failure == SubscriberType.Failure
     {
-
         _lock.do {
-
             if let completion = _completion {
                 subscriber.receive(subscription: Subscriptions.empty)
                 subscriber.receive(completion: completion)
@@ -90,8 +107,10 @@ extension PassthroughSubject {
         }
 
         fileprivate func request(_ demand: Subscribers.Demand) {
+            precondition(demand > 0, "demand must not be zero")
             _parent?._lock.do {
                 _demand = demand
+                _parent?.hasAnyDownstreamDemand = true
             }
         }
 
