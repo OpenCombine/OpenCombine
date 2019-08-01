@@ -14,6 +14,7 @@ cache:
       - .build
       - ~/.danger-swift
       - ~/.swiftenv
+      - ~/Library/Caches/Homebrew
 
 matrix:
   include:
@@ -30,10 +31,14 @@ matrix:
     #   os: osx
     #   osx_image: xcode11
     #   env: SWIFT_VERSION="5.1" OPENCOMBINE_COMPATIBILITY_TEST="YES"
-    - name: "macOS 10.14 | Swift 5.0 | SwiftLint"
+    - name: "macOS 10.14 | Swift 5.0 | Code Quality"
       os: osx
       osx_image: xcode10.2
-      env: SWIFT_VERSION="5.0" RUN_DANGER="YES"
+      env: SWIFT_VERSION="5.0" RUN_DANGER="YES" SWIFT_LINT="YES"
+
+before_cache:
+  - brew cleanup
+
 before_install:
   - if [[ $TRAVIS_OS_NAME == "linux" ]]; then
       cat /proc/cpuinfo;
@@ -55,6 +60,9 @@ script:
   - if [[ $OPENCOMBINE_COMPATIBILITY_TEST == "YES" ]]; then
       swift package generate-xcodeproj --xcconfig-overrides iOS-Combine-Compatibility.xcconfig;
       set -o pipefail && xcodebuild -scheme OpenCombine-Package -sdk iphonesimulator13.0 -destination "platform=iOS Simulator,name=iPhone Xs,OS=13.0" build test | xcpretty;
+    fi
+  - if [[ $SWIFT_LINT == "YES" ]]; then
+      swiftlint lint --strict --reporter "emoji";
     fi
   - if [[ $RUN_DANGER == "YES" ]]; then
       danger-swift ci;
