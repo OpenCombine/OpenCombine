@@ -133,8 +133,6 @@ private class _CompactMap<Upstream: Publisher, Downstream: Subscriber>
 
     fileprivate var _transform: Transform?
 
-    private var _unsatisfiedDemand: Subscribers.Demand = .none
-
     var _isCompleted: Bool {
         return _transform == nil
     }
@@ -150,26 +148,22 @@ private class _CompactMap<Upstream: Publisher, Downstream: Subscriber>
     }
 
     func receive(_ input: Input) -> Subscribers.Demand {
-        switch _transform?(input) {
-        case .success(let output?)?:
-            _unsatisfiedDemand -= 1
-            let newDemand = downstream.receive(output)
-            _unsatisfiedDemand += newDemand
-            return newDemand
-        case .success(nil)?:
+        guard let transform = _transform else { return .none }
+
+        switch transform(input) {
+        case .success(let output?):
+            return downstream.receive(output)
+        case .success(nil):
             return .max(1)
-        case .failure(let error)?:
+        case .failure(let error):
             downstream.receive(completion: .failure(error))
             _transform = nil
-            return .none
-        case nil:
             return .none
         }
     }
 
     func request(_ demand: Subscribers.Demand) {
         guard !_isCompleted else { return }
-        _unsatisfiedDemand += demand
         upstreamSubscription?.request(demand)
     }
 
@@ -187,14 +181,14 @@ extension Publishers.CompactMap {
           CustomStringConvertible
         where Downstream.Failure == Upstream.Failure
     {
+        var description: String { return "CompactMap" }
+
         func receive(completion: Subscribers.Completion<Upstream.Failure>) {
             if !_isCompleted {
                 _transform = nil
                 downstream.receive(completion: completion)
             }
         }
-
-        var description: String { return "CompactMap" }
     }
 }
 
@@ -205,13 +199,13 @@ extension Publishers.TryCompactMap {
           CustomStringConvertible
         where Downstream.Failure == Error
     {
+        var description: String { return "TryCompactMap" }
+
         func receive(completion: Subscribers.Completion<Upstream.Failure>) {
             if !_isCompleted {
                 _transform = nil
                 downstream.receive(completion: completion.eraseError())
             }
         }
-
-        var description: String { return "TryCompactMap" }
     }
 }
