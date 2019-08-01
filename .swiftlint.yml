@@ -75,3 +75,17 @@ generic_type_name:
 attributes:
   always_on_line_above:
     - "@usableFromInline"
+
+custom_rules:
+  no_foundation_dependency:
+    included: Sources/OpenCombine
+    name: "No Foundation Dependency"
+    regex: "^import.*Foundation.*$"
+    message: "We don't want to depend on Foundation"
+    severity: error
+  no_dispatch_dependency:
+    included: Sources/OpenCombine
+    name: "No Dispatch Dependency"
+    regex: "^import.*Dispatch.*$"
+    message: "We don't want to depend on Dispatch"
+    severity: error

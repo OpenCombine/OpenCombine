@@ -5,7 +5,62 @@
 //  Created by Joseph Spadafora on 7/3/19.
 //
 
-import Foundation
+extension Publisher {
+
+    /// Republishes all elements that match a provided closure.
+    ///
+    /// - Parameter isIncluded: A closure that takes one element and returns
+    ///   a Boolean value indicating whether to republish the element.
+    /// - Returns: A publisher that republishes all elements that satisfy the closure.
+    public func filter(
+        _ isIncluded: @escaping (Output) -> Bool
+    ) -> Publishers.Filter<Self> {
+        return Publishers.Filter(upstream: self, isIncluded: isIncluded)
+    }
+
+    /// Republishes all elements that match a provided error-throwing closure.
+    ///
+    /// If the `isIncluded` closure throws an error, the publisher fails with that error.
+    ///
+    /// - Parameter isIncluded:  A closure that takes one element and returns a
+    ///   Boolean value indicating whether to republish the element.
+    /// - Returns:  A publisher that republishes all elements that satisfy the closure.
+    public func tryFilter(
+        _ isIncluded: @escaping (Output) throws -> Bool
+    ) -> Publishers.TryFilter<Self> {
+        return Publishers.TryFilter(upstream: self, isIncluded: isIncluded)
+    }
+}
+
+extension Publishers.Filter {
+
+    public func filter(
+        _ isIncluded: @escaping (Output) -> Bool
+    ) -> Publishers.Filter<Upstream> {
+        return .init(upstream: upstream) { self.isIncluded($0) && isIncluded($0) }
+    }
+
+    public func tryFilter(
+        _ isIncluded: @escaping (Output) throws -> Bool
+    ) -> Publishers.TryFilter<Upstream> {
+        return .init(upstream: upstream) { try self.isIncluded($0) && isIncluded($0) }
+    }
+}
+
+extension Publishers.TryFilter {
+
+    public func filter(
+        _ isIncluded: @escaping (Output) -> Bool
+    ) -> Publishers.TryFilter<Upstream> {
+        return .init(upstream: upstream) { try self.isIncluded($0) && isIncluded($0) }
+    }
+
+    public func tryFilter(
+        _ isIncluded: @escaping (Output) throws -> Bool
+    ) -> Publishers.TryFilter<Upstream> {
+        return .init(upstream: upstream) { try self.isIncluded($0) && isIncluded($0) }
+    }
+}
 
 extension Publishers {
 
@@ -42,8 +97,7 @@ extension Publishers {
             where Upstream.Failure == SubscriberType.Failure,
                   Upstream.Output == SubscriberType.Input
         {
-            let filter = _Filter<Upstream, SubscriberType>(downstream: subscriber,
-                                                           isIncluded: isIncluded)
+            let filter = Inner(downstream: subscriber, isIncluded: catching(isIncluded))
             upstream.receive(subscriber: filter)
         }
     }
@@ -79,97 +133,33 @@ extension Publishers {
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-            where Upstream.Output == SubscriberType.Input,
-                  SubscriberType.Failure == Failure
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where Upstream.Output == Downstream.Input,
+                  Downstream.Failure == Failure
         {
-            let filter = _TryFilter<Upstream, SubscriberType>(downstream: subscriber,
-                                                              isIncluded: isIncluded)
+            let filter = Inner(downstream: subscriber, isIncluded: catching(isIncluded))
             upstream.receive(subscriber: filter)
         }
     }
 }
 
-extension Publisher {
-
-    /// Republishes all elements that match a provided closure.
-    ///
-    /// - Parameter isIncluded: A closure that takes one element and returns
-    /// a Boolean value indicating whether to republish the element.
-    /// - Returns: A publisher that republishes all elements that satisfy the closure.
-    public func filter(
-        _ isIncluded: @escaping (Self.Output) -> Bool
-    ) -> Publishers.Filter<Self> {
-        return Publishers.Filter(upstream: self, isIncluded: isIncluded)
-    }
-
-    /// Republishes all elements that match a provided error-throwing closure.
-    ///
-    /// If the `isIncluded` closure throws an error, the publisher fails with that error.
-    ///
-    /// - Parameter isIncluded:  A closure that takes one element and returns a
-    /// Boolean value indicating whether to republish the element.
-    /// - Returns:  A publisher that republishes all elements that satisfy the closure.
-    public func tryFilter(
-        _ isIncluded: @escaping (Self.Output) throws -> Bool
-    ) -> Publishers.TryFilter<Self> {
-        return Publishers.TryFilter(upstream: self, isIncluded: isIncluded)
-    }
-}
-
-private final class _Filter<Upstream: Publisher, Downstream: Subscriber>
-    : _BaseFilter<Upstream, Downstream>,
-      Subscriber,
-      CustomStringConvertible
-    where Upstream.Output == Downstream.Input,
-          Upstream.Failure == Downstream.Failure {
-
-    var description: String { return "Filter" }
-
-    init(downstream: Downstream, isIncluded: @escaping (Input) -> Bool) {
-        super.init(downstream: downstream,
-                   errorTransform: { $0 },
-                   isIncluded: { .success(isIncluded($0))
-        })
-    }
-}
-
-private final class _TryFilter<Upstream: Publisher, Downstream: Subscriber>
-    : _BaseFilter<Upstream, Downstream>,
-    Subscriber,
-    CustomStringConvertible
-    where Upstream.Output == Downstream.Input, Downstream.Failure == Error {
-
-    init(downstream: Downstream, isIncluded: @escaping (Input) throws -> Bool) {
-        super.init(downstream: downstream,
-                   errorTransform: { $0 as Error },
-                   isIncluded: { input in Result { try isIncluded(input) }
-        })
-    }
-
-    var description: String { return "TryFilter" }
-}
-
-private class _BaseFilter<Upstream: Publisher, Downstream: Subscriber>
+private class _Filter<Upstream: Publisher, Downstream: Subscriber>
     : OperatorSubscription<Downstream>,
       Subscription
     where Upstream.Output == Downstream.Input
 {
     typealias Input = Upstream.Output
-    typealias Output = Downstream.Input
     typealias Failure = Upstream.Failure
+    typealias Predicate = (Input) -> Result<Bool, Downstream.Failure>
 
-    private let _isIncluded: (Input) -> Result<Bool, Downstream.Failure>
-    private var _unsatisfiedDemand: Subscribers.Demand = .none
-    private var _isFinished = false
+    private var _isIncluded: Predicate?
 
-    var errorTransform: (Upstream.Failure) -> Downstream.Failure
+    var isFinished: Bool {
+        return _isIncluded == nil
+    }
 
-    init(downstream: Downstream,
-         errorTransform: @escaping (Upstream.Failure) -> Downstream.Failure,
-         isIncluded: @escaping (Input) -> Result<Bool, Downstream.Failure>) {
-        self._isIncluded = isIncluded
-        self.errorTransform = errorTransform
+    init(downstream: Downstream, isIncluded: @escaping Predicate) {
+        _isIncluded = isIncluded
         super.init(downstream: downstream)
     }
 
@@ -179,35 +169,60 @@ private class _BaseFilter<Upstream: Publisher, Downstream: Subscriber>
     }
 
     func receive(_ input: Input) -> Subscribers.Demand {
-        switch _isIncluded(input) {
+        guard let isIncluded = _isIncluded else { return .none }
+        switch isIncluded(input) {
+        case .success(let isIncluded):
+            return isIncluded ? downstream.receive(input) : .max(1)
         case .failure(let error):
             downstream.receive(completion: .failure(error))
             cancel()
-            _isFinished = true
             return .none
-        case .success(let isIncluded):
-            if isIncluded {
-                let newDemand = downstream.receive(input)
-                _unsatisfiedDemand += newDemand - 1
-                return newDemand
-            }
-            return .max(1)
-        }
-    }
-
-    func receive(completion: Subscribers.Completion<Failure>) {
-        switch completion {
-        case .finished:
-            downstream.receive(completion: .finished)
-        case .failure(let error):
-            let transformedError = errorTransform(error)
-            downstream.receive(completion: .failure(transformedError))
         }
     }
 
     func request(_ demand: Subscribers.Demand) {
-        guard !_isFinished else { return }
-        _unsatisfiedDemand += demand
+        guard !isFinished else { return }
         upstreamSubscription?.request(demand)
+    }
+
+    override func cancel() {
+        _isIncluded = nil
+        upstreamSubscription?.cancel()
+        upstreamSubscription = nil
+    }
+}
+
+extension Publishers.Filter {
+
+    private final class Inner<Downstream: Subscriber>
+        : _Filter<Upstream, Downstream>,
+          Subscriber,
+          CustomStringConvertible
+        where Upstream.Output == Downstream.Input,
+              Upstream.Failure == Downstream.Failure {
+
+        var description: String { return "Filter" }
+
+        func receive(completion: Subscribers.Completion<Failure>) {
+            guard !isFinished else { return }
+            downstream.receive(completion: completion)
+        }
+    }
+}
+
+extension Publishers.TryFilter {
+
+    private final class Inner<Downstream: Subscriber>
+        : _Filter<Upstream, Downstream>,
+          Subscriber,
+          CustomStringConvertible
+        where Upstream.Output == Downstream.Input, Downstream.Failure == Error {
+
+        var description: String { return "TryFilter" }
+
+        func receive(completion: Subscribers.Completion<Failure>) {
+            guard !isFinished else { return }
+            downstream.receive(completion: completion.eraseError())
+        }
     }
 }

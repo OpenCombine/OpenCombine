@@ -13,8 +13,8 @@ import Combine
 import OpenCombine
 #endif
 
-/// `OperatorTestHelper` is an abstraction that helps avoid a lot of boilerplate in when
-/// testing a custom operator.  It is initialized with a publisher type and creates a
+/// `OperatorTestHelper` is an abstraction that helps avoid a lot of boilerplate when
+/// testing an operator.  It is initialized with a publisher type and creates a
 /// `CustomSubscription`, `CustomPublisherBase` and `TrackingSubscriberBase`.
 @available(macOS 10.15, iOS 13.0, *)
 class OperatorTestHelper<SourceValue: Equatable,
@@ -37,21 +37,21 @@ class OperatorTestHelper<SourceValue: Equatable,
     /// you can just pass a `publisherType` and closure
     /// for `createSut` to get all the setup that you'll need for a test.
     /// - Parameter publisherType: This should be filled in with the
-    ///  type of `CustomPublisherBase` that you would like the
-    ///  operator you are testing to be built from.
-    /// - Parameter trackingDemand: This is the demand that the
-    /// created `TrackingSubscriber` should return upon receiving a subscription.
+    ///   type of `CustomPublisherBase` that you would like the
+    ///   operator you are testing to be built from.
+    /// - Parameter initialDemand: This is the demand that the
+    ///   created `TrackingSubscriber` should return upon receiving a subscription.
     /// - Parameter receiveValueDemand: This is the demand that the
-    /// created `TrackingSubscriber should return upon receiving a value.
+    ///   created `TrackingSubscriber should return upon receiving a value.
     /// - Parameter customSubscription: This parameter defaults to `CustomSubscription()`,
-    ///  but can be replaced with your own instance if you want to override
-    ///  any of the default `CustomSubscription` initializer closures.
+    ///   but can be replaced with your own instance if you want to override
+    ///   any of the default `CustomSubscription` initializer closures.
     /// - Parameter createSut: This closure takes a new concrete instance
-    /// of the `publisherType` as an input to the closure and creates an
-    /// instance of the operator that you are trying to test.
+    ///   of the `publisherType` as an input to the closure and creates an
+    ///   instance of the operator that you are trying to test.
     init(publisherType: SourcePublisher.Type,
-         trackingDemand: Subscribers.Demand = .unlimited,
-         receiveValueDemand: Subscribers.Demand = .unlimited,
+         initialDemand: Subscribers.Demand,
+         receiveValueDemand: Subscribers.Demand,
          customSubscription: CustomSubscription = CustomSubscription(),
          createSut: (SourcePublisher) -> Sut)
     {
@@ -61,7 +61,7 @@ class OperatorTestHelper<SourceValue: Equatable,
         self.sut = createSut(createdPublisher)
         self.tracking = TrackingSubscriberBase<Value, Failure>(
             receiveSubscription: {
-                $0.request(trackingDemand)
+                $0.request(initialDemand)
             },
             receiveValue: { _ in receiveValueDemand }
         )

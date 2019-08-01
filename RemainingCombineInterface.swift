@@ -3120,20 +3120,6 @@ extension Publisher {
     public func tryFirst(where predicate: @escaping (Self.Output) throws -> Bool) -> Publishers.TryFirstWhere<Self>
 }
 
-extension Publishers.Filter {
-
-    public func filter(_ isIncluded: @escaping (Publishers.Filter<Upstream>.Output) -> Bool) -> Publishers.Filter<Upstream>
-
-    public func tryFilter(_ isIncluded: @escaping (Publishers.Filter<Upstream>.Output) throws -> Bool) -> Publishers.TryFilter<Upstream>
-}
-
-extension Publishers.TryFilter {
-
-    public func filter(_ isIncluded: @escaping (Publishers.TryFilter<Upstream>.Output) -> Bool) -> Publishers.TryFilter<Upstream>
-
-    public func tryFilter(_ isIncluded: @escaping (Publishers.TryFilter<Upstream>.Output) throws -> Bool) -> Publishers.TryFilter<Upstream>
-}
-
 extension Just {
 
     public func prepend(_ elements: Output...) -> Publishers.Sequence<[Output], Just<Output>.Failure>

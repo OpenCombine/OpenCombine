@@ -52,13 +52,13 @@ install:
     fi
 script:
   - if [[ $OPENCOMBINE_TEST == "YES" ]]; then
-      swift test -c debug --enable-code-coverage --sanitize thread;
+      make test-debug;
     fi
   - if [[ $OPENCOMBINE_TEST == "YES" ]]; then
-      swift test -c release;
+      make test-release;
     fi
   - if [[ $OPENCOMBINE_COMPATIBILITY_TEST == "YES" ]]; then
-      swift package generate-xcodeproj --xcconfig-overrides iOS-Combine-Compatibility.xcconfig;
+      make generate-compatibility-xcodeproj;
       set -o pipefail && xcodebuild -scheme OpenCombine-Package -sdk iphonesimulator13.0 -destination "platform=iOS Simulator,name=iPhone Xs,OS=13.0" build test | xcpretty;
     fi
   - if [[ $SWIFT_LINT == "YES" ]]; then
@@ -69,7 +69,7 @@ script:
     fi
 after_success:
   - if [[ $CODE_COVERAGE == "YES" ]]; then
-      swift package generate-xcodeproj --enable-code-coverage;
+      make generate-xcodeproj;
       xcodebuild -scheme OpenCombine-Package build test | xcpretty;
       bash <(curl -s https://codecov.io/bash);
     fi
