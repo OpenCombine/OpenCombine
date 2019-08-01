@@ -16,8 +16,8 @@ do {
     if !addedTestFiles.isEmpty && !modifiedXCTestManifests {
 
         let addedTestsClasses = addedTestFiles.map {
-            "- " + $0.split(separator: "/").last!.dropLast(6)
-        }.joined(separator: "\n")
+            "- `\($0.split(separator: "/").last!.dropLast(6))`\n"
+        }.joined()
 
         fail("""
         You've added the following test classes:

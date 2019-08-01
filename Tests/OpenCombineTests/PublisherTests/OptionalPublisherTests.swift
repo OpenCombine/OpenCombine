@@ -369,7 +369,6 @@ final class OptionalPublisherTests: XCTestCase {
         XCTAssertEqual(count, 2)
     }
 
-
     // MARK: -
     func testTestSuiteIncludesAllTests() {
         // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/

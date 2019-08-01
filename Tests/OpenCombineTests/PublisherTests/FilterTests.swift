@@ -147,11 +147,14 @@ final class FilterTests: XCTestCase {
 
     func testTryFilterCanCompleteWithError() {
         // Given
-        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
-                                        initialDemand: .unlimited,
-                                        receiveValueDemand: .none) {
-            $0.tryFilter { _ in true }
-        }
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisher.self,
+            initialDemand: .unlimited,
+            receiveValueDemand: .none,
+            createSut: {
+                $0.tryFilter { _ in true }
+            }
+        )
 
         // When
         XCTAssertEqual(helper.publisher.send(1), .none)
@@ -165,11 +168,14 @@ final class FilterTests: XCTestCase {
     }
 
     func testFilterSubscriptionDemand() {
-        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
-                                        initialDemand: .max(3),
-                                        receiveValueDemand: .none) {
-                                            $0.filter { $0.isMultiple(of: 2) }
-                                        }
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisher.self,
+            initialDemand: .max(3),
+            receiveValueDemand: .none,
+            createSut: {
+                $0.filter { $0.isMultiple(of: 2) }
+            }
+        )
 
         XCTAssertEqual(helper.publisher.send(1), .max(1))
         XCTAssertEqual(helper.publisher.send(2), .max(0))
