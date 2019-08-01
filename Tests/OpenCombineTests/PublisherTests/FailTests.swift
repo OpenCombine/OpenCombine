@@ -18,6 +18,7 @@ final class FailTests: XCTestCase {
 
     static let allTests = [
         ("testSubscription", testSubscription),
+        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
     ]
 
     private typealias Sut = Fail<Int, TestingError>
@@ -29,5 +30,18 @@ final class FailTests: XCTestCase {
 
         XCTAssertEqual(tracking.history, [.subscription("Empty"),
                                           .completion(.failure(.oops))])
+    }
+
+    // MARK: -
+    func testTestSuiteIncludesAllTests() {
+        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
+#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+        let thisClass = type(of: self)
+        let allTestsCount = thisClass.allTests.count
+        let darwinCount = thisClass.defaultTestSuite.testCaseCount
+        XCTAssertEqual(allTestsCount,
+                       darwinCount,
+                       "\(darwinCount - allTestsCount) tests are missing from allTests")
+#endif
     }
 }

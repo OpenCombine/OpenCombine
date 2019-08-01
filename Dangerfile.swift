@@ -2,6 +2,33 @@ import Danger
 
 let danger = Danger()
 
+do {
+    let addedTestFiles = danger
+        .git
+        .createdFiles
+        .filter { $0.hasSuffix("Tests.swift") }
+
+    let modifiedXCTestManifests = danger
+        .git
+        .modifiedFiles
+        .contains { $0.hasSuffix("XCTestManifests.swift") }
+
+    if !addedTestFiles.isEmpty && !modifiedXCTestManifests {
+
+        let addedTestsClasses = addedTestFiles.map {
+            "- `\($0.split(separator: "/").last!.dropLast(6))`\n"
+        }.joined()
+
+        fail("""
+        You've added the following test classes:
+
+        \(addedTestsClasses)
+
+        but forgot to modify `XCTestManifests.swift`.
+        """)
+    }
+}
+
 SwiftLint.lint(inline: true,
                configFile: ".swiftlint.yml",
                strict: true,

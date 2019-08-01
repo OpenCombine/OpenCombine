@@ -68,6 +68,7 @@ final class SequenceTests: XCTestCase {
          testAppendSequenceOperatorSpecialization),
         ("testAppendPublisherOperatorSpecialization",
          testAppendPublisherOperatorSpecialization),
+        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
     ]
 
 #if OPENCOMBINE_COMPATIBILITY_TEST || !canImport(Combine)
@@ -661,6 +662,19 @@ final class SequenceTests: XCTestCase {
 
         XCTAssertEqual(newCollection.history, [.initFromSequence,
                                                .appendSequence])
+    }
+
+    // MARK: -
+    func testTestSuiteIncludesAllTests() {
+        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
+#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+        let thisClass = type(of: self)
+        let allTestsCount = thisClass.allTests.count
+        let darwinCount = thisClass.defaultTestSuite.testCaseCount
+        XCTAssertEqual(allTestsCount,
+                       darwinCount,
+                       "\(darwinCount - allTestsCount) tests are missing from allTests")
+#endif
     }
 }
 

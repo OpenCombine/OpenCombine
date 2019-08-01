@@ -22,6 +22,7 @@ final class AssignTests: XCTestCase {
         ("testSubscription", testSubscription),
         ("testReceiveValue", testReceiveValue),
         ("testPublisherOperator", testPublisherOperator),
+        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
     ]
 
     private typealias Sut<Root> = Subscribers.Assign<Root, Int>
@@ -128,5 +129,18 @@ final class AssignTests: XCTestCase {
 
         publisher.send(100)
         XCTAssertEqual(object.value, 42)
+    }
+
+    // MARK: -
+    func testTestSuiteIncludesAllTests() {
+        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
+#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+        let thisClass = type(of: self)
+        let allTestsCount = thisClass.allTests.count
+        let darwinCount = thisClass.defaultTestSuite.testCaseCount
+        XCTAssertEqual(allTestsCount,
+                       darwinCount,
+                       "\(darwinCount - allTestsCount) tests are missing from allTests")
+#endif
     }
 }

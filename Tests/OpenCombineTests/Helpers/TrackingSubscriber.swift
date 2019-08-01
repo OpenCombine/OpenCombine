@@ -86,6 +86,12 @@ final class TrackingSubscriberBase<Value: Equatable, Failure: Error>
     private let _receiveCompletion: ((Subscribers.Completion<Failure>) -> Void)?
     private let _onDeinit: (() -> Void)?
 
+    var onSubscribe: ((Subscription) -> Void)?
+    var onValue: ((Input) -> Void)?
+    var onFinish: (() -> Void)?
+    var onFailure: ((Failure) -> Void)?
+    var onDeinit: (() -> Void)?
+
     /// The history of subscriptions, inputs and completions of this subscriber
     private(set) var history: [Event] = []
 
@@ -144,16 +150,24 @@ final class TrackingSubscriberBase<Value: Equatable, Failure: Error>
 
     func receive(subscription: Subscription) {
         history.append(.subscription(.init(subscription)))
+        onSubscribe?(subscription)
         _receiveSubscription?(subscription)
     }
 
     func receive(_ input: Value) -> Subscribers.Demand {
         history.append(.value(input))
+        onValue?(input)
         return _receiveValue?(input) ?? .none
     }
 
     func receive(completion: Subscribers.Completion<Failure>) {
         history.append(.completion(completion))
+        switch completion {
+        case .failure(let error):
+            onFailure?(error)
+        case .finished:
+            onFinish?()
+        }
         _receiveCompletion?(completion)
     }
 
@@ -162,6 +176,7 @@ final class TrackingSubscriberBase<Value: Equatable, Failure: Error>
     }
 
     deinit {
+        onDeinit?()
         _onDeinit?()
     }
 }

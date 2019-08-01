@@ -21,6 +21,7 @@ final class EncodeTests: XCTestCase {
         ("testEncodingFailure", testEncodingFailure),
         ("testDemand", testDemand),
         ("testEncodeSuccessHistory", testEncodeSuccessHistory),
+        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
     ]
 
     private var encoder = TestEncoder()
@@ -107,5 +108,18 @@ final class EncodeTests: XCTestCase {
 
         XCTAssertEqual(publisher.send(["test" : "TestDecodable"]), .max(2))
         XCTAssertEqual(subscription.history, [.requested(.max(37))])
+    }
+
+    // MARK: -
+    func testTestSuiteIncludesAllTests() {
+        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
+#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+        let thisClass = type(of: self)
+        let allTestsCount = thisClass.allTests.count
+        let darwinCount = thisClass.defaultTestSuite.testCaseCount
+        XCTAssertEqual(allTestsCount,
+                       darwinCount,
+                       "\(darwinCount - allTestsCount) tests are missing from allTests")
+#endif
     }
 }
