@@ -26,6 +26,8 @@ final class CurrentValueSubjectTests: XCTestCase {
         ("testMultipleCompletions", testMultipleCompletions),
         ("testValuesAfterCompletion", testValuesAfterCompletion),
         ("testSubscriptionAfterCompletion", testSubscriptionAfterCompletion),
+        ("testSubscriptionAfterSend", testSubscriptionAfterSend),
+        ("testSubscriptionAfterSet", testSubscriptionAfterSet),
         ("testSendSubscription", testSendSubscription),
         ("testLifecycle", testLifecycle),
         ("testSynchronization", testSynchronization),
@@ -322,6 +324,39 @@ final class CurrentValueSubjectTests: XCTestCase {
                                             .completion(.finished)])
     }
 
+    func testSubscriptionAfterSend() {
+        // Given
+        let passthrough = Sut(0)
+        let subscriber = TrackingSubscriber(
+            receiveSubscription: { subscription in
+                subscription.request(.unlimited)
+            })
+
+        // When
+        passthrough.send(2)
+        passthrough.subscribe(subscriber)
+
+        // Then
+        XCTAssertEqual(subscriber.history, [.subscription("CurrentValueSubject"),
+                                            .value(2)])
+    }
+
+    func testSubscriptionAfterSet() {
+        // Given
+        let passthrough = Sut(0)
+        let subscriber = TrackingSubscriber(receiveSubscription: { subscription in
+            subscription.request(.unlimited)
+        })
+
+        // When
+        passthrough.value = 3
+        passthrough.subscribe(subscriber)
+
+        // Then
+        XCTAssertEqual(subscriber.history, [.subscription("CurrentValueSubject"),
+                                            .value(3)])
+    }
+
     func testSendSubscription() {
         let subscription1 = CustomSubscription()
         let cvs = Sut(1)
@@ -441,15 +476,15 @@ final class CurrentValueSubjectTests: XCTestCase {
 
         race(
             {
-                cvs.value += 1
+                cvs.value = 42
             },
             {
-                cvs.value -= 1
+                cvs.value = 42
             }
         )
 
         XCTAssertEqual(inputs.value.count, 40200)
-        XCTAssertEqual(cvs.value, 112)
+        XCTAssertEqual(cvs.value, 42)
 
         race(
             {
