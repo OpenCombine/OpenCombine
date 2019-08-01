@@ -65,6 +65,7 @@ final class JustTests: XCTestCase {
         ("testPrefixWhileOperatorSpecialization", testPrefixWhileOperatorSpecialization),
         ("testSetFailureTypeOperatorSpecialization",
          testSetFailureTypeOperatorSpecialization),
+        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
     ]
 
     private typealias Sut = Just
@@ -356,5 +357,18 @@ final class JustTests: XCTestCase {
 
     func testSetFailureTypeOperatorSpecialization() {
         XCTAssertEqual(try Sut(73).setFailureType(to: TestingError.self).result.get(), 73)
+    }
+
+    // MARK: -
+    func testTestSuiteIncludesAllTests() {
+        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
+#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+        let thisClass = type(of: self)
+        let allTestsCount = thisClass.allTests.count
+        let darwinCount = thisClass.defaultTestSuite.testCaseCount
+        XCTAssertEqual(allTestsCount,
+                       darwinCount,
+                       "\(darwinCount - allTestsCount) tests are missing from allTests")
+#endif
     }
 }

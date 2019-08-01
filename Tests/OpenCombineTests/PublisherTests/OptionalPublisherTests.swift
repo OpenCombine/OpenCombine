@@ -54,6 +54,7 @@ final class OptionalPublisherTests: XCTestCase {
          testOutputInRangeOperatorSpecialization),
         ("testPrefixOperatorSpecialization", testPrefixOperatorSpecialization),
         ("testPrefixWhileOperatorSpecialization", testPrefixWhileOperatorSpecialization),
+        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
     ]
 
 #if OPENCOMBINE_COMPATIBILITY_TEST || !canImport(Combine)
@@ -366,5 +367,19 @@ final class OptionalPublisherTests: XCTestCase {
         XCTAssertEqual(Sut<Int>(nil).prefix(while: predicate), Sut(nil))
 
         XCTAssertEqual(count, 2)
+    }
+
+
+    // MARK: -
+    func testTestSuiteIncludesAllTests() {
+        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
+#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+        let thisClass = type(of: self)
+        let allTestsCount = thisClass.allTests.count
+        let darwinCount = thisClass.defaultTestSuite.testCaseCount
+        XCTAssertEqual(allTestsCount,
+                       darwinCount,
+                       "\(darwinCount - allTestsCount) tests are missing from allTests")
+#endif
     }
 }

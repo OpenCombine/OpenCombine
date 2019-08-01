@@ -22,6 +22,7 @@ final class MulticastTests: XCTestCase {
         ("testMulticastDisconnect", testMulticastDisconnect),
         ("testLateSubscriber", testLateSubscriber),
         ("testSubscribeAfterCompletion", testSubscribeAfterCompletion),
+        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
     ]
 
     func testMulticast() throws {
@@ -284,5 +285,18 @@ final class MulticastTests: XCTestCase {
         multicast.subscribe(lateSubscriber)
 
         XCTAssertEqual(lateSubscriber.history, [.subscription("Multicast")])
+    }
+
+    // MARK: -
+    func testTestSuiteIncludesAllTests() {
+        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
+#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+        let thisClass = type(of: self)
+        let allTestsCount = thisClass.allTests.count
+        let darwinCount = thisClass.defaultTestSuite.testCaseCount
+        XCTAssertEqual(allTestsCount,
+                       darwinCount,
+                       "\(darwinCount - allTestsCount) tests are missing from allTests")
+#endif
     }
 }

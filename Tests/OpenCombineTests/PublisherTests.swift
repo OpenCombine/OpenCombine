@@ -20,6 +20,7 @@ final class PublisherTests: XCTestCase {
         ("testSubscribeSubscriber", testSubscribeSubscriber),
         ("testSubscribeSubject", testSubscribeSubject),
         ("testSubjectSubscriber", testSubjectSubscriber),
+        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
     ]
 
     func testSubscribeSubscriber() {
@@ -104,5 +105,18 @@ final class PublisherTests: XCTestCase {
         }
 
         XCTAssert(subjectDestroyed)
+    }
+
+    // MARK: -
+    func testTestSuiteIncludesAllTests() {
+        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
+#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+        let thisClass = type(of: self)
+        let allTestsCount = thisClass.allTests.count
+        let darwinCount = thisClass.defaultTestSuite.testCaseCount
+        XCTAssertEqual(allTestsCount,
+                       darwinCount,
+                       "\(darwinCount - allTestsCount) tests are missing from allTests")
+#endif
     }
 }
