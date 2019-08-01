@@ -200,7 +200,7 @@ extension Publishers.TryMap {
 
         override func cancel() {
             _transform = nil
-            upstreamSubscription?.cancel()
+            super.cancel()
         }
 
         var description: String { return "TryMap" }

@@ -103,8 +103,17 @@ final class AnyCancellableTests: XCTestCase {
         cancellable2.store(in: &disposeBag)
 
         XCTAssertEqual(disposeBag.history, [.emptyInit, .append, .append])
-
         XCTAssertEqual(disposeBag.storage, [cancellable1, cancellable2])
+
+        let cancellable2Abstracted: Cancellable = cancellable2
+        cancellable2Abstracted.store(in: &disposeBag)
+
+        XCTAssertEqual(disposeBag.history, [.emptyInit, .append, .append, .append])
+        XCTAssertEqual(disposeBag.storage.count, 3)
+
+        if disposeBag.storage.count == 3 {
+            XCTAssertNotEqual(disposeBag.storage[2], cancellable2)
+        }
     }
 
     func testStoreInSet() {
@@ -123,6 +132,11 @@ final class AnyCancellableTests: XCTestCase {
 
         cancellable2.store(in: &disposeBag)
         XCTAssertEqual(disposeBag, [cancellable1, cancellable2])
+
+        let cancellable2Abstracted: Cancellable = cancellable2
+        cancellable2Abstracted.store(in: &disposeBag)
+
+        XCTAssertEqual(disposeBag.count, 3)
     }
 
     func testIndirectCancellation() {

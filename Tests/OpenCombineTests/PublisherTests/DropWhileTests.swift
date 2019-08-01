@@ -13,8 +13,6 @@ import Combine
 import OpenCombine
 #endif
 
-// TODO: add tests from https://github.com/ReactiveX/RxJava/blob/83f2bd771ee172a2154e0fb30c5ffcaf8f71433c/src/test/java/io/reactivex/internal/operators/observable/ObservableSkipWhileTest.java
-
 @available(macOS 10.15, iOS 13.0, *)
 final class DropWhileTests: XCTestCase {
 
@@ -22,6 +20,7 @@ final class DropWhileTests: XCTestCase {
         ("testDropWhile", testDropWhile),
         ("testTryDropWhileFailureBecauseOfThrow", testTryDropWhileFailureBecauseOfThrow),
         ("testTryDropWhileFailureOnCompletion", testTryDropWhileFailureOnCompletion),
+        ("testTryDropWhileSuccess", testTryDropWhileSuccess),
         ("testDemand", testDemand),
         ("testTryDropWhileCancelsUpstreamOnThrow",
          testTryDropWhileCancelsUpstreamOnThrow),
@@ -82,7 +81,7 @@ final class DropWhileTests: XCTestCase {
         publisher.send(completion: .finished)
 
         XCTAssertEqual(tracking.history,
-                       [.subscription("DropWhile"),
+                       [.subscription("TryDropWhile"),
                         .completion(.failure("too much" as TestingError))])
 
         XCTAssertEqual(counter, 3)
@@ -101,8 +100,34 @@ final class DropWhileTests: XCTestCase {
         publisher.send(2)
 
         XCTAssertEqual(tracking.history,
-                       [.subscription("DropWhile"),
+                       [.subscription("TryDropWhile"),
                         .completion(.failure(TestingError.oops))])
+    }
+
+    func testTryDropWhileSuccess() {
+
+        let publisher = PassthroughSubject<Int, Error>()
+        let drop = publisher.tryDrop { $0.isMultiple(of: 2) }
+
+        let tracking = TrackingSubscriberBase<Int, Error>(
+            receiveSubscription: { $0.request(.max(2)) }
+        )
+
+        publisher.send(1)
+        drop.subscribe(tracking)
+        publisher.send(0)
+        publisher.send(2)
+        publisher.send(3)
+        publisher.send(4)
+        publisher.send(5)
+        publisher.send(completion: .finished)
+        publisher.send(8)
+
+        XCTAssertEqual(tracking.history,
+                       [.subscription("TryDropWhile"),
+                        .value(3),
+                        .value(4),
+                        .completion(.finished)])
     }
 
     func testDemand() {
@@ -123,38 +148,53 @@ final class DropWhileTests: XCTestCase {
 
         XCTAssertNotNil(downstreamSubscription)
 
-        XCTAssertEqual(subscription.history, [.requested(.max(1))])
+        XCTAssertEqual(subscription.history, [.requested(.max(42))])
 
         XCTAssertEqual(publisher.send(0), .max(1))
-        XCTAssertEqual(subscription.history, [.requested(.max(1))])
+        XCTAssertEqual(subscription.history, [.requested(.max(42))])
 
         XCTAssertEqual(publisher.send(2), .max(1))
-        XCTAssertEqual(subscription.history, [.requested(.max(1))])
+        XCTAssertEqual(subscription.history, [.requested(.max(42))])
 
         downstreamSubscription?.request(.max(95))
         downstreamSubscription?.request(.max(5))
-        XCTAssertEqual(subscription.history, [.requested(.max(1))])
+        XCTAssertEqual(subscription.history, [.requested(.max(42)),
+                                              .requested(.max(95)),
+                                              .requested(.max(5))])
 
-        XCTAssertEqual(publisher.send(3), .max(145)) // 145 = 42 + 95 + 5 + 3
-        XCTAssertEqual(subscription.history, [.requested(.max(1))])
+        XCTAssertEqual(publisher.send(3), .max(4))
+        XCTAssertEqual(subscription.history, [.requested(.max(42)),
+                                              .requested(.max(95)),
+                                              .requested(.max(5))])
 
         downstreamSubscription?.request(.max(121))
-        XCTAssertEqual(subscription.history, [.requested(.max(1)), .requested(.max(121))])
+        XCTAssertEqual(subscription.history, [.requested(.max(42)),
+                                              .requested(.max(95)),
+                                              .requested(.max(5)),
+                                              .requested(.max(121))])
 
         XCTAssertEqual(publisher.send(7), .max(4))
-        XCTAssertEqual(subscription.history, [.requested(.max(1)), .requested(.max(121))])
+        XCTAssertEqual(subscription.history, [.requested(.max(42)),
+                                              .requested(.max(95)),
+                                              .requested(.max(5)),
+                                              .requested(.max(121))])
 
         downstreamSubscription?.cancel()
         downstreamSubscription?.cancel()
-        XCTAssertEqual(subscription.history, [.requested(.max(1)),
+        XCTAssertEqual(subscription.history, [.requested(.max(42)),
+                                              .requested(.max(95)),
+                                              .requested(.max(5)),
                                               .requested(.max(121)),
                                               .cancelled])
+
         downstreamSubscription?.request(.max(50))
-        XCTAssertEqual(subscription.history, [.requested(.max(1)),
+        XCTAssertEqual(subscription.history, [.requested(.max(42)),
+                                              .requested(.max(95)),
+                                              .requested(.max(5)),
                                               .requested(.max(121)),
                                               .cancelled])
 
-        XCTAssertEqual(publisher.send(8), .max(4))
+        XCTAssertEqual(publisher.send(8), .none)
     }
 
     func testTryDropWhileCancelsUpstreamOnThrow() {
@@ -168,15 +208,18 @@ final class DropWhileTests: XCTestCase {
         )
 
         drop.subscribe(tracking)
-        XCTAssertEqual(subscription.history, [.requested(.max(1))])
+        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
         XCTAssertEqual(publisher.send(100), .none)
-        XCTAssertEqual(subscription.history, [.requested(.max(1)), .cancelled])
+        XCTAssertEqual(subscription.history, [.requested(.unlimited), .cancelled])
         publisher.send(completion: .finished)
-        XCTAssertEqual(subscription.history, [.requested(.max(1)), .cancelled])
+        XCTAssertEqual(subscription.history, [.requested(.unlimited), .cancelled])
         XCTAssertEqual(tracking.history,
-                       [.subscription("DropWhile"),
-                        .completion(.failure("too much" as TestingError)),
-                        .completion(.finished)])
+                       [.subscription("TryDropWhile"),
+                        .completion(.failure("too much" as TestingError))])
+        XCTAssertEqual(publisher.send(12), .none)
+        XCTAssertEqual(tracking.history,
+                       [.subscription("TryDropWhile"),
+                        .completion(.failure("too much" as TestingError))])
     }
 
     func testDropWhileCompletion() {
@@ -189,12 +232,103 @@ final class DropWhileTests: XCTestCase {
         )
 
         drop.subscribe(tracking)
-        XCTAssertEqual(subscription.history, [.requested(.max(1))])
+        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
         publisher.send(completion: .finished)
         publisher.send(completion: .finished)
-        XCTAssertEqual(subscription.history, [.requested(.max(1))])
+        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
         XCTAssertEqual(tracking.history, [.subscription("DropWhile"),
                                           .completion(.finished),
                                           .completion(.finished)])
+
+        publisher.send(completion: .failure(.oops))
+        publisher.send(completion: .failure(.oops))
+        XCTAssertEqual(tracking.history, [.subscription("DropWhile"),
+                                          .completion(.finished),
+                                          .completion(.finished),
+                                          .completion(.failure(.oops)),
+                                          .completion(.failure(.oops))])
+    }
+
+    func testCancelAlreadyCancelled() throws {
+        // Given
+        let subscription = CustomSubscription()
+        let publisher = CustomPublisher(subscription: subscription)
+        let dropWhile = publisher.drop(while: { _ in true })
+        var downstreamSubscription: Subscription?
+        let tracking = TrackingSubscriber(receiveSubscription: {
+            $0.request(.unlimited)
+            downstreamSubscription = $0
+        })
+
+        dropWhile.subscribe(tracking)
+        try XCTUnwrap(downstreamSubscription).cancel()
+        downstreamSubscription?.request(.unlimited)
+        try XCTUnwrap(downstreamSubscription).cancel()
+
+        XCTAssertEqual(subscription.history, [.requested(.unlimited), .cancelled])
+
+        publisher.send(completion: .failure(.oops))
+        publisher.send(completion: .finished)
+
+        XCTAssertEqual(subscription.history, [.requested(.unlimited), .cancelled])
+        XCTAssertEqual(tracking.history, [.subscription("DropWhile"),
+                                          .completion(.failure(.oops)),
+                                          .completion(.finished)])
+    }
+
+    func testLifecycle() throws {
+
+        var deinitCounter = 0
+
+        let onDeinit = { deinitCounter += 1 }
+
+        do {
+            let passthrough = PassthroughSubject<Int, TestingError>()
+            let dropWhile = passthrough.drop(while: { _ in true })
+            let emptySubscriber = TrackingSubscriber(onDeinit: onDeinit)
+            XCTAssertTrue(emptySubscriber.history.isEmpty)
+            dropWhile.subscribe(emptySubscriber)
+            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
+            passthrough.send(31)
+            XCTAssertEqual(emptySubscriber.inputs.count, 0)
+            passthrough.send(completion: .failure("failure"))
+            XCTAssertEqual(emptySubscriber.completions.count, 1)
+        }
+
+        XCTAssertEqual(deinitCounter, 0)
+
+        do {
+            let passthrough = PassthroughSubject<Int, TestingError>()
+            let dropWhile = passthrough.drop(while: { _ in true })
+            let emptySubscriber = TrackingSubscriber(onDeinit: onDeinit)
+            XCTAssertTrue(emptySubscriber.history.isEmpty)
+            dropWhile.subscribe(emptySubscriber)
+            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
+            XCTAssertEqual(emptySubscriber.inputs.count, 0)
+            XCTAssertEqual(emptySubscriber.completions.count, 0)
+        }
+
+        XCTAssertEqual(deinitCounter, 0)
+
+        var subscription: Subscription?
+
+        do {
+            let passthrough = PassthroughSubject<Int, TestingError>()
+            let dropWhile = passthrough.drop(while: { _ in true })
+            let emptySubscriber = TrackingSubscriber(
+                receiveSubscription: { subscription = $0; $0.request(.unlimited) },
+                onDeinit: onDeinit
+            )
+            XCTAssertTrue(emptySubscriber.history.isEmpty)
+            dropWhile.subscribe(emptySubscriber)
+            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
+            passthrough.send(31)
+            XCTAssertEqual(emptySubscriber.inputs.count, 0)
+            XCTAssertEqual(emptySubscriber.completions.count, 0)
+        }
+
+        XCTAssertEqual(deinitCounter, 0)
+        try XCTUnwrap(subscription).cancel()
+        XCTAssertEqual(deinitCounter, 0)
     }
 }

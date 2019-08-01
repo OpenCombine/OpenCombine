@@ -27,7 +27,7 @@ final class DeferredTests: XCTestCase {
 
         let subscription = CustomSubscription()
         let publisher = CustomPublisher(subscription: subscription)
-        let sut: Publishers.Deferred = Publishers.Deferred { () -> CustomPublisher in
+        let deferred = Deferred { () -> CustomPublisher in
             deferredPublisherCreatedCount += 1
             return publisher
         }
@@ -37,12 +37,12 @@ final class DeferredTests: XCTestCase {
         XCTAssertEqual(deferredPublisherCreatedCount, 0)
         XCTAssertEqual(tracking.history, [])
 
-        sut.subscribe(tracking)
+        deferred.subscribe(tracking)
 
         XCTAssertEqual(tracking.history, [.subscription("CustomSubscription")])
         XCTAssertEqual(deferredPublisherCreatedCount, 1)
 
-        sut.subscribe(tracking)
+        deferred.subscribe(tracking)
 
         XCTAssertEqual(deferredPublisherCreatedCount, 2)
 

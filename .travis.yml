@@ -2,9 +2,19 @@ language: generic
 
 addons:
   homebrew:
+    taps:
+      - danger/tap
     packages:
       - swiftlint
+      - danger-swift
     update: true
+
+cache:
+    directories:
+      - .build
+      - ~/.danger-swift
+      - ~/.swiftenv
+      - ~/Library/Caches/Homebrew
 
 matrix:
   include:
@@ -17,14 +27,18 @@ matrix:
       os: osx
       osx_image: xcode10.2
       env: SWIFT_VERSION="5.0" CODE_COVERAGE="YES" OPENCOMBINE_TEST="YES"
-    - name: "iOS 13.0 | Swift 5.1 | Compatibility Tests"
-      os: osx
-      osx_image: xcode11
-      env: SWIFT_VERSION="5.1" OPENCOMBINE_COMPATIBILITY_TEST="YES"
-    - name: "macOS 10.14 | Swift 5.0 | SwiftLint"
+    # - name: "iOS 13.0 | Swift 5.1 | Compatibility Tests"
+    #   os: osx
+    #   osx_image: xcode11
+    #   env: SWIFT_VERSION="5.1" OPENCOMBINE_COMPATIBILITY_TEST="YES"
+    - name: "macOS 10.14 | Swift 5.0 | Code Quality"
       os: osx
       osx_image: xcode10.2
-      env: SWIFT_VERSION="5.0" SWIFT_LINT="YES"
+      env: SWIFT_VERSION="5.0" RUN_DANGER="YES" SWIFT_LINT="YES"
+
+before_cache:
+  - brew cleanup
+
 before_install:
   - if [[ $TRAVIS_OS_NAME == "linux" ]]; then
       cat /proc/cpuinfo;
@@ -49,6 +63,9 @@ script:
     fi
   - if [[ $SWIFT_LINT == "YES" ]]; then
       swiftlint lint --strict --reporter "emoji";
+    fi
+  - if [[ $RUN_DANGER == "YES" ]]; then
+      danger-swift ci;
     fi
 after_success:
   - if [[ $CODE_COVERAGE == "YES" ]]; then

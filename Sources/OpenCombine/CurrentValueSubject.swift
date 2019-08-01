@@ -16,6 +16,10 @@ public final class CurrentValueSubject<Output, Failure: Error>: Subject {
 
     private var _completion: Subscribers.Completion<Failure>?
 
+    internal var upstreamSubscriptions: [Subscription] = []
+
+    internal var hasAnyDownstreamDemand = false
+
     /// The value wrapped by this subject, published as a new element whenever it changes.
     public var value: Output {
         didSet {
@@ -30,8 +34,21 @@ public final class CurrentValueSubject<Output, Failure: Error>: Subject {
         self.value = value
     }
 
-    public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-        where Output == SubscriberType.Input, Failure == SubscriberType.Failure
+    deinit {
+        for subscription in _subscriptions {
+            subscription._downstream = nil
+        }
+    }
+
+    public func send(subscription: Subscription) {
+        _lock.do {
+            upstreamSubscriptions.append(subscription)
+            subscription.request(.unlimited)
+        }
+    }
+
+    public func receive<Subscriber: OpenCombine.Subscriber>(subscriber: Subscriber)
+        where Output == Subscriber.Input, Failure == Subscriber.Failure
     {
         _lock.do {
 
@@ -109,7 +126,7 @@ extension CurrentValueSubject {
         }
 
         func request(_ demand: Subscribers.Demand) {
-            guard demand > 0 else { return }
+            precondition(demand > 0)
             _parent?._lock.do {
                 if !_delivered, let value = _parent?.value {
                     _offer(value)
@@ -118,6 +135,7 @@ extension CurrentValueSubject {
                 } else {
                     _demand = demand
                 }
+                _parent?.hasAnyDownstreamDemand = true
             }
         }
 

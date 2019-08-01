@@ -20,6 +20,7 @@ final class MapTests: XCTestCase {
         ("testError", testError),
         ("testTryMapFailureBecauseOfThrow", testTryMapFailureBecauseOfThrow),
         ("testTryMapFailureOnCompletion", testTryMapFailureOnCompletion),
+        ("testTryMapSuccess", testTryMapSuccess),
         ("testRange", testRange),
         ("testNoDemand", testNoDemand),
         ("testDemandSubscribe", testDemandSubscribe),
@@ -118,6 +119,22 @@ final class MapTests: XCTestCase {
         XCTAssertEqual(tracking.history,
                        [.subscription("TryMap"),
                         .completion(.failure(TestingError.oops))])
+    }
+
+    func testTryMapSuccess() {
+        let publisher = PassthroughSubject<Int, Error>()
+        let map = publisher.tryMap { $0 * 2 }
+
+        let tracking = TrackingSubscriberBase<Int, Error>()
+
+        publisher.send(1)
+        map.subscribe(tracking)
+        publisher.send(completion: .finished)
+        publisher.send(2)
+
+        XCTAssertEqual(tracking.history,
+                       [.subscription("TryMap"),
+                        .completion(.finished)])
     }
 
     func testRange() {
@@ -283,7 +300,7 @@ final class MapTests: XCTestCase {
             XCTAssertEqual(emptySubscriber.completions.count, 1)
         }
 
-        XCTAssertEqual(deinitCounter, 0)
+        XCTAssertEqual(deinitCounter, 1)
 
         do {
             let passthrough = PassthroughSubject<Int, TestingError>()
@@ -296,7 +313,7 @@ final class MapTests: XCTestCase {
             XCTAssertEqual(emptySubscriber.completions.count, 0)
         }
 
-        XCTAssertEqual(deinitCounter, 0)
+        XCTAssertEqual(deinitCounter, 1)
 
         var subscription: Subscription?
 
@@ -316,9 +333,9 @@ final class MapTests: XCTestCase {
             XCTAssertNotNil(subscription)
         }
 
-        XCTAssertEqual(deinitCounter, 0)
+        XCTAssertEqual(deinitCounter, 1)
         try XCTUnwrap(subscription).cancel()
-        XCTAssertEqual(deinitCounter, 0)
+        XCTAssertEqual(deinitCounter, 2)
     }
 
     func testMapOperatorSpecializationForMap() {

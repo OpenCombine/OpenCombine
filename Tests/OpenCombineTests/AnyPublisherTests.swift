@@ -18,6 +18,7 @@ final class AnyPublisherTests: XCTestCase {
 
     static let allTests = [
         ("testErasePublisher", testErasePublisher),
+        ("testDescription", testDescription),
     ]
 
     private typealias Sut = AnyPublisher<Int, TestingError>
@@ -34,5 +35,11 @@ final class AnyPublisherTests: XCTestCase {
 
         erased.subscribe(subscriber)
         XCTAssertEqual(publisher.history, [.subscriber])
+    }
+
+    func testDescription() {
+        let erased = AnyPublisher(TrackingSubject<Int>())
+        XCTAssertEqual(erased.description, "AnyPublisher")
+        XCTAssertEqual(erased.description, erased.playgroundDescription as? String)
     }
 }

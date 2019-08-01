@@ -5,8 +5,6 @@
 //  Created by Joseph Spadafora on 7/4/19.
 //
 
-import Foundation
-
 extension Publishers {
 
     /// A publisher that converts any failure from the
@@ -72,7 +70,6 @@ private final class _MapError<Upstream: Publisher, Downstream: Subscriber>
       CustomStringConvertible
     where Upstream.Output == Downstream.Input
 {
-
     typealias Input = Upstream.Output
     typealias Failure = Upstream.Failure
     typealias Output = Downstream.Input
