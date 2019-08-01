@@ -25,10 +25,6 @@ public final class CurrentValueSubject<Output, Failure: Error>: Subject {
     /// The value wrapped by this subject, published as a new element whenever it changes.
     public var value: Output {
         get {
-            defer {
-                _lock._unlock()
-            }
-            _lock._lock()
             return _value
         }
         set {
