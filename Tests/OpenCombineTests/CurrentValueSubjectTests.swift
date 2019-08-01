@@ -5,7 +5,6 @@
 //  Created by Sergej Jaskiewicz on 11.06.2019.
 //
 
-import Foundation
 import XCTest
 
 #if OPENCOMBINE_COMPATIBILITY_TEST
@@ -448,7 +447,6 @@ final class CurrentValueSubjectTests: XCTestCase {
         let subscriptions = Atomic<[Subscription]>([])
         let inputs = Atomic<[Int]>([])
         let completions = Atomic<[Subscribers.Completion<TestingError>]>([])
-        let lock = NSRecursiveLock()
 
         let cvs = Sut(112)
         let subscriber = AnySubscriber<Int, TestingError>(
@@ -478,18 +476,15 @@ final class CurrentValueSubjectTests: XCTestCase {
 
         race(
             {
-                lock.lock()
-                cvs.value += 1
-                lock.unlock()
+                cvs.value = 42
             },
             {
-                lock.lock()
-                cvs.value -= 1
-                lock.unlock()
+                cvs.value = 42
             }
         )
+
         XCTAssertEqual(inputs.value.count, 40200)
-        XCTAssertEqual(cvs.value, 112)
+        XCTAssertEqual(cvs.value, 42)
 
         race(
             {
