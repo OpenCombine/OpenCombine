@@ -28,10 +28,6 @@ public final class CurrentValueSubject<Output, Failure: Error>: Subject {
             return _value
         }
         set {
-            defer {
-                _lock._unlock()
-            }
-            _lock._lock()
             send(newValue)
         }
     }

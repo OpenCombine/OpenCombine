@@ -5,6 +5,7 @@
 //  Created by Sergej Jaskiewicz on 11.06.2019.
 //
 
+import Foundation
 import XCTest
 
 #if OPENCOMBINE_COMPATIBILITY_TEST
@@ -310,19 +311,19 @@ final class CurrentValueSubjectTests: XCTestCase {
                                             .completion(.finished)])
     }
 
-
     func testSubscriptionAfterSend() {
         // Given
         let passthrough = Sut(0)
-        let subscriber = TrackingSubscriber(receiveSubscription: { subscription in
-            subscription.request(.unlimited)
-        })
+        let subscriber = TrackingSubscriber(
+            receiveSubscription: { subscription in
+                subscription.request(.unlimited)
+            })
 
         // When
         passthrough.send(2)
-        print(passthrough.value)
         passthrough.subscribe(subscriber)
 
+        // Then
         XCTAssertEqual(subscriber.history, [.subscription("CurrentValueSubject"),
                                             .value(2)])
     }
@@ -336,9 +337,9 @@ final class CurrentValueSubjectTests: XCTestCase {
 
         // When
         passthrough.value = 3
-        print(passthrough.value)
         passthrough.subscribe(subscriber)
 
+        // Then
         XCTAssertEqual(subscriber.history, [.subscription("CurrentValueSubject"),
                                             .value(3)])
     }
@@ -398,6 +399,7 @@ final class CurrentValueSubjectTests: XCTestCase {
         let subscriptions = Atomic<[Subscription]>([])
         let inputs = Atomic<[Int]>([])
         let completions = Atomic<[Subscribers.Completion<TestingError>]>([])
+        let lock = NSRecursiveLock()
 
         let cvs = Sut(112)
         let subscriber = AnySubscriber<Int, TestingError>(
@@ -427,10 +429,14 @@ final class CurrentValueSubjectTests: XCTestCase {
 
         race(
             {
+                lock.lock()
                 cvs.value += 1
+                lock.unlock()
             },
             {
+                lock.lock()
                 cvs.value -= 1
+                lock.unlock()
             }
         )
         XCTAssertEqual(inputs.value.count, 40200)
