@@ -2,9 +2,18 @@ language: generic
 
 addons:
   homebrew:
+    taps:
+      - danger/tap
     packages:
       - swiftlint
+      - danger-swift
     update: true
+
+cache:
+    directories:
+      - .build
+      - ~/.danger-swift
+      - ~/.swiftenv
 
 matrix:
   include:
@@ -24,7 +33,7 @@ matrix:
     - name: "macOS 10.14 | Swift 5.0 | SwiftLint"
       os: osx
       osx_image: xcode10.2
-      env: SWIFT_VERSION="5.0" SWIFT_LINT="YES"
+      env: SWIFT_VERSION="5.0" RUN_DANGER="YES"
 before_install:
   - if [[ $TRAVIS_OS_NAME == "linux" ]]; then
       cat /proc/cpuinfo;
@@ -47,8 +56,8 @@ script:
       swift package generate-xcodeproj --xcconfig-overrides iOS-Combine-Compatibility.xcconfig;
       set -o pipefail && xcodebuild -scheme OpenCombine-Package -sdk iphonesimulator13.0 -destination "platform=iOS Simulator,name=iPhone Xs,OS=13.0" build test | xcpretty;
     fi
-  - if [[ $SWIFT_LINT == "YES" ]]; then
-      swiftlint lint --strict --reporter "emoji";
+  - if [[ $RUN_DANGER == "YES" ]]; then
+      danger-swift ci;
     fi
 after_success:
   - if [[ $CODE_COVERAGE == "YES" ]]; then

@@ -1,6 +1,0 @@
-swiftlint:
-  config_file: .swiftlint.yml
-  version: 0.34.0
-
-fail_on_violations: true
-  
