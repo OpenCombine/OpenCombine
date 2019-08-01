@@ -6,7 +6,7 @@
 //
 
 internal class OperatorSubscription<Downstream: Subscriber>: CustomReflectable {
-    internal var downstream: Downstream
+    internal var downstream: Downstream?
     internal var upstreamSubscription: Subscription?
 
     internal var customMirror: Mirror {
@@ -20,5 +20,6 @@ internal class OperatorSubscription<Downstream: Subscriber>: CustomReflectable {
     internal func cancel() {
         upstreamSubscription?.cancel()
         upstreamSubscription = nil
+        downstream = nil
     }
 }

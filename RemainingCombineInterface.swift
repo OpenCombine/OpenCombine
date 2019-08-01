@@ -3578,24 +3578,22 @@ extension Publishers.First : Equatable where Upstream : Equatable {
 /// Adds a `Publisher` to a property.
 ///
 /// Properties annotated with `@Published` contain both the stored value and a publisher which sends any new values after the property value has been sent. New subscribers will receive the current value of the property first.
+@available(iOS 13.0, OSX 10.15, tvOS 13.0, watchOS 6.0, *)
 @propertyWrapper public struct Published<Value> {
 
     /// Initialize the storage of the Published property as well as the corresponding `Publisher`.
     public init(initialValue: Value)
 
-    /// The current value of the property.
-    public var wrappedValue: Value
-
-    public var value: Value
+    public static subscript<EnclosingSelf: AnyObject>(
+        _enclosingInstance object: EnclosingSelf,
+        wrapped wrappedKeyPath: ReferenceWritableKeyPath<EnclosingSelf, Value>,
+        storage storageKeyPath: ReferenceWritableKeyPath<EnclosingSelf, Published<Value>>
+    ) -> Value { get set }
 
     public class Publisher : Publisher {
 
-        /// The kind of values published by this publisher.
         public typealias Output = Value
 
-        /// The kind of errors this publisher might publish.
-        ///
-        /// Use `Never` if this `Publisher` does not publish errors.
         public typealias Failure = Never
 
         /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
@@ -3607,9 +3605,170 @@ extension Publishers.First : Equatable where Upstream : Equatable {
         public func receive<S>(subscriber: S) where Value == S.Input, S : Subscriber, S.Failure == Published<Value>.Publisher.Failure
     }
 
-    public var wrapperValue: Published<Value>.Publisher { mutating get }
+    /// The property that can be accessed with the `$` syntax and allows access to the `Publisher`
+    public var projectedValue: Published<Value>.Publisher { mutating get }
+}
 
-    public var delegateValue: Published<Value>.Publisher { mutating get }
+/// A type of object with a publisher that emits before the object has changed.
+///
+/// By default an `ObservableObject` will synthesize an `objectWillChange`
+/// publisher that emits before any of its `@Published` properties changes:
+///
+///     class Contact : ObservableObject {
+///         @Published var name: String
+///         @Published var age: Int
+///
+///         init(name: String, age: Int) {
+///             self.name = name
+///             self.age = age
+///         }
+///
+///         func haveBirthday() -> Int {
+///             age += 1
+///         }
+///     }
+///
+///     let john = Contact(name: "John Appleseed", age: 24)
+///     john.objectWillChange.sink { _ in print("will change") }
+///     print(john.haveBirthday)
+///     // Prints "will change"
+///     // Prints "25"
+///
+public protocol ObservableObject : AnyObject {
+
+    /// The type of publisher that emits before the object has changed.
+    associatedtype ObjectWillChangePublisher : Publisher = ObservableObjectPublisher where Self.ObjectWillChangePublisher.Failure == Never
+
+    /// A publisher that emits before the object has changed.
+    var objectWillChange: Self.ObjectWillChangePublisher { get }
+}
+
+extension ObservableObject where Self.ObjectWillChangePublisher == ObservableObjectPublisher {
+
+    /// A publisher that emits before the object has changed.
+    public var objectWillChange: ObservableObjectPublisher { get }
+}
+
+/// The default publisher of an `ObservableObject`.
+final public class ObservableObjectPublisher : Publisher {
+
+    /// The kind of values published by this publisher.
+    public typealias Output = Void
+
+    /// The kind of errors this publisher might publish.
+    ///
+    /// Use `Never` if this `Publisher` does not publish errors.
+    public typealias Failure = Never
+
+    public init()
+
+    /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+    ///
+    /// - SeeAlso: `subscribe(_:)`
+    /// - Parameters:
+    ///     - subscriber: The subscriber to attach to this `Publisher`.
+    ///                   once attached it can begin to receive values.
+    final public func receive<S>(subscriber: S) where S : Subscriber, S.Failure == ObservableObjectPublisher.Failure, S.Input == ObservableObjectPublisher.Output
+
+    final public func send()
+}
+
+/// A publisher that allows for recording a series of inputs and a completion for later playback to each subscriber.
+public struct Record<Output, Failure> : Publisher where Failure : Error {
+
+    /// The recorded output and completion.
+    public let recording: Record<Output, Failure>.Recording
+
+    /// Interactively record a series of outputs and a completion.
+    public init(record: (inout Record<Output, Failure>.Recording) -> Void)
+
+    /// Initialize with a recording.
+    public init(recording: Record<Output, Failure>.Recording)
+
+    /// Set up a complete recording with the specified output and completion.
+    public init(output: [Output], completion: Subscribers.Completion<Failure>)
+
+    /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+    ///
+    /// - SeeAlso: `subscribe(_:)`
+    /// - Parameters:
+    ///     - subscriber: The subscriber to attach to this `Publisher`.
+    ///                   once attached it can begin to receive values.
+    public func receive<S>(subscriber: S) where Output == S.Input, Failure == S.Failure, S : Subscriber
+
+    /// A recorded set of `Output` and a `Subscribers.Completion`.
+    public struct Recording {
+
+        public typealias Input = Output
+
+        /// The output which will be sent to a `Subscriber`.
+        public var output: [Output] { get }
+
+        /// The completion which will be sent to a `Subscriber`.
+        public var completion: Subscribers.Completion<Failure> { get }
+
+        /// Set up a recording in a state ready to receive output.
+        public init()
+
+        /// Set up a complete recording with the specified output and completion.
+        public init(output: [Output], completion: Subscribers.Completion<Failure> = .finished)
+
+        /// Add an output to the recording.
+        ///
+        /// A `fatalError` will be raised if output is added after adding completion.
+        public mutating func receive(_ input: Record<Output, Failure>.Recording.Input)
+
+        /// Add a completion to the recording.
+        ///
+        /// A `fatalError` will be raised if more than one completion is added.
+        public mutating func receive(completion: Subscribers.Completion<Failure>)
+    }
+}
+
+extension Record : Codable where Output : Decodable, Output : Encodable, Failure : Decodable, Failure : Encodable {
+
+    /// Creates a new instance by decoding from the given decoder.
+    ///
+    /// This initializer throws an error if reading from the decoder fails, or
+    /// if the data read is corrupted or otherwise invalid.
+    ///
+    /// - Parameter decoder: The decoder to read data from.
+    public init(from decoder: Decoder) throws
+
+    /// Encodes this value into the given encoder.
+    ///
+    /// If the value fails to encode anything, `encoder` will encode an empty
+    /// keyed container in its place.
+    ///
+    /// This function throws an error if any values are invalid for the given
+    /// encoder's format.
+    ///
+    /// - Parameter encoder: The encoder to write data to.
+    public func encode(to encoder: Encoder) throws
+}
+
+extension Record.Recording : Codable where Output : Decodable, Output : Encodable, Failure : Decodable, Failure : Encodable {
+
+    /// Creates a new instance by decoding from the given decoder.
+    ///
+    /// This initializer throws an error if reading from the decoder fails, or
+    /// if the data read is corrupted or otherwise invalid.
+    ///
+    /// - Parameter decoder: The decoder to read data from.
+    public init(from decoder: Decoder) throws
+
+    public func encode(into encoder: Encoder) throws
+
+    /// Encodes this value into the given encoder.
+    ///
+    /// If the value fails to encode anything, `encoder` will encode an empty
+    /// keyed container in its place.
+    ///
+    /// This function throws an error if any values are invalid for the given
+    /// encoder's format.
+    ///
+    /// - Parameter encoder: The encoder to write data to.
+    public func encode(to encoder: Encoder) throws
 }
 
 extension Publishers {

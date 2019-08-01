@@ -12,8 +12,6 @@ public func allTests() -> [XCTestCaseEntry] {
     return [
         testCase(AnyCancellableTests.allTests),
         testCase(AnyPublisherTests.allTests),
-        testCase(AnySubjectTests.allTests),
-
         testCase(AssignTests.allTests),
         testCase(CombineIdentifierTests.allTests),
         testCase(CompletionTests.allTests),

@@ -34,13 +34,13 @@ extension Subscribers {
         /// Initializes a sink with the provided closures.
         ///
         /// - Parameters:
-        ///   - receiveValue: The closure to execute on receipt of a value. If `nil`,
-        ///     the sink uses an empty closure.
-        ///   - receiveCompletion: The closure to execute on completion. If `nil`,
-        ///     the sink uses an empty closure.
-        public init(receiveCompletion: ((Subscribers.Completion<Failure>) -> Void)? = nil,
-                    receiveValue: @escaping ((Input) -> Void)) {
-            self.receiveCompletion = receiveCompletion ?? { _ in }
+        ///   - receiveCompletion: The closure to execute on completion.
+        ///   - receiveValue: The closure to execute on receipt of a value.
+        public init(
+            receiveCompletion: @escaping (Subscribers.Completion<Failure>) -> Void,
+            receiveValue: @escaping ((Input) -> Void)
+        ) {
+            self.receiveCompletion = receiveCompletion
             self.receiveValue = receiveValue
         }
 
@@ -73,14 +73,13 @@ extension Publisher {
 
     /// Attaches a subscriber with closure-based behavior.
     ///
-    /// This method creates the subscriber and immediately requests
-    /// an unlimited number of values, prior to returning the subscriber.
-    /// - parameter receiveValue: The closure to execute on receipt of a value.
-    ///   If `nil`, the sink uses an empty closure.
+    /// This method creates the subscriber and immediately requests an unlimited number
+    /// of values, prior to returning the subscriber.
+    ///
     /// - parameter receiveComplete: The closure to execute on completion.
-    ///   If `nil`, the sink uses an empty closure.
-    /// - Returns: A cancellable instance; used when you end assignment
-    ///   of the received value. Deallocation of the result will tear down
+    /// - parameter receiveValue: The closure to execute on receipt of a value.
+    /// - Returns: A cancellable instance; used when you end assignment of
+    ///   the received value. Deallocation of the result will tear down
     ///   the subscription stream.
     public func sink(
         receiveCompletion: @escaping (Subscribers.Completion<Failure>) -> Void,
@@ -99,20 +98,21 @@ extension Publisher where Failure == Never {
 
     /// Attaches a subscriber with closure-based behavior.
     ///
-    /// This method creates the subscriber and immediately requests
-    /// an unlimited number of values, prior to returning the subscriber.
-    /// - parameter receiveComplete: The closure to execute on completion.
-    ///   If `nil`, the sink uses an empty closure.
-    /// - Returns: A subscriber that performs the provided closures upon
-    ///   receiving values or completion.
+    /// This method creates the subscriber and immediately requests an unlimited number
+    /// of values, prior to returning the subscriber.
+    ///
+    /// - parameter receiveValue: The closure to execute on receipt of a value.
+    /// - Returns: A cancellable instance; used when you end assignment of
+    ///   the received value. Deallocation of the result will tear down
+    ///   the subscription stream.
     public func sink(
         receiveValue: @escaping (Output) -> Void
-    ) -> Subscribers.Sink<Output, Failure> {
+    ) -> AnyCancellable {
         let subscriber = Subscribers.Sink<Output, Failure>(
-            receiveCompletion: nil,
+            receiveCompletion: { _ in },
             receiveValue: receiveValue
         )
         subscribe(subscriber)
-        return subscriber
+        return AnyCancellable(subscriber)
     }
 }

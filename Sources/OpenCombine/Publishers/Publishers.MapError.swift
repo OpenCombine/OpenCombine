@@ -70,7 +70,6 @@ private final class _MapError<Upstream: Publisher, Downstream: Subscriber>
       CustomStringConvertible
     where Upstream.Output == Downstream.Input
 {
-
     typealias Input = Upstream.Output
     typealias Failure = Upstream.Failure
     typealias Output = Downstream.Input

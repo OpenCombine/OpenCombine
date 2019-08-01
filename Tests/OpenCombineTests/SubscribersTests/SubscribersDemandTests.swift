@@ -19,14 +19,22 @@ import OpenCombine
 final class SubscribersDemandTests: XCTestCase {
 
     static let allTests = [
+        ("testCrashesOnNegativeValue", testCrashesOnNegativeValue),
         ("testAddition", testAddition),
         ("testSubtraction", testSubtraction),
         ("testMultiplication", testMultiplication),
         ("testComparison", testComparison),
         ("testMax", testMax),
         ("testDescription", testDescription),
-        ("testEncodeDecode", testEncodeDecode),
+        ("testEncodeDecodeJSON", testEncodeDecodeJSON),
+        ("testEncodeDecodePlist", testEncodeDecodePlist),
     ]
+
+    func testCrashesOnNegativeValue() {
+        assertCrashes {
+            _ = Subscribers.Demand.max(-1)
+        }
+    }
 
     func testAddition() {
 
@@ -203,35 +211,129 @@ final class SubscribersDemandTests: XCTestCase {
         XCTAssertEqual(Subscribers.Demand.unlimited.description, "unlimited")
     }
 
-    func testEncodeDecode() throws {
+    func testEncodeDecodeJSON() throws {
+        try testEncodeDecode(
+            encoder: JSONEncoder(),
+            decoder: JSONDecoder(),
+            expectedEncodedMax: #"{"value":42}"#,
+            expectedEncodedUnlimited: #"{"value":\#(UInt(Int.max) + 1)}"#,
+            illFormedNegative: #"{"value":-1}"#,
+            illFormedTooBig: #"{"value":\#(UInt(Int.max) + 2)}"#,
+            stringToDecoderInput: { Data($0.utf8) },
+            encoderOutputToString: { String(decoding: $0, as: UTF8.self) }
+        )
+    }
 
-        let jsonMax = #"{"rawValue":42}"#
-        let jsonUnlimited = #"{"rawValue":\#(UInt(Int.max) + 1)}"#
-        let jsonIllFormedNegative = #"{"rawValue":-1}"#
-        let jsonIllFormedTooBig = #"{"rawValue":\#(UInt(Int.max) + 2)}"#
+    func testEncodeDecodePlist() throws {
+        let encoder = PropertyListEncoder()
+        encoder.outputFormat = .xml
+        try testEncodeDecode(
+            encoder: encoder,
+            decoder: PropertyListDecoder(),
+            expectedEncodedMax: """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" \
+            "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+            <plist version="1.0">
+            <dict>
+            \t<key>value</key>
+            \t<integer>42</integer>
+            </dict>
+            </plist>
 
-        let encodedMax = try JSONEncoder().encode(Subscribers.Demand.max(42))
-        XCTAssertEqual(String(decoding: encodedMax, as: UTF8.self), jsonMax)
+            """,
+            expectedEncodedUnlimited: """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" \
+            "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+            <plist version="1.0">
+            <dict>
+            \t<key>value</key>
+            \t<integer>\(UInt(Int.max) + 1)</integer>
+            </dict>
+            </plist>
 
-        let encodedUnlimited = try JSONEncoder().encode(Subscribers.Demand.unlimited)
-        XCTAssertEqual(String(decoding: encodedUnlimited, as: UTF8.self), jsonUnlimited)
+            """,
+            illFormedNegative: """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" \
+            "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+            <plist version="1.0">
+            <dict>
+            \t<key>value</key>
+            \t<integer>-1</integer>
+            </dict>
+            </plist>
 
-        let decodedMax = try JSONDecoder().decode(Subscribers.Demand.self,
-                                                  from: Data(jsonMax.utf8))
+            """,
+            illFormedTooBig: """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" \
+            "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+            <plist version="1.0">
+            <dict>
+            \t<key>value</key>
+            \t<integer>\(UInt(Int.max) + 2)</integer>
+            </dict>
+            </plist>
+
+            """,
+            stringToDecoderInput: { Data($0.utf8) },
+            encoderOutputToString: { String(decoding: $0, as: UTF8.self) }
+        )
+    }
+
+    private func testEncodeDecode<Encoder: TopLevelEncoder, Decoder: TopLevelDecoder>(
+        encoder: Encoder,
+        decoder: Decoder,
+        expectedEncodedMax: String,
+        expectedEncodedUnlimited: String,
+        illFormedNegative: String,
+        illFormedTooBig: String,
+        stringToDecoderInput: (String) -> Decoder.Input,
+        encoderOutputToString: (Encoder.Output) -> String
+    ) throws where Decoder.Input == Encoder.Output {
+
+        let encodedMax = try encoderOutputToString(
+            encoder.encode(DemandKeyedWrapper.max(42))
+        )
+        XCTAssertEqual(encodedMax, expectedEncodedMax)
+
+        let encodedUnlimited = try encoderOutputToString(
+            encoder.encode(DemandKeyedWrapper.unlimited)
+        )
+        XCTAssertEqual(encodedUnlimited, expectedEncodedUnlimited)
+
+        let decodedMax = try decoder
+            .decode(DemandKeyedWrapper.self,
+                    from: stringToDecoderInput(expectedEncodedMax))
         XCTAssertEqual(decodedMax, .max(42))
 
-        let decodedUnlimited = try JSONDecoder().decode(Subscribers.Demand.self,
-                                                        from: Data(jsonUnlimited.utf8))
+        let decodedUnlimited = try decoder
+            .decode(DemandKeyedWrapper.self,
+                    from: stringToDecoderInput(expectedEncodedUnlimited))
         XCTAssertEqual(decodedUnlimited, .unlimited)
 
         XCTAssertThrowsError(
-            try JSONDecoder().decode(Subscribers.Demand.self,
-                                     from: Data(jsonIllFormedNegative.utf8))
+            try decoder.decode(DemandKeyedWrapper.self,
+                               from: stringToDecoderInput(illFormedNegative))
         )
 
-        let decodedIllFormedTooBig = try JSONDecoder()
-            .decode(Subscribers.Demand.self, from: Data(jsonIllFormedTooBig.utf8))
+        let decodedIllFormedTooBig = try decoder
+            .decode(DemandKeyedWrapper.self,
+                    from: stringToDecoderInput(illFormedTooBig))
 
-        XCTAssertEqual(decodedIllFormedTooBig.description, "max(\(UInt(Int.max) + 2))")
+        XCTAssertEqual(decodedIllFormedTooBig.value.description, "unlimited")
+    }
+}
+
+@available(macOS 10.15, iOS 13.0, *)
+private struct DemandKeyedWrapper: Codable, Equatable {
+    let value: Subscribers.Demand
+
+    static let unlimited = DemandKeyedWrapper(value: .unlimited)
+
+    static func max(_ value: Int) -> DemandKeyedWrapper {
+        return DemandKeyedWrapper(value: .max(value))
     }
 }
