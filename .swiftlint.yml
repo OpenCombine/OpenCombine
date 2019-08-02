@@ -83,9 +83,27 @@ custom_rules:
     regex: "^import.*Foundation.*$"
     message: "We don't want to depend on Foundation"
     severity: error
+
   no_dispatch_dependency:
     included: Sources/OpenCombine
     name: "No Dispatch Dependency"
     regex: "^import.*Dispatch.*$"
     message: "We don't want to depend on Dispatch"
     severity: error
+
+  inheritance_colon:
+    name: "Inheritance Colon"
+    regex: '\s[A-Z_]\w*(<[\w\s:\.,]+>)?(?: +:\s*|:(?:\s{0}|\s{2,}))([\[|\(]*\S)'
+    message: "Colons should be next to the identifier of the inheriting type"
+    severity: warning
+    match_kinds:
+      - identifier
+      - typeidentifier
+
+  dictionary_type_colon:
+    name: "Dictionary Type Colon"
+    regex: '\[\w+(?:(?:\s{0}|\s{2,}):| :(?:\s{0}|\s{2,})\w)'
+    message: "Colon should be surrounded by a single whitespace in a dictionary literal"
+    severity: warning
+    match_kinds:
+      - typeidentifier
