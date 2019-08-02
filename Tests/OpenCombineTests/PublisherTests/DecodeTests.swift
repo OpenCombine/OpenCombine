@@ -35,7 +35,7 @@ final class DecodeTests: XCTestCase {
         let data = 78
         let subject = PassthroughSubject<Int, Error>()
         let publisher = subject.decode(type: [String : String].self, decoder: jsonDecoder)
-        let subscriber = TrackingSubscriberBase<[String: String], Error>(
+        let subscriber = TrackingSubscriberBase<[String : String], Error>(
             receiveSubscription: { $0.request(.unlimited) }
         )
         jsonDecoder.handleDecode = { decodeData in
@@ -58,7 +58,7 @@ final class DecodeTests: XCTestCase {
         let failData = 95
         let subject = PassthroughSubject<Int, Error>()
         let publisher = subject.decode(type: [String : String].self, decoder: jsonDecoder)
-        let subscriber =  TrackingSubscriberBase<[String: String], Error>(
+        let subscriber =  TrackingSubscriberBase<[String : String], Error>(
             receiveSubscription: { $0.request(.unlimited) }
         )
 
