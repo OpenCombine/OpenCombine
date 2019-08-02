@@ -50,7 +50,7 @@ class OperatorTestHelper<SourceValue: Equatable,
     ///   of the `publisherType` as an input to the closure and creates an
     ///   instance of the operator that you are trying to test.
     init(publisherType: SourcePublisher.Type,
-         initialDemand: Subscribers.Demand,
+         initialDemand: Subscribers.Demand?,
          receiveValueDemand: Subscribers.Demand,
          customSubscription: CustomSubscription = CustomSubscription(),
          createSut: (SourcePublisher) -> Sut)
@@ -61,7 +61,7 @@ class OperatorTestHelper<SourceValue: Equatable,
         self.sut = createSut(createdPublisher)
         self.tracking = TrackingSubscriberBase<Value, Failure>(
             receiveSubscription: {
-                $0.request(initialDemand)
+                initialDemand.map($0.request)
             },
             receiveValue: { _ in receiveValueDemand }
         )

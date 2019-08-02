@@ -1,23 +1,60 @@
 //
-//  File.swift
+//  Publishers.First.swift
 //  
 //
 //  Created by Joseph Spadafora on 7/8/19.
 //
 
-import Foundation
+extension Publisher {
+
+    /// Publishes the first element of a stream, then finishes.
+    ///
+    /// If this publisher doesn’t receive any elements, it finishes without publishing.
+    /// - Returns: A publisher that only publishes the first element of a stream.
+    public func first() -> Publishers.First<Self> {
+        return .init(upstream: self)
+    }
+
+    /// Publishes the first element of a stream to
+    /// satisfy a predicate closure, then finishes.
+    ///
+    /// The publisher ignores all elements after the first.
+    /// If this publisher doesn’t receive any elements,
+    /// it finishes without publishing.
+    /// - Parameter predicate: A closure that takes an element as a parameter and
+    ///   returns a Boolean value that indicates whether to publish the element.
+    /// - Returns: A publisher that only publishes the first element of a stream
+    ///   that satifies the predicate.
+    public func first(
+        where predicate: @escaping (Output) -> Bool
+    ) -> Publishers.FirstWhere<Self> {
+        return .init(upstream: self, predicate: predicate)
+    }
+
+    /// Publishes the first element of a stream to satisfy a
+    /// throwing predicate closure, then finishes.
+    ///
+    /// The publisher ignores all elements after the first. If this publisher
+    /// doesn’t receive any elements, it finishes without publishing. If the
+    /// predicate closure throws, the publisher fails with an error.
+    /// - Parameter predicate: A closure that takes an element as a parameter and
+    ///   returns a Boolean value that indicates whether to publish the element.
+    /// - Returns: A publisher that only publishes the first element of a stream
+    ///   that satifies the predicate.
+    public func tryFirst(
+        where predicate: @escaping (Output) throws -> Bool
+    ) -> Publishers.TryFirstWhere<Self> {
+        return .init(upstream: self, predicate: predicate)
+    }
+}
 
 extension Publishers {
 
     /// A publisher that publishes the first element of a stream, then finishes.
-    public struct First<Upstream: Publisher>:Publisher {
+    public struct First<Upstream: Publisher>: Publisher {
 
-        /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
 
-        /// The kind of errors this publisher might publish.
-        ///
-        /// Use `Never` if this `Publisher` does not publish errors.
         public typealias Failure = Upstream.Failure
 
         /// The publisher from which this publisher receives elements.
@@ -27,19 +64,12 @@ extension Publishers {
             self.upstream = upstream
         }
 
-        /// This function is called to attach the specified `Subscriber`
-        /// to this `Publisher` by `subscribe(_:)`
-        ///
-        /// - SeeAlso: `subscribe(_:)`
-        /// - Parameters:
-        /// - subscriber: The subscriber to attach to this `Publisher`.
-        ///   once attached it can begin to receive values.
-        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-            where Failure == SubscriberType.Failure,
-                  Output == SubscriberType.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where Failure == Downstream.Failure,
+                  Output == Downstream.Input
         {
-            let firstSubscriber = _First<Upstream, SubscriberType>(downstream: subscriber)
-            upstream.receive(subscriber: firstSubscriber)
+            let inner = Inner(downstream: subscriber, predicate: { _ in .success(true) })
+            upstream.receive(subscriber: inner)
         }
     }
 
@@ -47,12 +77,8 @@ extension Publishers {
     /// stream to satisfy a predicate closure.
     public struct FirstWhere<Upstream: Publisher>: Publisher {
 
-        /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
 
-        /// The kind of errors this publisher might publish.
-        ///
-        /// Use `Never` if this `Publisher` does not publish errors.
         public typealias Failure = Upstream.Failure
 
         /// The publisher from which this publisher receives elements.
@@ -66,22 +92,12 @@ extension Publishers {
             self.predicate = predicate
         }
 
-        /// This function is called to attach the specified `Subscriber`
-        /// to this `Publisher` by `subscribe(_:)`
-        ///
-        /// - SeeAlso: `subscribe(_:)`
-        /// - Parameters:
-        ///     - subscriber: The subscriber to attach to this `Publisher`.
-        ///                   once attached it can begin to receive values.
-        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-            where Failure == SubscriberType.Failure,
-                  Output == SubscriberType.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where Failure == Downstream.Failure,
+                  Output == Downstream.Input
         {
-            let firstWhereSubscriber = _FirstWhere<Upstream, SubscriberType>(
-                downstream: subscriber,
-                isIncluded: predicate
-            )
-            upstream.receive(subscriber: firstWhereSubscriber)
+            let inner = Inner(downstream: subscriber, predicate: catching(predicate))
+            upstream.receive(subscriber: inner)
         }
     }
 
@@ -89,12 +105,8 @@ extension Publishers {
     /// to satisfy a throwing predicate closure.
     public struct TryFirstWhere<Upstream: Publisher>: Publisher {
 
-        /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
 
-        /// The kind of errors this publisher might publish.
-        ///
-        /// Use `Never` if this `Publisher` does not publish errors.
         public typealias Failure = Error
 
         /// The publisher from which this publisher receives elements.
@@ -108,181 +120,174 @@ extension Publishers {
             self.predicate = predicate
         }
 
-        /// This function is called to attach the specified `Subscriber`
-        /// to this `Publisher` by `subscribe(_:)`
-        ///
-        /// - SeeAlso: `subscribe(_:)`
-        /// - Parameters:
-        ///     - subscriber: The subscriber to attach to this `Publisher`.
-        ///                   once attached it can begin to receive values.
-        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-            where Failure == SubscriberType.Failure,
-                  Output == SubscriberType.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where Failure == Downstream.Failure,
+                  Output == Downstream.Input
         {
-            let tryFirstWhere = _TryFirstWhere<Upstream, SubscriberType>(
-                downstream: subscriber,
-                isIncluded: predicate
-            )
-            upstream.receive(subscriber: tryFirstWhere)
+            let inner = Inner(downstream: subscriber, predicate: catching(predicate))
+            upstream.receive(subscriber: inner)
         }
     }
 }
 
-// MARK: - Inner Classes
-private class _First<Upstream: Publisher, Downstream: Subscriber>
-    : _FirstWhereBase<Upstream, Downstream>,
-      CustomStringConvertible
-    where Upstream.Output == Downstream.Input,
-          Upstream.Failure == Downstream.Failure
-{
-    var description: String { return "First" }
-
-    init(downstream: Downstream) {
-        super.init(downstream: downstream,
-                   predicate: { _ in .success(true) },
-                   errorConversion: { $0 }
-        )
-    }
-}
-
 private class _FirstWhere<Upstream: Publisher, Downstream: Subscriber>
-    : _FirstWhereBase<Upstream, Downstream>,
-      CustomStringConvertible
-    where Upstream.Output == Downstream.Input,
-          Upstream.Failure == Downstream.Failure
-{
-    var description: String { return "TryFirst" }
-
-    init(downstream: Downstream, isIncluded: @escaping (Upstream.Output) -> Bool) {
-        super.init(downstream: downstream,
-                   predicate: { .success(isIncluded($0)) },
-                   errorConversion: { $0 })
-    }
-}
-
-private class _TryFirstWhere<Upstream: Publisher, Downstream: Subscriber>
-    : _FirstWhereBase<Upstream, Downstream>,
-      CustomStringConvertible
-    where Upstream.Output == Downstream.Input,
-          Downstream.Failure == Error
-{
-    typealias Input = Upstream.Output
-    typealias Output = Input
-
-    var description: String { return "TryFirstWhere" }
-
-    init(downstream: Downstream, isIncluded: @escaping (Input) throws -> Bool) {
-        super.init(downstream: downstream,
-                   predicate: { input in Result { try isIncluded(input) } },
-                   errorConversion: { $0 as Error }
-        )
-    }
-}
-
-private class _FirstWhereBase<Upstream: Publisher, Downstream: Subscriber>
     : OperatorSubscription<Downstream>,
-      Subscription,
-      Subscriber
+      Subscription
     where Downstream.Input == Upstream.Output
 {
-
     typealias Input = Upstream.Output
     typealias Failure = Upstream.Failure
     typealias Predicate = (Input) -> Result<Bool, Downstream.Failure>
 
-    var predicate: Predicate
-    var isActive = true
-    var first: Input?
+    //                         ┌──────────────────┐
+    //                 ┌──────▶│ .pending(input)  │───────────┐
+    //                 │       └──────────────────┘           │
+    //   receive(input)│                                      │request(demand)
+    //                 │                                      │
+    //                 │                                      │
+    //                 │                                      ▼
+    //       ┌──────────────────┐                     ┌──────────────┐
+    //  ●───▶│.waitingForDemand │                     │  .finished   │
+    //       └──────────────────┘                     └──────────────┘
+    //                 │                                      ▲
+    //                 │                                      │
+    //                 │                                      │
+    //  request(demand)│                                      │receive(input)
+    //                 │    ┌──────────────────────────┐      │
+    //                 └───▶│ .downstreamHasRequested  │──────┘
+    //                      └──────────────────────────┘
+    enum State {
+        case waitingForDemand
+        case pending(Input)
+        case downstreamHasRequested
+        case finished
+    }
 
-    let _errorConversion: (Upstream.Failure) -> Downstream.Failure
+    var predicate: Predicate?
+    private var _state: State = .waitingForDemand
 
-    init(downstream: Downstream,
-         predicate: @escaping Predicate,
-         errorConversion: @escaping (Upstream.Failure) -> Downstream.Failure) {
+    var isCompleted: Bool {
+        return predicate == nil
+    }
+
+    init(downstream: Downstream, predicate: @escaping Predicate) {
         self.predicate = predicate
-        self._errorConversion = errorConversion
         super.init(downstream: downstream)
     }
 
     func receive(subscription: Subscription) {
         upstreamSubscription = subscription
+        subscription.request(.unlimited)
         downstream.receive(subscription: self)
     }
 
     func receive(_ input: Input) -> Subscribers.Demand {
-        guard isActive else { return .none }
-        switch predicate(input) {
-        case .success(let isMatch):
-            if isMatch {
-                _ = downstream.receive(input)
-                downstream.receive(completion: .finished)
-                isActive = false
+        switch _state {
+        case .pending, .finished:
+            break
+        case .downstreamHasRequested:
+            _ifSatisfiesPredicate(input) {
+                _state = .finished
+                _sendDownstream(input)
             }
-        case .failure(let error):
-            downstream.receive(completion: .failure(error))
-            cancel()
+        case .waitingForDemand:
+            _ifSatisfiesPredicate(input) {
+                _state = .pending(input)
+            }
         }
         return .none
     }
 
-    func receive(completion: Subscribers.Completion<Failure>) {
-        guard isActive else { return }
-        switch completion {
-        case .failure(let upstreamError):
-            let converted = _errorConversion(upstreamError)
-            downstream.receive(completion: .failure(converted))
-        case .finished:
-            downstream.receive(completion: .finished)
+    private func _ifSatisfiesPredicate(_ input: Input, _ onSuccess: () -> Void) {
+        guard let predicate = self.predicate else { return }
+        switch predicate(input) {
+        case .success(true):
+            onSuccess()
+        case .success(false):
+            return
+        case .failure(let error):
+            cancel()
+            downstream.receive(completion: .failure(error))
+            return
         }
-        isActive = false
+    }
+
+    private func _sendDownstream(_ input: Input) {
+        _ = downstream.receive(input)
+        cancel()
+        downstream.receive(completion: .finished)
     }
 
     func request(_ demand: Subscribers.Demand) {
-        upstreamSubscription?.request(.unlimited)
+        precondition(demand > 0, "demand must not be zero")
+        switch _state {
+        case .waitingForDemand:
+            _state = .downstreamHasRequested
+        case .pending(let input):
+            _state = .finished
+            _sendDownstream(input)
+        case .finished, .downstreamHasRequested:
+            break
+        }
+    }
+
+    override func cancel() {
+        predicate = nil
+        upstreamSubscription?.cancel()
+        upstreamSubscription = nil
     }
 }
 
-// MARK: - Publisher extensions
-extension Publisher {
-
-    /// Publishes the first element of a stream, then finishes.
-    ///
-    /// If this publisher doesn’t receive any elements, it finishes without publishing.
-    /// - Returns: A publisher that only publishes the first element of a stream.
-    public func first() -> Publishers.First<Self> {
-        return Publishers.First(upstream: self)
-    }
-
-    /// Publishes the first element of a stream to
-    /// satisfy a predicate closure, then finishes.
-    ///
-    /// The publisher ignores all elements after the first.
-    /// If this publisher doesn’t receive any elements,
-    /// it finishes without publishing.
-    /// - Parameter predicate: A closure that takes an element as a parameter and
-    /// returns a Boolean value that indicates whether to publish the element.
-    /// - Returns: A publisher that only publishes the first element of a stream
-    /// that satifies the predicate.
-    public func first(where predicate: @escaping (Output) -> Bool)
-        -> Publishers.FirstWhere<Self>
+extension Publishers.First {
+    private final class Inner<Downstream: Subscriber>
+        : _FirstWhere<Upstream, Downstream>,
+          Subscriber,
+          CustomStringConvertible
+        where Upstream.Output == Downstream.Input,
+              Upstream.Failure == Downstream.Failure
     {
-        return Publishers.FirstWhere(upstream: self, predicate: predicate)
-    }
+        var description: String { return "First" }
 
-    /// Publishes the first element of a stream to satisfy a
-    /// throwing predicate closure, then finishes.
-    ///
-    /// The publisher ignores all elements after the first. If this publisher
-    /// doesn’t receive any elements, it finishes without publishing. If the
-    /// predicate closure throws, the publisher fails with an error.
-    /// - Parameter predicate: A closure that takes an element as a parameter and
-    /// returns a Boolean value that indicates whether to publish the element.
-    /// - Returns: A publisher that only publishes the first element of a stream
-    /// that satifies the predicate.
-    public func tryFirst(
-        where predicate: @escaping (Output) throws -> Bool
-    ) -> Publishers.TryFirstWhere<Self>
+        func receive(completion: Subscribers.Completion<Failure>) {
+            guard !isCompleted else { return }
+            predicate = nil
+            downstream.receive(completion: completion)
+        }
+    }
+}
+
+extension Publishers.FirstWhere {
+    private final class Inner<Downstream: Subscriber>
+        : _FirstWhere<Upstream, Downstream>,
+          Subscriber,
+          CustomStringConvertible
+        where Upstream.Output == Downstream.Input,
+              Upstream.Failure == Downstream.Failure
     {
-        return Publishers.TryFirstWhere(upstream: self, predicate: predicate)
+        var description: String { return "TryFirst" }
+
+        func receive(completion: Subscribers.Completion<Failure>) {
+            guard !isCompleted else { return }
+            predicate = nil
+            downstream.receive(completion: completion)
+        }
+    }
+}
+
+extension Publishers.TryFirstWhere {
+    private final class Inner<Downstream: Subscriber>
+        : _FirstWhere<Upstream, Downstream>,
+          Subscriber,
+          CustomStringConvertible
+        where Upstream.Output == Downstream.Input,
+              Downstream.Failure == Error
+    {
+        var description: String { return "TryFirstWhere" }
+
+        func receive(completion: Subscribers.Completion<Failure>) {
+            guard !isCompleted else { return }
+            predicate = nil
+            downstream.receive(completion: completion.eraseError())
+        }
     }
 }
