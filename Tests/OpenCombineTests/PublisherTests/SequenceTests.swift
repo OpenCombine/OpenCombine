@@ -13,7 +13,7 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 final class SequenceTests: XCTestCase {
 
     static let allTests = [
@@ -28,16 +28,12 @@ final class SequenceTests: XCTestCase {
         ("testCollectOperatorSpecialization", testCollectOperatorSpecialization),
         ("testCompactMapOperatorSpecialization", testCompactMapOperatorSpecialization),
         ("testMinOperatorSpecialization", testMinOperatorSpecialization),
-        ("tesTryMinOperatorSpecialization", testTryMinOperatorSpecialization),
         ("testMaxOperatorSpecialization", testMaxOperatorSpecialization),
-        ("tesTryMaxOperatorSpecialization", testTryMaxOperatorSpecialization),
         ("testContainsOperatorSpecialization", testContainsOperatorSpecialization),
         ("testTryContainsOperatorSpecialization", testTryContainsOperatorSpecialization),
         ("testDropWhileOperatorSpecialization", testDropWhileOperatorSpecialization),
         ("testDropFirstOperatorSpecialization", testDropFirstOperatorSpecialization),
         ("testFirstWhereOperatorSpecializtion", testFirstWhereOperatorSpecializtion),
-        ("testTryFirstWhereOperatorSpecializtion",
-         testTryFirstWhereOperatorSpecializtion),
         ("testFilterOperatorSpecialization", testFilterOperatorSpecialization),
         ("testIgnoreOutputOperatorSpecialization",
          testIgnoreOutputOperatorSpecialization),
@@ -60,7 +56,6 @@ final class SequenceTests: XCTestCase {
          testOutputInRangeOperatorSpecialization),
         ("testLastOperatorSpecialization", testLastOperatorSpecialization),
         ("testLastWhereOperatorSpecializtion", testLastWhereOperatorSpecializtion),
-        ("testTryLastWhereOperatorSpecializtion", testTryLastWhereOperatorSpecializtion),
         ("testPrependVariadicOperatorSpezialization",
          testPrependVariadicOperatorSpezialization),
         ("testPrependSequenceOperatorSpecialization",
@@ -73,7 +68,16 @@ final class SequenceTests: XCTestCase {
          testAppendSequenceOperatorSpecialization),
         ("testAppendPublisherOperatorSpecialization",
          testAppendPublisherOperatorSpecialization),
+        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
     ]
+
+#if OPENCOMBINE_COMPATIBILITY_TEST || !canImport(Combine)
+    private typealias ResultPublisher<Output, Failure: Error> =
+        Result<Output, Failure>.Publisher
+#else
+    private typealias ResultPublisher<Output, Failure: Error> =
+        Result<Output, Failure>.OCombine.Publisher
+#endif
 
     func testEmptySequence() {
 
@@ -299,32 +303,10 @@ final class SequenceTests: XCTestCase {
         XCTAssertEqual(makePublisher([3, 4, 5, -1, 2]).min(by: >), .init(5))
     }
 
-    func testTryMinOperatorSpecialization() {
-        XCTAssertEqual(try makePublisher([3, 4, 5, -1, 2]).tryMin(by: <).result.get(), -1)
-        XCTAssertEqual(try makePublisher([3, 4, 5, -1, 2]).tryMin(by: >).result.get(), 5)
-        XCTAssertNil(
-            try makePublisher(EmptyCollection<Int>()).tryMin(by: throwing).result.get()
-        )
-        XCTAssertEqual(try makePublisher([10]).tryMin(by: throwing).result.get(), 10)
-        assertThrowsError(try makePublisher([10, 20]).tryMin(by: throwing).result.get(),
-                          .oops)
-    }
-
     func testMaxOperatorSpecialization() {
         XCTAssertEqual(makePublisher(EmptyCollection<Int>()).max(), .init(nil))
         XCTAssertEqual(makePublisher([3, 4, 5, -1, 2]).max(), .init(5))
         XCTAssertEqual(makePublisher([3, 4, 5, -1, 2]).max(by: >), .init(-1))
-    }
-
-    func testTryMaxOperatorSpecialization() {
-        XCTAssertEqual(try makePublisher([3, 4, 5, -1, 2]).tryMax(by: <).result.get(), 5)
-        XCTAssertEqual(try makePublisher([3, 4, 5, -1, 2]).tryMax(by: >).result.get(), -1)
-        XCTAssertNil(
-            try makePublisher(EmptyCollection<Int>()).tryMax(by: throwing).result.get()
-        )
-        XCTAssertEqual(try makePublisher([10]).tryMax(by: throwing).result.get(), 10)
-        assertThrowsError(try makePublisher([10, 20]).tryMax(by: throwing).result.get(),
-                          .oops)
     }
 
     func testContainsOperatorSpecialization() {
@@ -372,28 +354,6 @@ final class SequenceTests: XCTestCase {
         XCTAssertEqual(
             makePublisher(EmptyCollection<Int>()).first { $0.isMultiple(of: 13) },
             .init(nil)
-        )
-    }
-
-    func testTryFirstWhereOperatorSpecializtion() {
-        XCTAssertEqual(
-            try makePublisher(1 ..< 9).tryFirst { $0.isMultiple(of: 4) }.result.get(),
-            4
-        )
-        XCTAssertNil(
-            try makePublisher(1 ..< 9).tryFirst { $0.isMultiple(of: 13) }.result.get()
-        )
-        XCTAssertNil(
-            try makePublisher(EmptyCollection<Int>())
-                .tryFirst { $0.isMultiple(of: 13) }.result.get()
-        )
-        XCTAssertNil(
-            try makePublisher(EmptyCollection<Int>())
-                .tryFirst(where: throwing).result.get()
-        )
-        assertThrowsError(
-            try makePublisher(0 ..< 9).tryFirst(where: throwing).result.get(),
-            .oops
         )
     }
 
@@ -484,10 +444,21 @@ final class SequenceTests: XCTestCase {
     }
 
     func testCountOperatorSpecialization() {
-        XCTAssertEqual(makePublisher(0 ..< .max).count(), Publishers.Once(.max))
-        XCTAssertEqual(makePublisher(EmptyCollection<Int>()).count(), Publishers.Once(0))
-        XCTAssertEqual(makePublisher([1, 1, 1, 1, 1, 1]).count(), Publishers.Optional(6))
-        XCTAssertEqual(makePublisher([]).count(), Publishers.Optional(0))
+        XCTAssertEqual(makePublisher(0 ..< .max).count(), Just(.max))
+        XCTAssertEqual(makePublisher(EmptyCollection<Int>()).count(), Just(0))
+        XCTAssertEqual(makePublisher([1, 1, 1, 1, 1, 1]).count(), Just(6))
+        XCTAssertEqual(
+            makePublisher([1, 1, 1, 1, 1, 1])
+                .setFailureType(to: TestingError.self)
+                .count(),
+            ResultPublisher(.success(6))
+        )
+        XCTAssertEqual(
+            makePublisher([1, 2, 3, 4, 5, 6].lazy.filter { $0.isMultiple(of: 2) })
+                .count(),
+            ResultPublisher(.success(3))
+        )
+        XCTAssertEqual(makePublisher([]).count(), Just(0))
     }
 
     func testOutputAtIndexOperatorSpecialization() {
@@ -552,28 +523,6 @@ final class SequenceTests: XCTestCase {
         XCTAssertEqual(
             makePublisher(EmptyCollection<Int>()).last { $0.isMultiple(of: 13) },
             .init(nil)
-        )
-    }
-
-    func testTryLastWhereOperatorSpecializtion() {
-        XCTAssertEqual(
-            try makePublisher(1 ..< 9).tryLast { $0.isMultiple(of: 4) }.result.get(),
-            8
-        )
-        XCTAssertNil(
-            try makePublisher(1 ..< 9).tryLast { $0.isMultiple(of: 13) }.result.get()
-        )
-        XCTAssertNil(
-            try makePublisher(EmptyCollection<Int>())
-                .tryLast { $0.isMultiple(of: 13) }.result.get()
-        )
-        XCTAssertNil(
-            try makePublisher(EmptyCollection<Int>())
-                .tryLast(where: throwing).result.get()
-        )
-        assertThrowsError(
-            try makePublisher(0 ..< 9).tryLast(where: throwing).result.get(),
-            .oops
         )
     }
 
@@ -714,6 +663,19 @@ final class SequenceTests: XCTestCase {
         XCTAssertEqual(newCollection.history, [.initFromSequence,
                                                .appendSequence])
     }
+
+    // MARK: -
+    func testTestSuiteIncludesAllTests() {
+        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
+#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+        let thisClass = type(of: self)
+        let allTestsCount = thisClass.allTests.count
+        let darwinCount = thisClass.defaultTestSuite.testCaseCount
+        XCTAssertEqual(allTestsCount,
+                       darwinCount,
+                       "\(darwinCount - allTestsCount) tests are missing from allTests")
+#endif
+    }
 }
 
 private final class Counter: Sequence, IteratorProtocol, CustomStringConvertible {
@@ -747,30 +709,30 @@ private final class Counter: Sequence, IteratorProtocol, CustomStringConvertible
 /// If both Foundation and OpenCombine are imported, Apple's Combine
 /// extensions leak through Foundation, which results in the following error:
 ///
-///     let publisher = [1, 2, 3, 4].publisher()
+///     let publisher = [1, 2, 3, 4].publisher
 ///                     ^
-///                     error: ambiguous use of 'publisher()'
+///                     error: ambiguous use of 'publisher'
 ///
 /// This could be fixed by explicitly specifying a type:
 ///
-///     let publisher: OpenCombine.Publishers.Sequence = [1, 2, 3, 4].publisher()
+///     let publisher: OpenCombine.Publishers.Sequence = [1, 2, 3, 4].publisher
 ///
 /// But this won't compile when testing compatibility, since compatibility tests
 /// don't import OpenCombine. This could be fixed as well like this:
 ///
 ///     #if OPENCOMBINE_COMPATIBILITY_TEST
-///     let publisher: Combine.Publishers.Sequence = [1, 2, 3, 4].publisher()
+///     let publisher: Combine.Publishers.Sequence = [1, 2, 3, 4].publisher
 ///     #else
-///     let publisher: OpenCombine.Publishers.Sequence = [1, 2, 3, 4].publisher()
+///     let publisher: OpenCombine.Publishers.Sequence = [1, 2, 3, 4].publisher
 ///     #endif
 ///
 /// But this is too verbose. This function provides a more concise way:
 ///
 ///     let publisher = makePublisher([1, 2, 3, 4])
 ///
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 private func makePublisher<Elements: Sequence>(
     _ elements: Elements
 ) -> Publishers.Sequence<Elements, Never> {
-    return elements.publisher()
+    return elements.publisher
 }

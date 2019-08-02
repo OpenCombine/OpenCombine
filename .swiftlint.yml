@@ -72,12 +72,20 @@ line_length:
 generic_type_name:
   min_length: 3
 
-file_types_order:
-  order:
-    - main_type
-    - extension
-    - supporting_type
-
 attributes:
   always_on_line_above:
     - "@usableFromInline"
+
+custom_rules:
+  no_foundation_dependency:
+    included: Sources/OpenCombine
+    name: "No Foundation Dependency"
+    regex: "^import.*Foundation.*$"
+    message: "We don't want to depend on Foundation"
+    severity: error
+  no_dispatch_dependency:
+    included: Sources/OpenCombine
+    name: "No Dispatch Dependency"
+    regex: "^import.*Dispatch.*$"
+    message: "We don't want to depend on Dispatch"
+    severity: error

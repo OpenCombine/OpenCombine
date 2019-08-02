@@ -13,7 +13,7 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 final class AssignTests: XCTestCase {
 
     static let allTests = [
@@ -22,6 +22,7 @@ final class AssignTests: XCTestCase {
         ("testSubscription", testSubscription),
         ("testReceiveValue", testReceiveValue),
         ("testPublisherOperator", testPublisherOperator),
+        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
     ]
 
     private typealias Sut<Root> = Subscribers.Assign<Root, Int>
@@ -70,19 +71,19 @@ final class AssignTests: XCTestCase {
         let subscription1 = CustomSubscription()
         assign.receive(subscription: subscription1)
         XCTAssertEqual(subscription1.lastRequested, .unlimited)
-        XCTAssertFalse(subscription1.canceled)
+        XCTAssertFalse(subscription1.cancelled)
 
         let subscription2 = CustomSubscription()
         assign.receive(subscription: subscription2)
-        XCTAssertFalse(subscription1.canceled)
-        XCTAssertTrue(subscription2.canceled)
+        XCTAssertFalse(subscription1.cancelled)
+        XCTAssertTrue(subscription2.cancelled)
 
         assign.receive(subscription: subscription1)
-        XCTAssertTrue(subscription1.canceled)
+        XCTAssertTrue(subscription1.cancelled)
 
-        subscription1.canceled = false
+        subscription1.cancelled = false
         assign.receive(completion: .finished)
-        XCTAssertTrue(subscription1.canceled)
+        XCTAssertTrue(subscription1.cancelled)
     }
 
     func testReceiveValue() {
@@ -128,5 +129,18 @@ final class AssignTests: XCTestCase {
 
         publisher.send(100)
         XCTAssertEqual(object.value, 42)
+    }
+
+    // MARK: -
+    func testTestSuiteIncludesAllTests() {
+        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
+#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+        let thisClass = type(of: self)
+        let allTestsCount = thisClass.allTests.count
+        let darwinCount = thisClass.defaultTestSuite.testCaseCount
+        XCTAssertEqual(allTestsCount,
+                       darwinCount,
+                       "\(darwinCount - allTestsCount) tests are missing from allTests")
+#endif
     }
 }

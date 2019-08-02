@@ -11,8 +11,6 @@
 /// is also useful when replacing a value with `Catch`.
 ///
 /// In contrast with `Publishers.Once`, a `Just` publisher cannot fail with an error.
-/// In contrast with `Publishers.Optional`, a `Just` publisher always produces
-/// a value.
 public struct Just<Output>: Publisher {
 
     public typealias Failure = Never
@@ -66,8 +64,8 @@ extension Just {
 
     public func tryAllSatisfy(
         _ predicate: (Output) throws -> Bool
-    ) -> Publishers.Once<Bool, Error> {
-        return Publishers.Once(Result { try predicate(output) })
+    ) -> Result<Bool, Error>.OCombine.Publisher {
+        return .init(Result { try predicate(output) })
     }
 
     public func contains(where predicate: (Output) -> Bool) -> Just<Bool> {
@@ -76,8 +74,8 @@ extension Just {
 
     public func tryContains(
         where predicate: (Output) throws -> Bool
-    ) -> Publishers.Once<Bool, Error> {
-        return Publishers.Once(Result { try predicate(output) })
+    ) -> Result<Bool, Error>.OCombine.Publisher {
+        return .init(Result { try predicate(output) })
     }
 
     public func collect() -> Just<[Output]> {
@@ -90,45 +88,25 @@ extension Just {
         return self
     }
 
-    public func tryMin(
-        by areInIncreasingOrder: (Output, Output) throws -> Bool
-    ) -> Publishers.Optional<Bool, Error> {
-        return Publishers.Optional(Result { try areInIncreasingOrder(output, output) })
-    }
-
     public func max(
         by areInIncreasingOrder: (Output, Output) -> Bool
     ) -> Just<Output> {
         return self
     }
 
-    public func tryMax(
-        by areInIncreasingOrder: (Output, Output) throws -> Bool
-    ) -> Publishers.Optional<Bool, Error> {
-        return Publishers.Optional(Result { try areInIncreasingOrder(output, output) })
-    }
-
     public func count() -> Just<Int> {
         return .init(1)
     }
 
-    public func dropFirst(
-        _ count: Int = 1
-    ) -> Publishers.Optional<Output, Never> {
+    public func dropFirst(_ count: Int = 1) -> Optional<Output>.OCombine.Publisher {
         precondition(count >= 0, "count must not be negative")
-        return Publishers.Optional(count > 0 ? nil : output)
+        return .init(count > 0 ? nil : self.output)
     }
 
     public func drop(
         while predicate: (Output) -> Bool
-    ) -> Publishers.Optional<Output, Never> {
-        return Publishers.Optional(predicate(output) ? nil : output)
-    }
-
-    public func tryDrop(
-        while predicate: (Output) throws -> Bool
-    ) -> Publishers.Optional<Output, Error> {
-        return Publishers.Optional(Result { try predicate(output) ? nil : output })
+    ) -> Optional<Output>.OCombine.Publisher {
+        return .init(predicate(output) ? nil : output)
     }
 
     public func first() -> Just<Output> {
@@ -137,14 +115,8 @@ extension Just {
 
     public func first(
         where predicate: (Output) -> Bool
-    ) -> Publishers.Optional<Output, Never> {
-        return Publishers.Optional(predicate(output) ? output : nil)
-    }
-
-    public func tryFirst(
-        where predicate: (Output) throws -> Bool
-    ) -> Publishers.Optional<Output, Error> {
-        return Publishers.Optional(Result { try predicate(output) ? output : nil })
+    ) -> Optional<Output>.OCombine.Publisher {
+        return .init(predicate(output) ? output : nil)
     }
 
     public func last() -> Just<Output> {
@@ -153,18 +125,12 @@ extension Just {
 
     public func last(
         where predicate: (Output) -> Bool
-    ) -> Publishers.Optional<Output, Never> {
-        return Publishers.Optional(predicate(output) ? output : nil)
+    ) -> Optional<Output>.OCombine.Publisher {
+        return .init(predicate(output) ? output : nil)
     }
 
-    public func tryLast(
-        where predicate: (Output) throws -> Bool
-    ) -> Publishers.Optional<Output, Error> {
-        return Publishers.Optional(Result { try predicate(output) ? output : nil })
-    }
-
-    public func ignoreOutput() -> Publishers.Empty<Output, Never> {
-        return Publishers.Empty()
+    public func ignoreOutput() -> Empty<Output, Never> {
+        return .init()
     }
 
     public func map<ElementOfResult>(
@@ -175,79 +141,61 @@ extension Just {
 
     public func tryMap<ElementOfResult>(
         _ transform: (Output) throws -> ElementOfResult
-    ) -> Publishers.Once<ElementOfResult, Error> {
-        return Publishers.Once(Result { try transform(output) })
+    ) -> Result<ElementOfResult, Error>.OCombine.Publisher {
+        return .init(Result { try transform(output) })
     }
 
     public func compactMap<ElementOfResult>(
         _ transform: (Output) -> ElementOfResult?
-    ) -> Publishers.Optional<ElementOfResult, Never> {
-        return Publishers.Optional(transform(output))
-    }
-
-    public func tryCompactMap<ElementOfResult>(
-        _ transform: (Output) throws -> ElementOfResult?
-    ) -> Publishers.Optional<ElementOfResult, Error> {
-        return Publishers.Optional(Result { try transform(output) })
+    ) -> Optional<ElementOfResult>.OCombine.Publisher {
+        return .init(transform(output))
     }
 
     public func filter(
         _ isIncluded: (Output) -> Bool
-    ) -> Publishers.Optional<Output, Never> {
-        return Publishers.Optional(isIncluded(output) ? output : nil)
+    ) -> Optional<Output>.OCombine.Publisher {
+        return .init(isIncluded(output) ? output : nil)
     }
 
-    public func tryFilter(
-        _ isIncluded: (Output) throws -> Bool
-    ) -> Publishers.Optional<Output, Error> {
-        return Publishers.Optional(Result { try isIncluded(output) ? output : nil })
-    }
-
-    public func output(at index: Int) -> Publishers.Optional<Output, Never> {
+    public func output(at index: Int) -> Optional<Output>.OCombine.Publisher {
         precondition(index >= 0, "index must not be negative")
-        return Publishers.Optional(index == 0 ? output : nil)
+        return .init(index == 0 ? output : nil)
     }
 
-    public func output<RangeExpr: RangeExpression>(
-        in range: RangeExpr
-    ) -> Publishers.Optional<Output, Never> where RangeExpr.Bound == Int {
+    public func output<RangeExpression: Swift.RangeExpression>(
+        in range: RangeExpression
+    ) -> Optional<Output>.OCombine.Publisher where RangeExpression.Bound == Int {
         // TODO: Broken in Apple's Combine? (FB6169621)
         // Empty range should result in a nil
         let range = range.relative(to: 0..<Int.max)
-        return Publishers.Optional(range.lowerBound == 0 ? output : nil)
+        return .init(range.lowerBound == 0 ? output : nil)
         // The above implementation is used for compatibility.
         //
         // It actually probably should be just this:
-        // return Publishers.Optional(range.contains(0) ? output : nil)
+        // return .init(range.contains(0) ? output : nil)
     }
 
-    public func prefix(_ maxLength: Int) -> Publishers.Optional<Output, Never> {
+    public func prefix(_ maxLength: Int) -> Optional<Output>.OCombine.Publisher {
         precondition(maxLength >= 0, "maxLength must not be negative")
-        return Publishers.Optional(maxLength > 0 ? output : nil)
+        return .init(maxLength > 0 ? output : nil)
     }
 
     public func prefix(
         while predicate: (Output) -> Bool
-    ) -> Publishers.Optional<Output, Never> {
-        return Publishers.Optional(predicate(output) ? output : nil)
-    }
-
-    public func tryPrefix(
-        while predicate: (Output) throws -> Bool
-    ) -> Publishers.Optional<Output, Error> {
-        return Publishers.Optional(Result { try predicate(output) ? output : nil })
+    ) -> Optional<Output>.OCombine.Publisher {
+        return .init(predicate(output) ? output : nil)
     }
 
     public func setFailureType<Failure: Error>(
         to failureType: Failure.Type
-    ) -> Publishers.Once<Output, Failure> {
-        return Publishers.Once(output)
+    ) -> Result<Output, Failure>.OCombine.Publisher {
+        return .init(output)
     }
 
     public func mapError<Failure: Error>(
         _ transform: (Never) -> Failure
-    ) -> Publishers.Once<Output, Failure> {
-        return Publishers.Once(output)
+    ) -> Result<Output, Failure>.OCombine.Publisher {
+        return .init(output)
     }
 
     public func removeDuplicates(
@@ -258,9 +206,8 @@ extension Just {
 
     public func tryRemoveDuplicates(
         by predicate: (Output, Output) throws -> Bool
-    ) -> Publishers.Once<Output, Error> {
-        return Publishers
-            .Once(Result { try _ = predicate(output, output); return output })
+    ) -> Result<Output, Error>.OCombine.Publisher {
+        return .init(Result { try _ = predicate(output, output); return output })
     }
 
     public func replaceError(with output: Output) -> Just<Output> {
@@ -275,36 +222,32 @@ extension Just {
         return self
     }
 
-    public func retry() -> Just<Output> {
-        return self
-    }
-
     public func reduce<Accumulator>(
         _ initialResult: Accumulator,
         _ nextPartialResult: (Accumulator, Output) -> Accumulator
-    ) -> Publishers.Once<Accumulator, Never> {
-        return Publishers.Once(nextPartialResult(initialResult, output))
+    ) -> Result<Accumulator, Never>.OCombine.Publisher {
+        return .init(nextPartialResult(initialResult, output))
     }
 
     public func tryReduce<Accumulator>(
         _ initialResult: Accumulator,
         _ nextPartialResult: (Accumulator, Output) throws -> Accumulator
-    ) -> Publishers.Once<Accumulator, Error> {
-        return Publishers.Once(Result { try nextPartialResult(initialResult, output) })
+    ) -> Result<Accumulator, Error>.OCombine.Publisher {
+        return .init(Result { try nextPartialResult(initialResult, output) })
     }
 
     public func scan<ElementOfResult>(
         _ initialResult: ElementOfResult,
         _ nextPartialResult: (ElementOfResult, Output) -> ElementOfResult
-    ) -> Publishers.Once<ElementOfResult, Never> {
-        return Publishers.Once(nextPartialResult(initialResult, output))
+    ) -> Result<ElementOfResult, Never>.OCombine.Publisher {
+        return .init(nextPartialResult(initialResult, output))
     }
 
     public func tryScan<ElementOfResult>(
         _ initialResult: ElementOfResult,
         _ nextPartialResult: (ElementOfResult, Output) throws -> ElementOfResult
-    ) -> Publishers.Once<ElementOfResult, Error> {
-        return Publishers.Once(Result { try nextPartialResult(initialResult, output) })
+    ) -> Result<ElementOfResult, Error>.OCombine.Publisher {
+        return .init(Result { try nextPartialResult(initialResult, output) })
     }
 }
 

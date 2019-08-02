@@ -48,6 +48,12 @@ extension Publishers {
 
         /// The closure that transforms elements from the upstream publisher.
         public let transform: (Upstream.Output) -> Output
+
+        public init(upstream: Upstream,
+                    transform: @escaping (Upstream.Output) -> Output) {
+            self.upstream = upstream
+            self.transform = transform
+        }
     }
 
     /// A publisher that transforms all elements from the upstream publisher
@@ -62,6 +68,12 @@ extension Publishers {
         /// The error-throwing closure that transforms elements from
         /// the upstream publisher.
         public let transform: (Upstream.Output) throws -> Output
+
+        public init(upstream: Upstream,
+                    transform: @escaping (Upstream.Output) throws -> Output) {
+            self.upstream = upstream
+            self.transform = transform
+        }
     }
 }
 
@@ -70,7 +82,7 @@ extension Publishers.Map {
         where Output == Downstream.Input, Downstream.Failure == Upstream.Failure
     {
         let inner = Inner(downstream: subscriber, transform: catching(transform))
-        upstream.receive(subscriber: inner)
+        upstream.subscribe(inner)
     }
 
     public func map<Result>(
@@ -92,7 +104,7 @@ extension Publishers.TryMap {
         where Output == Downstream.Input, Downstream.Failure == Error
     {
         let inner = Inner(downstream: subscriber, transform: catching(transform))
-        upstream.receive(subscriber: inner)
+        upstream.subscribe(inner)
     }
 
     public func map<Result>(
@@ -188,7 +200,7 @@ extension Publishers.TryMap {
 
         override func cancel() {
             _transform = nil
-            upstreamSubscription?.cancel()
+            super.cancel()
         }
 
         var description: String { return "TryMap" }

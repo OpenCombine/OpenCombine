@@ -13,13 +13,14 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 final class MapTests: XCTestCase {
     static let allTests = [
         ("testEmpty", testEmpty),
         ("testError", testError),
         ("testTryMapFailureBecauseOfThrow", testTryMapFailureBecauseOfThrow),
         ("testTryMapFailureOnCompletion", testTryMapFailureOnCompletion),
+        ("testTryMapSuccess", testTryMapSuccess),
         ("testRange", testRange),
         ("testNoDemand", testNoDemand),
         ("testDemandSubscribe", testDemandSubscribe),
@@ -35,7 +36,8 @@ final class MapTests: XCTestCase {
         ("testMapOperatorSpecializationForTryMap",
          testMapOperatorSpecializationForTryMap),
         ("testTryMapOperatorSpecializationForTryMap",
-         testTryMapOperatorSpecializationForTryMap)
+         testTryMapOperatorSpecializationForTryMap),
+        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
     ]
 
     func testEmpty() {
@@ -120,6 +122,22 @@ final class MapTests: XCTestCase {
                         .completion(.failure(TestingError.oops))])
     }
 
+    func testTryMapSuccess() {
+        let publisher = PassthroughSubject<Int, Error>()
+        let map = publisher.tryMap { $0 * 2 }
+
+        let tracking = TrackingSubscriberBase<Int, Error>()
+
+        publisher.send(1)
+        map.subscribe(tracking)
+        publisher.send(completion: .finished)
+        publisher.send(2)
+
+        XCTAssertEqual(tracking.history,
+                       [.subscription("TryMap"),
+                        .completion(.finished)])
+    }
+
     func testRange() {
         // Given
         let publisher = PassthroughSubject<Int, TestingError>()
@@ -169,18 +187,22 @@ final class MapTests: XCTestCase {
     }
 
     func testDemandSend() {
-        // Given
-        let expectedReceiveValueDemand = 4
+        var expectedReceiveValueDemand = 4
         let subscription = CustomSubscription()
         let publisher = CustomPublisher(subscription: subscription)
         let map = publisher.map { $0 * 2 }
         let tracking = TrackingSubscriber(
+            receiveSubscription: { $0.request(.unlimited) },
             receiveValue: { _ in .max(expectedReceiveValueDemand) }
         )
-        // When
+
         map.subscribe(tracking)
-        // Then
-        XCTAssertEqual(publisher.send(0), .max(expectedReceiveValueDemand))
+
+        XCTAssertEqual(publisher.send(0), .max(4))
+
+        expectedReceiveValueDemand = 120
+
+        XCTAssertEqual(publisher.send(0), .max(120))
     }
 
     func testCompletion() {
@@ -279,7 +301,7 @@ final class MapTests: XCTestCase {
             XCTAssertEqual(emptySubscriber.completions.count, 1)
         }
 
-        XCTAssertEqual(deinitCounter, 0)
+        XCTAssertEqual(deinitCounter, 1)
 
         do {
             let passthrough = PassthroughSubject<Int, TestingError>()
@@ -292,7 +314,7 @@ final class MapTests: XCTestCase {
             XCTAssertEqual(emptySubscriber.completions.count, 0)
         }
 
-        XCTAssertEqual(deinitCounter, 0)
+        XCTAssertEqual(deinitCounter, 1)
 
         var subscription: Subscription?
 
@@ -312,9 +334,9 @@ final class MapTests: XCTestCase {
             XCTAssertNotNil(subscription)
         }
 
-        XCTAssertEqual(deinitCounter, 0)
+        XCTAssertEqual(deinitCounter, 1)
         try XCTUnwrap(subscription).cancel()
-        XCTAssertEqual(deinitCounter, 0)
+        XCTAssertEqual(deinitCounter, 2)
     }
 
     func testMapOperatorSpecializationForMap() {
@@ -436,5 +458,18 @@ final class MapTests: XCTestCase {
                                           .value(7),
                                           .value(11),
                                           .completion(.failure(TestingError.oops))])
+    }
+
+    // MARK: -
+    func testTestSuiteIncludesAllTests() {
+        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
+#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+        let thisClass = type(of: self)
+        let allTestsCount = thisClass.allTests.count
+        let darwinCount = thisClass.defaultTestSuite.testCaseCount
+        XCTAssertEqual(allTestsCount,
+                       darwinCount,
+                       "\(darwinCount - allTestsCount) tests are missing from allTests")
+#endif
     }
 }

@@ -13,12 +13,15 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 final class EncodeTests: XCTestCase {
+
     static let allTests = [
-        ("testEncodeWorks", testEncodeWorks),
+        ("testEncodingSuccess", testEncodingSuccess),
+        ("testEncodingFailure", testEncodingFailure),
         ("testDemand", testDemand),
-        ("testEncodeSuccessHistory", testEncodeSuccessHistory)
+        ("testEncodeSuccessHistory", testEncodeSuccessHistory),
+        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
     ]
 
     private var encoder = TestEncoder()
@@ -30,37 +33,49 @@ final class EncodeTests: XCTestCase {
         decoder = TestDecoder()
     }
 
-    func testEncodeWorks() throws {
-        // Given
-        let testValue = ["test": "TestDecodable"]
-        let subject = PassthroughSubject<[String: String], Error>()
+    func testEncodingSuccess() throws {
+        let testValue = ["test" : "TestDecodable"]
+        let subject = PassthroughSubject<[String : String], Error>()
         let publisher = subject.encode(encoder: encoder)
         let subscriber = TrackingSubscriberBase<Int, Error>(
             receiveSubscription: { $0.request(.unlimited) }
         )
 
-        // When
         publisher.subscribe(subscriber)
         subject.send(testValue)
 
-        // Then
-        XCTAssert(encoder.encoded.first?.value as? [String: String] == testValue)
+        XCTAssertEqual(encoder.encoded.first?.value as? [String : String], testValue)
+    }
+
+    func testEncodingFailure() throws {
+        let testValue = ["test" : "TestDecodable"]
+        let subject = PassthroughSubject<[String : String], Error>()
+
+        encoder.handleEncode = { _ in throw TestingError.oops }
+
+        let publisher = subject.encode(encoder: encoder)
+        let subscriber = TrackingSubscriberBase<Int, Error>(
+            receiveSubscription: { $0.request(.unlimited) }
+        )
+
+        publisher.subscribe(subscriber)
+        subject.send(testValue)
+
+        XCTAssertEqual(subscriber.history, [.subscription("Encode"),
+                                            .completion(.failure(TestingError.oops))])
     }
 
     func testEncodeSuccessHistory() throws {
-        // Given
-        let testValue = ["test": "TestDecodable"]
-        let subject = PassthroughSubject<[String: String], Error>()
+        let testValue = ["test" : "TestDecodable"]
+        let subject = PassthroughSubject<[String : String], Error>()
         let publisher = subject.encode(encoder: encoder)
         let subscriber = TrackingSubscriberBase<Int, Error>(
             receiveSubscription: { $0.request(.unlimited) }
         )
 
-        // When
         publisher.subscribe(subscriber)
         subject.send(testValue)
 
-        // Then
         guard let testKey = encoder.encoded.first?.key, encoder.encoded.count == 1 else {
             XCTFail("Could not get testing data from encoding")
             return
@@ -70,23 +85,16 @@ final class EncodeTests: XCTestCase {
     }
 
     func testDemand() {
-        // `CustomSubscription` tracks all the requests and cancellations
-        // in its `history` property
         let subscription = CustomSubscription()
 
-        // `CustomPublisher` sends the subscription object it has been initialized with
-        // to whoever subscribed to the `CustomPublisher`.
-        let publisher = CustomPublisherBase<[String: String]>(subscription: subscription)
+        let publisher = CustomPublisherBase<[String : String], TestingError>(
+            subscription: subscription
+        )
 
-        // `_Encode` helper will receive the `CustomSubscription `
         let encode = publisher.encode(encoder: encoder)
 
-        // This is actually `_Decode`
         var downstreamSubscription: Subscription?
 
-        // `TrackingSubscriber` records every event like "receiveSubscription",
-        // "receiveValue" and "receiveCompletion" into its `history` property,
-        // optionally executing the provided callbacks.
         let tracking = TrackingSubscriberBase<Int, Error>(
             receiveSubscription: {
                 $0.request(.max(37))
@@ -96,7 +104,22 @@ final class EncodeTests: XCTestCase {
         )
 
         encode.subscribe(tracking)
-        XCTAssertNotNil(downstreamSubscription) // Removes unused variable warning
+        XCTAssertNotNil(downstreamSubscription)
+
+        XCTAssertEqual(publisher.send(["test" : "TestDecodable"]), .max(2))
         XCTAssertEqual(subscription.history, [.requested(.max(37))])
+    }
+
+    // MARK: -
+    func testTestSuiteIncludesAllTests() {
+        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
+#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+        let thisClass = type(of: self)
+        let allTestsCount = thisClass.allTests.count
+        let darwinCount = thisClass.defaultTestSuite.testCaseCount
+        XCTAssertEqual(allTestsCount,
+                       darwinCount,
+                       "\(darwinCount - allTestsCount) tests are missing from allTests")
+#endif
     }
 }

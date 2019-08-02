@@ -5,8 +5,6 @@
 //  Created by Joseph Spadafora on 6/25/19.
 //
 
-import Foundation
-
 extension Publishers {
 
     /// A publisher that publishes the number of elements received
@@ -40,7 +38,7 @@ extension Publishers {
                   SubscriberType.Input == Output
         {
             let count = _Count<Upstream, SubscriberType>(downstream: subscriber)
-            upstream.receive(subscriber: count)
+            upstream.subscribe(count)
         }
     }
 }

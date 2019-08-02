@@ -42,7 +42,7 @@ extension Publishers {
                 downstream: subscriber,
                 decoder: _decoder
             )
-            upstream.receive(subscriber: decodeSubscriber)
+            upstream.subscribe(decodeSubscriber)
         }
     }
 }
