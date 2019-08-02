@@ -13,13 +13,14 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 final class PublisherTests: XCTestCase {
 
     static let allTests = [
         ("testSubscribeSubscriber", testSubscribeSubscriber),
         ("testSubscribeSubject", testSubscribeSubject),
         ("testSubjectSubscriber", testSubjectSubscriber),
+        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
     ]
 
     func testSubscribeSubscriber() {
@@ -55,21 +56,23 @@ final class PublisherTests: XCTestCase {
 
         let cancellable = publisher.subscribe(subject)
 
-        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
-        XCTAssertEqual(subject.history, [])
+        XCTAssertEqual(subscription.history, [])
+        XCTAssertEqual(subject.history, [.subscription("Subject")])
 
         XCTAssertEqual(publisher.send(0), .none)
         XCTAssertEqual(publisher.send(1), .none)
 
-        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
-        XCTAssertEqual(subject.history, [.value(0), .value(1)])
+        XCTAssertEqual(subscription.history, [])
+        XCTAssertEqual(subject.history, [.subscription("Subject"),
+                                         .value(0),
+                                         .value(1)])
 
         cancellable.cancel()
 
         XCTAssertEqual(publisher.send(2), .none)
 
-        XCTAssertEqual(subscription.history, [.requested(.unlimited), .cancelled])
-        XCTAssertEqual(subject.history, [.value(0), .value(1)])
+        XCTAssertEqual(subscription.history, [.cancelled])
+        XCTAssertEqual(subject.history, [.subscription("Subject"), .value(0), .value(1)])
     }
 
     func testSubjectSubscriber() throws {
@@ -90,16 +93,30 @@ final class PublisherTests: XCTestCase {
                 XCTAssertEqual(String(describing: subjectSubscription), "Subject")
 
                 subjectSubscription.request(.max(42))
-                XCTAssertEqual(subscription.history, [.requested(.unlimited)])
+                XCTAssertEqual(subscription.history, [.requested(.max(42))])
 
                 subjectSubscription.cancel()
-                XCTAssertEqual(subscription.history, [.requested(.unlimited), .cancelled])
+                subjectSubscription.cancel()
+                XCTAssertEqual(subscription.history, [.requested(.max(42)), .cancelled])
 
                 subjectSubscription.request(.max(37))
-                XCTAssertEqual(subscription.history, [.requested(.unlimited), .cancelled])
+                XCTAssertEqual(subscription.history, [.requested(.max(42)), .cancelled])
             }
         }
 
-        XCTAssertTrue(subjectDestroyed)
+        XCTAssert(subjectDestroyed)
+    }
+
+    // MARK: -
+    func testTestSuiteIncludesAllTests() {
+        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
+#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+        let thisClass = type(of: self)
+        let allTestsCount = thisClass.allTests.count
+        let darwinCount = thisClass.defaultTestSuite.testCaseCount
+        XCTAssertEqual(allTestsCount,
+                       darwinCount,
+                       "\(darwinCount - allTestsCount) tests are missing from allTests")
+#endif
     }
 }

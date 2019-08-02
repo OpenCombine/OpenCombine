@@ -14,13 +14,14 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 final class CombineIdentifierTests: PerformanceTestCase {
 
     static let allTests = [
         ("testDefaultInitialized", testDefaultInitialized),
         ("testAnyObject", testAnyObject),
         ("testDefaultInitializedPerformance", testDefaultInitializedPerformance),
+        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
     ]
 
     func testDefaultInitialized() {
@@ -55,5 +56,18 @@ final class CombineIdentifierTests: PerformanceTestCase {
                 _ = CombineIdentifier()
             }
         }
+    }
+
+    // MARK: -
+    func testTestSuiteIncludesAllTests() {
+        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
+#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+        let thisClass = type(of: self)
+        let allTestsCount = thisClass.allTests.count
+        let darwinCount = thisClass.defaultTestSuite.testCaseCount
+        XCTAssertEqual(allTestsCount,
+                       darwinCount,
+                       "\(darwinCount - allTestsCount) tests are missing from allTests")
+#endif
     }
 }

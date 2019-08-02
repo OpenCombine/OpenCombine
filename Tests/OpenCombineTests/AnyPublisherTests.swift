@@ -13,11 +13,13 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 final class AnyPublisherTests: XCTestCase {
 
     static let allTests = [
         ("testErasePublisher", testErasePublisher),
+        ("testDescription", testDescription),
+        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
     ]
 
     private typealias Sut = AnyPublisher<Int, TestingError>
@@ -34,5 +36,24 @@ final class AnyPublisherTests: XCTestCase {
 
         erased.subscribe(subscriber)
         XCTAssertEqual(publisher.history, [.subscriber])
+    }
+
+    func testDescription() {
+        let erased = AnyPublisher(TrackingSubject<Int>())
+        XCTAssertEqual(erased.description, "AnyPublisher")
+        XCTAssertEqual(erased.description, erased.playgroundDescription as? String)
+    }
+
+    // MARK: -
+    func testTestSuiteIncludesAllTests() {
+        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
+#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+        let thisClass = type(of: self)
+        let allTestsCount = thisClass.allTests.count
+        let darwinCount = thisClass.defaultTestSuite.testCaseCount
+        XCTAssertEqual(allTestsCount,
+                       darwinCount,
+                       "\(darwinCount - allTestsCount) tests are missing from allTests")
+#endif
     }
 }

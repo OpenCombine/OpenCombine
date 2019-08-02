@@ -14,12 +14,21 @@ public final class CurrentValueSubject<Output, Failure: Error>: Subject {
     // TODO: Combine uses bag data structure
     private var _subscriptions: [Conduit] = []
 
+    private var _value: Output
+
     private var _completion: Subscribers.Completion<Failure>?
+
+    internal var upstreamSubscriptions: [Subscription] = []
+
+    internal var hasAnyDownstreamDemand = false
 
     /// The value wrapped by this subject, published as a new element whenever it changes.
     public var value: Output {
-        didSet {
-            send(value)
+        get {
+            return _value
+        }
+        set {
+            send(newValue)
         }
     }
 
@@ -27,11 +36,24 @@ public final class CurrentValueSubject<Output, Failure: Error>: Subject {
     ///
     /// - Parameter value: The initial value to publish.
     public init(_ value: Output) {
-        self.value = value
+        self._value = value
     }
 
-    public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-        where Output == SubscriberType.Input, Failure == SubscriberType.Failure
+    deinit {
+        for subscription in _subscriptions {
+            subscription._downstream = nil
+        }
+    }
+
+    public func send(subscription: Subscription) {
+        _lock.do {
+            upstreamSubscriptions.append(subscription)
+            subscription.request(.unlimited)
+        }
+    }
+
+    public func receive<Subscriber: OpenCombine.Subscriber>(subscriber: Subscriber)
+        where Output == Subscriber.Input, Failure == Subscriber.Failure
     {
         _lock.do {
 
@@ -51,6 +73,7 @@ public final class CurrentValueSubject<Output, Failure: Error>: Subject {
 
     public func send(_ input: Output) {
         _lock.do {
+            _value = input
             for subscription in _subscriptions where !subscription.isCompleted {
                 if subscription._demand > 0 {
                     subscription._offer(input)
@@ -109,7 +132,7 @@ extension CurrentValueSubject {
         }
 
         func request(_ demand: Subscribers.Demand) {
-            guard demand > 0 else { return }
+            precondition(demand > 0)
             _parent?._lock.do {
                 if !_delivered, let value = _parent?.value {
                     _offer(value)
@@ -118,6 +141,7 @@ extension CurrentValueSubject {
                 } else {
                     _demand = demand
                 }
+                _parent?.hasAnyDownstreamDemand = true
             }
         }
 

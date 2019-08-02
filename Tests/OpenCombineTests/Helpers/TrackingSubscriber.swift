@@ -22,7 +22,7 @@ import OpenCombine
 /// `TrackingSubscriber.Event.subscription(Subscription.empty)`
 /// is considered equal to any other subscription no matter what the subscription object
 /// actually is.
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 typealias TrackingSubscriber = TrackingSubscriberBase<Int, TestingError>
 
 /// `TrackingSubscriber` records every event like "receiveSubscription",
@@ -36,9 +36,8 @@ typealias TrackingSubscriber = TrackingSubscriberBase<Int, TestingError>
 /// `TrackingSubscriber.Event.subscription(Subscription.empty)`
 /// is considered equal to any other subscription no matter what the subscription object
 /// actually is.
-@available(macOS 10.15, *)
-final class TrackingSubscriberBase<Value: Equatable,
-                                   Failure: Error>
+@available(macOS 10.15, iOS 13.0, *)
+final class TrackingSubscriberBase<Value: Equatable, Failure: Error>
     : Subscriber,
       CustomStringConvertible
 {
@@ -51,7 +50,7 @@ final class TrackingSubscriberBase<Value: Equatable,
         static func == (lhs: Event, rhs: Event) -> Bool {
             switch (lhs, rhs) {
             case let (.subscription(lhs), .subscription(rhs)):
-                return lhs.description == rhs.description
+                return lhs == rhs
             case let (.value(lhs), .value(rhs)):
                 return lhs == rhs
             case let (.completion(lhs), .completion(rhs)):
@@ -86,6 +85,12 @@ final class TrackingSubscriberBase<Value: Equatable,
     private let _receiveValue: ((Input) -> Subscribers.Demand)?
     private let _receiveCompletion: ((Subscribers.Completion<Failure>) -> Void)?
     private let _onDeinit: (() -> Void)?
+
+    var onSubscribe: ((Subscription) -> Void)?
+    var onValue: ((Input) -> Void)?
+    var onFinish: (() -> Void)?
+    var onFailure: ((Failure) -> Void)?
+    var onDeinit: (() -> Void)?
 
     /// The history of subscriptions, inputs and completions of this subscriber
     private(set) var history: [Event] = []
@@ -145,16 +150,24 @@ final class TrackingSubscriberBase<Value: Equatable,
 
     func receive(subscription: Subscription) {
         history.append(.subscription(.init(subscription)))
+        onSubscribe?(subscription)
         _receiveSubscription?(subscription)
     }
 
     func receive(_ input: Value) -> Subscribers.Demand {
         history.append(.value(input))
+        onValue?(input)
         return _receiveValue?(input) ?? .none
     }
 
     func receive(completion: Subscribers.Completion<Failure>) {
         history.append(.completion(completion))
+        switch completion {
+        case .failure(let error):
+            onFailure?(error)
+        case .finished:
+            onFinish?()
+        }
         _receiveCompletion?(completion)
     }
 
@@ -163,26 +176,31 @@ final class TrackingSubscriberBase<Value: Equatable,
     }
 
     deinit {
+        onDeinit?()
         _onDeinit?()
     }
 }
 
-@available(macOS 10.15, *)
-final class TrackingSubject<Value: Equatable>: Subject, CustomStringConvertible {
+@available(macOS 10.15, iOS 13.0, *)
+typealias TrackingSubject<Output: Equatable> = TrackingSubjectBase<Output, TestingError>
 
-    typealias Failure = TestingError
-
-    typealias Output = Value
-
+@available(macOS 10.15, iOS 13.0, *)
+final class TrackingSubjectBase<Output: Equatable, Failure: Error>
+    : Subject,
+      CustomStringConvertible
+{
     enum Event: Equatable, CustomStringConvertible {
         case subscriber
-        case value(Value)
-        case completion(Subscribers.Completion<TestingError>)
+        case subscription(StringSubscription)
+        case value(Output)
+        case completion(Subscribers.Completion<Failure>)
 
         static func == (lhs: Event, rhs: Event) -> Bool {
             switch (lhs, rhs) {
             case (.subscriber, .subscriber):
                 return true
+            case let (.subscription(lhs), .subscription(rhs)):
+                return lhs == rhs
             case let (.value(lhs), .value(rhs)):
                 return lhs == rhs
             case let (.completion(lhs), .completion(rhs)):
@@ -190,7 +208,7 @@ final class TrackingSubject<Value: Equatable>: Subject, CustomStringConvertible 
                 case (.finished, .finished):
                     return true
                 case let (.failure(lhs), .failure(rhs)):
-                    return lhs == rhs
+                    return (lhs as? TestingError) == (rhs as? TestingError)
                 default:
                     return false
                 }
@@ -203,6 +221,8 @@ final class TrackingSubject<Value: Equatable>: Subject, CustomStringConvertible 
             switch self {
             case .subscriber:
                 return ".subscriber"
+            case .subscription(let description):
+                return ".subscription(\"\(description)\")"
             case .value(let value):
                 return ".value(\(value))"
             case .completion(.finished):
@@ -213,7 +233,7 @@ final class TrackingSubject<Value: Equatable>: Subject, CustomStringConvertible 
         }
     }
 
-    private let _passthrough = PassthroughSubject<Value, TestingError>()
+    private let _passthrough = PassthroughSubject<Output, Failure>()
     private(set) var history: [Event] = []
     private let _receiveSubscriber: ((CustomCombineIdentifierConvertible) -> Void)?
     private let _onDeinit: (() -> Void)?
@@ -228,12 +248,17 @@ final class TrackingSubject<Value: Equatable>: Subject, CustomStringConvertible 
         _onDeinit?()
     }
 
-    func send(_ value: Value) {
+    func send(subscription: Subscription) {
+        history.append(.subscription(.subscription(subscription)))
+        _passthrough.send(subscription: subscription)
+    }
+
+    func send(_ value: Output) {
         history.append(.value(value))
         _passthrough.send(value)
     }
 
-    func send(completion: Subscribers.Completion<TestingError>) {
+    func send(completion: Subscribers.Completion<Failure>) {
         history.append(.completion(completion))
         _passthrough.send(completion: completion)
     }
@@ -249,7 +274,7 @@ final class TrackingSubject<Value: Equatable>: Subject, CustomStringConvertible 
     var description: String { return "TrackingSubject" }
 }
 
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 enum StringSubscription: Subscription,
                          CustomStringConvertible,
                          ExpressibleByStringLiteral {
@@ -298,5 +323,12 @@ enum StringSubscription: Subscription,
         case .subscription(let underlying):
             return underlying
         }
+    }
+}
+
+@available(macOS 10.15, iOS 13.0, *)
+extension StringSubscription: Equatable {
+    static func == (lhs: StringSubscription, rhs: StringSubscription) -> Bool {
+        return lhs.description == rhs.description
     }
 }

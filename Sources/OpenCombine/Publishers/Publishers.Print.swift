@@ -47,7 +47,7 @@ extension Publishers {
             where Failure == SubscriberType.Failure, Output == SubscriberType.Input
         {
             let inner = Inner(downstream: subscriber, prefix: prefix, stream: stream)
-            upstream.receive(subscriber: inner)
+            upstream.subscribe(inner)
         }
     }
 }

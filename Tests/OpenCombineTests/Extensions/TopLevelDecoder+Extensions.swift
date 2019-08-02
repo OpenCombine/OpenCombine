@@ -13,4 +13,7 @@ import OpenCombine
 
 extension JSONDecoder: TopLevelDecoder {}
 extension JSONEncoder: TopLevelEncoder {}
+
+extension PropertyListDecoder: TopLevelDecoder {}
+extension PropertyListEncoder: TopLevelEncoder {}
 #endif

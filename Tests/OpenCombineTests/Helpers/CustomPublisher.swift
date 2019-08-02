@@ -30,16 +30,13 @@ import OpenCombine
 ///     publisher.subscribe(subscriber)
 ///
 ///     assert(subscription.history == [.requested(.max(42)), .cancelled])
-@available(macOS 10.15, *)
-typealias CustomPublisher = CustomPublisherBase<Int>
+@available(macOS 10.15, iOS 13.0, *)
+typealias CustomPublisher = CustomPublisherBase<Int, TestingError>
 
-@available(macOS 10.15, *)
-final class CustomPublisherBase<Value: Equatable>: Publisher {
+@available(macOS 10.15, iOS 13.0, *)
+final class CustomPublisherBase<Output: Equatable, Failure: Error>: Publisher {
 
-    typealias Output = Value
-    typealias Failure = TestingError
-
-    private(set) var subscriber: AnySubscriber<Value, TestingError>?
+    private(set) var subscriber: AnySubscriber<Output, Failure>?
     private(set) var erasedSubscriber: Any?
     private let subscription: Subscription?
 
@@ -47,19 +44,19 @@ final class CustomPublisherBase<Value: Equatable>: Publisher {
         self.subscription = subscription
     }
 
-    func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-        where Failure == SubscriberType.Failure, Output == SubscriberType.Input
+    func receive<Downstream: Subscriber>(subscriber: Downstream)
+        where Failure == Downstream.Failure, Output == Downstream.Input
     {
         self.subscriber = AnySubscriber(subscriber)
         erasedSubscriber = subscriber
         subscription.map(subscriber.receive(subscription:))
     }
 
-    func send(_ value: Value) -> Subscribers.Demand {
+    func send(_ value: Output) -> Subscribers.Demand {
         return subscriber?.receive(value) ?? .none
     }
 
-    func send(completion: Subscribers.Completion<TestingError>) {
+    func send(completion: Subscribers.Completion<Failure>) {
         subscriber!.receive(completion: completion)
     }
 }

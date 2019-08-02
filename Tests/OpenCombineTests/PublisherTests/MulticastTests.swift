@@ -13,7 +13,7 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 final class MulticastTests: XCTestCase {
 
     static let allTests = [
@@ -22,6 +22,7 @@ final class MulticastTests: XCTestCase {
         ("testMulticastDisconnect", testMulticastDisconnect),
         ("testLateSubscriber", testLateSubscriber),
         ("testSubscribeAfterCompletion", testSubscribeAfterCompletion),
+        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
     ]
 
     func testMulticast() throws {
@@ -63,9 +64,12 @@ final class MulticastTests: XCTestCase {
 
     func testMulticastConnectTwice() {
 
-        let publisher = PassthroughSubject<Int, TestingError>()
-        let multicast = publisher.multicast(PassthroughSubject.init)
-        let tracking = TrackingSubscriber(receiveSubscription: { $0.request(.unlimited) })
+        let publisher = TrackingSubject<Int>()
+        let multicastSubject = TrackingSubject<Int>()
+        let multicast = publisher.multicast(subject: multicastSubject)
+        let tracking = TrackingSubscriber(
+            receiveSubscription: { $0.request(.max(10)) }
+        )
 
         multicast.subscribe(tracking)
 
@@ -148,7 +152,7 @@ final class MulticastTests: XCTestCase {
         XCTAssertNotNil(publisher.subscriber)
         XCTAssertEqual(subscription.history, [.requested(.unlimited)])
         XCTAssertEqual(earlySubscriber.history, [.subscription("Multicast")])
-        XCTAssertEqual(subject.history, [.subscriber])
+        XCTAssertEqual(subject.history, [.subscriber, .subscription("Subject")])
 
         XCTAssertEqual(publisher.send(1), .none)
         XCTAssertEqual(publisher.send(2), .none)
@@ -161,6 +165,7 @@ final class MulticastTests: XCTestCase {
                                                  .value(2),
                                                  .value(3)])
         XCTAssertEqual(subject.history, [.subscriber,
+                                         .subscription("Subject"),
                                          .value(1),
                                          .value(2),
                                          .value(3),
@@ -187,6 +192,7 @@ final class MulticastTests: XCTestCase {
                                                 .value(5),
                                                 .value(6)])
         XCTAssertEqual(subject.history, [.subscriber,
+                                         .subscription("Subject"),
                                          .value(1),
                                          .value(2),
                                          .value(3),
@@ -219,6 +225,7 @@ final class MulticastTests: XCTestCase {
         XCTAssertEqual(latestSubscriber.history, [.subscription("Multicast"),
                                                   .completion(.finished)])
         XCTAssertEqual(subject.history, [.subscriber,
+                                         .subscription("Subject"),
                                          .value(1),
                                          .value(2),
                                          .value(3),
@@ -248,6 +255,10 @@ final class MulticastTests: XCTestCase {
                 self.subscriber = AnySubscriber(subscriber)
             }
 
+            func send(subscription: Subscription) {
+                subscriber?.receive(subscription: subscription)
+            }
+
             func send(_ value: Int) {
                 _ = subscriber?.receive(value)
             }
@@ -274,5 +285,18 @@ final class MulticastTests: XCTestCase {
         multicast.subscribe(lateSubscriber)
 
         XCTAssertEqual(lateSubscriber.history, [.subscription("Multicast")])
+    }
+
+    // MARK: -
+    func testTestSuiteIncludesAllTests() {
+        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
+#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+        let thisClass = type(of: self)
+        let allTestsCount = thisClass.allTests.count
+        let darwinCount = thisClass.defaultTestSuite.testCaseCount
+        XCTAssertEqual(allTestsCount,
+                       darwinCount,
+                       "\(darwinCount - allTestsCount) tests are missing from allTests")
+#endif
     }
 }

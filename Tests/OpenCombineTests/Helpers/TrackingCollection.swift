@@ -11,7 +11,7 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 typealias DisposeBag = TrackingCollection<AnyCancellable>
 
 final class TrackingCollection<Element> {
@@ -222,5 +222,36 @@ extension TrackingCollection: RangeReplaceableCollection {
     func removeAll(where shouldBeRemoved: (Element) throws -> Bool) rethrows {
         history.append(.removeAllWhere)
         try storage.removeAll(where: shouldBeRemoved)
+    }
+}
+
+final class TrackingRangeExpression<RangeExpression: Swift.RangeExpression>
+    : Swift.RangeExpression
+    where RangeExpression.Bound == Int
+{
+    enum Event: Equatable {
+        case contains(Int)
+        case relativeTo(Range<Int>?)
+    }
+
+    typealias Bound = Int
+
+    private let underlying: RangeExpression
+    private(set) var history: [Event] = []
+
+    init(_ underlying: RangeExpression) {
+        self.underlying = underlying
+    }
+
+    func relative<Elements: Collection>(
+        to collection: Elements
+    ) -> Range<Int> where Elements.Index == Int {
+        history.append(.relativeTo(collection as? Range<Int>))
+        return underlying.relative(to: collection)
+    }
+
+    func contains(_ element: Int) -> Bool {
+        history.append(.contains(element))
+        return underlying.contains(element)
     }
 }

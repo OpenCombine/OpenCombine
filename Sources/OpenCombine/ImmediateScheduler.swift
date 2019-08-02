@@ -139,9 +139,7 @@ public struct ImmediateScheduler: Scheduler {
                          tolerance: SchedulerTimeType.Stride,
                          options: SchedulerOptions?,
                          _ action: @escaping () -> Void) {
-        fatalError(
-            "Attempt to schedule something in the future on the immediate scheduler"
-        )
+        action()
     }
 
     /// Performs the action at some time after the specified date, at the specified
@@ -151,8 +149,7 @@ public struct ImmediateScheduler: Scheduler {
                          tolerance: SchedulerTimeType.Stride,
                          options: SchedulerOptions?,
                          _ action: @escaping () -> Void) -> Cancellable {
-        fatalError(
-            "Attempt to schedule something in the future on the immediate scheduler"
-        )
+        action()
+        return Subscriptions.empty
     }
 }

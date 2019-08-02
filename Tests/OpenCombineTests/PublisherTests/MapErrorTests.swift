@@ -13,7 +13,7 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13.0, *)
 final class MapErrorTests: XCTestCase {
     static let allTests = [
         ("testEmpty", testEmpty),
@@ -26,6 +26,7 @@ final class MapErrorTests: XCTestCase {
         ("testCancel", testCancel),
         ("testCancelAlreadyCancelled", testCancelAlreadyCancelled),
         ("testLifecycle", testLifecycle),
+        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
     ]
 
     func testEmpty() {
@@ -212,7 +213,7 @@ final class MapErrorTests: XCTestCase {
             XCTAssertEqual(emptySubscriber.completions.count, 1)
         }
 
-        XCTAssertEqual(deinitCounter, 0)
+        XCTAssertEqual(deinitCounter, 1)
 
         do {
             let passthrough = PassthroughSubject<Int, TestingError>()
@@ -227,7 +228,7 @@ final class MapErrorTests: XCTestCase {
             XCTAssertEqual(emptySubscriber.completions.count, 0)
         }
 
-        XCTAssertEqual(deinitCounter, 0)
+        XCTAssertEqual(deinitCounter, 1)
 
         var subscription: Subscription?
 
@@ -247,9 +248,22 @@ final class MapErrorTests: XCTestCase {
             XCTAssertNotNil(subscription)
         }
 
-        XCTAssertEqual(deinitCounter, 0)
+        XCTAssertEqual(deinitCounter, 1)
         try XCTUnwrap(subscription).cancel()
-        XCTAssertEqual(deinitCounter, 0)
+        XCTAssertEqual(deinitCounter, 2)
+    }
+
+    // MARK: -
+    func testTestSuiteIncludesAllTests() {
+        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
+#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+        let thisClass = type(of: self)
+        let allTestsCount = thisClass.allTests.count
+        let darwinCount = thisClass.defaultTestSuite.testCaseCount
+        XCTAssertEqual(allTestsCount,
+                       darwinCount,
+                       "\(darwinCount - allTestsCount) tests are missing from allTests")
+#endif
     }
 }
 
