@@ -5,7 +5,7 @@ import PackageDescription
 let package = Package(
     name: "OpenCombine",
     products: [
-        .library(name: "OpenCombine", targets: ["OpenCombine"]),
+        .library(name: "OpenCombine", type: .dynamic, targets: ["OpenCombine"]),
         .library(name: "OpenCombineDispatch", targets: ["OpenCombineDispatch"]),
         .library(name: "OpenCombineFoundation", targets: ["OpenCombineFoundation"]),
     ],

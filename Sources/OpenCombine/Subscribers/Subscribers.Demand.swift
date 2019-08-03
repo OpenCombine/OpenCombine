@@ -33,7 +33,7 @@ extension Subscribers {
         @inline(__always)
         @inlinable
         public static var unlimited: Demand {
-            return Demand(rawValue: .max)
+            return Demand(rawValue: UInt(Int.max) + 1)
         }
 
         /// A demand for no items.

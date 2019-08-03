@@ -105,18 +105,18 @@ final class PassthroughSubjectTests: XCTestCase {
     }
 
     func testSendFailureCompletion() {
-        let cvs = Sut()
+        let passthrough = Sut()
         let subscriber = TrackingSubscriber(
             receiveSubscription: { subscription in
                 subscription.request(.unlimited)
             }
         )
 
-        cvs.subscribe(subscriber)
+        passthrough.subscribe(subscriber)
 
         XCTAssertEqual(subscriber.history, [.subscription("PassthroughSubject")])
 
-        cvs.send(completion: .failure(.oops))
+        passthrough.send(completion: .failure(.oops))
 
         XCTAssertEqual(subscriber.history, [.subscription("PassthroughSubject"),
                                             .completion(.failure(.oops))])
@@ -364,67 +364,76 @@ final class PassthroughSubjectTests: XCTestCase {
         XCTAssertEqual(deinitCounter, 2)
     }
 
-    func testSynchronization() {
-
-        let subscriptions = Atomic<[Subscription]>([])
-        let inputs =  Atomic<[Int]>([])
-        let completions = Atomic<[Subscribers.Completion<TestingError>]>([])
-
-        let passthrough = Sut()
-        let subscriber = AnySubscriber<Int, TestingError>(
-            receiveSubscription: { subscription in
-                subscriptions.do { $0.append(subscription) }
-                subscription.request(.unlimited)
-            },
-            receiveValue: { value in
-                inputs.do { $0.append(value) }
-                return .none
-            },
-            receiveCompletion: { completion in
-                completions.do { $0.append(completion) }
+    func testCancelsUpstreamSubscriptionsOnDeinit() {
+        let subscription = CustomSubscription()
+        do {
+            let passthrough = Sut()
+            for _ in 0 ..< 5 {
+                passthrough.send(subscription: subscription)
             }
-        )
+            XCTAssertEqual(subscription.history, [])
+        }
 
-        race(
-            {
-                passthrough.subscribe(subscriber)
-            },
-            {
-                passthrough.subscribe(subscriber)
+        XCTAssertEqual(subscription.history, [.cancelled,
+                                              .cancelled,
+                                              .cancelled,
+                                              .cancelled,
+                                              .cancelled])
+    }
+
+    func testReleasesEverythingOnTermination() {
+
+        enum TerminationReason: CaseIterable {
+            case cancelled
+            case finished
+            case failed
+        }
+
+        for reason in TerminationReason.allCases {
+            weak var weakSubscriber: TrackingSubscriber?
+            weak var weakSubject: Sut?
+            weak var weakSubscription: AnyObject?
+
+            do {
+                let subject = Sut()
+                do {
+                    let subscriber = TrackingSubscriber(receiveSubscription: {
+                        weakSubscription = $0 as AnyObject
+                    })
+                    weakSubscriber = subscriber
+                    weakSubject = subject
+
+                    subject.subscribe(subscriber)
+                }
+
+                switch reason {
+                case .cancelled:
+                    (weakSubscription as? Subscription)?.cancel()
+                case .finished:
+                    subject.send(completion: .finished)
+                case .failed:
+                    subject.send(completion: .failure(.oops))
+                }
+
+                XCTAssertNil(weakSubscriber, "Subscriber leaked - \(reason)")
+                XCTAssertNil(weakSubscription, "Subscription leaked - \(reason)")
             }
+
+            XCTAssertNil(weakSubject, "Subject leaked -  \(reason)")
+        }
+    }
+
+    func testConduitReflection() throws {
+        try testSubscriptionReflection(
+            description: "PassthroughSubject",
+            customMirror: expectedChildren(
+                ("parent", .contains("PassthroughSubject")),
+                ("downstream", .contains("TrackingSubscriberBase")),
+                ("demand", "max(0)"),
+                ("subject", .contains("PassthroughSubject"))
+            ),
+            playgroundDescription:  "PassthroughSubject",
+            sut: PassthroughSubject<Int, Error>()
         )
-
-        XCTAssertEqual(subscriptions.value.count, 200)
-
-        race(
-            {
-                passthrough.send(31)
-            },
-            {
-                passthrough.send(42)
-            }
-        )
-
-        XCTAssertEqual(inputs.value.count, 40000)
-
-        race(
-            {
-                subscriptions.value[0].request(.max(4))
-            },
-            {
-                subscriptions.value[0].request(.max(10))
-            }
-        )
-
-        race(
-            {
-                passthrough.send(completion: .finished)
-            },
-            {
-                passthrough.send(completion: .failure(""))
-            }
-        )
-
-        XCTAssertEqual(completions.value.count, 200)
     }
 }
