@@ -3310,7 +3310,7 @@ extension Publishers.First : Equatable where Upstream : Equatable {
         storage storageKeyPath: ReferenceWritableKeyPath<EnclosingSelf, Published<Value>>
     ) -> Value { get set }
 
-    public class Publisher : Publisher {
+    public struct Publisher : Publisher {
 
         public typealias Output = Value
 
