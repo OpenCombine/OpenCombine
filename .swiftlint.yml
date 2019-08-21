@@ -78,14 +78,14 @@ attributes:
 
 custom_rules:
   no_foundation_dependency:
-    included: Sources/OpenCombine
+    included: Sources/OpenCombine/
     name: "No Foundation Dependency"
     regex: "^import.*Foundation.*$"
     message: "We don't want to depend on Foundation"
     severity: error
 
   no_dispatch_dependency:
-    included: Sources/OpenCombine
+    included: Sources/OpenCombine/
     name: "No Dispatch Dependency"
     regex: "^import.*Dispatch.*$"
     message: "We don't want to depend on Dispatch"
