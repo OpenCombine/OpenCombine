@@ -138,7 +138,7 @@ extension Optional.OCombine.Publisher {
     }
 
     public func collect() -> Optional<[Output]>.OCombine.Publisher {
-        return .init(self.output.map { [$0] })
+        return .init(self.output.map { [$0] } ?? [])
     }
 
     public func compactMap<ElementOfResult>(

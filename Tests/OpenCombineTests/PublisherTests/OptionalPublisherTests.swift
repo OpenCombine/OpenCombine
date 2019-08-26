@@ -195,7 +195,7 @@ final class OptionalPublisherTests: XCTestCase {
 
     func testCollectOperatorSpecialization() {
         XCTAssertEqual(Sut<Int>(13).collect(), Sut([13]))
-        XCTAssertEqual(Sut<Int>(nil).collect(), Sut(nil))
+        XCTAssertEqual(Sut<Int>(nil).collect(), Sut([]))
     }
 
     func testCountOperatorSpecialization() {
