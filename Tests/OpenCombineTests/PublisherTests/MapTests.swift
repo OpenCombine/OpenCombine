@@ -22,6 +22,22 @@ final class MapTests: XCTestCase {
         }
     }
 
+    func testTryMapEmpty() {
+        // Given
+        let tracking = TrackingSubscriberBase<String, Error>(
+            receiveSubscription: { $0.request(.unlimited) }
+        )
+        let publisher = TrackingSubjectBase<Int, Error>(
+            receiveSubscriber: {
+                XCTAssertEqual(String(describing: $0), "TryMap")
+            }
+        )
+        // When
+        publisher.tryMap(String.init).subscribe(tracking)
+        // Then
+        XCTAssertEqual(tracking.history, [.subscription("TryMap")])
+    }
+
     func testError() {
         MapTests.testError(valueComparator: ==) { $0.map { $0 * 2 } }
     }
