@@ -81,7 +81,11 @@ extension Publishers.Map {
     public func receive<Downstream: Subscriber>(subscriber: Downstream)
         where Output == Downstream.Input, Downstream.Failure == Upstream.Failure
     {
-        let inner = Inner(downstream: subscriber, transform: catching(transform))
+        let inner = TransformingInner<Upstream, Downstream>(
+            description: "Map",
+            downstream: subscriber,
+            shouldProxySubscription: false,
+            transform: catching(transform))
         upstream.subscribe(inner)
     }
 
@@ -103,8 +107,16 @@ extension Publishers.TryMap {
     public func receive<Downstream: Subscriber>(subscriber: Downstream)
         where Output == Downstream.Input, Downstream.Failure == Error
     {
-        let inner = Inner(downstream: subscriber, transform: catching(transform))
-        upstream.subscribe(inner)
+        let inner = TransformingInner<
+            Publishers.MapError<Upstream, Error>,
+            Downstream>(description: "TryMap",
+                        downstream: subscriber,
+                        shouldProxySubscription: true,
+                        transform: catching(transform))
+        // We use mapError for the `tryXXX` variant in order to adapt
+        // the upstream to match the `Failure` of the downstream. Because
+        // it uses `throw`, we know downstream's `Failure` will be `Error`.
+        upstream.mapError { error -> Error in error }.subscribe(inner)
     }
 
     public func map<Result>(
@@ -117,92 +129,5 @@ extension Publishers.TryMap {
         _ transform: @escaping (Output) throws -> Result
     ) -> Publishers.TryMap<Upstream, Result> {
         return .init(upstream: upstream) { try transform(self.transform($0)) }
-    }
-}
-
-private class _Map<Upstream: Publisher, Downstream: Subscriber>
-    : OperatorSubscription<Downstream>
-{
-    typealias Input = Upstream.Output
-    typealias Failure = Upstream.Failure
-    typealias Transform = (Input) -> Result<Downstream.Input, Downstream.Failure>
-
-    fileprivate var _transform: Transform?
-
-    var isCompleted: Bool {
-        return _transform == nil
-    }
-
-    init(downstream: Downstream, transform: @escaping Transform) {
-        _transform = transform
-        super.init(downstream: downstream)
-    }
-
-    func receive(_ input: Input) -> Subscribers.Demand {
-        switch _transform?(input) {
-        case .success(let output)?:
-            return downstream.receive(output)
-        case .failure(let error)?:
-            downstream.receive(completion: .failure(error))
-            _transform = nil
-            return .none
-        case nil:
-            return .none
-        }
-    }
-}
-
-extension Publishers.Map {
-
-    private final class Inner<Downstream: Subscriber>
-        : _Map<Upstream, Downstream>,
-          CustomStringConvertible,
-          Subscriber
-        where Downstream.Failure == Upstream.Failure
-    {
-
-        func receive(subscription: Subscription) {
-            downstream.receive(subscription: subscription)
-        }
-
-        func receive(completion: Subscribers.Completion<Failure>) {
-            downstream.receive(completion: completion)
-        }
-
-        var description: String { return "Map" }
-    }
-}
-
-extension Publishers.TryMap {
-
-    private final class Inner<Downstream: Subscriber>
-        : _Map<Upstream, Downstream>,
-          Subscription,
-          CustomStringConvertible,
-          Subscriber
-        where Downstream.Failure == Error
-    {
-        func receive(subscription: Subscription) {
-            upstreamSubscription = subscription
-            downstream.receive(subscription: self)
-        }
-
-        func receive(completion: Subscribers.Completion<Failure>) {
-            if !isCompleted {
-                _transform = nil
-                downstream.receive(completion: completion.eraseError())
-            }
-        }
-
-        func request(_ demand: Subscribers.Demand) {
-            upstreamSubscription?.request(demand)
-        }
-
-        override func cancel() {
-            _transform = nil
-            super.cancel()
-        }
-
-        var description: String { return "TryMap" }
     }
 }

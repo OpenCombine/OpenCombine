@@ -38,6 +38,7 @@ public func allTests() -> [XCTestCaseEntry] {
         testCase(PublisherTests.allTests),
         testCase(ReplaceNilTests.allTests),
         testCase(ResultPublisherTests.allTests),
+        testCase(ScanTests.allTests),
         testCase(SequenceTests.allTests),
         testCase(SetFailureTypeTests.allTests),
         testCase(SinkTests.allTests),
