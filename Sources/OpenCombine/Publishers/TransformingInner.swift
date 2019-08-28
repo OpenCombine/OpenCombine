@@ -39,14 +39,13 @@ extension TransformingInner: Subscriber {
     }
 
     public final func receive(_ input: Upstream.Output) -> Subscribers.Demand {
-        switch transform?(input) {
+        guard let trans = transform else { return .none }
+        switch trans(input) {
         case .success(let transformedValue):
             return downstream.receive(transformedValue)
         case .failure(let error):
             downstream.receive(completion: .failure(error))
             transform = nil
-            return .none
-        case nil:
             return .none
         }
     }
