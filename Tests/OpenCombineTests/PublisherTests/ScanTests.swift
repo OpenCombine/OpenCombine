@@ -70,7 +70,7 @@ final class ScanTests: XCTestCase {
         var counter = 0 // How many times the transform is called?
 
         let publisher = PassthroughSubject<Int, Error>()
-        let scan = publisher.tryScan(0) { (accum, value) -> Int in
+        let scan = publisher.tryScan(0) { _, value -> Int in
             counter += 1
             if value == 100 {
                 throw "too much" as TestingError
