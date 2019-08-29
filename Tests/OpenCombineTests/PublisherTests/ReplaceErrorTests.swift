@@ -158,7 +158,7 @@ final class ReplaceErrorTests: XCTestCase {
                                         initialDemand: .unlimited,
                                         receiveValueDemand: .max(1),
                                         createSut: { $0.replaceError(with: 42) })
-        
+
         helper.downstreamSubscription?.cancel()
         try XCTUnwrap(helper.downstreamSubscription).cancel()
         helper.downstreamSubscription?.request(.unlimited)
