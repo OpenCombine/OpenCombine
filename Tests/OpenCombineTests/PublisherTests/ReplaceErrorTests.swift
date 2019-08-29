@@ -37,50 +37,60 @@ final class ReplaceErrorTests: XCTestCase {
 
     func testError() {
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
-                                initialDemand: .max(1),
-                                receiveValueDemand: .none,
-                                createSut: { $0.replaceError(with: 42) })
+                                        initialDemand: .max(1),
+                                        receiveValueDemand: .none,
+                                        createSut: { $0.replaceError(with: 42) })
 
         helper.publisher.send(completion: .failure(TestingError.oops))
         
-        XCTAssertEqual(helper.tracking.history, [.subscription("ReplaceError"), .value(42), .completion(.finished)])
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReplaceError"),
+                                                 .value(42),
+                                                 .completion(.finished)
+        ])
     }
     
     func testWithoutError() {
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
-                                initialDemand: .max(1),
-                                receiveValueDemand: .none,
-                                createSut: { $0.replaceError(with: 40) })
+                                        initialDemand: .max(1),
+                                        receiveValueDemand: .none,
+                                        createSut: { $0.replaceError(with: 40) })
 
         XCTAssertEqual(helper.publisher.send(42), .none)
         helper.publisher.send(completion: .finished)
 
-        XCTAssertEqual(helper.tracking.history, [.subscription("ReplaceError"), .value(42), .completion(.finished)])
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReplaceError"),
+                                                 .value(42),
+                                                 .completion(.finished)])
     }
 
     func testSendingValueAndThenError() {
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
-                                initialDemand: .max(1),
-                                receiveValueDemand: .max(1),
-                                createSut: { $0.replaceError(with: 42) })
+                                        initialDemand: .max(1),
+                                        receiveValueDemand: .max(1),
+                                        createSut: { $0.replaceError(with: 42) })
 
         XCTAssertEqual(helper.publisher.send(41), .max(1))
         helper.publisher.send(completion: .failure(TestingError.oops))
 
-        XCTAssertEqual(helper.tracking.history, [.subscription("ReplaceError"), .value(41), .value(42), .completion(.finished)])
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReplaceError"),
+                                                 .value(41),
+                                                 .value(42),
+                                                 .completion(.finished)])
     }
 
     func testFailingBeforeDemanding() {
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
-                                initialDemand: nil,
-                                receiveValueDemand: .max(1),
-                                createSut: { $0.replaceError(with: 42) })
+                                        initialDemand: nil,
+                                        receiveValueDemand: .max(1),
+                                        createSut: { $0.replaceError(with: 42) })
 
         helper.publisher.send(completion: .failure(TestingError.oops))
         XCTAssertEqual(helper.tracking.history, [.subscription("ReplaceError")])
 
         helper.downstreamSubscription?.request(.unlimited)
-        XCTAssertEqual(helper.tracking.history, [.subscription("ReplaceError"), .value(42), .completion(.finished)])
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReplaceError"),
+                                                 .value(42),
+                                                 .completion(.finished)])
     }
 
     func testLifecycle() throws {
@@ -145,9 +155,9 @@ final class ReplaceErrorTests: XCTestCase {
 
     func testCancelAlreadyCancelled() throws {
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
-                                initialDemand: .unlimited,
-                                receiveValueDemand: .max(1),
-                                createSut: { $0.replaceError(with: 42) })
+                                        initialDemand: .unlimited,
+                                        receiveValueDemand: .max(1),
+                                        createSut: { $0.replaceError(with: 42) })
         
         helper.downstreamSubscription?.cancel()
         try XCTUnwrap(helper.downstreamSubscription).cancel()

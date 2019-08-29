@@ -9,7 +9,7 @@ import Foundation
 
 extension Publishers {
     /// A publisher that replaces any errors in the stream with a provided element.
-    public struct ReplaceError<Upstream> : Publisher where Upstream : Publisher {
+    public struct ReplaceError<Upstream>: Publisher where Upstream : Publisher {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
