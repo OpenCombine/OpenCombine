@@ -44,6 +44,18 @@ final class ReplaceErrorTests: XCTestCase {
         
         XCTAssertEqual(helper.tracking.history, [.subscription("ReplaceError"), .value(42), .completion(.finished)])
     }
+    
+    func testWithoutError() {
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                initialDemand: .max(1),
+                                receiveValueDemand: .none,
+                                createSut: { $0.replaceError(with: 40) })
+
+        XCTAssertEqual(helper.publisher.send(42), .none)
+        helper.publisher.send(completion: .finished)
+
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReplaceError"), .value(42), .completion(.finished)])
+    }
 
     func testSendingValueAndThenError() {
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
