@@ -18,6 +18,7 @@ final class ReplaceErrorTests: XCTestCase {
     static let allTests = [
         ("testEmpty", testEmpty),
         ("testError", testError),
+        ("testWithoutError", testWithoutError),
         ("testSendingValueAndThenError", testSendingValueAndThenError),
         ("testLifecycle", testLifecycle),
         ("testCancelAlreadyCancelled", testCancelAlreadyCancelled),

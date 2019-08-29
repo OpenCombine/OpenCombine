@@ -68,6 +68,7 @@ private final class _ReplaceError<Upstream: Publisher, Downstream: Subscriber>
     var hasFailed: Bool = false
     var description: String { return "ReplaceError" }
 
+    private let _lock = Lock(recursive: true)
     private let output: Downstream.Input
 
     init(downstream: Downstream,
@@ -77,15 +78,17 @@ private final class _ReplaceError<Upstream: Publisher, Downstream: Subscriber>
     }
     
     func request(_ demand: Subscribers.Demand) {
-        guard hasFailed == false else {
-            _ = downstream.receive(output)
-            downstream?.receive(completion: .finished)
-            return
+        _lock.do {
+            guard hasFailed == false else {
+                _ = downstream.receive(output)
+                downstream?.receive(completion: .finished)
+                return
+            }
+
+            hasAnyDownstreamDemand = true
+
+            upstreamSubscription?.request(demand)
         }
-
-        hasAnyDownstreamDemand = true
-
-        upstreamSubscription?.request(demand)
     }
 
     func receive(subscription: Subscription) {
@@ -98,17 +101,19 @@ private final class _ReplaceError<Upstream: Publisher, Downstream: Subscriber>
     }
 
     func receive(completion: Subscribers.Completion<Upstream.Failure>) {
-        switch completion {
-        case .finished:
-            downstream.receive(completion: .finished)
-        case .failure:
-            hasFailed = true
+        _lock.do {
+            switch completion {
+            case .finished:
+                downstream.receive(completion: .finished)
+            case .failure:
+                hasFailed = true
 
-            // If there was no demand from downstream,
-            // ReplaceError does not forward the value that replaces the error until it is requested.
-            if hasAnyDownstreamDemand {
-                _ = downstream.receive(output)
-                downstream?.receive(completion: .finished)
+                // If there was no demand from downstream,
+                // ReplaceError does not forward the value that replaces the error until it is requested.
+                if hasAnyDownstreamDemand {
+                    _ = downstream.receive(output)
+                    downstream?.receive(completion: .finished)
+                }
             }
         }
     }
