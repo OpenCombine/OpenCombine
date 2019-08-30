@@ -28,13 +28,17 @@ extension Publishers {
             self.output = output
         }
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<SubscriberType>(subscriber: SubscriberType) where SubscriberType : Subscriber, Upstream.Output == SubscriberType.Input, SubscriberType.Failure == Publishers.ReplaceError<Upstream>.Failure {
+        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
+            where Upstream.Output == SubscriberType.Input,
+                  SubscriberType.Failure == Failure
+        {
             let replaceErrorSubscriber = _ReplaceError<Upstream, SubscriberType>(
                 downstream: subscriber,
                 output: output
@@ -45,11 +49,13 @@ extension Publishers {
 }
 
 extension Publisher {
-        /// Replaces any errors in the stream with the provided element.
+    /// Replaces any errors in the stream with the provided element.
     ///
-    /// If the upstream publisher fails with an error, this publisher emits the provided element, then finishes normally.
+    /// If the upstream publisher fails with an error, this publisher emits the provided element,
+    /// then finishes normally.
     /// - Parameter output: An element to emit when the upstream publisher fails.
-    /// - Returns: A publisher that replaces an error from the upstream publisher with the provided output element.
+    /// - Returns: A publisher that replaces an error from the upstream publisher with
+    ///            the provided output element.
     public func replaceError(with output: Self.Output) -> Publishers.ReplaceError<Self> {
         return Publishers.ReplaceError(upstream: self, output: output)
     }

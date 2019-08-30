@@ -28,9 +28,9 @@ final class ReplaceErrorTests: XCTestCase {
     
     func testEmpty() {
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
-                        initialDemand: nil,
-                        receiveValueDemand: .none,
-                        createSut: { $0.replaceError(with: 42) })
+                                        initialDemand: nil,
+                                        receiveValueDemand: .none,
+                                        createSut: { $0.replaceError(with: 42) })
 
         XCTAssertEqual(helper.tracking.history, [.subscription("ReplaceError")])
     }
