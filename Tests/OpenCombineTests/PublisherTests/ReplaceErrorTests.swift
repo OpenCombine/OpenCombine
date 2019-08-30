@@ -25,7 +25,7 @@ final class ReplaceErrorTests: XCTestCase {
         ("testFailingBeforeDemanding", testFailingBeforeDemanding),
         ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
     ]
-    
+
     func testEmpty() {
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
                                         initialDemand: nil,
@@ -42,13 +42,13 @@ final class ReplaceErrorTests: XCTestCase {
                                         createSut: { $0.replaceError(with: 42) })
 
         helper.publisher.send(completion: .failure(TestingError.oops))
-        
+
         XCTAssertEqual(helper.tracking.history, [.subscription("ReplaceError"),
                                                  .value(42),
                                                  .completion(.finished)
         ])
     }
-    
+
     func testWithoutError() {
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
                                         initialDemand: .max(1),

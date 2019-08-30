@@ -7,7 +7,7 @@
 
 extension Publishers {
     /// A publisher that replaces any errors in the stream with a provided element.
-    public struct ReplaceError<Upstream>: Publisher where Upstream : Publisher {
+    public struct ReplaceError<Upstream>: Publisher where Upstream: Publisher {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
@@ -23,7 +23,8 @@ extension Publishers {
         /// The publisher from which this publisher receives elements.
         public let upstream: Upstream
 
-        public init(upstream: Upstream, output: Publishers.ReplaceError<Upstream>.Output) {
+        public init(upstream: Upstream,
+                    output: Publishers.ReplaceError<Upstream>.Output) {
             self.upstream = upstream
             self.output = output
         }
@@ -51,8 +52,8 @@ extension Publishers {
 extension Publisher {
     /// Replaces any errors in the stream with the provided element.
     ///
-    /// If the upstream publisher fails with an error, this publisher emits the provided element,
-    /// then finishes normally.
+    /// If the upstream publisher fails with an error, this publisher emits the provided
+    /// element, then finishes normally.
     /// - Parameter output: An element to emit when the upstream publisher fails.
     /// - Returns: A publisher that replaces an error from the upstream publisher with
     ///            the provided output element.
@@ -83,7 +84,7 @@ private final class _ReplaceError<Upstream: Publisher, Downstream: Subscriber>
         self.output = output
         super.init(downstream: downstream)
     }
-    
+
     func request(_ demand: Subscribers.Demand) {
         _lock.do {
             guard hasFailed == false else {
