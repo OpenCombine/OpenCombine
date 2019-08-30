@@ -5,8 +5,6 @@
 //  Created by Bogdan Vlad on 8/29/19.
 //
 
-import Foundation
-
 extension Publishers {
     /// A publisher that replaces any errors in the stream with a provided element.
     public struct ReplaceError<Upstream>: Publisher where Upstream : Publisher {
@@ -37,7 +35,10 @@ extension Publishers {
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
         public func receive<SubscriberType>(subscriber: SubscriberType) where SubscriberType : Subscriber, Upstream.Output == SubscriberType.Input, SubscriberType.Failure == Publishers.ReplaceError<Upstream>.Failure {
-            let replaceErrorSubscriber = _ReplaceError<Upstream, SubscriberType>(downstream: subscriber, output: output)
+            let replaceErrorSubscriber = _ReplaceError<Upstream, SubscriberType>(
+                downstream: subscriber,
+                output: output
+            )
             upstream.subscribe(replaceErrorSubscriber)
         }
     }
@@ -109,7 +110,8 @@ private final class _ReplaceError<Upstream: Publisher, Downstream: Subscriber>
                 hasFailed = true
 
                 // If there was no demand from downstream,
-                // ReplaceError does not forward the value that replaces the error until it is requested.
+                // ReplaceError does not forward the value that
+                // replaces the error until it is requested.
                 if hasAnyDownstreamDemand {
                     _ = downstream.receive(output)
                     downstream?.receive(completion: .finished)
