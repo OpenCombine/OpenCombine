@@ -1963,44 +1963,9 @@ extension Publishers {
         ///                   once attached it can begin to receive values.
         public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
     }
-
-    /// A publisher that replaces any errors in the stream with a provided element.
-    public struct ReplaceError<Upstream> : Publisher where Upstream : Publisher {
-
-        /// The kind of values published by this publisher.
-        public typealias Output = Upstream.Output
-
-        /// The kind of errors this publisher might publish.
-        ///
-        /// Use `Never` if this `Publisher` does not publish errors.
-        public typealias Failure = Never
-
-        /// The element with which to replace errors from the upstream publisher.
-        public let output: Upstream.Output
-
-        /// The publisher from which this publisher receives elements.
-        public let upstream: Upstream
-
-        public init(upstream: Upstream, output: Publishers.ReplaceError<Upstream>.Output)
-
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
-        ///
-        /// - SeeAlso: `subscribe(_:)`
-        /// - Parameters:
-        ///     - subscriber: The subscriber to attach to this `Publisher`.
-        ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Output == S.Input, S.Failure == Publishers.ReplaceError<Upstream>.Failure
-    }
 }
 
 extension Publisher {
-
-    /// Replaces any errors in the stream with the provided element.
-    ///
-    /// If the upstream publisher fails with an error, this publisher emits the provided element, then finishes normally.
-    /// - Parameter output: An element to emit when the upstream publisher fails.
-    /// - Returns: A publisher that replaces an error from the upstream publisher with the provided output element.
-    public func replaceError(with output: Self.Output) -> Publishers.ReplaceError<Self>
 
     /// Replaces an empty stream with the provided element.
     ///
