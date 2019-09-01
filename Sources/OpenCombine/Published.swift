@@ -39,13 +39,13 @@ import Foundation
         // MARK: - Private
         private var _passthrowObject = OpenCombine.PassthroughSubject<Value,Never>()
         
-        public func send(_ input: Output) {
+        internal func send(_ input: Output) {
             _passthrowObject.send(input)
         }
     }
 
     /// The property that can be accessed with the `$` syntax and allows access to the `Publisher`
-    public private(set) lazy var projectedValue: Published<Value>.Publisher = Published<Value>.Publisher()
+    public private(set) lazy var projectedValue: Published<Value>.Publisher = .init()
     
     public var wrappedValue: Value {
         get { value }
