@@ -36,13 +36,13 @@ public func allTests() -> [XCTestCaseEntry] {
         testCase(PassthroughSubjectTests.allTests),
         testCase(PrintTests.allTests),
         testCase(PublisherTests.allTests),
+        testCase(ReplaceErrorTests.allTests),
         testCase(ReplaceNilTests.allTests),
         testCase(ResultPublisherTests.allTests),
         testCase(SequenceTests.allTests),
         testCase(SetFailureTypeTests.allTests),
         testCase(SinkTests.allTests),
         testCase(SubscribersDemandTests.allTests),
-        testCase(ReplaceErrorTests.allTests),
     ]
 }
 #endif

@@ -168,6 +168,28 @@ final class ReplaceErrorTests: XCTestCase {
                                               .cancelled])
     }
 
+    func testErrorWhileDownstreamDemandIsZero() {
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        initialDemand: .max(1),
+                                        receiveValueDemand: .none,
+                                        createSut: { $0.replaceError(with: 42) })
+
+        // Send demanded value
+        _ = helper.publisher.send(9)
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReplaceError"),
+                                                 .value(9)])
+
+        helper.publisher.send(completion: .failure(TestingError.oops))
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReplaceError"),
+                                                 .value(9)])
+
+        helper.downstreamSubscription?.request(.max(1))
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReplaceError"),
+                                                 .value(9),
+                                                 .value(42),
+                                                 .completion(.finished)])
+    }
+
     // MARK: -
     func testTestSuiteIncludesAllTests() {
     // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/

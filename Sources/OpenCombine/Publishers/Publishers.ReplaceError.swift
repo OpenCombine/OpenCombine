@@ -7,7 +7,7 @@
 
 extension Publishers {
     /// A publisher that replaces any errors in the stream with a provided element.
-    public struct ReplaceError<Upstream>: Publisher where Upstream: Publisher {
+    public struct ReplaceError<Upstream: Publisher>: Publisher {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
@@ -24,7 +24,7 @@ extension Publishers {
         public let upstream: Upstream
 
         public init(upstream: Upstream,
-                    output: Publishers.ReplaceError<Upstream>.Output) {
+                    output: Output) {
             self.upstream = upstream
             self.output = output
         }
@@ -57,7 +57,7 @@ extension Publisher {
     /// - Parameter output: An element to emit when the upstream publisher fails.
     /// - Returns: A publisher that replaces an error from the upstream publisher with
     ///            the provided output element.
-    public func replaceError(with output: Self.Output) -> Publishers.ReplaceError<Self> {
+    public func replaceError(with output: Output) -> Publishers.ReplaceError<Self> {
         return Publishers.ReplaceError(upstream: self, output: output)
     }
 }
@@ -72,11 +72,10 @@ private final class _ReplaceError<Upstream: Publisher, Downstream: Subscriber>
     typealias Input = Upstream.Output
     typealias Failure = Upstream.Failure
 
-    var hasAnyDownstreamDemand: Bool = false
+    var downstreamDemandCounter: Subscribers.Demand = .none
     var hasFailed: Bool = false
     var description: String { return "ReplaceError" }
 
-    private let _lock = Lock(recursive: true)
     private let output: Downstream.Input
 
     init(downstream: Downstream,
@@ -86,15 +85,11 @@ private final class _ReplaceError<Upstream: Publisher, Downstream: Subscriber>
     }
 
     func request(_ demand: Subscribers.Demand) {
-        _lock.do {
-            guard hasFailed == false else {
-                _ = downstream.receive(output)
-                downstream?.receive(completion: .finished)
-                return
-            }
-
-            hasAnyDownstreamDemand = true
-
+        if hasFailed {
+            _ = downstream.receive(output)
+            downstream?.receive(completion: .finished)
+        } else {
+            downstreamDemandCounter += demand
             upstreamSubscription?.request(demand)
         }
     }
@@ -105,24 +100,27 @@ private final class _ReplaceError<Upstream: Publisher, Downstream: Subscriber>
     }
 
     func receive(_ input: Upstream.Output) -> Subscribers.Demand {
-        return downstream.receive(input)
+        downstreamDemandCounter -= 1
+
+        let demand = downstream.receive(input)
+        downstreamDemandCounter += demand
+
+        return demand
     }
 
     func receive(completion: Subscribers.Completion<Upstream.Failure>) {
-        _lock.do {
-            switch completion {
-            case .finished:
-                downstream.receive(completion: .finished)
-            case .failure:
-                hasFailed = true
+        switch completion {
+        case .finished:
+            downstream.receive(completion: .finished)
+        case .failure:
+            hasFailed = true
 
-                // If there was no demand from downstream,
-                // ReplaceError does not forward the value that
-                // replaces the error until it is requested.
-                if hasAnyDownstreamDemand {
-                    _ = downstream.receive(output)
-                    downstream?.receive(completion: .finished)
-                }
+            // If there was no demand from downstream,
+            // ReplaceError does not forward the value that
+            // replaces the error until it is requested.
+            if downstreamDemandCounter > 0 {
+                _ = downstream.receive(output)
+                downstream?.receive(completion: .finished)
             }
         }
     }
