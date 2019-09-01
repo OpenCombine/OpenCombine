@@ -24,6 +24,7 @@ final class ReplaceErrorTests: XCTestCase {
         ("testCancelAlreadyCancelled", testCancelAlreadyCancelled),
         ("testFailingBeforeDemanding", testFailingBeforeDemanding),
         ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
+        ("testErrorWhileDownstreamDemandIsZero", testErrorWhileDownstreamDemandIsZero),
     ]
 
     func testEmpty() {
