@@ -5,6 +5,7 @@
 //  Created by Евгений Богомолов on 01/09/2019.
 //
 
+#if swift(>=5.1)
 @propertyWrapper public struct Published<Value> {
 
     /// Initialize the storage of the Published
@@ -66,3 +67,4 @@
         self.value = wrappedValue
     }
 }
+#endif
