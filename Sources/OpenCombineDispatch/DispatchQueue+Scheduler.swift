@@ -65,7 +65,6 @@ extension DispatchQueue {
                 return .init(dispatchTime + stride.timeInterval)
             }
 
-
             public func hash(into hasher: inout Hasher) {
                 hasher.combine(dispatchTime.rawValue)
             }
@@ -178,6 +177,8 @@ extension DispatchQueue {
                     return .seconds(lhs.magnitude - rhs.magnitude)
                 }
 
+                // swiftlint:disable shorthand_operator
+
                 public static func -= (lhs: inout Stride, rhs: Stride) {
                     lhs = lhs - rhs
                 }
@@ -189,6 +190,8 @@ extension DispatchQueue {
                 public static func += (lhs: inout Stride, rhs: Stride) {
                     lhs = lhs + rhs
                 }
+
+                // swiftlint:enable shorthand_operator
 
                 public static func seconds(_ value: Double) -> Stride {
                     return Stride(magnitude: Int(value * 1_000_000_000))

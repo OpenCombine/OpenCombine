@@ -5,8 +5,8 @@
 //  Created by Sergej Jaskiewicz on 26.08.2019.
 //
 
-import XCTest
 import Dispatch
+import XCTest
 
 #if OPENCOMBINE_COMPATIBILITY_TEST
 import Combine
@@ -135,11 +135,11 @@ final class DispatchQueueSchedulerTests: XCTestCase {
     func testStrideFromDispatchTimeInterval() {
         typealias Stride = Scheduler.SchedulerTimeType.Stride
 
-        XCTAssertEqual(Stride(.seconds(12)).magnitude,      12000000000)
+        XCTAssertEqual(Stride(.seconds(12)).magnitude, 12000000000)
         XCTAssertEqual(Stride(.milliseconds(34)).magnitude, 34000000)
         XCTAssertEqual(Stride(.microseconds(56)).magnitude, 56000)
-        XCTAssertEqual(Stride(.nanoseconds(78)).magnitude,  78)
-        XCTAssertEqual(Stride(.never).magnitude,            .max)
+        XCTAssertEqual(Stride(.nanoseconds(78)).magnitude, 78)
+        XCTAssertEqual(Stride(.never).magnitude, .max)
 
         do {
             // @unknown default branch
@@ -161,7 +161,7 @@ final class DispatchQueueSchedulerTests: XCTestCase {
 
             let interval = unsafeBitCast(MyDispatchTimeInterval.unknownCase,
                                          to: DispatchTimeInterval.self)
-            XCTAssertEqual(Stride(interval).magnitude,            .max)
+            XCTAssertEqual(Stride(interval).magnitude, .max)
         }
     }
 
@@ -391,12 +391,18 @@ final class DispatchQueueSchedulerTests: XCTestCase {
 
     func testNow() {
         let expectedNow = DispatchTime.now().uptimeNanoseconds
-        let actualNowMainScheduler = mainScheduler.now.dispatchTime.uptimeNanoseconds
-        let actualNowBackgroundScheduler = backgroundScheduler.now.dispatchTime.uptimeNanoseconds
+        let actualNowMainScheduler = mainScheduler
+            .now
+            .dispatchTime
+            .uptimeNanoseconds
+        let actualNowBackgroundScheduler = backgroundScheduler
+            .now
+            .dispatchTime
+            .uptimeNanoseconds
         XCTAssertLessThan(abs(actualNowMainScheduler.distance(to: expectedNow)),
-                          100_000/*nanoseconds*/)
+                          200_000/*nanoseconds*/)
         XCTAssertLessThan(abs(actualNowBackgroundScheduler.distance(to: expectedNow)),
-                          100_000/*nanoseconds*/)
+                          200_000/*nanoseconds*/)
     }
 
     func testDefaultSchedulerOptions() {
@@ -411,7 +417,7 @@ final class DispatchQueueSchedulerTests: XCTestCase {
         main.assertForOverFulfill = true
 
         var didExecuteMainAction = false
-        var didExecuteBackgroundAction = false
+        let didExecuteBackgroundAction = Atomic(false)
 
         mainScheduler.schedule {
             didExecuteMainAction = true
@@ -422,16 +428,16 @@ final class DispatchQueueSchedulerTests: XCTestCase {
 
         backgroundScheduler
             .schedule(options: .init(qos: .userInteractive, group: group)) {
-                didExecuteBackgroundAction = true
+                didExecuteBackgroundAction.do { $0 = true }
             }
 
         XCTAssertFalse(didExecuteMainAction)
-        XCTAssertFalse(didExecuteBackgroundAction)
+        XCTAssertFalse(didExecuteBackgroundAction.value)
 
         XCTAssertEqual(group.wait(timeout: .now() + 0.1), .success)
 
         XCTAssertFalse(didExecuteMainAction)
-        XCTAssertTrue(didExecuteBackgroundAction)
+        XCTAssertTrue(didExecuteBackgroundAction.value)
 
         wait(for: [main], timeout: 0.1)
     }
@@ -517,7 +523,6 @@ final class DispatchQueueSchedulerTests: XCTestCase {
 #endif
     }
 }
-
 
 #if OPENCOMBINE_COMPATIBILITY_TEST || !canImport(Combine)
 
