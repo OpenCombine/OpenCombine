@@ -2,7 +2,7 @@
 /.build
 /Packages
 /*.xcodeproj
-.swiftpm/
+/.swiftpm
 
 # Created by https://www.gitignore.io/api/Xcode
 # Edit at https://www.gitignore.io/?templates=Xcode
