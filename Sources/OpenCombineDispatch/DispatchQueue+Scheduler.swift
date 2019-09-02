@@ -126,7 +126,7 @@ extension DispatchQueue {
                     case .nanoseconds(let nanoseconds):
                         self = .nanoseconds(nanoseconds)
                     case .never:
-                        self = .nanoseconds(.max)
+                        fallthrough
                     @unknown default:
                         self = .nanoseconds(.max)
                     }
