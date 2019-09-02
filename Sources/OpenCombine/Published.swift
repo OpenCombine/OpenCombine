@@ -11,7 +11,7 @@
     /// Initialize the storage of the Published
     /// property as well as the corresponding `Publisher`.
     public init(initialValue: Value) {
-        self.value = initialValue
+        _value = initialValue
     }
 
     public struct Publisher: OpenCombine.Publisher {
@@ -51,20 +51,20 @@
     public private(set) lazy var projectedValue: Published<Value>.Publisher = .init()
 
     public var wrappedValue: Value {
-        get { value }
+        get { _value }
         set {
-            value = newValue
+            _value = newValue
             projectedValue.send(newValue)
         }
      }
 
-    private var value: Value
+    private var _value: Value
 
     /// For removing warning: Property wrapper's `init(initialValue:)`
     /// should be renamed to 'init(wrappedValue:)';
     /// use of 'init(initialValue:)' is deprecated
     public init(wrappedValue: Value) {
-        self.value = wrappedValue
+        self._value = wrappedValue
     }
 }
 #endif
