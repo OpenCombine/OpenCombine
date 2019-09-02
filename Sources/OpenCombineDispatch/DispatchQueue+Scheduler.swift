@@ -50,7 +50,9 @@ extension DispatchQueue {
             /// - Parameter other: Another dispatch queue time.
             /// - Returns: The time interval between this time and the provided time.
             public func distance(to other: SchedulerTimeType) -> Stride {
-                fatalError()
+                return .nanoseconds(
+                    Int(other.dispatchTime.rawValue - dispatchTime.rawValue)
+                )
             }
 
             /// Returns a dispatch queue scheduler time calculated by advancing
@@ -59,20 +61,23 @@ extension DispatchQueue {
             /// - Parameter n: A time interval to advance.
             /// - Returns: A dispatch queue time advanced by the given
             ///   interval from this instance’s time.
-            public func advanced(by n: Stride) -> SchedulerTimeType {
-                fatalError()
+            public func advanced(by stride: Stride) -> SchedulerTimeType {
+                return .init(dispatchTime + stride.timeInterval)
             }
+
 
             public func hash(into hasher: inout Hasher) {
                 hasher.combine(dispatchTime.rawValue)
             }
 
             public func encode(to encoder: Encoder) throws {
-                fatalError()
+                var container = encoder.singleValueContainer()
+                try container.encode(dispatchTime.uptimeNanoseconds)
             }
 
             public init(from decoder: Decoder) throws {
-                fatalError()
+                let container = try decoder.singleValueContainer()
+                dispatchTime = try .init(uptimeNanoseconds: container.decode(UInt64.self))
             }
 
             /// A type that represents the distance between two values.
@@ -112,7 +117,20 @@ extension DispatchQueue {
                 ///
                 /// - Parameter timeInterval: A dispatch time interval.
                 public init(_ timeInterval: DispatchTimeInterval) {
-                    fatalError()
+                    switch timeInterval {
+                    case .seconds(let seconds):
+                        self = .seconds(seconds)
+                    case .milliseconds(let milliseconds):
+                        self = .milliseconds(milliseconds)
+                    case .microseconds(let microseconds):
+                        self = .microseconds(microseconds)
+                    case .nanoseconds(let nanoseconds):
+                        self = .nanoseconds(nanoseconds)
+                    case .never:
+                        self = .nanoseconds(.max)
+                    @unknown default:
+                        self = .nanoseconds(.max)
+                    }
                 }
 
                 /// Creates a dispatch queue time interval from a floating-point
@@ -138,7 +156,7 @@ extension DispatchQueue {
                 /// - Parameter exactly: A binary integer representing a time interval.
                 public init?<Source: BinaryInteger>(exactly source: Source) {
                     guard let value = Int(exactly: source) else { return nil }
-                    self = .seconds(value)
+                    self = .nanoseconds(value)
                 }
 
                 public static func < (lhs: Stride, rhs: Stride) -> Bool {
@@ -146,27 +164,30 @@ extension DispatchQueue {
                 }
 
                 public static func * (lhs: Stride, rhs: Stride) -> Stride {
-                    return Stride(magnitude: lhs.magnitude * rhs.magnitude)
+                    // A bug in Combine, should be nanoseconds (FB7189676)
+                    return .seconds(lhs.magnitude * rhs.magnitude)
                 }
 
                 public static func + (lhs: Stride, rhs: Stride) -> Stride {
-                    return Stride(magnitude: lhs.magnitude + rhs.magnitude)
+                    // A bug in Combine, should be nanoseconds (FB7189676)
+                    return .seconds(lhs.magnitude + rhs.magnitude)
                 }
 
                 public static func - (lhs: Stride, rhs: Stride) -> Stride {
-                    return Stride(magnitude: lhs.magnitude - rhs.magnitude)
+                    // A bug in Combine, should be nanoseconds (FB7189676)
+                    return .seconds(lhs.magnitude - rhs.magnitude)
                 }
 
                 public static func -= (lhs: inout Stride, rhs: Stride) {
-                    lhs.magnitude -= rhs.magnitude
+                    lhs = lhs - rhs
                 }
 
                 public static func *= (lhs: inout Stride, rhs: Stride) {
-                    lhs.magnitude *= rhs.magnitude
+                    lhs = lhs * rhs
                 }
 
                 public static func += (lhs: inout Stride, rhs: Stride) {
-                    lhs.magnitude += rhs.magnitude
+                    lhs = lhs + rhs
                 }
 
                 public static func seconds(_ value: Double) -> Stride {
@@ -187,14 +208,6 @@ extension DispatchQueue {
 
                 public static func nanoseconds(_ value: Int) -> Stride {
                     return Stride(magnitude: value)
-                }
-
-                public init(from decoder: Decoder) throws {
-                    fatalError()
-                }
-
-                public func encode(to encoder: Encoder) throws {
-                    fatalError()
                 }
             }
         }
@@ -221,7 +234,7 @@ extension DispatchQueue {
         }
 
         public var minimumTolerance: SchedulerTimeType.Stride {
-            fatalError()
+            return .nanoseconds(0)
         }
 
         public var now: SchedulerTimeType {
@@ -255,16 +268,15 @@ extension DispatchQueue {
                              tolerance: SchedulerTimeType.Stride,
                              options: SchedulerOptions?,
                              _ action: @escaping () -> Void) -> Cancellable {
+            let options = options ?? .init()
             let timer = DispatchSource.makeTimerSource(queue: queue)
-            timer.setEventHandler(handler: action)
+            timer.setEventHandler(qos: options.qos,
+                                  flags: options.flags,
+                                  handler: action)
             timer.schedule(deadline: date.dispatchTime,
                            repeating: interval.timeInterval,
                            leeway: tolerance.timeInterval)
-            if #available(macOS 10.12, iOS 10.0, tvOS 10.0, watchOS 3.0, *) {
-                timer.activate()
-            } else {
-                timer.resume()
-            }
+            timer.resume()
             return AnyCancellable(timer.cancel)
         }
     }
