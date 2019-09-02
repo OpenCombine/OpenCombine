@@ -15,7 +15,9 @@ let package = Package(
         .target(name: "OpenCombine"),
         .target(name: "OpenCombineDispatch", dependencies: ["OpenCombine"]),
         .testTarget(name: "OpenCombineTests",
-                    dependencies: ["OpenCombine", "GottaGoFast"],
+                    dependencies: ["OpenCombine",
+                                   "OpenCombineDispatch",
+                                   "GottaGoFast"],
                     swiftSettings: [.unsafeFlags(["-enable-testing"])])
     ]
 )

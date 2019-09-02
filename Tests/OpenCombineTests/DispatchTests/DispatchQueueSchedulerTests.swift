@@ -18,29 +18,6 @@ import OpenCombineDispatch
 @available(macOS 10.15, iOS 13.0, *)
 final class DispatchQueueSchedulerTests: XCTestCase {
 
-    static let allTests = [
-        ("testSchedulerTimeTypeDistance", testSchedulerTimeTypeDistance),
-        ("testSchedulerTimeTypeAdvanced", testSchedulerTimeTypeAdvanced),
-        ("testSchedulerTimeTypeEquatable", testSchedulerTimeTypeEquatable),
-        ("testSchedulerTimeTypeHashable", testSchedulerTimeTypeHashable),
-        ("testSchedulerTimeTypeCodable", testSchedulerTimeTypeCodable),
-        ("testStrideToDispatchTimeInterval", testStrideToDispatchTimeInterval),
-        ("testStrideFromDispatchTimeInterval", testStrideFromDispatchTimeInterval),
-        ("testStrideFromNumericValue", testStrideFromNumericValue),
-        ("testStrideComparable", testStrideComparable),
-        ("testStrideMultiplication", testStrideMultiplication),
-        ("testStrideAddition", testStrideAddition),
-        ("testStrideSubtraction", testStrideSubtraction),
-        ("testStrideCodable", testStrideCodable),
-        ("testMinimumTolerance", testMinimumTolerance),
-        ("testNow", testNow),
-        ("testDefaultSchedulerOptions", testDefaultSchedulerOptions),
-        ("testScheduleActionOnceNow", testScheduleActionOnceNow),
-        ("testScheduleActionOnceLater", testScheduleActionOnceLater),
-        ("testScheduleRepeating", testScheduleRepeating),
-        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
-    ]
-
     // MARK: - Scheduler.SchedulerTimeType
 
     func testSchedulerTimeTypeDistance() {
@@ -140,29 +117,6 @@ final class DispatchQueueSchedulerTests: XCTestCase {
         XCTAssertEqual(Stride(.microseconds(56)).magnitude, 56000)
         XCTAssertEqual(Stride(.nanoseconds(78)).magnitude, 78)
         XCTAssertEqual(Stride(.never).magnitude, .max)
-
-        do {
-            // @unknown default branch
-
-            enum MyDispatchTimeInterval {
-                case seconds(Int)
-                case milliseconds(Int)
-                case microseconds(Int)
-                case nanoseconds(Int)
-                case never
-                case unknownCase
-            }
-
-            guard MemoryLayout<MyDispatchTimeInterval>.size ==
-                MemoryLayout<DispatchTimeInterval>.size else {
-                XCTFail("This hack doesn't work anymore. Remove the check below.")
-                return
-            }
-
-            let interval = unsafeBitCast(MyDispatchTimeInterval.unknownCase,
-                                         to: DispatchTimeInterval.self)
-            XCTAssertEqual(Stride(interval).magnitude, .max)
-        }
     }
 
     func testStrideFromNumericValue() {
@@ -506,21 +460,8 @@ final class DispatchQueueSchedulerTests: XCTestCase {
             let difference = expectedEnd.dispatchTime.rawValue
                 .distance(to: end.dispatchTime.rawValue)
 
-            XCTAssertLessThan(abs(difference), 5_000_000/*nanoseconds*/)
+            XCTAssertLessThan(abs(difference), 10_000_000/*nanoseconds*/)
         }
-    }
-
-    // MARK: -
-    func testTestSuiteIncludesAllTests() {
-        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-        let thisClass = type(of: self)
-        let allTestsCount = thisClass.allTests.count
-        let darwinCount = thisClass.defaultTestSuite.testCaseCount
-        XCTAssertEqual(allTestsCount,
-                       darwinCount,
-                       "\(darwinCount - allTestsCount) tests are missing from allTests")
-#endif
     }
 }
 
