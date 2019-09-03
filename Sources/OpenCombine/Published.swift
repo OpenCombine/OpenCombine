@@ -66,5 +66,16 @@
     public init(wrappedValue: Value) {
         self._value = wrappedValue
     }
+
+    @available(*, unavailable, message:
+        "This subscript is unavailable in OpenCombine yet")
+    public static subscript<EnclosingSelf: AnyObject>(
+        _enclosingInstance object: EnclosingSelf,
+        wrapped wrappedKeyPath: ReferenceWritableKeyPath<EnclosingSelf, Value>,
+        storage storageKeyPath: ReferenceWritableKeyPath<EnclosingSelf, Published<Value>>
+    ) -> Value {
+        get { fatalError() }
+        set { fatalError() }
+    }
 }
 #endif
