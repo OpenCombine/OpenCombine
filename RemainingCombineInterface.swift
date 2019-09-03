@@ -3247,40 +3247,6 @@ extension Publishers.First : Equatable where Upstream : Equatable {
     public static func == (lhs: Publishers.First<Upstream>, rhs: Publishers.First<Upstream>) -> Bool
 }
 
-/// Adds a `Publisher` to a property.
-///
-/// Properties annotated with `@Published` contain both the stored value and a publisher which sends any new values after the property value has been sent. New subscribers will receive the current value of the property first.
-@available(iOS 13.0, OSX 10.15, tvOS 13.0, watchOS 6.0, *)
-@propertyWrapper public struct Published<Value> {
-
-    /// Initialize the storage of the Published property as well as the corresponding `Publisher`.
-    public init(initialValue: Value)
-
-    public static subscript<EnclosingSelf: AnyObject>(
-        _enclosingInstance object: EnclosingSelf,
-        wrapped wrappedKeyPath: ReferenceWritableKeyPath<EnclosingSelf, Value>,
-        storage storageKeyPath: ReferenceWritableKeyPath<EnclosingSelf, Published<Value>>
-    ) -> Value { get set }
-
-    public struct Publisher : Publisher {
-
-        public typealias Output = Value
-
-        public typealias Failure = Never
-
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
-        ///
-        /// - SeeAlso: `subscribe(_:)`
-        /// - Parameters:
-        ///     - subscriber: The subscriber to attach to this `Publisher`.
-        ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where Value == S.Input, S : Subscriber, S.Failure == Published<Value>.Publisher.Failure
-    }
-
-    /// The property that can be accessed with the `$` syntax and allows access to the `Publisher`
-    public var projectedValue: Published<Value>.Publisher { mutating get }
-}
-
 /// A type of object with a publisher that emits before the object has changed.
 ///
 /// By default an `ObservableObject` will synthesize an `objectWillChange`
