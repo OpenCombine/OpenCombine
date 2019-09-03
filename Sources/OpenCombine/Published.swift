@@ -31,7 +31,8 @@
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<SubscriberType>(subscriber: SubscriberType)
+        public func receive<SubscriberType>
+            (subscriber: SubscriberType)
             where Value == SubscriberType.Input,
             SubscriberType: Subscriber,
             SubscriberType.Failure == Published<Value>.Publisher.Failure
@@ -57,11 +58,6 @@
     public var wrappedValue: Value {
         get { projectedValue.subject.value }
         set { projectedValue.subject.value = newValue }
-    }
-
-    @available(*, unavailable)
-    public init(wrappedValue: Value) {
-        self.projectedValue = .init(wrappedValue)
     }
 
     /* Subscript template
