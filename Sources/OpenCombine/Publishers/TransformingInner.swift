@@ -19,7 +19,8 @@ internal class TransformingInnerBase<Upstream: Publisher, Downstream: Subscriber
 }
 
 // This extension mostly provides an implementation of Subscriber. Subclassess must
-// provide an implementation of `.receive(subscription:)`
+// declare conformance to `Subscriber` and provide an implementation of
+// `.receive(subscription:)`
 extension TransformingInnerBase {
     public typealias Input = Upstream.Output
     public typealias Failure = Upstream.Failure
@@ -78,8 +79,7 @@ internal class ThrowingTransformingInner<Upstream: Publisher, Downstream: Subscr
 {
     internal init(downstream: Downstream, transform: @escaping (Input) throws
         -> Downstream.Input) {
-        let foo = catching(transform)
-        super.init(downstream: downstream, transform: foo)
+        super.init(downstream: downstream, transform: catching(transform))
     }
 
     public final func receive(subscription: Subscription) {
