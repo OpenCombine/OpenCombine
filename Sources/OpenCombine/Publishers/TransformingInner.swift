@@ -60,6 +60,11 @@ internal class TransformingInner<Upstream: Publisher, Downstream: Subscriber>
     Subscriber
     where Upstream.Failure == Downstream.Failure
 {
+    internal init(downstream: Downstream, transform: @escaping (Input)
+        -> Downstream.Input) {
+        super.init(downstream: downstream, transform: catching(transform))
+    }
+
     public final func receive(subscription: Subscription) {
         downstream.receive(subscription: subscription)
     }
@@ -68,8 +73,15 @@ internal class TransformingInner<Upstream: Publisher, Downstream: Subscriber>
 internal class ThrowingTransformingInner<Upstream: Publisher, Downstream: Subscriber>
     : TransformingInnerBase<Upstream, Downstream>,
     Subscriber
-    where Upstream.Failure == Downstream.Failure
+    where Upstream.Failure == Downstream.Failure,
+    Downstream.Failure == Error
 {
+    internal init(downstream: Downstream, transform: @escaping (Input) throws
+        -> Downstream.Input) {
+        let foo = catching(transform)
+        super.init(downstream: downstream, transform: foo)
+    }
+
     public final func receive(subscription: Subscription) {
         upstreamSubscription = subscription
         downstream.receive(subscription: self)

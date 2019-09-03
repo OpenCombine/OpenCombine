@@ -96,14 +96,12 @@ extension Publishers {
         {
             var accumulator = initialResult
             let nextPartialResult = self.nextPartialResult // avoid self reference
-            let transform: (Upstream.Output)
-                -> Result<Downstream.Input, Downstream.Failure> = catching({
-                    accumulator = nextPartialResult(accumulator, $0)
-                    return accumulator
-                })
-            let inner = Inner<Upstream, Downstream>(
-                downstream: subscriber,
-                transform: transform)
+            let transform: (Upstream.Output) -> Downstream.Input = {
+                accumulator = nextPartialResult(accumulator, $0)
+                return accumulator
+            }
+            let inner = Inner<Upstream, Downstream>(downstream: subscriber,
+                                                    transform: transform)
             upstream.subscribe(inner)
         }
     }
@@ -145,11 +143,10 @@ extension Publishers {
         {
             let nextPartialResult = self.nextPartialResult // avoid self reference
             var accumulator = initialResult
-            let transform: (Upstream.Output)
-                -> Result<Downstream.Input, Downstream.Failure> = catching({
-                    accumulator = try nextPartialResult(accumulator, $0)
-                    return accumulator
-                })
+            let transform: (Upstream.Output) throws -> Downstream.Input = {
+                accumulator = try nextPartialResult(accumulator, $0)
+                return accumulator
+            }
             let inner = Inner<Publishers.MapError<Upstream, Error>, Downstream>(
                 downstream: subscriber,
                 transform: transform)
@@ -176,7 +173,8 @@ extension Publishers.TryScan {
     fileprivate class Inner<Upstream: Publisher, Downstream: Subscriber>
         : ThrowingTransformingInner<Upstream, Downstream>,
         CustomStringConvertible
-        where Upstream.Failure == Downstream.Failure
+        where Upstream.Failure == Downstream.Failure,
+        Downstream.Failure == Error
     {
         var description: String { "TryScan" }
     }
