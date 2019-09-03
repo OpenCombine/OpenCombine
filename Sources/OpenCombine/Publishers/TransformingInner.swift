@@ -5,22 +5,18 @@
 //
 
 internal class TransformingInner<Upstream: Publisher, Downstream: Subscriber>
-    : OperatorSubscription<Downstream>,
-    CustomStringConvertible
+    : OperatorSubscription<Downstream>
     where Upstream.Failure == Downstream.Failure
 {
-    internal let description: String
     private let shouldProxySubscription: Bool
     private var transform: ((Input) -> Result<Downstream.Input, Failure>)?
 
-    internal init(description: String,
-                  downstream: Downstream,
+    internal init(downstream: Downstream,
                   shouldProxySubscription: Bool,
                   transform: @escaping (Input)
         -> Result<Downstream.Input, Downstream.Failure>) {
         self.shouldProxySubscription = shouldProxySubscription
         self.transform = transform
-        self.description = description
         super.init(downstream: downstream)
     }
 }

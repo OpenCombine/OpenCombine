@@ -101,8 +101,7 @@ extension Publishers {
                     accumulator = nextPartialResult(accumulator, $0)
                     return accumulator
                 })
-            let inner = TransformingInner<Upstream, Downstream>(
-                description: "Scan",
+            let inner = Inner<Upstream, Downstream>(
                 downstream: subscriber,
                 shouldProxySubscription: false,
                 transform: transform)
@@ -152,17 +151,35 @@ extension Publishers {
                     accumulator = try nextPartialResult(accumulator, $0)
                     return accumulator
                 })
-            let inner = TransformingInner<
-                Publishers.MapError<Upstream, Error>,
-                Downstream>(
-                    description: "TryScan",
-                    downstream: subscriber,
-                    shouldProxySubscription: true,
-                    transform: transform)
+            let inner = Inner<Publishers.MapError<Upstream, Error>, Downstream>(
+                downstream: subscriber,
+                shouldProxySubscription: true,
+                transform: transform)
             // We use mapError for the `tryXXX` variant in order to adapt
             // the upstream to match the `Failure` of the downstream. Because
             // it uses `throw`, we know downstream's `Failure` will be `Error`.
             upstream.mapError { error -> Error in error }.subscribe(inner)
         }
+    }
+}
+
+
+extension Publishers.Scan {
+    fileprivate class Inner<Upstream: Publisher, Downstream: Subscriber>
+        : TransformingInner<Upstream, Downstream>,
+        CustomStringConvertible
+    where Upstream.Failure == Downstream.Failure
+    {
+        var description: String { "Scan" }
+    }
+}
+
+extension Publishers.TryScan {
+    fileprivate class Inner<Upstream: Publisher, Downstream: Subscriber>
+        : TransformingInner<Upstream, Downstream>,
+        CustomStringConvertible
+    where Upstream.Failure == Downstream.Failure
+    {
+        var description: String { "TryScan" }
     }
 }

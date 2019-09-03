@@ -81,11 +81,9 @@ extension Publishers.Map {
     public func receive<Downstream: Subscriber>(subscriber: Downstream)
         where Output == Downstream.Input, Downstream.Failure == Upstream.Failure
     {
-        let inner = TransformingInner<Upstream, Downstream>(
-            description: "Map",
-            downstream: subscriber,
-            shouldProxySubscription: false,
-            transform: catching(transform))
+        let inner = Inner<Upstream, Downstream>(downstream: subscriber,
+                                                shouldProxySubscription: false,
+                                                transform: catching(transform))
         upstream.subscribe(inner)
     }
 
@@ -107,12 +105,10 @@ extension Publishers.TryMap {
     public func receive<Downstream: Subscriber>(subscriber: Downstream)
         where Output == Downstream.Input, Downstream.Failure == Error
     {
-        let inner = TransformingInner<
-            Publishers.MapError<Upstream, Error>,
-            Downstream>(description: "TryMap",
-                        downstream: subscriber,
-                        shouldProxySubscription: true,
-                        transform: catching(transform))
+        let inner = Inner<Publishers.MapError<Upstream, Error>, Downstream>(
+            downstream: subscriber,
+            shouldProxySubscription: true,
+            transform: catching(transform))
         // We use mapError for the `tryXXX` variant in order to adapt
         // the upstream to match the `Failure` of the downstream. Because
         // it uses `throw`, we know downstream's `Failure` will be `Error`.
@@ -131,3 +127,22 @@ extension Publishers.TryMap {
         return .init(upstream: upstream) { try transform(self.transform($0)) }
     }
 }
+
+extension Publishers.Map {
+    fileprivate class Inner<Upstream: Publisher, Downstream: Subscriber>
+        : TransformingInner<Upstream, Downstream>,  CustomStringConvertible
+    where Upstream.Failure == Downstream.Failure
+    {
+        var description: String { "Map" }
+    }
+}
+
+extension Publishers.TryMap {
+    fileprivate class Inner<Upstream: Publisher, Downstream: Subscriber>
+        : TransformingInner<Upstream, Downstream>,  CustomStringConvertible
+    where Upstream.Failure == Downstream.Failure
+    {
+        var description: String { "TryMap" }
+    }
+}
+
