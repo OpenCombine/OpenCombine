@@ -55,6 +55,9 @@
     /// `$` syntax and allows access to the `Publisher`
     public let projectedValue: Published<Value>.Publisher
 
+    @available(*, unavailable, message:
+        "@Published is only available on properties of classes")
+
     public var wrappedValue: Value {
         get { projectedValue.subject.value }
         set { projectedValue.subject.value = newValue }
