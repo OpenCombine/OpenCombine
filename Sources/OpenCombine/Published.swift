@@ -54,10 +54,11 @@
     /// The property that can be accessed with the
     /// `$` syntax and allows access to the `Publisher`
     public let projectedValue: Published<Value>.Publisher
-
+    
+    /* Makes framework uncompilable
     @available(*, unavailable, message:
         "@Published is only available on properties of classes")
-
+    */
     public var wrappedValue: Value {
         get { projectedValue.subject.value }
         set { projectedValue.subject.value = newValue }
