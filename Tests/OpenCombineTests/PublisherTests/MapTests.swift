@@ -16,7 +16,8 @@ import OpenCombine
 @available(macOS 10.15, iOS 13.0, *)
 final class MapTests: XCTestCase {
     static let allTests = [
-        ("testEmpty", testEmpty),
+        ("testMapEmpty", testMapEmpty),
+        ("testTryMapEmpty", testTryMapEmpty),
         ("testError", testError),
         ("testTryMapFailureBecauseOfThrow", testTryMapFailureBecauseOfThrow),
         ("testTryMapFailureOnCompletion", testTryMapFailureOnCompletion),
@@ -40,7 +41,7 @@ final class MapTests: XCTestCase {
         ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
     ]
 
-    func testEmpty() {
+    func testMapEmpty() {
         // Given
         let tracking = TrackingSubscriberBase<String, TestingError>(
             receiveSubscription: { $0.request(.unlimited) }
@@ -54,6 +55,22 @@ final class MapTests: XCTestCase {
         publisher.map(String.init).subscribe(tracking)
         // Then
         XCTAssertEqual(tracking.history, [.subscription("PassthroughSubject")])
+    }
+
+    func testTryMapEmpty() {
+        // Given
+        let tracking = TrackingSubscriberBase<String, Error>(
+            receiveSubscription: { $0.request(.unlimited) }
+        )
+        let publisher = TrackingSubjectBase<Int, Error>(
+            receiveSubscriber: {
+                XCTAssertEqual(String(describing: $0), "TryMap")
+            }
+        )
+        // When
+        publisher.tryMap(String.init).subscribe(tracking)
+        // Then
+        XCTAssertEqual(tracking.history, [.subscription("TryMap")])
     }
 
     func testError() {

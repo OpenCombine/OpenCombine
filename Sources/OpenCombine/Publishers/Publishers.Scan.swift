@@ -94,14 +94,9 @@ extension Publishers {
             Downstream: Subscriber,
             Upstream.Failure == Downstream.Failure
         {
-            var accumulator = initialResult
-            let nextPartialResult = self.nextPartialResult // avoid self reference
-            let transform: (Upstream.Output) -> Downstream.Input = {
-                accumulator = nextPartialResult(accumulator, $0)
-                return accumulator
-            }
             let inner = Inner<Upstream, Downstream>(downstream: subscriber,
-                                                    transform: transform)
+                                                    initialResult: initialResult,
+                                                    nextPartialResult: nextPartialResult)
             upstream.subscribe(inner)
         }
     }
@@ -119,10 +114,10 @@ extension Publishers {
 
         public let nextPartialResult: (Output, Upstream.Output) throws -> Output
 
-        public init(upstream: Upstream,
-                    initialResult: Output,
-                    nextPartialResult: @escaping (Output, Upstream.Output) throws
-            -> Output)
+        public init(
+            upstream: Upstream,
+            initialResult: Output,
+            nextPartialResult: @escaping (Output, Upstream.Output) throws -> Output)
         {
             self.upstream = upstream
             self.initialResult = initialResult
@@ -141,41 +136,55 @@ extension Publishers {
             Downstream: Subscriber,
             Downstream.Failure == Publishers.TryScan<Upstream, Output>.Failure
         {
-            let nextPartialResult = self.nextPartialResult // avoid self reference
-            var accumulator = initialResult
-            let transform: (Upstream.Output) throws -> Downstream.Input = {
-                accumulator = try nextPartialResult(accumulator, $0)
-                return accumulator
-            }
-            let inner = Inner<Publishers.MapError<Upstream, Error>, Downstream>(
+            let inner = Inner<Upstream, Downstream>(
                 downstream: subscriber,
-                transform: transform)
-            // We use mapError for the `tryXXX` variant in order to adapt
-            // the upstream to match the `Failure` of the downstream. Because
-            // it uses `throw`, we know downstream's `Failure` will be `Error`.
-            upstream.mapError { error -> Error in error }.subscribe(inner)
+                initialResult: initialResult,
+                nextPartialResult: nextPartialResult)
+            upstream.subscribe(inner)
         }
     }
 }
 
-
 extension Publishers.Scan {
-    fileprivate class Inner<Upstream: Publisher, Downstream: Subscriber>
-        : TransformingInner<Upstream, Downstream>,
+    fileprivate final class Inner<Upstream: Publisher, Downstream: Subscriber>
+        : NonThrowingTransformingInner<Upstream, Downstream>,
         CustomStringConvertible
         where Upstream.Failure == Downstream.Failure
     {
-        var description: String { "Scan" }
+        final var description: String { "Scan" }
+
+        init(downstream: Downstream,
+             initialResult: Downstream.Input,
+             nextPartialResult: @escaping (Downstream.Input, Upstream.Output)
+            -> Downstream.Input)
+        {
+            var accumulator = initialResult
+            super.init(downstream: downstream) {
+                accumulator = nextPartialResult(accumulator, $0)
+                return accumulator
+            }
+        }
     }
 }
 
 extension Publishers.TryScan {
-    fileprivate class Inner<Upstream: Publisher, Downstream: Subscriber>
+    fileprivate final class Inner<Upstream: Publisher, Downstream: Subscriber>
         : ThrowingTransformingInner<Upstream, Downstream>,
         CustomStringConvertible
-        where Upstream.Failure == Downstream.Failure,
-        Downstream.Failure == Error
+        where Downstream.Failure == Error
     {
-        var description: String { "TryScan" }
+        final var description: String { "TryScan" }
+
+        init(downstream: Downstream,
+             initialResult: Downstream.Input,
+             nextPartialResult: @escaping (Downstream.Input, Upstream.Output) throws
+            -> Downstream.Input)
+        {
+            var accumulator = initialResult
+            super.init(downstream: downstream) {
+                accumulator = try nextPartialResult(accumulator, $0)
+                return accumulator
+            }
+        }
     }
 }

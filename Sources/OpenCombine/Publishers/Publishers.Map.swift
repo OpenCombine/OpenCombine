@@ -104,13 +104,10 @@ extension Publishers.TryMap {
     public func receive<Downstream: Subscriber>(subscriber: Downstream)
         where Output == Downstream.Input, Downstream.Failure == Error
     {
-        let inner = Inner<Publishers.MapError<Upstream, Error>, Downstream>(
+        let inner = Inner<Upstream, Downstream>(
             downstream: subscriber,
             transform: transform)
-        // We use mapError for the `tryXXX` variant in order to adapt
-        // the upstream to match the `Failure` of the downstream. Because
-        // it uses `throw`, we know downstream's `Failure` will be `Error`.
-        upstream.mapError { error -> Error in error }.subscribe(inner)
+        upstream.subscribe(inner)
     }
 
     public func map<Result>(
@@ -127,21 +124,19 @@ extension Publishers.TryMap {
 }
 
 extension Publishers.Map {
-    fileprivate class Inner<Upstream: Publisher, Downstream: Subscriber>
-        : TransformingInner<Upstream, Downstream>,  CustomStringConvertible
+    fileprivate final class Inner<Upstream: Publisher, Downstream: Subscriber>
+        : NonThrowingTransformingInner<Upstream, Downstream>, CustomStringConvertible
         where Upstream.Failure == Downstream.Failure
     {
-        var description: String { "Map" }
+        final var description: String { "Map" }
     }
 }
 
 extension Publishers.TryMap {
-    fileprivate class Inner<Upstream: Publisher, Downstream: Subscriber>
-        : ThrowingTransformingInner<Upstream, Downstream>,  CustomStringConvertible
-        where Upstream.Failure == Downstream.Failure,
-        Downstream.Failure == Error
+    fileprivate final class Inner<Upstream: Publisher, Downstream: Subscriber>
+        : ThrowingTransformingInner<Upstream, Downstream>, CustomStringConvertible
+        where Downstream.Failure == Error
     {
-        var description: String { "TryMap" }
+        final var description: String { "TryMap" }
     }
 }
-
