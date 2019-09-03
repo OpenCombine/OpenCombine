@@ -59,13 +59,12 @@
         set { projectedValue.subject.value = newValue }
     }
 
-    /// For removing warning: Property wrapper's `init(initialValue:)`
-    /// should be renamed to 'init(wrappedValue:)';
-    /// use of 'init(initialValue:)' is deprecated
+    @available(*, unavailable)
     public init(wrappedValue: Value) {
         self.projectedValue = .init(wrappedValue)
     }
 
+    /* Subscript template
     @available(*, unavailable, message:
         "This subscript is unavailable in OpenCombine yet")
     public static subscript<EnclosingSelf: AnyObject>(
@@ -76,5 +75,6 @@
         get { fatalError() }
         set { fatalError() }
     }
+    */
 }
 #endif
