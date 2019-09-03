@@ -11,7 +11,7 @@
     /// Initialize the storage of the Published
     /// property as well as the corresponding `Publisher`.
     public init(initialValue: Value) {
-        _value = initialValue
+        self.projectedValue = .init(initialValue)
     }
 
     public struct Publisher: OpenCombine.Publisher {
@@ -36,35 +36,34 @@
             SubscriberType: Subscriber,
             SubscriberType.Failure == Published<Value>.Publisher.Failure
         {
-            _passthrowObject.subscribe(subscriber)
+            subject.subscribe(subscriber)
         }
 
-        private let _passthrowObject = OpenCombine.PassthroughSubject<Value, Never>()
+        fileprivate let subject: OpenCombine.CurrentValueSubject<Value, Never>
 
-        internal func send(_ input: Output) {
-            _passthrowObject.send(input)
+        fileprivate init(_ output: Output) {
+            self.subject = .init(output)
+        }
+
+        fileprivate func send(_ input: Output) {
+            subject.send(input)
         }
     }
 
     /// The property that can be accessed with the
     /// `$` syntax and allows access to the `Publisher`
-    public private(set) lazy var projectedValue: Published<Value>.Publisher = .init()
+    public let projectedValue: Published<Value>.Publisher
 
     public var wrappedValue: Value {
-        get { _value }
-        set {
-            _value = newValue
-            projectedValue.send(newValue)
-        }
-     }
-
-    private var _value: Value
+        get { projectedValue.subject.value }
+        set { projectedValue.subject.value = newValue }
+    }
 
     /// For removing warning: Property wrapper's `init(initialValue:)`
     /// should be renamed to 'init(wrappedValue:)';
     /// use of 'init(initialValue:)' is deprecated
     public init(wrappedValue: Value) {
-        self._value = wrappedValue
+        self.projectedValue = .init(wrappedValue)
     }
 
     @available(*, unavailable, message:
