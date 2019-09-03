@@ -82,7 +82,6 @@ extension Publishers.Map {
         where Output == Downstream.Input, Downstream.Failure == Upstream.Failure
     {
         let inner = Inner<Upstream, Downstream>(downstream: subscriber,
-                                                shouldProxySubscription: false,
                                                 transform: catching(transform))
         upstream.subscribe(inner)
     }
@@ -107,7 +106,6 @@ extension Publishers.TryMap {
     {
         let inner = Inner<Publishers.MapError<Upstream, Error>, Downstream>(
             downstream: subscriber,
-            shouldProxySubscription: true,
             transform: catching(transform))
         // We use mapError for the `tryXXX` variant in order to adapt
         // the upstream to match the `Failure` of the downstream. Because
@@ -131,7 +129,7 @@ extension Publishers.TryMap {
 extension Publishers.Map {
     fileprivate class Inner<Upstream: Publisher, Downstream: Subscriber>
         : TransformingInner<Upstream, Downstream>,  CustomStringConvertible
-    where Upstream.Failure == Downstream.Failure
+        where Upstream.Failure == Downstream.Failure
     {
         var description: String { "Map" }
     }
@@ -139,8 +137,8 @@ extension Publishers.Map {
 
 extension Publishers.TryMap {
     fileprivate class Inner<Upstream: Publisher, Downstream: Subscriber>
-        : TransformingInner<Upstream, Downstream>,  CustomStringConvertible
-    where Upstream.Failure == Downstream.Failure
+        : ThrowingTransformingInner<Upstream, Downstream>,  CustomStringConvertible
+        where Upstream.Failure == Downstream.Failure
     {
         var description: String { "TryMap" }
     }

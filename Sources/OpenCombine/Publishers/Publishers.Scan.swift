@@ -103,7 +103,6 @@ extension Publishers {
                 })
             let inner = Inner<Upstream, Downstream>(
                 downstream: subscriber,
-                shouldProxySubscription: false,
                 transform: transform)
             upstream.subscribe(inner)
         }
@@ -153,7 +152,6 @@ extension Publishers {
                 })
             let inner = Inner<Publishers.MapError<Upstream, Error>, Downstream>(
                 downstream: subscriber,
-                shouldProxySubscription: true,
                 transform: transform)
             // We use mapError for the `tryXXX` variant in order to adapt
             // the upstream to match the `Failure` of the downstream. Because
@@ -168,7 +166,7 @@ extension Publishers.Scan {
     fileprivate class Inner<Upstream: Publisher, Downstream: Subscriber>
         : TransformingInner<Upstream, Downstream>,
         CustomStringConvertible
-    where Upstream.Failure == Downstream.Failure
+        where Upstream.Failure == Downstream.Failure
     {
         var description: String { "Scan" }
     }
@@ -176,9 +174,9 @@ extension Publishers.Scan {
 
 extension Publishers.TryScan {
     fileprivate class Inner<Upstream: Publisher, Downstream: Subscriber>
-        : TransformingInner<Upstream, Downstream>,
+        : ThrowingTransformingInner<Upstream, Downstream>,
         CustomStringConvertible
-    where Upstream.Failure == Downstream.Failure
+        where Upstream.Failure == Downstream.Failure
     {
         var description: String { "TryScan" }
     }

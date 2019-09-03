@@ -4,35 +4,25 @@
 //  Created by Eric Patey on 26.08.2019.
 //
 
-internal class TransformingInner<Upstream: Publisher, Downstream: Subscriber>
+internal class TransformingInnerBase<Upstream: Publisher, Downstream: Subscriber>
     : OperatorSubscription<Downstream>
     where Upstream.Failure == Downstream.Failure
 {
-    private let shouldProxySubscription: Bool
     private var transform: ((Input) -> Result<Downstream.Input, Failure>)?
 
     internal init(downstream: Downstream,
-                  shouldProxySubscription: Bool,
                   transform: @escaping (Input)
         -> Result<Downstream.Input, Downstream.Failure>) {
-        self.shouldProxySubscription = shouldProxySubscription
         self.transform = transform
         super.init(downstream: downstream)
     }
 }
 
-extension TransformingInner: Subscriber {
+// This extension mostly provides an implementation of Subscriber. Subclassess must
+// provide an implementation of `.receive(subscription:)`
+extension TransformingInnerBase {
     public typealias Input = Upstream.Output
     public typealias Failure = Upstream.Failure
-
-    public final func receive(subscription: Subscription) {
-        if shouldProxySubscription {
-            upstreamSubscription = subscription
-            downstream.receive(subscription: self)
-        } else {
-            downstream.receive(subscription: subscription)
-        }
-    }
 
     public final func receive(_ input: Upstream.Output) -> Subscribers.Demand {
         guard let trans = transform else { return .none }
@@ -59,8 +49,29 @@ extension TransformingInner: Subscriber {
     }
 }
 
-extension TransformingInner: Subscription {
+extension TransformingInnerBase: Subscription {
     public final func request(_ demand: Subscribers.Demand) {
         upstreamSubscription?.request(demand)
+    }
+}
+
+internal class TransformingInner<Upstream: Publisher, Downstream: Subscriber>
+    : TransformingInnerBase<Upstream, Downstream>,
+    Subscriber
+    where Upstream.Failure == Downstream.Failure
+{
+    public final func receive(subscription: Subscription) {
+        downstream.receive(subscription: subscription)
+    }
+}
+
+internal class ThrowingTransformingInner<Upstream: Publisher, Downstream: Subscriber>
+    : TransformingInnerBase<Upstream, Downstream>,
+    Subscriber
+    where Upstream.Failure == Downstream.Failure
+{
+    public final func receive(subscription: Subscription) {
+        upstreamSubscription = subscription
+        downstream.receive(subscription: self)
     }
 }
