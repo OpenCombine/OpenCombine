@@ -43,7 +43,7 @@
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
         public func receive<Downstream: Subscriber>(subscriber: Downstream)
-        where Downstream.Input == Value, Downstream.Failure == Never
+            where Downstream.Input == Value, Downstream.Failure == Never
         {
             subject.subscribe(subscriber)
         }
@@ -53,10 +53,6 @@
         fileprivate init(_ output: Output) {
             subject = .init(output)
         }
-
-        fileprivate func send(_ input: Output) {
-            subject.send(input)
-        }
     }
 
     private var value: Value
@@ -65,10 +61,12 @@
     /// `$` syntax and allows access to the `Publisher`
     public var projectedValue: Publisher {
         mutating get {
-            if publisher == nil {
-                publisher = Publisher(value)
+            if let publisher = publisher {
+                return publisher
             }
-            return publisher!
+            let publisher = Publisher(value)
+            self.publisher = publisher
+            return publisher
         }
     }
 
@@ -79,7 +77,7 @@
         get { value }
         set {
             value = newValue
-            publisher?.send(newValue)
+            publisher?.subject.value = newValue
         }
     }
 
