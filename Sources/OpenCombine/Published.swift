@@ -66,7 +66,14 @@
 
     /// The property that can be accessed with the
     /// `$` syntax and allows access to the `Publisher`
-    public private(set) lazy var projectedValue = Publisher(self.value)
+    public var projectedValue: Publisher {
+        mutating get {
+            if publisher == nil {
+                publisher = Publisher(value)
+            }
+            return publisher!
+        }
+    }
 
     @available(*, unavailable, message:
         "@Published is only available on properties of classes")
@@ -75,9 +82,11 @@
         get { value }
         set {
             value = newValue
-            projectedValue.send(newValue)
+            publisher?.send(newValue)
         }
     }
+
+    private var publisher: Publisher?
 
     @available(*, unavailable, message:
         "This subscript is unavailable in OpenCombine yet")
