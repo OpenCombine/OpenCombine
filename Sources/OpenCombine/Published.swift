@@ -62,6 +62,8 @@
         }
     }
 
+    private var value: Value
+
     /// The property that can be accessed with the
     /// `$` syntax and allows access to the `Publisher`
     public private(set) lazy var projectedValue = Publisher(self.value)
@@ -76,8 +78,6 @@
             projectedValue.send(newValue)
         }
     }
-
-    private var value: Value
 
     @available(*, unavailable, message:
         "This subscript is unavailable in OpenCombine yet")
