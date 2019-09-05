@@ -6,12 +6,23 @@
 //
 
 #if swift(>=5.1)
+/// Adds a `Publisher` to a property.
+///
+/// Properties annotated with `@Published` contain both the stored value
+/// and a publisher which sends any new values after the property value
+/// has been sent. New subscribers will receive the current value
+/// of the property first.
 @propertyWrapper public struct Published<Value> {
 
     /// Initialize the storage of the Published
     /// property as well as the corresponding `Publisher`.
     public init(initialValue: Value) {
-        self.projectedValue = .init(initialValue)
+        value = initialValue
+    }
+
+    @available(*, unavailable)
+    public init(wrappedValue: Value) {
+        value = wrappedValue
     }
 
     public struct Publisher: OpenCombine.Publisher {
@@ -43,7 +54,7 @@
         fileprivate let subject: OpenCombine.CurrentValueSubject<Value, Never>
 
         fileprivate init(_ output: Output) {
-            self.subject = .init(output)
+            subject = .init(output)
         }
 
         fileprivate func send(_ input: Output) {
@@ -53,18 +64,21 @@
 
     /// The property that can be accessed with the
     /// `$` syntax and allows access to the `Publisher`
-    public let projectedValue: Published<Value>.Publisher
-    
-    /* Makes framework uncompilable
+    public private(set) lazy var projectedValue = Publisher(self.value)
+
     @available(*, unavailable, message:
         "@Published is only available on properties of classes")
-    */
+
     public var wrappedValue: Value {
-        get { projectedValue.subject.value }
-        set { projectedValue.subject.value = newValue }
+        get { value }
+        set {
+            value = newValue
+            projectedValue.send(newValue)
+        }
     }
 
-    /* Subscript template
+    private var value: Value
+
     @available(*, unavailable, message:
         "This subscript is unavailable in OpenCombine yet")
     public static subscript<EnclosingSelf: AnyObject>(
@@ -75,6 +89,5 @@
         get { fatalError() }
         set { fatalError() }
     }
-    */
 }
 #endif
