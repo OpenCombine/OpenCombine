@@ -42,6 +42,7 @@ public func allTests() -> [XCTestCaseEntry] {
         testCase(SetFailureTypeTests.allTests),
         testCase(SinkTests.allTests),
         testCase(SubscribersDemandTests.allTests),
+        testCase(Publisher.allTests),
     ]
 }
 #endif
