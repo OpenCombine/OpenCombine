@@ -22,24 +22,10 @@ final class PublishedTests: XCTestCase {
     ]
 
     func testPublisher() {
-        #if OPENCOMBINE_COMPATIBILITY_TEST
-        var published: OpenCombine.Published<Int> = Published(initialValue: 0)
-        // All tests for CurrentValueSubject already exists
-        XCTAssert(publisher is CurrentValueSubject)
-        #endif
     }
 
     // MARK: -
 
     func testTestSuiteIncludesAllTests() {
-        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-        let thisClass = type(of: self)
-        let allTestsCount = thisClass.allTests.count
-        let darwinCount = thisClass.defaultTestSuite.testCaseCount
-        XCTAssertEqual(allTestsCount,
-                       darwinCount,
-                       "\(darwinCount - allTestsCount) tests are missing from allTests")
-#endif
     }
 }
