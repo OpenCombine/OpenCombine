@@ -25,4 +25,14 @@ generate-compatibility-xcodeproj:
 generate-xcodeproj:
 	swift package generate-xcodeproj --enable-code-coverage
 
-.PHONY: debug release test-debug test-release swift-version test-compatibility-debug generate-compatibility-xcodeproj generate-xcodeproj
+clean:
+	rm -rf .build
+
+.PHONY: debug release \
+	    test-debug \
+	    test-release \
+	    swift-version \
+	    test-compatibility-debug \
+	    generate-compatibility-xcodeproj \
+	    generate-xcodeproj \
+	    clean

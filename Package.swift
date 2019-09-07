@@ -13,6 +13,7 @@ let package = Package(
     targets: [
         .target(name: "OpenCombine"),
         .testTarget(name: "OpenCombineTests",
-                    dependencies: ["OpenCombine", "GottaGoFast"])
+                    dependencies: ["OpenCombine", "GottaGoFast"],
+                    swiftSettings: [.unsafeFlags(["-enable-testing"])])
     ]
 )
