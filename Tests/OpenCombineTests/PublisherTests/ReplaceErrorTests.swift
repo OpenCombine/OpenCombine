@@ -15,17 +15,6 @@ import OpenCombine
 
 @available(macOS 10.15, iOS 13.0, *)
 final class ReplaceErrorTests: XCTestCase {
-    static let allTests = [
-        ("testEmpty", testEmpty),
-        ("testError", testError),
-        ("testWithoutError", testWithoutError),
-        ("testSendingValueAndThenError", testSendingValueAndThenError),
-        ("testLifecycle", testLifecycle),
-        ("testCancelAlreadyCancelled", testCancelAlreadyCancelled),
-        ("testFailingBeforeDemanding", testFailingBeforeDemanding),
-        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
-        ("testErrorWhileDownstreamDemandIsZero", testErrorWhileDownstreamDemandIsZero),
-    ]
 
     func testEmpty() {
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
@@ -189,19 +178,6 @@ final class ReplaceErrorTests: XCTestCase {
                                                  .value(9),
                                                  .value(42),
                                                  .completion(.finished)])
-    }
-
-    // MARK: -
-    func testTestSuiteIncludesAllTests() {
-    // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
-    #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-        let thisClass = type(of: self)
-        let allTestsCount = thisClass.allTests.count
-        let darwinCount = thisClass.defaultTestSuite.testCaseCount
-        XCTAssertEqual(allTestsCount,
-                       darwinCount,
-                       "\(darwinCount - allTestsCount) tests are missing from allTests")
-    #endif
     }
 }
 

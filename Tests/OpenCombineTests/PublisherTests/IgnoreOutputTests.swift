@@ -14,15 +14,6 @@ import OpenCombine
 
 @available(macOS 10.15, iOS 13.0, *)
 final class IgnoreOutputTests: XCTestCase {
-    static let allTests = [
-        ("testCompletionWithEmpty", testCompletionWithEmpty),
-        ("testCompletionWithValues", testCompletionWithValues),
-        ("testCompletionWithError", testCompletionWithError),
-        ("testDemand", testDemand),
-        ("testSendsSubcriptionDownstreamBeforeDemandUpstream",
-         testSendsSubcriptionDownstreamBeforeDemandUpstream),
-        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
-    ]
 
     func testCompletionWithEmpty() {
         let subscription = CustomSubscription()
@@ -143,18 +134,5 @@ final class IgnoreOutputTests: XCTestCase {
 
         XCTAssertEqual(receiveOrder, [sentSubscriptionDownstream,
                                       sentDemandRequestUpstream])
-    }
-
-    // MARK: -
-    func testTestSuiteIncludesAllTests() {
-        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-        let thisClass = type(of: self)
-        let allTestsCount = thisClass.allTests.count
-        let darwinCount = thisClass.defaultTestSuite.testCaseCount
-        XCTAssertEqual(allTestsCount,
-                       darwinCount,
-                       "\(darwinCount - allTestsCount) tests are missing from allTests")
-#endif
     }
 }

@@ -15,12 +15,6 @@ import OpenCombine
 
 @available(macOS 10.15, iOS 13.0, *)
 final class ReplaceNilTests: XCTestCase {
-    static let allTests = [
-        ("testReplacesNilElement", testReplacesNilElement),
-        ("testExistingElementIsPreserved", testExistingElementIsPreserved),
-        ("testMultipleReplacements", testMultipleReplacements),
-        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
-    ]
 
     func testReplacesNilElement() {
         // Given
@@ -91,18 +85,5 @@ final class ReplaceNilTests: XCTestCase {
                                             .value(5),
                                             .value(42),
                                             .completion(.finished)])
-    }
-
-    // MARK: -
-    func testTestSuiteIncludesAllTests() {
-        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-        let thisClass = type(of: self)
-        let allTestsCount = thisClass.allTests.count
-        let darwinCount = thisClass.defaultTestSuite.testCaseCount
-        XCTAssertEqual(allTestsCount,
-                       darwinCount,
-                       "\(darwinCount - allTestsCount) tests are missing from allTests")
-#endif
     }
 }
