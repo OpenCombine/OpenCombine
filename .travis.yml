@@ -52,14 +52,26 @@ install:
     fi
 script:
   - if [[ $OPENCOMBINE_TEST == "YES" ]]; then
-      make test-debug;
+      if [[ $TRAVIS_OS_NAME == "linux" ]]; then
+        make SWIFT_TEST_FLAGS=--enable-test-discovery test-debug;
+      else
+        make test-debug;
+      fi
     fi
   - if [[ $OPENCOMBINE_TEST == "YES" ]]; then
-      make test-release;
+      if [[ $TRAVIS_OS_NAME == "linux" ]]; then
+        make SWIFT_TEST_FLAGS=--enable-test-discovery test-release;
+      else
+        make test-release;
+      fi
     fi
   - if [[ $OPENCOMBINE_COMPATIBILITY_TEST == "YES" ]]; then
       make generate-compatibility-xcodeproj;
-      set -o pipefail && xcodebuild -scheme OpenCombine-Package -sdk iphonesimulator13.0 -destination "platform=iOS Simulator,name=iPhone Xs,OS=13.0" build test | xcpretty;
+      set -o pipefail && xcodebuild \
+          -scheme OpenCombine-Package \
+          -sdk iphonesimulator13.0 \
+          -destination "platform=iOS Simulator,name=iPhone Xs,OS=13.0" \
+          build test | xcpretty;
     fi
   - if [[ $SWIFT_LINT == "YES" ]]; then
       swiftlint lint --strict --reporter "emoji";
