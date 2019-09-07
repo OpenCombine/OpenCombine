@@ -16,20 +16,6 @@ import OpenCombine
 @available(macOS 10.15, iOS 13.0, *)
 final class PassthroughSubjectTests: XCTestCase {
 
-    static let allTests = [
-        ("testRequestingDemand", testRequestingDemand),
-        ("testCrashOnZeroInitialDemand", testCrashOnZeroInitialDemand),
-        ("testSendFailureCompletion", testSendFailureCompletion),
-        ("testMultipleSubscriptions", testMultipleSubscriptions),
-        ("testMultipleCompletions", testMultipleCompletions),
-        ("testValuesAfterCompletion", testValuesAfterCompletion),
-        ("testSubscriptionAfterCompletion", testSubscriptionAfterCompletion),
-        ("testSendSubscription", testSendSubscription),
-        ("testLifecycle", testLifecycle),
-        ("testSynchronization", testSynchronization),
-        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
-    ]
-
     private typealias Sut = PassthroughSubject<Int, TestingError>
 
     // Reactive Streams Spec: Rules #1, #2, #9
@@ -440,18 +426,5 @@ final class PassthroughSubjectTests: XCTestCase {
         )
 
         XCTAssertEqual(completions.value.count, 200)
-    }
-
-    // MARK: -
-    func testTestSuiteIncludesAllTests() {
-        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-        let thisClass = type(of: self)
-        let allTestsCount = thisClass.allTests.count
-        let darwinCount = thisClass.defaultTestSuite.testCaseCount
-        XCTAssertEqual(allTestsCount,
-                       darwinCount,
-                       "\(darwinCount - allTestsCount) tests are missing from allTests")
-#endif
     }
 }

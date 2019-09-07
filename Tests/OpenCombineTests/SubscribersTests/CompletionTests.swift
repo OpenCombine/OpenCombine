@@ -18,12 +18,7 @@ import Foundation
 @available(macOS 10.15, iOS 13.0, *)
 final class CompletionTests: XCTestCase {
 
-    static let allTests = [
-        ("testEncodingDecoding", testEncodingDecoding),
-        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
-    ]
-
-    typealias Sut = Subscribers.Completion<TestingError>
+    private typealias Sut = Subscribers.Completion<TestingError>
 
     let encoder: JSONEncoder = {
         let encoder = JSONEncoder()
@@ -67,18 +62,5 @@ final class CompletionTests: XCTestCase {
                 XCTFail("DecodingError.keyNotFound error expected")
             }
         }
-    }
-
-    // MARK: -
-    func testTestSuiteIncludesAllTests() {
-        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-        let thisClass = type(of: self)
-        let allTestsCount = thisClass.allTests.count
-        let darwinCount = thisClass.defaultTestSuite.testCaseCount
-        XCTAssertEqual(allTestsCount,
-                       darwinCount,
-                       "\(darwinCount - allTestsCount) tests are missing from allTests")
-#endif
     }
 }

@@ -15,30 +15,6 @@ import OpenCombine
 
 @available(macOS 10.15, iOS 13.0, *)
 final class FilterTests: XCTestCase {
-    static let allTests = [
-        ("testFilterRemovesElements", testFilterRemovesElements),
-        ("testTryFilterWorks", testTryFilterWorks),
-        ("testTryFilterCompletesWithErrorWhenThrown",
-            testTryFilterCompletesWithErrorWhenThrown),
-        ("testCanCompleteWithFinished", testCanCompleteWithFinished),
-        ("testFilterCanCompleteWithError", testFilterCanCompleteWithError),
-        ("testTryFilterCanCompleteWithError", testTryFilterCanCompleteWithError),
-        ("testFilterSubscriptionDemand", testFilterSubscriptionDemand),
-        ("testTryFilterSubscriptionDemand", testTryFilterSubscriptionDemand),
-        ("testFilterCancel", testFilterCancel),
-        ("testTryFilterCancel", testTryFilterCancel),
-        ("testCancelAlreadyCancelled", testCancelAlreadyCancelled),
-        ("testLifecycle", testLifecycle),
-        ("testFilterOperatorSpecializationForFilter",
-            testFilterOperatorSpecializationForFilter),
-        ("testTryFilterOperatorSpecializationForFilter",
-            testTryFilterOperatorSpecializationForFilter),
-        ("testFilterOperatorSpecializationForTryFilter",
-            testFilterOperatorSpecializationForTryFilter),
-        ("testTryFilterOperatorSpecializationForTryFilter",
-            testTryFilterOperatorSpecializationForTryFilter),
-        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
-    ]
 
     func testFilterRemovesElements() {
         // Given
@@ -398,19 +374,6 @@ final class FilterTests: XCTestCase {
         // Then
         XCTAssertEqual(helper.tracking.history, [.subscription("TryFilter"),
                                                  .value(15)])
-    }
-
-    // MARK: -
-    func testTestSuiteIncludesAllTests() {
-        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-        let thisClass = type(of: self)
-        let allTestsCount = thisClass.allTests.count
-        let darwinCount = thisClass.defaultTestSuite.testCaseCount
-        XCTAssertEqual(allTestsCount,
-                       darwinCount,
-                       "\(darwinCount - allTestsCount) tests are missing from allTests")
-#endif
     }
 }
 

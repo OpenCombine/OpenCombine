@@ -16,50 +16,6 @@ import OpenCombine
 @available(macOS 10.15, iOS 13.0, *)
 final class ResultPublisherTests: XCTestCase {
 
-    static let allTests = [
-        ("testOnceSuccessNoInitialDemand", testOnceSuccessNoInitialDemand),
-        ("testOnceSuccessWithInitialDemand", testOnceSuccessWithInitialDemand),
-        ("testSuccessCancelOnSubscription", testSuccessCancelOnSubscription),
-        ("testOnceFailure", testOnceFailure),
-        ("testFailureCancelOnSubscription", testFailureCancelOnSubscription),
-        ("testLifecycle", testLifecycle),
-        ("testCustomMirror", testCustomMirror),
-        ("testMinOperatorSpecialization", testMinOperatorSpecialization),
-        ("testTryMinOperatorSpecialization", testTryMinOperatorSpecialization),
-        ("testMaxOperatorSpecialization", testMaxOperatorSpecialization),
-        ("testTryMaxOperatorSpecialization", testTryMaxOperatorSpecialization),
-        ("testContainsOperatorSpecialization", testContainsOperatorSpecialization),
-        ("testTryContainsOperatorSpecialization", testTryContainsOperatorSpecialization),
-        ("testRemoveDuplicatesOperatorSpecialization",
-         testRemoveDuplicatesOperatorSpecialization),
-        ("testTryRemoveDuplicatesOperatorSpecialization",
-         testTryRemoveDuplicatesOperatorSpecialization),
-        ("testAllSatifyOperatorSpecialization", testAllSatifyOperatorSpecialization),
-        ("testTryAllSatifyOperatorSpecialization",
-         testTryAllSatifyOperatorSpecialization),
-        ("testCollectOperatorSpecialization", testCollectOperatorSpecialization),
-        ("testCountOperatorSpecialization", testCountOperatorSpecialization),
-        ("testFirstOperatorSpecialization", testFirstOperatorSpecialization),
-        ("testLastOperatorSpecialization", testLastOperatorSpecialization),
-        ("testIgnoreOutputOperatorSpecialization",
-         testIgnoreOutputOperatorSpecialization),
-        ("testMapOperatorSpecialization", testMapOperatorSpecialization),
-        ("testTryMapOperatorSpecialization", testTryMapOperatorSpecialization),
-        ("testMapErrorOperatorSpecialization", testMapErrorOperatorSpecialization),
-        ("testReplaceErrorOperatorSpecialization",
-         testReplaceErrorOperatorSpecialization),
-        ("testReplaceEmptyOperatorSpecialization",
-         testReplaceEmptyOperatorSpecialization),
-        ("testRetryOperatorSpecialization", testRetryOperatorSpecialization),
-        ("testReduceOperatorSpecialization", testReduceOperatorSpecialization),
-        ("testTryReduceOperatorSpecialization", testTryReduceOperatorSpecialization),
-        ("testScanOperatorSpecialization", testScanOperatorSpecialization),
-        ("testTryScanOperatorSpecialization", testTryScanOperatorSpecialization),
-        ("testSetFailureTypeOperatorSpecialization",
-         testSetFailureTypeOperatorSpecialization),
-        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
-    ]
-
 #if OPENCOMBINE_COMPATIBILITY_TEST || !canImport(Combine)
     private typealias ResultPublisher<Output, Failure: Error> =
         Result<Output, Failure>.Publisher
@@ -451,18 +407,5 @@ final class ResultPublisherTests: XCTestCase {
                 .get(),
             73
         )
-    }
-
-    // MARK: -
-    func testTestSuiteIncludesAllTests() {
-        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-        let thisClass = type(of: self)
-        let allTestsCount = thisClass.allTests.count
-        let darwinCount = thisClass.defaultTestSuite.testCaseCount
-        XCTAssertEqual(allTestsCount,
-                       darwinCount,
-                       "\(darwinCount - allTestsCount) tests are missing from allTests")
-#endif
     }
 }

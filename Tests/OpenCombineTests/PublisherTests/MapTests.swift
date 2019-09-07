@@ -15,30 +15,6 @@ import OpenCombine
 
 @available(macOS 10.15, iOS 13.0, *)
 final class MapTests: XCTestCase {
-    static let allTests = [
-        ("testEmpty", testEmpty),
-        ("testError", testError),
-        ("testTryMapFailureBecauseOfThrow", testTryMapFailureBecauseOfThrow),
-        ("testTryMapFailureOnCompletion", testTryMapFailureOnCompletion),
-        ("testTryMapSuccess", testTryMapSuccess),
-        ("testRange", testRange),
-        ("testNoDemand", testNoDemand),
-        ("testDemandSubscribe", testDemandSubscribe),
-        ("testDemandSend", testDemandSend),
-        ("testCompletion", testCompletion),
-        ("testMapCancel", testMapCancel),
-        ("testTryMapCancel", testTryMapCancel),
-        ("testCancelAlreadyCancelled", testCancelAlreadyCancelled),
-        ("testLifecycle", testLifecycle),
-        ("testMapOperatorSpecializationForMap", testMapOperatorSpecializationForMap),
-        ("testTryMapOperatorSpecializationForMap",
-         testTryMapOperatorSpecializationForMap),
-        ("testMapOperatorSpecializationForTryMap",
-         testMapOperatorSpecializationForTryMap),
-        ("testTryMapOperatorSpecializationForTryMap",
-         testTryMapOperatorSpecializationForTryMap),
-        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
-    ]
 
     func testEmpty() {
         // Given
@@ -460,18 +436,5 @@ final class MapTests: XCTestCase {
                                           .value(7),
                                           .value(11),
                                           .completion(.failure(TestingError.oops))])
-    }
-
-    // MARK: -
-    func testTestSuiteIncludesAllTests() {
-        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-        let thisClass = type(of: self)
-        let allTestsCount = thisClass.allTests.count
-        let darwinCount = thisClass.defaultTestSuite.testCaseCount
-        XCTAssertEqual(allTestsCount,
-                       darwinCount,
-                       "\(darwinCount - allTestsCount) tests are missing from allTests")
-#endif
     }
 }

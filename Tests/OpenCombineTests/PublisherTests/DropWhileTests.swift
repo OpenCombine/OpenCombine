@@ -16,20 +16,6 @@ import OpenCombine
 @available(macOS 10.15, iOS 13.0, *)
 final class DropWhileTests: XCTestCase {
 
-    static let allTests = [
-        ("testDropWhile", testDropWhile),
-        ("testTryDropWhileFailureBecauseOfThrow", testTryDropWhileFailureBecauseOfThrow),
-        ("testTryDropWhileFailureOnCompletion", testTryDropWhileFailureOnCompletion),
-        ("testTryDropWhileSuccess", testTryDropWhileSuccess),
-        ("testDemand", testDemand),
-        ("testTryDropWhileCancelsUpstreamOnThrow",
-         testTryDropWhileCancelsUpstreamOnThrow),
-        ("testDropWhileCompletion", testDropWhileCompletion),
-        ("testCancelAlreadyCancelled", testCancelAlreadyCancelled),
-        ("testLifecycle", testLifecycle),
-        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
-    ]
-
     func testDropWhile() {
 
         var counter = 0 // How many times the predicate is called?
@@ -332,18 +318,5 @@ final class DropWhileTests: XCTestCase {
         XCTAssertEqual(deinitCounter, 0)
         try XCTUnwrap(subscription).cancel()
         XCTAssertEqual(deinitCounter, 0)
-    }
-
-    // MARK: -
-    func testTestSuiteIncludesAllTests() {
-        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-        let thisClass = type(of: self)
-        let allTestsCount = thisClass.allTests.count
-        let darwinCount = thisClass.defaultTestSuite.testCaseCount
-        XCTAssertEqual(allTestsCount,
-                       darwinCount,
-                       "\(darwinCount - allTestsCount) tests are missing from allTests")
-#endif
     }
 }
