@@ -53,14 +53,14 @@ install:
 script:
   - if [[ $OPENCOMBINE_TEST == "YES" ]]; then
       if [[ $TRAVIS_OS_NAME == "linux" ]]; then
-        make SWIFT_TEST_FLAGS=--enable-test-discovery test-debug;
+        make SWIFT_TEST_FLAGS="--enable-test-discovery --enable-index-store" test-debug;
       else
         make test-debug;
       fi
     fi
   - if [[ $OPENCOMBINE_TEST == "YES" ]]; then
       if [[ $TRAVIS_OS_NAME == "linux" ]]; then
-        make SWIFT_TEST_FLAGS=--enable-test-discovery test-release;
+        make SWIFT_TEST_FLAGS="--enable-test-discovery --enable-index-store" test-release;
       else
         make test-release;
       fi
