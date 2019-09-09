@@ -109,9 +109,7 @@ extension Publishers {
         public init(upstream: Upstream,
                     maxPublishers: Subscribers.Demand,
                     transform: @escaping (Upstream.Output) -> NewPublisher) {
-            self.upstream = upstream
-            self.maxPublishers = maxPublishers
-            self.transform = transform
+            fatalError()
         }
 
         public func receive<SubscriberType>(subscriber: SubscriberType)
