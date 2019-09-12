@@ -75,8 +75,7 @@ extension Publishers {
 extension Publishers.FlatMap {
     fileprivate final class Inner<Downstream: Subscriber>
         : CustomStringConvertible,
-        Cancellable,
-        CustomReflectable
+        Cancellable
     where Downstream.Input == Child.Output, Downstream.Failure == Upstream.Failure {
         typealias Input = Upstream.Output
         typealias Failure = Upstream.Failure
@@ -105,10 +104,6 @@ extension Publishers.FlatMap {
         private var upstreamSubscription: Subscription?
 
         var description: String { return "FlatMap" }
-
-        internal var customMirror: Mirror {
-            return Mirror(self, children: EmptyCollection())
-        }
 
         init(downstream: Downstream,
              maxPublishers: Subscribers.Demand,
