@@ -346,7 +346,8 @@ final class FlatMapTests: XCTestCase {
                     received777Sem.signal()
                 }
                 return .none
-        })
+            }
+        )
 
         flatMap.subscribe(downstreamSubscriber)
 
