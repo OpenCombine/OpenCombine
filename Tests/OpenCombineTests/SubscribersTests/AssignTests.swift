@@ -50,7 +50,7 @@ final class AssignTests: XCTestCase {
         XCTAssertEqual(children[1].value as? ReferenceWritableKeyPath<TestObject, Int>,
                        \.value)
 
-        XCTAssertEqual(children[2].label, "upstreamSubscription")
+        XCTAssertEqual(children[2].label, "status")
         XCTAssertNotNil(children[2].value)
     }
 

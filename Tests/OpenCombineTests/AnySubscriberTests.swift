@@ -138,6 +138,7 @@ final class AnySubscriberTests: XCTestCase {
 
         let expectedEvents: [TrackingSubject<Int>.Event] =
             [.subscription("Subject")] + events.compactMap(subscriberEventToSubjectEvent)
+                .throughFirstCompletion()
 
         XCTAssertEqual(subject.history, expectedEvents)
 
@@ -145,8 +146,14 @@ final class AnySubscriberTests: XCTestCase {
 
         publishEvents(shuffledEvents, erased)
 
-        let expectedShuffledEvents =
-            shuffledEvents.compactMap(subscriberEventToSubjectEvent)
+//        let expectedShuffledEvents =
+//            shuffledEvents.compactMap(subscriberEventToSubjectEvent)
+        // TODO: Because Apple changed the behavior of AnySubscriber to become inactive
+        // after it receives its first `.completion`, this shuffled testing no longer
+        // really makes any sense.
+        // Depending on the original goal of the shuffled testing, a new test could be
+        // written.
+        let expectedShuffledEvents = [TrackingSubject<Int>.Event]()
 
         XCTAssertEqual(subject.history, expectedEvents + expectedShuffledEvents)
 
@@ -228,5 +235,22 @@ private func subscriberEventToSubjectEvent(
         return .value(v)
     case let .completion(c):
         return .completion(c)
+    }
+}
+
+@available(macOS 10.15, iOS 13.0, *)
+extension Array {
+    // swiftlint:disable:next generic_type_name
+    func throughFirstCompletion<T>() -> Array where Element == TrackingSubject<T>.Event {
+        var encounteredFirstCompletion = false
+        return self.prefix {
+            if encounteredFirstCompletion {
+                return false
+            }
+            if case .completion = $0 {
+                encounteredFirstCompletion = true
+            }
+            return true
+        }
     }
 }

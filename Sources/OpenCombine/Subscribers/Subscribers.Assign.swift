@@ -27,7 +27,7 @@ extension Subscribers {
             let children: [(label: String?, value: Any)] = [
                 (label: "object", value: object as Any),
                 (label: "keyPath", value: keyPath),
-                (label: "upstreamSubscription", value: _upstreamSubscription as Any)
+                (label: "status", value: _upstreamSubscription as Any)
             ]
             return Mirror(self, children: children)
         }

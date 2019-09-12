@@ -231,24 +231,28 @@ internal final class SubjectSubscriber<Downstream: Subject>
 {
     internal var downstreamSubject: Downstream?
     internal var upstreamSubscription: Subscription?
+    private var isCompleted = false
 
     internal init(_ parent: Downstream) {
         self.downstreamSubject = parent
     }
 
     internal func receive(subscription: Subscription) {
-        guard upstreamSubscription == nil else { return }
+        guard upstreamSubscription == nil, !isCompleted else { return }
         upstreamSubscription = subscription
         downstreamSubject?.send(subscription: self)
     }
 
     internal func receive(_ input: Downstream.Output) -> Subscribers.Demand {
+        guard !isCompleted else { return .none }
         downstreamSubject?.send(input)
         return .none
     }
 
     internal func receive(completion: Subscribers.Completion<Downstream.Failure>) {
+        guard !isCompleted else { return }
         downstreamSubject?.send(completion: completion)
+        isCompleted = true
     }
 
     internal var description: String { return "Subject" }
