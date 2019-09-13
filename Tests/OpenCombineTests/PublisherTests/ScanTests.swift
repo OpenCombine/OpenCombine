@@ -15,24 +15,6 @@ import OpenCombine
 
 @available(macOS 10.15, iOS 13.0, *)
 final class ScanTests: XCTestCase {
-    static let allTests = [
-        ("testEmpty", testEmpty),
-        ("testError", testError),
-        ("testTryScanFailureBecauseOfThrow", testTryScanFailureBecauseOfThrow),
-        ("testTryScanFailureOnCompletion", testTryScanFailureOnCompletion),
-        ("testTryScanSuccess", testTryScanSuccess),
-        ("testRange", testRange),
-        ("testNoDemand", testNoDemand),
-        ("testDemandSubscribe", testDemandSubscribe),
-        ("testDemandSend", testDemandSend),
-        ("testCompletion", testCompletion),
-        ("testScanCancel", testScanCancel),
-        ("testTryScanCancel", testTryScanCancel),
-        ("testCancelAlreadyCancelled", testCancelAlreadyCancelled),
-        ("testLifecycle", testLifecycle),
-        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
-    ]
-
     func testEmpty() {
         // Given
         let tracking = TrackingSubscriberBase<String, TestingError>(
@@ -330,18 +312,5 @@ final class ScanTests: XCTestCase {
         XCTAssertEqual(deinitCounter, 1)
         try XCTUnwrap(subscription).cancel()
         XCTAssertEqual(deinitCounter, 2)
-    }
-
-    // MARK: -
-    func testTestSuiteIncludesAllTests() {
-        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-        let thisClass = type(of: self)
-        let allTestsCount = thisClass.allTests.count
-        let darwinCount = thisClass.defaultTestSuite.testCaseCount
-        XCTAssertEqual(allTestsCount,
-                       darwinCount,
-                       "\(darwinCount - allTestsCount) tests are missing from allTests")
-#endif
     }
 }
