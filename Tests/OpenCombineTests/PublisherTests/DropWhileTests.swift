@@ -225,16 +225,12 @@ final class DropWhileTests: XCTestCase {
         publisher.send(completion: .finished)
         XCTAssertEqual(subscription.history, [.requested(.unlimited)])
         XCTAssertEqual(tracking.history, [.subscription("DropWhile"),
-                                          .completion(.finished),
                                           .completion(.finished)])
 
         publisher.send(completion: .failure(.oops))
         publisher.send(completion: .failure(.oops))
         XCTAssertEqual(tracking.history, [.subscription("DropWhile"),
-                                          .completion(.finished),
-                                          .completion(.finished),
-                                          .completion(.failure(.oops)),
-                                          .completion(.failure(.oops))])
+                                          .completion(.finished)])
     }
 
     func testCancelAlreadyCancelled() throws {
@@ -259,9 +255,7 @@ final class DropWhileTests: XCTestCase {
         publisher.send(completion: .finished)
 
         XCTAssertEqual(subscription.history, [.requested(.unlimited), .cancelled])
-        XCTAssertEqual(tracking.history, [.subscription("DropWhile"),
-                                          .completion(.failure(.oops)),
-                                          .completion(.finished)])
+        XCTAssertEqual(tracking.history, [.subscription("DropWhile")])
     }
 
     func testLifecycle() throws {

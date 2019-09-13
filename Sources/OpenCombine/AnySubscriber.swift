@@ -249,6 +249,7 @@ internal final class SubjectSubscriber<Downstream: Subject>
 
     internal func receive(completion: Subscribers.Completion<Downstream.Failure>) {
         downstreamSubject?.send(completion: completion)
+        downstreamSubject = nil
     }
 
     internal var description: String { return "Subject" }

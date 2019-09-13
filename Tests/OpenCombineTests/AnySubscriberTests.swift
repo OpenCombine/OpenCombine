@@ -138,17 +138,9 @@ final class AnySubscriberTests: XCTestCase {
 
         let expectedEvents: [TrackingSubject<Int>.Event] =
             [.subscription("Subject")] + events.compactMap(subscriberEventToSubjectEvent)
+                .throughFirstCompletion()
 
         XCTAssertEqual(subject.history, expectedEvents)
-
-        let shuffledEvents = events.shuffled()
-
-        publishEvents(shuffledEvents, erased)
-
-        let expectedShuffledEvents =
-            shuffledEvents.compactMap(subscriberEventToSubjectEvent)
-
-        XCTAssertEqual(subject.history, expectedEvents + expectedShuffledEvents)
 
         let demand = erased.receive(0)
 
@@ -228,5 +220,23 @@ private func subscriberEventToSubjectEvent(
         return .value(v)
     case let .completion(c):
         return .completion(c)
+    }
+}
+
+@available(macOS 10.15, iOS 13.0, *)
+extension Array {
+    func throughFirstCompletion<SubjectOutput>() -> Array
+        where Element == TrackingSubject<SubjectOutput>.Event
+    {
+        var encounteredFirstCompletion = false
+        return self.prefix {
+            if encounteredFirstCompletion {
+                return false
+            }
+            if case .completion = $0 {
+                encounteredFirstCompletion = true
+            }
+            return true
+        }
     }
 }
