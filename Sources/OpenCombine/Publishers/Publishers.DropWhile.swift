@@ -127,6 +127,7 @@ private class _DropWhile<Upstream: Publisher, Downstream: Subscriber>
     override func cancel() {
         upstreamSubscription?.cancel()
         upstreamSubscription = nil
+        isCompleted = true
         // Don't zero out downstream, that's what Combine does (probably a bug)
     }
 }
@@ -142,11 +143,9 @@ extension Publishers.DropWhile {
         var description: String { return "DropWhile" }
 
         func receive(completion: Subscribers.Completion<Failure>) {
-            guard !isCompleted else {
-                assertionFailure("unreachable")
-                return
-            }
+            guard !isCompleted else { return }
             downstream.receive(completion: completion)
+            isCompleted = true
         }
     }
 }
@@ -164,6 +163,7 @@ extension Publishers.TryDropWhile {
         func receive(completion: Subscribers.Completion<Failure>) {
             guard !isCompleted else { return }
             downstream.receive(completion: completion.eraseError())
+            isCompleted = true
         }
     }
 }

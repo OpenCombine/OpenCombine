@@ -18,19 +18,6 @@ import OpenCombine
 @available(macOS 10.15, iOS 13.0, *)
 final class SubscribersDemandTests: XCTestCase {
 
-    static let allTests = [
-        ("testCrashesOnNegativeValue", testCrashesOnNegativeValue),
-        ("testAddition", testAddition),
-        ("testSubtraction", testSubtraction),
-        ("testMultiplication", testMultiplication),
-        ("testComparison", testComparison),
-        ("testMax", testMax),
-        ("testDescription", testDescription),
-        ("testEncodeDecodeJSON", testEncodeDecodeJSON),
-        ("testEncodeDecodePlist", testEncodeDecodePlist),
-        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
-    ]
-
     func testCrashesOnNegativeValue() {
         assertCrashes {
             _ = Subscribers.Demand.max(-1)
@@ -109,6 +96,7 @@ final class SubscribersDemandTests: XCTestCase {
     }
 
     func testComparison() {
+        // swiftlint:disable no_space_in_method_call
         XCTAssertFalse(Subscribers.Demand.unlimited <  .unlimited)
         XCTAssertFalse(Subscribers.Demand.unlimited >  .unlimited)
         XCTAssertFalse(Subscribers.Demand.unlimited != .unlimited)
@@ -198,6 +186,7 @@ final class SubscribersDemandTests: XCTestCase {
         XCTAssertTrue (100 == Subscribers.Demand.max(100))
         XCTAssertTrue (100 <= Subscribers.Demand.max(100))
         XCTAssertTrue (100 >= Subscribers.Demand.max(100))
+        // swiftlint:enable no_space_in_method_call
     }
 
     func testMax() {
@@ -325,19 +314,6 @@ final class SubscribersDemandTests: XCTestCase {
                     from: stringToDecoderInput(illFormedTooBig))
 
         XCTAssertEqual(decodedIllFormedTooBig.value.description, "unlimited")
-    }
-
-    // MARK: -
-    func testTestSuiteIncludesAllTests() {
-        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-        let thisClass = type(of: self)
-        let allTestsCount = thisClass.allTests.count
-        let darwinCount = thisClass.defaultTestSuite.testCaseCount
-        XCTAssertEqual(allTestsCount,
-                       darwinCount,
-                       "\(darwinCount - allTestsCount) tests are missing from allTests")
-#endif
     }
 }
 

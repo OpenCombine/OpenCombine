@@ -16,27 +16,6 @@ import OpenCombine
 @available(macOS 10.15, iOS 13.0, *)
 final class CompactMapTests: XCTestCase {
 
-    static let allTests = [
-        ("testEmpty", testEmpty),
-        ("testError", testError),
-        ("testTryMapFailureBecauseOfThrow", testTryMapFailureBecauseOfThrow),
-        ("testTryMapFailureOnCompletion", testTryMapFailureOnCompletion),
-        ("testRange", testRange),
-        ("testNoDemand", testNoDemand),
-        ("testDemandOnSubscribe", testDemandOnSubscribe),
-        ("testDemand", testDemand),
-        ("testCompletion", testCompletion),
-        ("testCompactMapCancel", testCompactMapCancel),
-        ("testTryCompactMapCancel", testTryCompactMapCancel),
-        ("testCancelAlreadyCancelled", testCancelAlreadyCancelled),
-        ("testCompactMapOperatorSpecializationForCompactMap",
-            testCompactMapOperatorSpecializationForCompactMap),
-        ("testMapOperatorSpecializationForCompactMap",
-            testMapOperatorSpecializationForCompactMap),
-        ("testCompactMapOperatorSpecializationForTryCompactMap",
-            testCompactMapOperatorSpecializationForTryCompactMap),
-    ]
-
     func testEmpty() {
         let tracking = TrackingSubscriberBase<Int, TestingError>(
             receiveSubscription: { $0.request(.unlimited) }

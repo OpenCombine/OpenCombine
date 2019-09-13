@@ -16,29 +16,6 @@ import OpenCombine
 @available(macOS 10.15, iOS 13.0, *)
 final class FirstTests: XCTestCase {
 
-    static let allTests = [
-        ("testFirstDemand", testFirstDemand),
-        ("testFirstFinishesAndReturnsFirstItem", testFirstFinishesAndReturnsFirstItem),
-        ("testFirstFinishesWithError", testFirstFinishesWithError),
-        ("testFirstFinishesImmediately", testFirstFinishesImmediately),
-        ("testFirstLifecycle", testFirstLifecycle),
-        ("testFirstWhereDemand", testFirstWhereDemand),
-        ("testFirstWhereFinishesAndReturnsFirstMatchingItem",
-            testFirstWhereFinishesAndReturnsFirstMatchingItem),
-        ("testFirstWhereFinishesWithError", testFirstWhereFinishesWithError),
-        ("testFirstWhereLifecycle", testFirstWhereLifecycle),
-        ("testTryFirstWhereDemand", testTryFirstWhereDemand),
-        ("testTryFirstWhereReturnsFirstMatchingElement",
-            testTryFirstWhereReturnsFirstMatchingElement),
-        ("testTryFirstWhereFinishesWithError", testTryFirstWhereFinishesWithError),
-        ("testTryFirstWhereFinishesWhenErrorThrown",
-            testTryFirstWhereFinishesWhenErrorThrown),
-        ("testTryFirstWhereLifecycle",
-            testTryFirstWhereLifecycle),
-        ("testCancelAlreadyCancelled", testCancelAlreadyCancelled),
-        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
-    ]
-
     func testFirstDemand() throws {
 
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
@@ -625,18 +602,5 @@ final class FirstTests: XCTestCase {
         try XCTUnwrap(helper.downstreamSubscription).cancel()
 
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited), .cancelled])
-    }
-
-    // MARK: -
-    func testTestSuiteIncludesAllTests() {
-        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-        let thisClass = type(of: self)
-        let allTestsCount = thisClass.allTests.count
-        let darwinCount = thisClass.defaultTestSuite.testCaseCount
-        XCTAssertEqual(allTestsCount,
-                       darwinCount,
-                       "\(darwinCount - allTestsCount) tests are missing from allTests")
-#endif
     }
 }

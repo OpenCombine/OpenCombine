@@ -16,16 +16,6 @@ import OpenCombine
 @available(macOS 10.15, iOS 13.0, *)
 final class AnyCancellableTests: XCTestCase {
 
-    static let allTests = [
-        ("testClosureInitialized", testClosureInitialized),
-        ("testCancelableInitialized", testCancelableInitialized),
-        ("testCancelTwice", testCancelTwice),
-        ("testStoreInArbitraryCollection", testStoreInArbitraryCollection),
-        ("testStoreInSet", testStoreInSet),
-        ("testIndirectCancellation", testIndirectCancellation),
-        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
-    ]
-
     func testClosureInitialized() {
 
         var fired = false
@@ -151,18 +141,5 @@ final class AnyCancellableTests: XCTestCase {
 
         cancellable1.cancel()
         XCTAssertEqual(subscription.history, [.cancelled])
-    }
-
-    // MARK: -
-    func testTestSuiteIncludesAllTests() {
-        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-        let thisClass = type(of: self)
-        let allTestsCount = thisClass.allTests.count
-        let darwinCount = thisClass.defaultTestSuite.testCaseCount
-        XCTAssertEqual(allTestsCount,
-                       darwinCount,
-                       "\(darwinCount - allTestsCount) tests are missing from allTests")
-#endif
     }
 }

@@ -22,7 +22,7 @@ matrix:
       os: linux
       dist: xenial
       sudo: required
-      env: SWIFT_VERSION="swift-5.1-DEVELOPMENT-SNAPSHOT-2019-06-16-a" OPENCOMBINE_TEST="YES"
+      env: SWIFT_VERSION="swift-5.1-DEVELOPMENT-SNAPSHOT-2019-09-05-a" OPENCOMBINE_TEST="YES"
     - name: "macOS 10.14 | Swift 5.0 | Tests"
       os: osx
       osx_image: xcode10.2
@@ -52,14 +52,26 @@ install:
     fi
 script:
   - if [[ $OPENCOMBINE_TEST == "YES" ]]; then
-      make test-debug;
+      if [[ $TRAVIS_OS_NAME == "linux" ]]; then
+        make SWIFT_TEST_FLAGS="--enable-test-discovery --enable-index-store" test-debug;
+      else
+        make test-debug;
+      fi
     fi
   - if [[ $OPENCOMBINE_TEST == "YES" ]]; then
-      make test-release;
+      if [[ $TRAVIS_OS_NAME == "linux" ]]; then
+        make SWIFT_TEST_FLAGS="--enable-test-discovery --enable-index-store" test-release;
+      else
+        make test-release;
+      fi
     fi
   - if [[ $OPENCOMBINE_COMPATIBILITY_TEST == "YES" ]]; then
       make generate-compatibility-xcodeproj;
-      set -o pipefail && xcodebuild -scheme OpenCombine-Package -sdk iphonesimulator13.0 -destination "platform=iOS Simulator,name=iPhone Xs,OS=13.0" build test | xcpretty;
+      set -o pipefail && xcodebuild \
+          -scheme OpenCombine-Package \
+          -sdk iphonesimulator13.0 \
+          -destination "platform=iOS Simulator,name=iPhone Xs,OS=13.0" \
+          build test | xcpretty;
     fi
   - if [[ $SWIFT_LINT == "YES" ]]; then
       swiftlint lint --strict --reporter "emoji";

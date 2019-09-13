@@ -13,26 +13,8 @@ import Combine
 import OpenCombine
 #endif
 
-// swiftlint:disable explicit_top_level_acl
-
 @available(macOS 10.15, iOS 13.0, *)
 final class CurrentValueSubjectTests: XCTestCase {
-
-    static let allTests = [
-        ("testRequestingDemand", testRequestingDemand),
-        ("testCrashOnZeroInitialDemand", testCrashOnZeroInitialDemand),
-        ("testSendFailureCompletion", testSendFailureCompletion),
-        ("testMultipleSubscriptions", testMultipleSubscriptions),
-        ("testMultipleCompletions", testMultipleCompletions),
-        ("testValuesAfterCompletion", testValuesAfterCompletion),
-        ("testSubscriptionAfterCompletion", testSubscriptionAfterCompletion),
-        ("testSubscriptionAfterSend", testSubscriptionAfterSend),
-        ("testSubscriptionAfterSet", testSubscriptionAfterSet),
-        ("testSendSubscription", testSendSubscription),
-        ("testLifecycle", testLifecycle),
-        ("testSynchronization", testSynchronization),
-        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
-    ]
 
     private typealias Sut = CurrentValueSubject<Int, TestingError>
 
@@ -506,18 +488,5 @@ final class CurrentValueSubjectTests: XCTestCase {
         )
 
         XCTAssertEqual(completions.value.count, 200)
-    }
-
-    // MARK: -
-    func testTestSuiteIncludesAllTests() {
-        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-        let thisClass = type(of: self)
-        let allTestsCount = thisClass.allTests.count
-        let darwinCount = thisClass.defaultTestSuite.testCaseCount
-        XCTAssertEqual(allTestsCount,
-                       darwinCount,
-                       "\(darwinCount - allTestsCount) tests are missing from allTests")
-#endif
     }
 }

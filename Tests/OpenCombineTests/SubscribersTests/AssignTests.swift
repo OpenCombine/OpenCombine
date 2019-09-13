@@ -16,15 +16,6 @@ import OpenCombine
 @available(macOS 10.15, iOS 13.0, *)
 final class AssignTests: XCTestCase {
 
-    static let allTests = [
-        ("testDescription", testDescription),
-        ("testReflection", testReflection),
-        ("testSubscription", testSubscription),
-        ("testReceiveValue", testReceiveValue),
-        ("testPublisherOperator", testPublisherOperator),
-        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
-    ]
-
     private typealias Sut<Root> = Subscribers.Assign<Root, Int>
 
     private final class TestObject {
@@ -59,7 +50,7 @@ final class AssignTests: XCTestCase {
         XCTAssertEqual(children[1].value as? ReferenceWritableKeyPath<TestObject, Int>,
                        \.value)
 
-        XCTAssertEqual(children[2].label, "upstreamSubscription")
+        XCTAssertEqual(children[2].label, "status")
         XCTAssertNotNil(children[2].value)
     }
 
@@ -129,18 +120,5 @@ final class AssignTests: XCTestCase {
 
         publisher.send(100)
         XCTAssertEqual(object.value, 42)
-    }
-
-    // MARK: -
-    func testTestSuiteIncludesAllTests() {
-        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-        let thisClass = type(of: self)
-        let allTestsCount = thisClass.allTests.count
-        let darwinCount = thisClass.defaultTestSuite.testCaseCount
-        XCTAssertEqual(allTestsCount,
-                       darwinCount,
-                       "\(darwinCount - allTestsCount) tests are missing from allTests")
-#endif
     }
 }

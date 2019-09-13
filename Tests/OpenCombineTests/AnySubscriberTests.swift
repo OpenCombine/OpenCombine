@@ -19,17 +19,6 @@ private typealias Sut = AnySubscriber<Int, TestingError>
 @available(macOS 10.15, iOS 13.0, *)
 final class AnySubscriberTests: XCTestCase {
 
-    static let allTests = [
-        ("testCombineIdentifier", testCombineIdentifier),
-        ("testDescription", testDescription),
-        ("testReflection", testReflection),
-        ("testErasingSubscriber", testErasingSubscriber),
-        ("testErasingSubscriberSubscription", testErasingSubscriberSubscription),
-        ("testErasingSubject", testErasingSubject),
-        ("testErasingSubjectSubscription", testErasingSubjectSubscription),
-        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
-    ]
-
     func testCombineIdentifier() {
 
         let empty = Sut()
@@ -149,17 +138,9 @@ final class AnySubscriberTests: XCTestCase {
 
         let expectedEvents: [TrackingSubject<Int>.Event] =
             [.subscription("Subject")] + events.compactMap(subscriberEventToSubjectEvent)
+                .throughFirstCompletion()
 
         XCTAssertEqual(subject.history, expectedEvents)
-
-        let shuffledEvents = events.shuffled()
-
-        publishEvents(shuffledEvents, erased)
-
-        let expectedShuffledEvents =
-            shuffledEvents.compactMap(subscriberEventToSubjectEvent)
-
-        XCTAssertEqual(subject.history, expectedEvents + expectedShuffledEvents)
 
         let demand = erased.receive(0)
 
@@ -180,19 +161,6 @@ final class AnySubscriberTests: XCTestCase {
 
         XCTAssertEqual(subject.history, [.subscription("Subject"),
                                          .completion(.finished)])
-    }
-
-    // MARK: -
-    func testTestSuiteIncludesAllTests() {
-        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-        let thisClass = type(of: self)
-        let allTestsCount = thisClass.allTests.count
-        let darwinCount = thisClass.defaultTestSuite.testCaseCount
-        XCTAssertEqual(allTestsCount,
-                       darwinCount,
-                       "\(darwinCount - allTestsCount) tests are missing from allTests")
-#endif
     }
 }
 
@@ -252,5 +220,23 @@ private func subscriberEventToSubjectEvent(
         return .value(v)
     case let .completion(c):
         return .completion(c)
+    }
+}
+
+@available(macOS 10.15, iOS 13.0, *)
+extension Array {
+    func throughFirstCompletion<SubjectOutput>() -> Array
+        where Element == TrackingSubject<SubjectOutput>.Event
+    {
+        var encounteredFirstCompletion = false
+        return self.prefix {
+            if encounteredFirstCompletion {
+                return false
+            }
+            if case .completion = $0 {
+                encounteredFirstCompletion = true
+            }
+            return true
+        }
     }
 }

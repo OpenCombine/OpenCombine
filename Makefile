@@ -1,3 +1,5 @@
+SWIFT_TEST_FLAGS=
+
 debug:
 	swift build -c debug
 
@@ -5,10 +7,10 @@ release:
 	swift build -c release
 
 test-debug:
-	swift test -c debug --enable-code-coverage --sanitize thread
+	swift test -c debug --sanitize thread $(SWIFT_TEST_FLAGS)
 
 test-release:
-	swift test -c release
+	swift test -c release $(SWIFT_TEST_FLAGS)
 
 swift-version:
 	swift -version
@@ -23,4 +25,14 @@ generate-compatibility-xcodeproj:
 generate-xcodeproj:
 	swift package generate-xcodeproj --enable-code-coverage
 
-.PHONY: debug release test-debug test-release swift-version test-compatibility-debug generate-compatibility-xcodeproj generate-xcodeproj
+clean:
+	rm -rf .build
+
+.PHONY: debug release \
+	    test-debug \
+	    test-release \
+	    swift-version \
+	    test-compatibility-debug \
+	    generate-compatibility-xcodeproj \
+	    generate-xcodeproj \
+	    clean

@@ -16,58 +16,6 @@ import OpenCombine
 @available(macOS 10.15, iOS 13.0, *)
 final class JustTests: XCTestCase {
 
-    static let allTests = [
-        ("testJustNoInitialDemand", testJustNoInitialDemand),
-        ("testCustomMirror", testCustomMirror),
-        ("testJustWithInitialDemand", testJustWithInitialDemand),
-        ("testLifecycle", testLifecycle),
-        ("testCancelOnSubscription", testCancelOnSubscription),
-        ("testMinOperatorSpecialization", testMinOperatorSpecialization),
-        ("testMaxOperatorSpecialization", testMaxOperatorSpecialization),
-        ("testContainsOperatorSpecialization", testContainsOperatorSpecialization),
-        ("testTryContainsOperatorSpecialization", testTryContainsOperatorSpecialization),
-        ("testRemoveDuplicatesOperatorSpecialization",
-         testRemoveDuplicatesOperatorSpecialization),
-        ("testTryRemoveDuplicatesOperatorSpecialization",
-         testTryRemoveDuplicatesOperatorSpecialization),
-        ("testAllSatisfyOperatorSpecialization", testAllSatisfyOperatorSpecialization),
-        ("testTryAllSatisfyOperatorSpecialization",
-         testTryAllSatisfyOperatorSpecialization),
-        ("testCollectOperatorSpecialization", testCollectOperatorSpecialization),
-        ("testCountOperatorSpecialization", testCountOperatorSpecialization),
-        ("testDropFirstOperatorSpecialization", testDropFirstOperatorSpecialization),
-        ("testDropWhileOperatorSpecialization", testDropWhileOperatorSpecialization),
-        ("testFirstOperatorSpecialization", testFirstOperatorSpecialization),
-        ("testFirstWhereOperatorSpecializtion", testFirstWhereOperatorSpecializtion),
-        ("testLastOperatorSpecialization", testLastOperatorSpecialization),
-        ("testLastWhereOperatorSpecializtion", testLastWhereOperatorSpecializtion),
-        ("testIgnoreOutputOperatorSpecialization",
-         testIgnoreOutputOperatorSpecialization),
-        ("testMapOperatorSpecialization", testMapOperatorSpecialization),
-        ("testTryMapOperatorSpecialization", testTryMapOperatorSpecialization),
-        ("testCompactMapOperatorSpecialization", testCompactMapOperatorSpecialization),
-        ("testFilterOperatorSpecialization", testFilterOperatorSpecialization),
-        ("testMapErrorOperatorSpecialization", testMapErrorOperatorSpecialization),
-        ("testReplaceErrorOperatorSpecialization",
-         testReplaceErrorOperatorSpecialization),
-        ("testReplaceEmptyOperatorSpecialization",
-         testReplaceEmptyOperatorSpecialization),
-        ("testRetryOperatorSpecialization", testRetryOperatorSpecialization),
-        ("testReduceOperatorSpecialization", testReduceOperatorSpecialization),
-        ("testTryReduceOperatorSpecialization", testTryReduceOperatorSpecialization),
-        ("testScanOperatorSpecialization", testScanOperatorSpecialization),
-        ("testTryScanOperatorSpecialization", testTryScanOperatorSpecialization),
-        ("testOutputAtIndexOperatorSpecialization",
-         testOutputAtIndexOperatorSpecialization),
-        ("testOutputInRangeOperatorSpecialization",
-         testOutputInRangeOperatorSpecialization),
-        ("testPrefixOperatorSpecialization", testPrefixOperatorSpecialization),
-        ("testPrefixWhileOperatorSpecialization", testPrefixWhileOperatorSpecialization),
-        ("testSetFailureTypeOperatorSpecialization",
-         testSetFailureTypeOperatorSpecialization),
-        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
-    ]
-
     private typealias Sut = Just
 
     func testJustNoInitialDemand() {
@@ -357,18 +305,5 @@ final class JustTests: XCTestCase {
 
     func testSetFailureTypeOperatorSpecialization() {
         XCTAssertEqual(try Sut(73).setFailureType(to: TestingError.self).result.get(), 73)
-    }
-
-    // MARK: -
-    func testTestSuiteIncludesAllTests() {
-        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-        let thisClass = type(of: self)
-        let allTestsCount = thisClass.allTests.count
-        let darwinCount = thisClass.defaultTestSuite.testCaseCount
-        XCTAssertEqual(allTestsCount,
-                       darwinCount,
-                       "\(darwinCount - allTestsCount) tests are missing from allTests")
-#endif
     }
 }
