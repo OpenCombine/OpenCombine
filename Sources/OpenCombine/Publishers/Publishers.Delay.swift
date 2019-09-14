@@ -58,76 +58,84 @@ extension Publishers {
             where Upstream.Failure == Downstream.Failure,
             Upstream.Output == Downstream.Input
         {
+            let inner: Inner<Upstream, Downstream> = Inner(downstream: subscriber,
+                                                           upstream: upstream,
+                                                           interval: interval,
+                                                           tolerance: tolerance,
+                                                           scheduler: scheduler,
+                                                           options: options)
             scheduler.schedule {
-                self._receive(subscriber: subscriber)
+                self.upstream.subscribe(inner)
             }
-        }
-
-        private func _receive<Downstream: Subscriber>(subscriber: Downstream)
-            where Upstream.Failure == Downstream.Failure,
-            Upstream.Output == Downstream.Input
-        {
-            let scheduler = self.scheduler
-            let interval = self.interval
-            let tolerance = self.tolerance
-
-            let delayedPublisher = upstream.flatMap
-                { output -> PassthroughSubject<Output, Failure> in
-
-                let object: PassthroughSubject<Output, Failure> = .init()
-                let date = scheduler.now.advanced(by: interval)
-                let tolerance = Swift.min(scheduler.minimumTolerance, tolerance)
-
-                scheduler.schedule(after: date,
-                                   tolerance: tolerance,
-                                   options: self.options,
-                                   {
-                    object.send(output)
-                })
-                return object
-            }
-            delayedPublisher.subscribe(subscriber)
         }
     }
 }
 
-// MARK: A cap is required until the "FlatMap" is accessible
-extension Publishers {
-    public struct FlatMap<NewPublisher, Upstream>: Publisher
-        where NewPublisher: Publisher, Upstream: Publisher,
-        NewPublisher.Failure == Upstream.Failure {
+extension Publishers.Delay {
 
-        public typealias Output = NewPublisher.Output
-        public typealias Failure = Upstream.Failure
+    private final class Inner<Upstream: Publisher, Downstream: Subscriber>
+          : OperatorSubscription<Downstream>,
+            CustomStringConvertible,
+            Subscriber
+        where Downstream.Input == Upstream.Output, Downstream.Failure == Upstream.Failure
+    {
+        typealias Input = Upstream.Output
+        typealias Failure = Upstream.Failure
+        typealias Transform = (Input) -> Result<Downstream.Input, Downstream.Failure>
 
-        public let upstream: Upstream
+        let interval: Context.SchedulerTimeType.Stride
+        let tolerance: Context.SchedulerTimeType.Stride
+        let scheduler: Context
+        let options: Context.SchedulerOptions?
 
-        public let maxPublishers: Subscribers.Demand
-
-        public let transform: (Upstream.Output) -> NewPublisher
-
-        public init(upstream: Upstream,
-                    maxPublishers: Subscribers.Demand,
-                    transform: @escaping (Upstream.Output) -> NewPublisher) {
-            fatalError()
+        init(downstream: Downstream,
+             upstream: Upstream,
+             interval: Context.SchedulerTimeType.Stride,
+             tolerance: Context.SchedulerTimeType.Stride,
+             scheduler: Context,
+             options: Context.SchedulerOptions?) {
+            self.interval = interval
+            self.tolerance = Swift.min(scheduler.minimumTolerance, tolerance)
+            self.scheduler = scheduler
+            self.options = options
+            self.isCompleted = false
+            super.init(downstream: downstream)
         }
 
-        public func receive<SubscriberType>(subscriber: SubscriberType)
-            where SubscriberType: Subscriber,
-            NewPublisher.Output == SubscriberType.Input,
-            Upstream.Failure == SubscriberType.Failure {
+        func receive(subscription: Subscription) {
+            downstream.receive(subscription: subscription)
         }
-    }
-}
 
-// MARK: A cap is required until the "FlatMap" is accessible
-extension Publisher {
-    public func flatMap<TypeIn, TypeOut>(
-        maxPublishers: Subscribers.Demand = .unlimited,
-        _ transform: @escaping (Self.Output) -> TypeOut)
-        -> Publishers.FlatMap<TypeOut, Self>
-        where TypeIn == TypeOut.Output, TypeOut: Publisher,
-        Self.Failure == TypeOut.Failure {
-        fatalError()
+        func receive(_ input: Upstream.Output) -> Subscribers.Demand {
+            if isCompleted {
+                return .none
+            }
+            let date = scheduler.now.advanced(by: interval)
+
+            scheduler.schedule(after: date,
+                               tolerance: tolerance,
+                               options: options,
+                               { [weak self] in
+                guard let strongSelf = self,
+                    strongSelf.isCompleted == false else  {
+                    return
+                }
+                _ = strongSelf.downstream?.receive(input)
+            })
+            return .none
+        }
+
+        func receive(completion: Subscribers.Completion<Failure>) {
+            isCompleted = true
+            downstream.receive(completion: completion)
+        }
+
+        override func cancel() {
+            isCompleted = true
+            super.cancel()
+        }
+
+        var description: String { return "Delay" }
+        private var isCompleted: Bool
     }
 }
