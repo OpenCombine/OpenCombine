@@ -354,9 +354,9 @@ final class DispatchQueueSchedulerTests: XCTestCase {
             .dispatchTime
             .uptimeNanoseconds
         XCTAssertLessThan(abs(actualNowMainScheduler.distance(to: expectedNow)),
-                          200_000/*nanoseconds*/)
+                          500_000/*nanoseconds*/)
         XCTAssertLessThan(abs(actualNowBackgroundScheduler.distance(to: expectedNow)),
-                          200_000/*nanoseconds*/)
+                          500_000/*nanoseconds*/)
     }
 
     func testDefaultSchedulerOptions() {
@@ -385,12 +385,12 @@ final class DispatchQueueSchedulerTests: XCTestCase {
                 didExecuteBackgroundAction.do { $0 = true }
             }
 
-        XCTAssertFalse(didExecuteMainAction)
+        XCTAssertFalse(didExecuteMainAction, "action should be executed asynchronously")
 
         // Wait for the background scheduler to execute the work.
         XCTAssertEqual(group.wait(timeout: .now() + 0.1), .success)
 
-        XCTAssertFalse(didExecuteMainAction)
+        XCTAssertFalse(didExecuteMainAction, "action should be executed asynchronously")
         XCTAssertTrue(didExecuteBackgroundAction.value)
 
         wait(for: [main], timeout: 0.1)
@@ -401,25 +401,18 @@ final class DispatchQueueSchedulerTests: XCTestCase {
         let main = expectation(description: "scheduled on main queue")
         main.assertForOverFulfill = true
 
+        var didExecuteAction = false
+
         let delay = Scheduler.SchedulerTimeType.Stride.milliseconds(200)
 
-        let start = mainScheduler.now
-
         mainScheduler.schedule(after: mainScheduler.now.advanced(by: delay)) {
+            didExecuteAction = true
             main.fulfill()
         }
 
-        waitForExpectations(timeout: 3/*seconds*/) { error in
-            if let error = error {
-                XCTFail(String(describing: error))
-                return
-            }
+        XCTAssertFalse(didExecuteAction, "action should be executed asynchronously")
 
-            let end = mainScheduler.now
-
-            XCTAssertLessThan(abs(start.distance(to: end).magnitude - delay.magnitude),
-                              delay.magnitude / 10)
-        }
+        wait(for: [main], timeout: 3/*seconds*/)
     }
 
     func testScheduleRepeating() {
@@ -430,38 +423,19 @@ final class DispatchQueueSchedulerTests: XCTestCase {
         let delay = Scheduler.SchedulerTimeType.Stride.milliseconds(100)
         let interval = Scheduler.SchedulerTimeType.Stride.milliseconds(50)
 
-        let start = mainScheduler.now
-
-        // By the time the scheduled action is performed 'expectedFulfillmentCount' times,
-        // the clock should be approximately here.
-        let expectedEnd = start
-            .advanced(by: delay)
-            .advanced(by: .nanoseconds(
-                    interval.magnitude * (main.expectedFulfillmentCount - 1)
-                )
-            )
+        var didExecuteAction = false
 
         let token = mainScheduler
             .schedule(after: mainScheduler.now.advanced(by: delay),
                       interval: interval) {
+                didExecuteAction = true
                 main.fulfill()
             }
 
         XCTAssert(token is AnyCancellable)
+        XCTAssertFalse(didExecuteAction, "action should be executed asynchronously")
 
-        waitForExpectations(timeout: 3/*seconds*/) { error in
-            if let error = error {
-                XCTFail(String(describing: error))
-                return
-            }
-
-            let end = mainScheduler.now
-
-            let difference = expectedEnd.dispatchTime.rawValue
-                .distance(to: end.dispatchTime.rawValue)
-
-            XCTAssertLessThan(abs(difference), 10_000_000/*nanoseconds*/)
-        }
+        wait(for: [main], timeout: 3/*seconds*/)
     }
 }
 
