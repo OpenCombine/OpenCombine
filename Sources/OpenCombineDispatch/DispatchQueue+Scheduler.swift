@@ -284,6 +284,20 @@ extension DispatchQueue {
         }
     }
 
+    /// A namespace for disambiguation when both OpenCombine and Combine are imported.
+    ///
+    /// Combine extends `DispatchQueue` with new methods and nested types.
+    /// If you import both OpenCombine and Combine (either explicitly or implicitly,
+    /// e. g. when importing Foundation), you will not be able
+    /// to write `DispatchQueue.main.schedule { doThings() }`,
+    /// because Swift is unable to understand which `schedule` method
+    /// you're referring to.
+    ///
+    /// So you have to write `DispatchQueue.main.ocombine.schedule { doThings() }`.
+    ///
+    /// This bug is tracked [here](https://bugs.swift.org/browse/SR-11183).
+    ///
+    /// You can omit this whenever Combine is not available (e. g. on Linux).
     public var ocombine: OCombine {
         return OCombine(self)
     }

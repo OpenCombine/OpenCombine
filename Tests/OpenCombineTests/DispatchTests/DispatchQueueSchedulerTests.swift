@@ -386,8 +386,8 @@ final class DispatchQueueSchedulerTests: XCTestCase {
             }
 
         XCTAssertFalse(didExecuteMainAction)
-        XCTAssertFalse(didExecuteBackgroundAction.value)
 
+        // Wait for the background scheduler to execute the work.
         XCTAssertEqual(group.wait(timeout: .now() + 0.1), .success)
 
         XCTAssertFalse(didExecuteMainAction)
