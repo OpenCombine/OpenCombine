@@ -9,6 +9,7 @@
 #define COPENCOMBINEHELPERS_H
 
 #include <stdint.h>
+#include <stddef.h>
 
 #if __has_attribute(swift_name)
 # define OPENCOMBINE_SWIFT_NAME(_name) __attribute__((swift_name(#_name)))
@@ -67,6 +68,28 @@ void opencombine_unfair_recursive_lock_unlock(OpenCombineUnfairRecursiveLock)
 
 void opencombine_unfair_recursive_lock_dealloc(OpenCombineUnfairRecursiveLock lock)
     OPENCOMBINE_SWIFT_NAME(UnfairRecursiveLock.deallocate(self:));
+
+#pragma mark - Type metadata
+
+#ifdef __cplusplus
+typedef bool OpenCombineBool;
+#else
+typedef _Bool OpenCombineBool;
+#endif
+
+typedef OpenCombineBool(*_Nonnull OpenCombineFieldEnumerator)(
+    void* _Nullable enumeratorContext,
+    const char* _Nonnull fieldName,
+    size_t fieldOffset,
+    const void* _Nonnull fieldTypeMetadataPtr
+);
+
+OpenCombineBool
+opencombine_enumerate_class_fields(
+    const void* _Nonnull type_metadata,
+    void* _Nullable enumerator_context,
+    OpenCombineFieldEnumerator enumerator
+) OPENCOMBINE_SWIFT_NAME(enumerateClassFields(typeMetadata:enumeratorContext:enumerator:));
 
 #ifdef __cplusplus
 } // extern "C"

@@ -1,1 +1,2 @@
 OTHER_SWIFT_FLAGS = $(inherited) -DOPENCOMBINE_COMPATIBILITY_TEST
+OTHER_LDFLAGS = $(inherited) -L"$(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)" -lobjc -lswiftCore
