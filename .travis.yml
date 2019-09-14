@@ -60,6 +60,13 @@ script:
     fi
   - if [[ $OPENCOMBINE_TEST == "YES" ]]; then
       if [[ $TRAVIS_OS_NAME == "linux" ]]; then
+        make SWIFT_TEST_FLAGS="--enable-test-discovery --enable-index-store" test-debug-sanitize-thread;
+      else
+        make test-debug-sanitize-thread;
+      fi
+    fi
+  - if [[ $OPENCOMBINE_TEST == "YES" ]]; then
+      if [[ $TRAVIS_OS_NAME == "linux" ]]; then
         make SWIFT_TEST_FLAGS="--enable-test-discovery --enable-index-store" test-release;
       else
         make test-release;

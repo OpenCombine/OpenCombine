@@ -7,7 +7,10 @@ release:
 	swift build -c release
 
 test-debug:
-	swift test -c debug --sanitize thread $(SWIFT_TEST_FLAGS)
+	swift test -c debug $(SWIFT_TEST_FLAGS)
+
+test-debug-sanitize-thread:
+	swift test -c debug --sanitize thread $(SWIFT_TEST_FLAGS)	
 
 test-release:
 	swift test -c release $(SWIFT_TEST_FLAGS)
