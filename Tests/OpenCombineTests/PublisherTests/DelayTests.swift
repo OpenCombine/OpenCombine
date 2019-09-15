@@ -7,13 +7,7 @@
 
 import XCTest
 
-//#if OPENCOMBINE_COMPATIBILITY_TEST
-import Combine
-import Darwin
-//#else
-//import Darwin
-//import OpenCombine
-//#endif
+import OpenCombine
 
 @available(iOS 13.0, *)
 final class DelayTests: XCTestCase {
@@ -29,67 +23,67 @@ final class DelayTests: XCTestCase {
 
     func testDelayNotFireWhenPublisherChangesValueOnSubscribe() {
         let passthrow: PassthroughSubject<Int, Never> = PassthroughSubject()
-        let sheduler = RunLoop.main
-        let interval: RunLoop.SchedulerTimeType.Stride = 1.0
-        let tolerance = sheduler.minimumTolerance
+        let scheduler = VirtualTimeScheduler()
+        let interval: VirtualTimeScheduler.SchedulerTimeType.Stride = 1.0
+        let tolerance = scheduler.minimumTolerance
 
         let delay = Publishers.Delay(upstream: passthrow,
                                      interval: interval,
                                      tolerance: tolerance,
-                                     scheduler: sheduler)
-        let expectation = XCTestExpectation(description: #function)
-        expectation.isInverted = true
+                                     scheduler: scheduler)
+        var expectation = false
 
         let cancel = delay.sink { _ in
-            expectation.fulfill()
+            expectation = true
         }
         passthrow.send(0)
-
-        wait(for: [expectation], timeout: 2.0)
+        scheduler.flush()
+        XCTAssertFalse(expectation)
         cancel.cancel()
     }
 
     func testDelayFireOnPublisherChangeValue() {
         let passthrow: PassthroughSubject<Int, Never> = PassthroughSubject()
-        let sheduler = RunLoop.main
-        let tolerance = sheduler.minimumTolerance
+        let scheduler = VirtualTimeScheduler()
+        let tolerance = scheduler.minimumTolerance
 
         let delay = Publishers.Delay(upstream: passthrow,
                                      interval: 1.0,
                                      tolerance: tolerance,
-                                     scheduler: sheduler)
-        let expectation = XCTestExpectation(description: #function)
+                                     scheduler: scheduler)
+        var expectation = false
 
         let cancel = delay.sink { _ in
-            expectation.fulfill()
+            expectation = true
         }
-        sheduler.perform {
+        scheduler.schedule {
             passthrow.send(0)
         }
-        wait(for: [expectation], timeout: 2.0)
+        scheduler.flush()
+        XCTAssertTrue(expectation)
         cancel.cancel()
     }
 
     func testDelayNotFireAfterCancel() {
         let passthrow: PassthroughSubject<Int, Never> = PassthroughSubject()
-        let sheduler = RunLoop.main
-        let tolerance = sheduler.minimumTolerance
+        let scheduler = VirtualTimeScheduler()
+        let tolerance = scheduler.minimumTolerance
 
         let delay = Publishers.Delay(upstream: passthrow,
                                      interval: 1.0,
                                      tolerance: tolerance,
-                                     scheduler: sheduler)
-        let expectation = XCTestExpectation(description: #function)
-        expectation.isInverted = true
+                                     scheduler: scheduler)
+        var expectation = false
 
         let cancel = delay.sink { _ in
-            expectation.fulfill()
+            expectation = true
         }
-        sheduler.perform {
-             passthrow.send(0)
+        scheduler.schedule {
              cancel.cancel()
+             passthrow.send(0)
         }
-        wait(for: [expectation], timeout: 2.0)
+        scheduler.flush()
+        XCTAssertFalse(expectation)
     }
 
     func testDelayDurationAndValues() {
@@ -97,24 +91,19 @@ final class DelayTests: XCTestCase {
             let time: Double
             let value: Int
         }
+        let scheduler = VirtualTimeScheduler()
         func currentTime() -> Double {
-            var time = timeval()
-            _ = gettimeofday(&time, nil)
-            let result = Double(time.tv_sec) + Double(time.tv_usec) / 1_000_000
-            return result
+            return Double(scheduler.now.date)
         }
         let passthrow: PassthroughSubject<Int, Never> = PassthroughSubject()
-        let sheduler = RunLoop.main
-        let tolerance = sheduler.minimumTolerance
-        let toleranceValue: Double = tolerance.timeInterval
+        let tolerance = scheduler.minimumTolerance
+        let toleranceValue: Double = Double(tolerance.magnitude)
         let delayTime: Double = 1.0
 
         let delay = Publishers.Delay(upstream: passthrow,
                                      interval: 1.0,
                                      tolerance: tolerance,
-                                     scheduler: sheduler)
-        let expectation = XCTestExpectation(description: #function)
-        expectation.isInverted = true
+                                     scheduler: scheduler)
 
         var receivedValues: [Context] = []
         let cancel = delay.sink { value in
@@ -123,24 +112,25 @@ final class DelayTests: XCTestCase {
         }
         var sentValues: [Context] = []
         // Send 1st value at start
-        sheduler.perform {
+        scheduler.schedule {
             let first = Context(time: currentTime(), value: 10)
             passthrow.send(first.value)
             sentValues.append(first)
         }
         // Send 2nd value after 1 sec
-        sheduler.schedule(after: sheduler.now.advanced(by: 1)) {
+        scheduler.schedule(after: scheduler.now.advanced(by: 1)) {
             let second = Context(time: currentTime(), value: 654)
             passthrow.send(second.value)
             sentValues.append(second)
         }
         // Send 3d value after 2 sec
-        sheduler.schedule(after: sheduler.now.advanced(by: 2)) {
+        scheduler.schedule(after: scheduler.now.advanced(by: 2)) {
             let fird = Context(time: currentTime(), value: 82375)
             passthrow.send(fird.value)
             sentValues.append(fird)
         }
-        wait(for: [expectation], timeout: 5.0)
+
+        scheduler.flush()
         cancel.cancel()
 
         XCTAssertTrue(sentValues.count == 3)
