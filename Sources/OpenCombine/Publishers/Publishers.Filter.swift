@@ -93,9 +93,9 @@ extension Publishers {
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-            where Upstream.Failure == SubscriberType.Failure,
-                  Upstream.Output == SubscriberType.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where Upstream.Failure == Downstream.Failure,
+                  Upstream.Output == Downstream.Input
         {
             let filter = Inner(downstream: subscriber, isIncluded: catching(isIncluded))
             upstream.receive(subscriber: filter)

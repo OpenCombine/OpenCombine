@@ -30,8 +30,8 @@ public struct Fail<Output, Failure: Error>: Publisher {
     /// The failure to send when terminating the publisher.
     public let error: Failure
 
-    public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-        where Output == SubscriberType.Input, Failure == SubscriberType.Failure
+    public func receive<Downstream: Subscriber>(subscriber: Downstream)
+        where Output == Downstream.Input, Failure == Downstream.Failure
     {
         subscriber.receive(subscription: Subscriptions.empty)
         subscriber.receive(completion: .failure(error))

@@ -37,10 +37,10 @@ extension Publishers {
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-            where Failure == SubscriberType.Failure, Output == SubscriberType.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where Failure == Downstream.Failure, Output == Downstream.Input
         {
-            let encodeSubscriber = _Encode<Upstream, SubscriberType, Coder>(
+            let encodeSubscriber = _Encode<Upstream, Downstream, Coder>(
                 downstream: subscriber,
                 encoder: encoder
             )

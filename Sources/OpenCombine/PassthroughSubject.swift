@@ -39,8 +39,8 @@ public final class PassthroughSubject<Output, Failure: Error>: Subject  {
         }
     }
 
-    public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-        where Output == SubscriberType.Input, Failure == SubscriberType.Failure
+    public func receive<Downstream: Subscriber>(subscriber: Downstream)
+        where Output == Downstream.Input, Failure == Downstream.Failure
     {
         _lock.do {
             if let completion = _completion {

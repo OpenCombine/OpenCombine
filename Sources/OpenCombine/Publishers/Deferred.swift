@@ -38,9 +38,9 @@ public struct Deferred<DeferredPublisher: Publisher>: Publisher {
     /// - Parameters:
     ///     - subscriber: The subscriber to attach to this `Publisher`.
     ///                   once attached it can begin to receive values.
-    public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-        where Failure == SubscriberType.Failure,
-              Output == SubscriberType.Input
+    public func receive<Downstream: Subscriber>(subscriber: Downstream)
+        where Failure == Downstream.Failure,
+              Output == Downstream.Input
     {
         let deferredPublisher = createPublisher()
         deferredPublisher.subscribe(subscriber)

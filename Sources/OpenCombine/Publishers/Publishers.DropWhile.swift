@@ -26,8 +26,8 @@ extension Publishers {
             self.predicate = predicate
         }
 
-        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-            where Failure == SubscriberType.Failure, Output == SubscriberType.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where Failure == Downstream.Failure, Output == Downstream.Input
         {
             let inner = Inner(downstream: subscriber, predicate: catching(predicate))
             upstream.subscribe(inner)
@@ -53,8 +53,8 @@ extension Publishers {
             self.predicate = predicate
         }
 
-        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-            where Output == SubscriberType.Input, SubscriberType.Failure == Error
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where Output == Downstream.Input, Downstream.Failure == Error
         {
             let inner = Inner(downstream: subscriber, predicate: catching(predicate))
             upstream.subscribe(inner)

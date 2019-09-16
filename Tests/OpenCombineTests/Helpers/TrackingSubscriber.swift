@@ -263,8 +263,8 @@ final class TrackingSubjectBase<Output: Equatable, Failure: Error>
         _passthrough.send(completion: completion)
     }
 
-    func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-        where Failure == SubscriberType.Failure, Output == SubscriberType.Input
+    func receive<Downstream: Subscriber>(subscriber: Downstream)
+        where Failure == Downstream.Failure, Output == Downstream.Input
     {
         _receiveSubscriber?(subscriber)
         history.append(.subscriber)
