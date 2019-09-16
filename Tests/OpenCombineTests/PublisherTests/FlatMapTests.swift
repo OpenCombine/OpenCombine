@@ -28,7 +28,7 @@ import OpenCombine
 /// I understand that timeouts like this are a smell. I'd be happy to entertain other ways
 /// to deterministically test concurrency/race conditions.
 
-func performConcurrentBlock(_ block: @escaping () -> Void) {
+private func performConcurrentBlock(_ block: @escaping () -> Void) {
     let sem = DispatchSemaphore(value: 0)
     DispatchQueue.global(qos: .background).async {
         block()
@@ -45,34 +45,6 @@ func performConcurrentBlock(_ block: @escaping () -> Void) {
 
 @available(macOS 10.15, iOS 13.0, *)
 final class FlatMapTests: XCTestCase {
-
-    static let allTests = [
-        ("testSendsChildValues", testSendsChildValues),
-        ("testChildSubscribeDeadlock", testChildSubscribeDeadlock),
-        ("testCancelCancels", testCancelCancels),
-        ("testUpstreamDemandWithMaxPublishers", testUpstreamDemandWithMaxPublishers),
-        ("testUpstreamDemandWithNoMaxPublishers", testUpstreamDemandWithNoMaxPublishers),
-        ("testChildDemandWhenUnlimited", testChildDemandWhenUnlimited),
-        ("testChildDemandWhenLimited", testChildDemandWhenLimited),
-        ("testDemandFromLimitedtoUnlimited", testDemandFromLimitedToUnlimited),
-        ("testChildValueReceivedWhileSendingValue",
-         testChildValueReceivedWhileSendingValue),
-        ("testCompletesProperlyWhenChildrenOutliveUpstream",
-         testCompletesProperlyWhenChildrenOutliveUpstream),
-        ("testCompletesProperlyWhenUpstreamOutlivesChildren",
-         testCompletesProperlyWhenUpstreamOutlivesChildren),
-        ("testDoesNotCompleteWithBufferedValues", testDoesNotCompleteWithBufferedValues),
-        ("testFailsIfUpstreamFails", testFailsIfUpstreamFails),
-        ("testFailsIfChildFails", testFailsIfChildFails),
-        ("testFailsWithoutSendingBufferedValues", testFailsWithoutSendingBufferedValues),
-        ("testAllSubscriptionsReleasedOnUpstreamFailure",
-         testAllSubscriptionsReleasedOnUpstreamFailure),
-        ("testAllSubscriptionsReleasedOnChildFailure",
-         testAllSubscriptionsReleasedOnChildFailure),
-        ("testSendsSubcriptionDownstreamBeforeDemandUpstream",
-         testSendsSubcriptionDownstreamBeforeDemandUpstream),
-        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests)
-    ]
 
     func testSendsChildValues() {
         let upstreamPublisher = PassthroughSubject<
@@ -608,18 +580,5 @@ final class FlatMapTests: XCTestCase {
 
         XCTAssertEqual(receiveOrder, [sentSubscriptionDownstream,
                                       sentDemandRequestUpstream])
-    }
-
-    // MARK: -
-    func testTestSuiteIncludesAllTests() {
-        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
-        #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-        let thisClass = type(of: self)
-        let allTestsCount = thisClass.allTests.count
-        let darwinCount = thisClass.defaultTestSuite.testCaseCount
-        XCTAssertEqual(allTestsCount,
-                       darwinCount,
-                       "\(darwinCount - allTestsCount) tests are missing from allTests")
-        #endif
     }
 }

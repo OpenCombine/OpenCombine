@@ -15,13 +15,14 @@ extension Publisher {
     /// - Parameters:
     ///   - maxPublishers: The maximum number of publishers produced by this method.
     ///   - transform: A closure that takes an element as a parameter and returns a
-    ///   publisher that produces elements of that type.
+    ///     publisher that produces elements of that type.
     /// - Returns: A publisher that transforms elements from an upstream publisher into
-    /// a publisher of that element’s type.
-    public func flatMap<Result, Child>(maxPublishers: Subscribers.Demand = .unlimited,
-                                       _ transform: @escaping (Self.Output) -> Child)
-        -> Publishers.FlatMap<Child, Self>
-        where Result == Child.Output, Child: Publisher, Self.Failure == Child.Failure {
+    ///   a publisher of that element’s type.
+    public func flatMap<Result, Child: Publisher>(
+        maxPublishers: Subscribers.Demand = .unlimited,
+        _ transform: @escaping (Output) -> Child
+    ) -> Publishers.FlatMap<Child, Self>
+        where Result == Child.Output, Failure == Child.Failure {
             return Publishers.FlatMap(upstream: self,
                                       maxPublishers: maxPublishers,
                                       transform: transform)
@@ -29,9 +30,10 @@ extension Publisher {
 }
 
 extension Publishers {
-    public struct FlatMap<Child, Upstream>: Publisher
-        where Child: Publisher, Upstream: Publisher, Child.Failure == Upstream.Failure {
 
+    public struct FlatMap<Child: Publisher, Upstream: Publisher>: Publisher
+        where Child.Failure == Upstream.Failure
+    {
         /// The kind of values published by this publisher.
         public typealias Output = Child.Output
 
@@ -60,23 +62,24 @@ extension Publishers {
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<Downstream>(subscriber: Downstream)
-            where Downstream: Subscriber,
-            Child.Output == Downstream.Input,
-            Upstream.Failure == Downstream.Failure {
-                let inner = Inner(downstream: subscriber,
-                                  maxPublishers: maxPublishers,
-                                  transform: transform)
-                upstream.subscribe(inner)
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where Child.Output == Downstream.Input, Upstream.Failure == Downstream.Failure
+        {
+            let inner = Inner(downstream: subscriber,
+                              maxPublishers: maxPublishers,
+                              transform: transform)
+            upstream.subscribe(inner)
         }
     }
 }
 
 extension Publishers.FlatMap {
+
     fileprivate final class Inner<Downstream: Subscriber>
         : CustomStringConvertible,
-        Cancellable
-    where Downstream.Input == Child.Output, Downstream.Failure == Upstream.Failure {
+          Cancellable
+        where Downstream.Input == Child.Output, Downstream.Failure == Upstream.Failure
+    {
         typealias Input = Upstream.Output
         typealias Failure = Upstream.Failure
 
@@ -85,11 +88,13 @@ extension Publishers.FlatMap {
             // If the value was buffered at the time it became available, and the child's
             // demand was left at `.none` we keep track of the child in `pausedChild` so
             // that we can demand some more of it after sending this value.
-            pausedChild: ChildSubscriber?)
+            pausedChild: ChildSubscriber?
+        )
 
         private let lock = Lock(recursive: false)
         private let maxPublishers: Subscribers.Demand
-        private let transform: (Upstream.Output) -> Child
+        private let transform: (Input) -> Child
+
         // Locking rules for this class.
         //  - All mutable state must only be accessed while `lock` is held.
         //  - In order to avoid any deadlock potential, it is absolutely forbidden to have
@@ -114,12 +119,14 @@ extension Publishers.FlatMap {
         }
 
         final func cancel() {
-            let (upstreamToCancel, childrenToCancel) = lock.do { ()
-                -> (Subscription?, Set<ChildSubscriber>) in
-                let upstreamToCancel = upstreamSubscription
-                upstreamSubscription = nil
-                return (upstreamToCancel, lockedDeactivateAndReturnChildToCancel())
-            }
+
+            let (upstreamToCancel, childrenToCancel) = lock
+                .do { () -> (Subscription?, Set<ChildSubscriber>) in
+                    let upstreamToCancel = upstreamSubscription
+                    upstreamSubscription = nil
+                    return (upstreamToCancel, lockedDeactivateAndReturnChildrenToCancel())
+                }
+
             upstreamToCancel?.cancel()
             cancelChildren(childrenToCancel)
         }
@@ -128,12 +135,13 @@ extension Publishers.FlatMap {
 
 // Private implementation
 extension Publishers.FlatMap.Inner {
+
     private func deactivate() {
-        cancelChildren(lock.do(lockedDeactivateAndReturnChildToCancel))
+        cancelChildren(lock.do(lockedDeactivateAndReturnChildrenToCancel))
     }
 
     // Must be called with lock held.
-    private func lockedDeactivateAndReturnChildToCancel() -> Set<ChildSubscriber> {
+    private func lockedDeactivateAndReturnChildrenToCancel() -> Set<ChildSubscriber> {
         downstream = nil
         downstreamDemand = .none
         let result = childSubscribers
@@ -212,7 +220,8 @@ extension Publishers.FlatMap.Inner {
         }
 
         let demandResult = surplusAvailable || demandForChild() == .unlimited
-            ? Subscribers.Demand.none : Subscribers.Demand.max(1)
+            ? Subscribers.Demand.none
+            : .max(1)
 
         if processTheQueue {
             processQueue()
@@ -222,7 +231,7 @@ extension Publishers.FlatMap.Inner {
     }
 
     private func demandForChild() -> Subscribers.Demand {
-        return self.downstreamDemand == .unlimited ? .unlimited : .max(1)
+        return downstreamDemand == .unlimited ? .unlimited : .max(1)
     }
 
     private enum QueueWorkStatus {
@@ -284,7 +293,7 @@ extension Publishers.FlatMap.Inner {
 
 // This `Subscriber` implementation is for `FlatMap`'s upstream subscription
 extension Publishers.FlatMap.Inner: Subscriber {
-    // FlatMap received the upstream subscription
+
     fileprivate func receive(subscription: Subscription) {
         upstreamSubscription = subscription
         downstream?.receive(subscription: self)
@@ -304,7 +313,6 @@ extension Publishers.FlatMap.Inner: Subscriber {
         return .none
     }
 
-    // Upstream subscription completed
     fileprivate func receive(completion: Subscribers.Completion<Failure>) {
         switch completion {
         case .finished:
@@ -320,8 +328,7 @@ extension Publishers.FlatMap.Inner: Subscriber {
 extension Publishers.FlatMap.Inner: Subscription {
     fileprivate func request(_ demand: Subscribers.Demand) {
         let (drainTheQueue, becameUnlimited) = lock.do { () -> (Bool, Bool) in
-            let becameUnlimited =
-                (demand == .unlimited) && (downstreamDemand != .unlimited)
+            let becameUnlimited = demand == .unlimited && downstreamDemand != .unlimited
             downstreamDemand = demand
             defer { queueIsBeingProcessed = true }
             return (!queueIsBeingProcessed, becameUnlimited)
@@ -377,14 +384,15 @@ extension Publishers.FlatMap.Inner {
 }
 
 extension Publishers.FlatMap.Inner.ChildSubscriber: Cancellable {
-    internal func cancel() {
+    fileprivate func cancel() {
         _upstreamSubscription?.cancel()
         _upstreamSubscription = nil
     }
 }
 
 extension Publishers.FlatMap.Inner.ChildSubscriber: Subscriber {
-    internal func receive(subscription: Subscription) {
+
+    fileprivate func receive(subscription: Subscription) {
         if _upstreamSubscription == nil {
             _upstreamSubscription = subscription
             subscription.request(_parent.demandForChild())
