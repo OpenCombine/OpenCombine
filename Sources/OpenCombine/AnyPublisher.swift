@@ -47,8 +47,8 @@ extension AnyPublisher: Publisher {
     ///     - subscriber: The subscriber to attach to this `Publisher`.
     ///                   once attached it can begin to receive values.
     @inlinable
-    public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-        where Output == SubscriberType.Input, Failure == SubscriberType.Failure
+    public func receive<Downstream: Subscriber>(subscriber: Downstream)
+        where Output == Downstream.Input, Failure == Downstream.Failure
     {
         box.subscribe(subscriber)
     }
@@ -63,8 +63,8 @@ internal class PublisherBoxBase<Output, Failure: Error>: Publisher {
     internal init() {}
 
     @inlinable
-    internal func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-        where Failure == SubscriberType.Failure, Output == SubscriberType.Input
+    internal func receive<Downstream: Subscriber>(subscriber: Downstream)
+        where Failure == Downstream.Failure, Output == Downstream.Input
     {
         fatalError()
     }
@@ -84,8 +84,8 @@ internal final class PublisherBox<PublisherType: Publisher>
     }
 
     @inlinable
-    override internal func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-        where Failure == SubscriberType.Failure, Output == SubscriberType.Input
+    override internal func receive<Downstream: Subscriber>(subscriber: Downstream)
+        where Failure == Downstream.Failure, Output == Downstream.Input
     {
         base.subscribe(subscriber)
     }

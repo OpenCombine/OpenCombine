@@ -25,9 +25,9 @@ extension Publishers {
             self.sequence = sequence
         }
 
-        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-            where Failure == SubscriberType.Failure,
-                  Elements.Element == SubscriberType.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where Failure == Downstream.Failure,
+                  Elements.Element == Downstream.Input
         {
             if let inner = Inner(downstream: subscriber, sequence: sequence) {
                 subscriber.receive(subscription: inner)
@@ -74,7 +74,7 @@ extension Publishers.Sequence {
 
         var customMirror: Mirror {
             let children: CollectionOfOne<(label: String?, value: Any)> =
-                    CollectionOfOne(("sequence", _sequence ?? [Element]()))
+                .init(("sequence", _sequence ?? [Element]()))
             return Mirror(self, children: children)
         }
 

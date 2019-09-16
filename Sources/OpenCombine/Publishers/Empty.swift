@@ -42,8 +42,8 @@ public struct Empty<Output, Failure: Error>: Publisher, Equatable {
     /// to the subscriber. If `false`, it never completes.
     public let completeImmediately: Bool
 
-    public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-        where Output == SubscriberType.Input, Failure == SubscriberType.Failure
+    public func receive<Downstream: Subscriber>(subscriber: Downstream)
+        where Output == Downstream.Input, Failure == Downstream.Failure
     {
         subscriber.receive(subscription: Subscriptions.empty)
         if completeImmediately {

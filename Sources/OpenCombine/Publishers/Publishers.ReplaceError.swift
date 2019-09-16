@@ -49,11 +49,11 @@ extension Publishers {
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-            where Upstream.Output == SubscriberType.Input,
-                  SubscriberType.Failure == Failure
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where Upstream.Output == Downstream.Input,
+                  Downstream.Failure == Failure
         {
-            let replaceErrorSubscriber = _ReplaceError<Upstream, SubscriberType>(
+            let replaceErrorSubscriber = _ReplaceError<Upstream, Downstream>(
                 downstream: subscriber,
                 output: output
             )
