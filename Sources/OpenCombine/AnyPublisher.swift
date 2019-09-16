@@ -62,11 +62,11 @@ internal class PublisherBoxBase<Output, Failure: Error>: Publisher {
     @inlinable
     internal init() {}
 
-    @inlinable
+    @usableFromInline
     internal func receive<Downstream: Subscriber>(subscriber: Downstream)
         where Failure == Downstream.Failure, Output == Downstream.Input
     {
-        fatalError()
+        abstractMethod()
     }
 }
 
