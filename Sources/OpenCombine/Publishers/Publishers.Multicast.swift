@@ -28,10 +28,9 @@ extension Publishers {
 
     public final class Multicast<Upstream: Publisher, SubjectType: Subject>
         : ConnectablePublisher
-            where Upstream.Failure == SubjectType.Failure,
-                  Upstream.Output == SubjectType.Output
+        where Upstream.Failure == SubjectType.Failure,
+              Upstream.Output == SubjectType.Output
     {
-
         public typealias Output = Upstream.Output
 
         public typealias Failure = Upstream.Failure
@@ -55,14 +54,7 @@ extension Publishers {
         }
 
         public func connect() -> Cancellable {
-
-            let subscriber = SubjectSubscriber(_subject)
-
-            upstream.subscribe(subscriber)
-
-            return AnyCancellable {
-                subscriber.downstreamSubject = nil
-            }
+            return upstream.subscribe(_subject)
         }
     }
 }
