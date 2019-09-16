@@ -137,17 +137,17 @@ internal class AnySubscriberBase<Input, Failure: Error>: Subscriber {
 
     @usableFromInline
     internal func receive(subscription: Subscription) {
-        fatalError()
+        abstractMethod()
     }
 
     @usableFromInline
     internal func receive(_ input: Input) -> Subscribers.Demand {
-        fatalError()
+        abstractMethod()
     }
 
     @usableFromInline
     internal func receive(completion: Subscribers.Completion<Failure>) {
-        fatalError()
+        abstractMethod()
     }
 }
 
