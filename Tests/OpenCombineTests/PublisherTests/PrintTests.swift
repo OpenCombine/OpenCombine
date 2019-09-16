@@ -18,7 +18,7 @@ final class PrintTests: XCTestCase {
 
     func testPrintWithoutPrefix() {
 
-        let stream = StringStream()
+        let stream = HistoryStream()
         let subscription = CustomSubscription(
             onRequest: { _ in stream.write("callback request demand\n") },
             onCancel: { stream.write("callback cancel subscription\n") }
@@ -68,44 +68,81 @@ final class PrintTests: XCTestCase {
                                               .requested(.max(30)),
                                               .cancelled])
 
-        let expectedOutput = """
-        receive subscription: (CustomSubscription)
-        callback subscription
-        request unlimited
-        callback request demand
-        request max: (30)
-        callback request demand
-        receive cancel
-        callback cancel subscription
-        receive value: (1)
-        callback value
-        request max: (100)
-        request max: (2) (synchronous)
-        request max: (42)
-        receive value: (2)
-        callback value
-        request max: (100)
-        request max: (2) (synchronous)
-        receive finished
-        callback completion
-        request max: (12)
-        receive error: (failure)
-        callback completion
-        request max: (12)
-        receive value: (10)
-        callback value
-        request max: (100)
-        request unlimited (synchronous)
-        receive cancel
-
-        """
+        let expectedOutput = [
+            "",
+            "receive subscription: (CustomSubscription)",
+            "\n",
+            "callback subscription\n",
+            "",
+            "request unlimited",
+            "\n",
+            "callback request demand\n",
+            "",
+            "request max: (30)",
+            "\n",
+            "callback request demand\n",
+            "",
+            "receive cancel",
+            "\n",
+            "callback cancel subscription\n",
+            "",
+            "receive value: (1)",
+            "\n",
+            "callback value\n",
+            "",
+            "request max: (100)",
+            "\n",
+            "",
+            "request max: (2) (synchronous)",
+            "\n",
+            "",
+            "request max: (42)",
+            "\n",
+            "",
+            "receive value: (2)",
+            "\n",
+            "callback value\n",
+            "",
+            "request max: (100)",
+            "\n",
+            "",
+            "request max: (2) (synchronous)",
+            "\n",
+            "",
+            "receive finished",
+            "\n",
+            "callback completion\n",
+            "",
+            "request max: (12)",
+            "\n",
+            "",
+            "receive error: (failure)",
+            "\n",
+            "callback completion\n",
+            "",
+            "request max: (12)",
+            "\n",
+            "",
+            "receive value: (10)",
+            "\n",
+            "callback value\n",
+            "",
+            "request max: (100)",
+            "\n",
+            "",
+            "request unlimited (synchronous)",
+            "\n",
+            "",
+            "receive cancel",
+            "\n"
+        ]
 
         XCTAssertEqual(stream.output.value, expectedOutput)
     }
 
     func testPrintWithPrefix() {
 
-        let stream = StringStream()
+        let stream = HistoryStream()
         let subscription = CustomSubscription(
             onRequest: { _ in stream.write("callback request demand\n") },
             onCancel: { stream.write("callback cancel subscription\n") }
@@ -155,44 +192,81 @@ final class PrintTests: XCTestCase {
                                               .requested(.max(30)),
                                               .cancelled])
 
-        let expectedOutput = """
-        👉: receive subscription: (CustomSubscription)
-        callback subscription
-        👉: request unlimited
-        callback request demand
-        👉: request max: (30)
-        callback request demand
-        👉: receive cancel
-        callback cancel subscription
-        👉: receive value: (1)
-        callback value
-        👉: request max: (100)
-        👉: request max: (2) (synchronous)
-        👉: request max: (42)
-        👉: receive value: (2)
-        callback value
-        👉: request max: (100)
-        👉: request max: (2) (synchronous)
-        👉: receive finished
-        callback completion
-        👉: request max: (12)
-        👉: receive error: (failure)
-        callback completion
-        👉: request max: (12)
-        👉: receive value: (10)
-        callback value
-        👉: request max: (100)
-        👉: request unlimited (synchronous)
-        👉: receive cancel
-
-        """
+        let expectedOutput = [
+            "",
+            "👉: receive subscription: (CustomSubscription)",
+            "\n",
+            "callback subscription\n",
+            "",
+            "👉: request unlimited",
+            "\n",
+            "callback request demand\n",
+            "",
+            "👉: request max: (30)",
+            "\n",
+            "callback request demand\n",
+            "",
+            "👉: receive cancel",
+            "\n",
+            "callback cancel subscription\n",
+            "",
+            "👉: receive value: (1)",
+            "\n",
+            "callback value\n",
+            "",
+            "👉: request max: (100)",
+            "\n",
+            "",
+            "👉: request max: (2) (synchronous)",
+            "\n",
+            "",
+            "👉: request max: (42)",
+            "\n",
+            "",
+            "👉: receive value: (2)",
+            "\n",
+            "callback value\n",
+            "",
+            "👉: request max: (100)",
+            "\n",
+            "",
+            "👉: request max: (2) (synchronous)",
+            "\n",
+            "",
+            "👉: receive finished",
+            "\n",
+            "callback completion\n",
+            "",
+            "👉: request max: (12)",
+            "\n",
+            "",
+            "👉: receive error: (failure)",
+            "\n",
+            "callback completion\n",
+            "",
+            "👉: request max: (12)",
+            "\n",
+            "",
+            "👉: receive value: (10)",
+            "\n",
+            "callback value\n",
+            "",
+            "👉: request max: (100)",
+            "\n",
+            "",
+            "👉: request unlimited (synchronous)",
+            "\n",
+            "",
+            "👉: receive cancel",
+            "\n"
+        ]
 
         XCTAssertEqual(stream.output.value, expectedOutput)
     }
 
     func testSynchronization() {
 
-        let stream = StringStream()
+        let stream = HistoryStream()
         let publisher = CustomPublisherBase<Int, Never>(subscription: nil)
         let printer = publisher.print(to: stream)
 
@@ -208,11 +282,11 @@ final class PrintTests: XCTestCase {
     }
 }
 
-private final class StringStream: TextOutputStream {
+private final class HistoryStream: TextOutputStream {
 
-    var output = Atomic("")
+    let output = Atomic([String]())
 
     func write(_ string: String) {
-        output.do { $0.write(string) }
+        output.do { $0.append(string) }
     }
 }
