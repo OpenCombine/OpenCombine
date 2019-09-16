@@ -74,92 +74,82 @@ extension Publishers.Print {
         typealias Input = Downstream.Input
         typealias Failure = Downstream.Failure
 
-        private var _downstream: Downstream
-        private let _prefix: String
-        private var _stream: TextOutputStream
-        private var _upstreamSubscription: Subscription?
-        private let _printerLock = Lock(recursive: false)
+        /// A concrete type wrapper around an abstract stream.
+        private struct PrintTarget: TextOutputStream {
+            var stream: TextOutputStream
+            mutating func write(_ string: String) {
+                stream.write(string)
+            }
+        }
+
+        private var downstream: Downstream
+        private let prefix: String
+        private var stream: PrintTarget?
+        private var subscription: Subscription?
+        private let lock = Lock(recursive: false)
 
         init(downstream: Downstream, prefix: String, stream: TextOutputStream?) {
-            _downstream = downstream
-            _prefix = prefix
-            _stream = stream ?? StdoutStream()
+            self.downstream = downstream
+            self.prefix = prefix.isEmpty ? "" : "\(prefix): "
+            self.stream = stream.map(PrintTarget.init)
         }
 
         func receive(subscription: Subscription) {
-            _log("receive subscription", value: subscription)
-            _upstreamSubscription = subscription
-            _downstream.receive(subscription: self)
+            log("\(prefix)receive subscription: (\(subscription))")
+            lock.do {
+                self.subscription = subscription
+            }
+            downstream.receive(subscription: self)
         }
 
         func receive(_ input: Input) -> Subscribers.Demand {
-            _log("receive value", value: input)
-            let demand = _downstream.receive(input)
-            _logDemand(demand, synchronous: true)
+            log("\(prefix)receive value: (\(input))")
+            let demand = downstream.receive(input)
+
+            if let max = demand.max {
+                log("\(prefix)request max: (\(max)) (synchronous)")
+            } else {
+                log("\(prefix)request unlimited (synchronous)")
+            }
+
             return demand
         }
 
         func receive(completion: Subscribers.Completion<Failure>) {
             switch completion {
             case .finished:
-                _log("receive finished")
+                log("\(prefix)receive finished")
             case .failure(let error):
-                _log("receive error", value: error)
+                log("\(prefix)receive error: (\(error))")
             }
-            _downstream.receive(completion: completion)
+            downstream.receive(completion: completion)
         }
 
         func request(_ demand: Subscribers.Demand) {
-            _logDemand(demand, synchronous: false)
-            _upstreamSubscription?.request(demand)
+            if let max = demand.max {
+                log("\(prefix)request max: (\(max))")
+            } else {
+                log("\(prefix)request unlimited")
+            }
+            subscription?.request(demand)
         }
 
         func cancel() {
-            _log("receive cancel")
-            _upstreamSubscription?.cancel()
-            _upstreamSubscription = nil
+            log("\(prefix)receive cancel")
+            subscription?.cancel()
+            subscription = nil
         }
 
         var description: String { return "Print" }
 
         var customMirror: Mirror { return Mirror(self, children: EmptyCollection()) }
 
-        private func _log(_ description: String,
-                          value: Any? = nil,
-                          additionalInfo: String = "") {
-            _printerLock.do {
-                if !_prefix.isEmpty {
-                    _stream.write(_prefix)
-                    _stream.write(": ")
-                }
-                _stream.write(description)
-                if let value = value {
-                    _stream.write(": (")
-                    _stream.write(String(describing: value))
-                    _stream.write(")")
-                }
-                if !additionalInfo.isEmpty {
-                    _stream.write(" (")
-                    _stream.write(additionalInfo)
-                    _stream.write(")")
-                }
-                _stream.write("\n")
-            }
-        }
-
-        private func _logDemand(_ demand: Subscribers.Demand, synchronous: Bool) {
-            let synchronouslyStr = synchronous ? "synchronous" : ""
-            if let max = demand.max {
-                _log("request max", value: max, additionalInfo: synchronouslyStr)
+        private func log(_ text: String) {
+            if var stream = stream {
+                Swift.print(text, to: &stream)
             } else {
-                _log("request unlimited", additionalInfo: synchronouslyStr)
+                Swift.print("", text)
             }
         }
-    }
-}
-
-private struct StdoutStream: TextOutputStream {
-    mutating func write(_ string: String) {
-        print(string, terminator: "")
     }
 }

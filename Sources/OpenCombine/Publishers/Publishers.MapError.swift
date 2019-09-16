@@ -36,7 +36,7 @@ extension Publishers {
             where Failure == Downstream.Failure,
                   Upstream.Output == Downstream.Input
         {
-            upstream.subscribe(Inner(downstream: subscriber,transform: transform))
+            upstream.subscribe(Inner(downstream: subscriber, transform: transform))
         }
     }
 }
