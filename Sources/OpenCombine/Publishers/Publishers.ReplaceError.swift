@@ -5,6 +5,19 @@
 //  Created by Bogdan Vlad on 8/29/19.
 //
 
+extension Publisher {
+    /// Replaces any errors in the stream with the provided element.
+    ///
+    /// If the upstream publisher fails with an error, this publisher emits the provided
+    /// element, then finishes normally.
+    /// - Parameter output: An element to emit when the upstream publisher fails.
+    /// - Returns: A publisher that replaces an error from the upstream publisher with
+    ///            the provided output element.
+    public func replaceError(with output: Output) -> Publishers.ReplaceError<Self> {
+        return .init(upstream: self, output: output)
+    }
+}
+
 extension Publishers {
     /// A publisher that replaces any errors in the stream with a provided element.
     public struct ReplaceError<Upstream: Publisher>: Publisher {
@@ -49,18 +62,9 @@ extension Publishers {
     }
 }
 
-extension Publisher {
-    /// Replaces any errors in the stream with the provided element.
-    ///
-    /// If the upstream publisher fails with an error, this publisher emits the provided
-    /// element, then finishes normally.
-    /// - Parameter output: An element to emit when the upstream publisher fails.
-    /// - Returns: A publisher that replaces an error from the upstream publisher with
-    ///            the provided output element.
-    public func replaceError(with output: Output) -> Publishers.ReplaceError<Self> {
-        return Publishers.ReplaceError(upstream: self, output: output)
-    }
-}
+extension Publishers.ReplaceError: Equatable
+    where Upstream: Equatable, Upstream.Output: Equatable
+{}
 
 private final class _ReplaceError<Upstream: Publisher, Downstream: Subscriber>
     : OperatorSubscription<Downstream>,

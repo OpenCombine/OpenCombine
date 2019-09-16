@@ -3037,17 +3037,6 @@ extension Publishers.ReplaceEmpty : Equatable where Upstream : Equatable, Upstre
     public static func == (lhs: Publishers.ReplaceEmpty<Upstream>, rhs: Publishers.ReplaceEmpty<Upstream>) -> Bool
 }
 
-extension Publishers.ReplaceError : Equatable where Upstream : Equatable, Upstream.Output : Equatable {
-
-    /// Returns a Boolean value that indicates whether two publishers are equivalent.
-    ///
-    /// - Parameters:
-    ///   - lhs: A replace error publisher to compare for equality.
-    ///   - rhs: Another replace error publisher to compare for equality.
-    /// - Returns: `true` if the two publishers have equal upstream publishers and output elements, `false` otherwise.
-    public static func == (lhs: Publishers.ReplaceError<Upstream>, rhs: Publishers.ReplaceError<Upstream>) -> Bool
-}
-
 extension Publishers.DropUntilOutput : Equatable where Upstream : Equatable, Other : Equatable {
 
     /// Returns a Boolean value indicating whether two values are equal.
@@ -3154,17 +3143,6 @@ extension Publishers.Drop : Equatable where Upstream : Equatable {
     ///   - rhs: Another drop publisher to compare for equality..
     /// - Returns: `true` if the publishers have equal upstream and count properties, `false` otherwise.
     public static func == (lhs: Publishers.Drop<Upstream>, rhs: Publishers.Drop<Upstream>) -> Bool
-}
-
-extension Publishers.First : Equatable where Upstream : Equatable {
-
-    /// Returns a Boolean value that indicates whether two first publishers have equal upstream publishers.
-    ///
-    /// - Parameters:
-    ///   - lhs: A drop publisher to compare for equality.
-    ///   - rhs: Another drop publisher to compare for equality.
-    /// - Returns: `true` if the two publishers have equal upstream publishers, `false` otherwise.
-    public static func == (lhs: Publishers.First<Upstream>, rhs: Publishers.First<Upstream>) -> Bool
 }
 
 /// A type of object with a publisher that emits before the object has changed.
