@@ -76,7 +76,9 @@ extension Publishers.Print {
 
         /// A concrete type wrapper around an abstract stream.
         private struct PrintTarget: TextOutputStream {
+
             var stream: TextOutputStream
+
             mutating func write(_ string: String) {
                 stream.write(string)
             }
