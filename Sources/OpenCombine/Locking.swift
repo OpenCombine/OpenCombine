@@ -35,19 +35,19 @@ internal final class Lock {
     }
 
     @inlinable
-    internal func _lock() {
+    internal func lock() {
         pthread_mutex_lock(&_mutex)
     }
 
     @inlinable
-    internal func _unlock() {
+    internal func unlock() {
         pthread_mutex_unlock(&_mutex)
     }
 
     @inlinable
     internal func `do`<Result>(_ body: () throws -> Result) rethrows -> Result {
-        _lock()
-        defer { _unlock() }
+        lock()
+        defer { unlock() }
         return try body()
     }
 }
