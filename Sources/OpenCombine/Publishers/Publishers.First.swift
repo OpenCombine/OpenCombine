@@ -130,6 +130,8 @@ extension Publishers {
     }
 }
 
+extension Publishers.First: Equatable where Upstream: Equatable {}
+
 private class _FirstWhere<Upstream: Publisher, Downstream: Subscriber>
     : OperatorSubscription<Downstream>,
       Subscription
