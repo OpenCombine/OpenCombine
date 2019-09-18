@@ -5,6 +5,12 @@
 //  Created by Sergej Jaskiewicz on 10.06.2019.
 //
 
+extension Publisher {
+    public func eraseToAnyPublisher() -> AnyPublisher<Output, Failure> {
+        return .init(self)
+    }
+}
+
 /// A type-erasing publisher.
 ///
 /// Use `AnyPublisher` to wrap a publisher whose type has details you don’t want to expose
@@ -13,7 +19,6 @@ public struct AnyPublisher<Output, Failure: Error>
   : CustomStringConvertible,
     CustomPlaygroundDisplayConvertible
 {
-
     @usableFromInline
     internal let box: PublisherBoxBase<Output, Failure>
 
