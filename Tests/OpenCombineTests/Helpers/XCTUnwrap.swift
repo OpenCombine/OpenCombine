@@ -7,7 +7,8 @@
 
 import XCTest
 
-// FIXME: Remove this shim as soon is XCTUnwrap is added to swift-corelibs-xctest
+// XCTUnwrap is available since Swift 5.1
+#if swift(<5.1)
 
 private struct UnwrappingFailure: Error {}
 
@@ -39,3 +40,5 @@ public func XCTUnwrap<Result>(_ expression: @autoclosure () throws -> Result?,
         throw UnwrappingFailure()
     }
 }
+
+#endif

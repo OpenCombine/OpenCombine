@@ -5,9 +5,7 @@
 //  Created by Joseph Spadafora on 6/29/19.
 //
 
-#if OPENCOMBINE_COMPATIBILITY_TEST
-import Combine
-#else
+#if !OPENCOMBINE_COMPATIBILITY_TEST
 import Foundation
 import OpenCombine
 

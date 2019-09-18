@@ -16,12 +16,6 @@ import OpenCombine
 @available(macOS 10.15, iOS 13.0, *)
 final class ImmediateSchedulerTests: XCTestCase {
 
-    static let allTests = [
-        ("testStride", testSchedulerTimeType),
-        ("testActions", testActions),
-        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
-    ]
-
     func testSchedulerTimeType() throws {
 
         typealias Stride = ImmediateScheduler.SchedulerTimeType.Stride
@@ -98,18 +92,5 @@ final class ImmediateSchedulerTests: XCTestCase {
 
         XCTAssertTrue(fired)
         XCTAssertEqual(String(describing: cancellable), "Empty")
-    }
-
-    // MARK: -
-    func testTestSuiteIncludesAllTests() {
-        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-        let thisClass = type(of: self)
-        let allTestsCount = thisClass.allTests.count
-        let darwinCount = thisClass.defaultTestSuite.testCaseCount
-        XCTAssertEqual(allTestsCount,
-                       darwinCount,
-                       "\(darwinCount - allTestsCount) tests are missing from allTests")
-#endif
     }
 }

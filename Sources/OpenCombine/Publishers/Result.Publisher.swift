@@ -77,8 +77,8 @@ extension Result {
                 self.init(.failure(failure))
             }
 
-            public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-                where SubscriberType.Input == Success, SubscriberType.Failure == Failure
+            public func receive<Downstream: Subscriber>(subscriber: Downstream)
+                where Downstream.Input == Success, Downstream.Failure == Failure
             {
                 switch result {
                 case .success(let value):
@@ -115,34 +115,36 @@ extension Result {
 #endif
 }
 
-private final class Inner<SubscriberType: Subscriber>: Subscription,
-                                          CustomStringConvertible,
-                                          CustomReflectable
-{
-    private let _output: SubscriberType.Input
-    private var _downstream: SubscriberType?
+extension Result.OCombine {
+    private final class Inner<Downstream: Subscriber>: Subscription,
+                                                       CustomStringConvertible,
+                                                       CustomReflectable
+    {
+        private let _output: Downstream.Input
+        private var _downstream: Downstream?
 
-    init(value: SubscriberType.Input, downstream: SubscriberType) {
-        _output = value
-        _downstream = downstream
-    }
+        init(value: Downstream.Input, downstream: Downstream) {
+            _output = value
+            _downstream = downstream
+        }
 
-    func request(_ demand: Subscribers.Demand) {
-        if let downstream = _downstream, demand > 0 {
-            _ = downstream.receive(_output)
-            downstream.receive(completion: .finished)
+        func request(_ demand: Subscribers.Demand) {
+            if let downstream = _downstream, demand > 0 {
+                _ = downstream.receive(_output)
+                downstream.receive(completion: .finished)
+                _downstream = nil
+            }
+        }
+
+        func cancel() {
             _downstream = nil
         }
-    }
 
-    func cancel() {
-        _downstream = nil
-    }
+        var description: String { return "Once" }
 
-    var description: String { return "Once" }
-
-    var customMirror: Mirror {
-        return Mirror(self, unlabeledChildren: CollectionOfOne(_output))
+        var customMirror: Mirror {
+            return Mirror(self, unlabeledChildren: CollectionOfOne(_output))
+        }
     }
 }
 

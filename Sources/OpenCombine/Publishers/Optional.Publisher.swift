@@ -50,8 +50,8 @@ extension Optional {
                 self.output = output
             }
 
-            public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-                where Output == SubscriberType.Input, Failure == SubscriberType.Failure
+            public func receive<Downstream: Subscriber>(subscriber: Downstream)
+                where Output == Downstream.Input, Failure == Downstream.Failure
             {
                 if let output = output {
                     subscriber.receive(subscription: Inner(value: output,
@@ -74,34 +74,36 @@ extension Optional {
 #endif
 }
 
-private final class Inner<SubscriberType: Subscriber>: Subscription,
+extension Optional.OCombine {
+    private final class Inner<Downstream: Subscriber>: Subscription,
                                                        CustomStringConvertible,
                                                        CustomReflectable
-{
-    private let _output: SubscriberType.Input
-    private var _downstream: SubscriberType?
+    {
+        private let _output: Downstream.Input
+        private var _downstream: Downstream?
 
-    init(value: SubscriberType.Input, downstream: SubscriberType) {
-        _output = value
-        _downstream = downstream
-    }
+        init(value: Downstream.Input, downstream: Downstream) {
+            _output = value
+            _downstream = downstream
+        }
 
-    func request(_ demand: Subscribers.Demand) {
-        if let downstream = _downstream, demand > 0 {
-            _ = downstream.receive(_output)
-            downstream.receive(completion: .finished)
+        func request(_ demand: Subscribers.Demand) {
+            if let downstream = _downstream, demand > 0 {
+                _ = downstream.receive(_output)
+                downstream.receive(completion: .finished)
+                _downstream = nil
+            }
+        }
+
+        func cancel() {
             _downstream = nil
         }
-    }
 
-    func cancel() {
-        _downstream = nil
-    }
+        var description: String { return "Optional" }
 
-    var description: String { return "Optional" }
-
-    var customMirror: Mirror {
-        return Mirror(self, unlabeledChildren: CollectionOfOne(_output))
+        var customMirror: Mirror {
+            return Mirror(self, unlabeledChildren: CollectionOfOne(_output))
+        }
     }
 }
 

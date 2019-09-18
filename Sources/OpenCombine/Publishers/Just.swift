@@ -25,8 +25,8 @@ public struct Just<Output>: Publisher {
         self.output = output
     }
 
-    public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-        where SubscriberType.Input == Output, SubscriberType.Failure == Never
+    public func receive<Downstream: Subscriber>(subscriber: Downstream)
+        where Downstream.Input == Output, Downstream.Failure == Never
     {
         subscriber.receive(subscription: Inner(value: output, downstream: subscriber))
     }
@@ -251,33 +251,35 @@ extension Just {
     }
 }
 
-private final class Inner<SubscriberType: Subscriber>: Subscription,
-    CustomStringConvertible,
-    CustomReflectable
-{
-    private let _output: SubscriberType.Input
-    private var _downstream: SubscriberType?
+extension Just {
+    private final class Inner<Downstream: Subscriber>: Subscription,
+        CustomStringConvertible,
+        CustomReflectable
+    {
+        private let _output: Downstream.Input
+        private var _downstream: Downstream?
 
-    init(value: SubscriberType.Input, downstream: SubscriberType) {
-        _output = value
-        _downstream = downstream
-    }
+        init(value: Downstream.Input, downstream: Downstream) {
+            _output = value
+            _downstream = downstream
+        }
 
-    func request(_ demand: Subscribers.Demand) {
-        if let downstream = _downstream, demand > 0 {
-            _ = downstream.receive(_output)
-            downstream.receive(completion: .finished)
+        func request(_ demand: Subscribers.Demand) {
+            if let downstream = _downstream, demand > 0 {
+                _ = downstream.receive(_output)
+                downstream.receive(completion: .finished)
+                _downstream = nil
+            }
+        }
+
+        func cancel() {
             _downstream = nil
         }
-    }
 
-    func cancel() {
-        _downstream = nil
-    }
+        var description: String { return "Just" }
 
-    var description: String { return "Just" }
-
-    var customMirror: Mirror {
-        return Mirror(self, unlabeledChildren: CollectionOfOne(_output))
+        var customMirror: Mirror {
+            return Mirror(self, unlabeledChildren: CollectionOfOne(_output))
+        }
     }
 }

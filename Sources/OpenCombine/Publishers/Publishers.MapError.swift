@@ -32,15 +32,11 @@ extension Publishers {
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-            where Failure == SubscriberType.Failure,
-                  Upstream.Output == SubscriberType.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where Failure == Downstream.Failure,
+                  Upstream.Output == Downstream.Input
         {
-            let mapErrorSubscriber = _MapError<Upstream, SubscriberType>(
-                downstream: subscriber,
-                transform: transform
-            )
-            upstream.subscribe(mapErrorSubscriber)
+            upstream.subscribe(Inner(downstream: subscriber, transform: transform))
         }
     }
 }
@@ -64,41 +60,44 @@ extension Publisher {
     }
 }
 
-private final class _MapError<Upstream: Publisher, Downstream: Subscriber>
-    : OperatorSubscription<Downstream>,
-      Subscriber,
-      CustomStringConvertible
-    where Upstream.Output == Downstream.Input
-{
-    typealias Input = Upstream.Output
-    typealias Failure = Upstream.Failure
-    typealias Output = Downstream.Input
+extension Publishers.MapError {
 
-    private let _transform: (Upstream.Failure) -> Downstream.Failure
+    private final class Inner<Downstream: Subscriber>
+        : OperatorSubscription<Downstream>,
+          Subscriber,
+          CustomStringConvertible
+        where Upstream.Output == Downstream.Input
+    {
+        typealias Input = Upstream.Output
+        typealias Failure = Upstream.Failure
+        typealias Output = Downstream.Input
 
-    var description: String { return "MapError" }
+        private let _transform: (Upstream.Failure) -> Downstream.Failure
 
-    init(downstream: Downstream,
-         transform: @escaping (Upstream.Failure) -> Downstream.Failure) {
-        self._transform = transform
-        super.init(downstream: downstream)
-    }
+        var description: String { return "MapError" }
 
-    func receive(subscription: Subscription) {
-        upstreamSubscription = subscription
-        downstream.receive(subscription: subscription)
-    }
+        init(downstream: Downstream,
+             transform: @escaping (Upstream.Failure) -> Downstream.Failure) {
+            self._transform = transform
+            super.init(downstream: downstream)
+        }
 
-    func receive(_ input: Input) -> Subscribers.Demand {
-        return downstream.receive(input)
-    }
+        func receive(subscription: Subscription) {
+            upstreamSubscription = subscription
+            downstream.receive(subscription: subscription)
+        }
 
-    func receive(completion: Subscribers.Completion<Failure>) {
-        switch completion {
-        case .finished:
-            downstream.receive(completion: .finished)
-        case .failure(let error):
-            downstream.receive(completion: .failure(_transform(error)))
+        func receive(_ input: Input) -> Subscribers.Demand {
+            return downstream.receive(input)
+        }
+
+        func receive(completion: Subscribers.Completion<Failure>) {
+            switch completion {
+            case .finished:
+                downstream.receive(completion: .finished)
+            case .failure(let error):
+                downstream.receive(completion: .failure(_transform(error)))
+            }
         }
     }
 }

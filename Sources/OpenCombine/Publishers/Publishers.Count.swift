@@ -33,11 +33,11 @@ extension Publishers {
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-            where Upstream.Failure == SubscriberType.Failure,
-                  SubscriberType.Input == Output
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where Upstream.Failure == Downstream.Failure,
+                  Downstream.Input == Output
         {
-            let count = _Count<Upstream, SubscriberType>(downstream: subscriber)
+            let count = _Count<Upstream, Downstream>(downstream: subscriber)
             upstream.subscribe(count)
         }
     }

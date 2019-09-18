@@ -5,6 +5,12 @@
 //  Created by Sergej Jaskiewicz on 10.06.2019.
 //
 
+extension Publisher {
+    public func eraseToAnyPublisher() -> AnyPublisher<Output, Failure> {
+        return .init(self)
+    }
+}
+
 /// A type-erasing publisher.
 ///
 /// Use `AnyPublisher` to wrap a publisher whose type has details you don’t want to expose
@@ -13,7 +19,6 @@ public struct AnyPublisher<Output, Failure: Error>
   : CustomStringConvertible,
     CustomPlaygroundDisplayConvertible
 {
-
     @usableFromInline
     internal let box: PublisherBoxBase<Output, Failure>
 
@@ -47,8 +52,8 @@ extension AnyPublisher: Publisher {
     ///     - subscriber: The subscriber to attach to this `Publisher`.
     ///                   once attached it can begin to receive values.
     @inlinable
-    public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-        where Output == SubscriberType.Input, Failure == SubscriberType.Failure
+    public func receive<Downstream: Subscriber>(subscriber: Downstream)
+        where Output == Downstream.Input, Failure == Downstream.Failure
     {
         box.subscribe(subscriber)
     }
@@ -62,11 +67,11 @@ internal class PublisherBoxBase<Output, Failure: Error>: Publisher {
     @inlinable
     internal init() {}
 
-    @inlinable
-    internal func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-        where Failure == SubscriberType.Failure, Output == SubscriberType.Input
+    @usableFromInline
+    internal func receive<Downstream: Subscriber>(subscriber: Downstream)
+        where Failure == Downstream.Failure, Output == Downstream.Input
     {
-        fatalError()
+        abstractMethod()
     }
 }
 
@@ -84,8 +89,8 @@ internal final class PublisherBox<PublisherType: Publisher>
     }
 
     @inlinable
-    override internal func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-        where Failure == SubscriberType.Failure, Output == SubscriberType.Input
+    override internal func receive<Downstream: Subscriber>(subscriber: Downstream)
+        where Failure == Downstream.Failure, Output == Downstream.Input
     {
         base.subscribe(subscriber)
     }

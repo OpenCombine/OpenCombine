@@ -26,8 +26,8 @@ extension Publishers {
             self.predicate = predicate
         }
 
-        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-            where Failure == SubscriberType.Failure, Output == SubscriberType.Input
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where Failure == Downstream.Failure, Output == Downstream.Input
         {
             let inner = Inner(downstream: subscriber, predicate: catching(predicate))
             upstream.subscribe(inner)
@@ -53,8 +53,8 @@ extension Publishers {
             self.predicate = predicate
         }
 
-        public func receive<SubscriberType: Subscriber>(subscriber: SubscriberType)
-            where Output == SubscriberType.Input, SubscriberType.Failure == Error
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where Output == Downstream.Input, Downstream.Failure == Error
         {
             let inner = Inner(downstream: subscriber, predicate: catching(predicate))
             upstream.subscribe(inner)
@@ -127,6 +127,7 @@ private class _DropWhile<Upstream: Publisher, Downstream: Subscriber>
     override func cancel() {
         upstreamSubscription?.cancel()
         upstreamSubscription = nil
+        isCompleted = true
         // Don't zero out downstream, that's what Combine does (probably a bug)
     }
 }
@@ -142,11 +143,9 @@ extension Publishers.DropWhile {
         var description: String { return "DropWhile" }
 
         func receive(completion: Subscribers.Completion<Failure>) {
-            guard !isCompleted else {
-                assertionFailure("unreachable")
-                return
-            }
+            guard !isCompleted else { return }
             downstream.receive(completion: completion)
+            isCompleted = true
         }
     }
 }
@@ -164,6 +163,7 @@ extension Publishers.TryDropWhile {
         func receive(completion: Subscribers.Completion<Failure>) {
             guard !isCompleted else { return }
             downstream.receive(completion: completion.eraseError())
+            isCompleted = true
         }
     }
 }

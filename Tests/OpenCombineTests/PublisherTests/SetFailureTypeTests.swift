@@ -16,18 +16,6 @@ import OpenCombine
 @available(macOS 10.15, iOS 13.0, *)
 final class SetFailureTypeTests: XCTestCase {
 
-    static let allTests = [
-        ("testEmpty", testEmpty),
-        ("testForwardingValues", testForwardingValues),
-        ("testNoDemand", testNoDemand),
-        ("testDemandSubscribe", testDemandSubscribe),
-        ("testDemandSend", testDemandSend),
-        ("testCompletion", testCompletion),
-        ("testCancel", testCancel),
-        ("testCancelAlreadyCancelled", testCancelAlreadyCancelled),
-        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
-    ]
-
     func testEmpty() {
         let tracking = TrackingSubscriberBase<Int, TestingError>(
             receiveSubscription: { $0.request(.unlimited) }
@@ -169,18 +157,5 @@ final class SetFailureTypeTests: XCTestCase {
                                               .cancelled,
                                               .requested(.unlimited),
                                               .cancelled])
-    }
-
-    // MARK: -
-    func testTestSuiteIncludesAllTests() {
-        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-        let thisClass = type(of: self)
-        let allTestsCount = thisClass.allTests.count
-        let darwinCount = thisClass.defaultTestSuite.testCaseCount
-        XCTAssertEqual(allTestsCount,
-                       darwinCount,
-                       "\(darwinCount - allTestsCount) tests are missing from allTests")
-#endif
     }
 }

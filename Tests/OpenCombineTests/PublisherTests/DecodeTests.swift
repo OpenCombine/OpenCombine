@@ -15,12 +15,6 @@ import OpenCombine
 
 @available(macOS 10.15, iOS 13.0, *)
 final class DecodeTests: XCTestCase {
-    static let allTests = [
-        ("testDecodingSuccess", testDecodingSuccess),
-        ("testDecodingFailure", testDecodingFailure),
-        ("testDemand", testDemand),
-        ("testTestSuiteIncludesAllTests", testTestSuiteIncludesAllTests),
-    ]
 
     var jsonEncoder: TestEncoder = TestEncoder()
     var jsonDecoder: TestDecoder = TestDecoder()
@@ -92,19 +86,6 @@ final class DecodeTests: XCTestCase {
 
         XCTAssertEqual(publisher.send(10), .none)
         XCTAssertEqual(subscription.history, [.requested(.max(42)), .cancelled])
-    }
-
-    // MARK: -
-    func testTestSuiteIncludesAllTests() {
-        // https://oleb.net/blog/2017/03/keeping-xctest-in-sync/
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-        let thisClass = type(of: self)
-        let allTestsCount = thisClass.allTests.count
-        let darwinCount = thisClass.defaultTestSuite.testCaseCount
-        XCTAssertEqual(allTestsCount,
-                       darwinCount,
-                       "\(darwinCount - allTestsCount) tests are missing from allTests")
-#endif
     }
 }
 
