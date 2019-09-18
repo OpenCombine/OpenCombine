@@ -26,7 +26,7 @@ final class AnyPublisherTests: XCTestCase {
                 XCTAssertEqual($0.combineIdentifier, subscriber.combineIdentifier)
             }
         )
-        let erased = AnyPublisher(publisher)
+        let erased = publisher.eraseToAnyPublisher()
 
         erased.subscribe(subscriber)
         XCTAssertEqual(publisher.history, [.subscriber])
