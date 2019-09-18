@@ -17,100 +17,19 @@ import OpenCombine
 final class MulticastTests: XCTestCase {
 
     func testMulticast() throws {
-
-        let publisher = CustomPublisher(subscription: CustomSubscription())
-        let multicast = publisher.multicast(PassthroughSubject.init)
-        let tracking = TrackingSubscriber(receiveSubscription: { $0.request(.unlimited) })
-
-        multicast.subscribe(tracking)
-
-        XCTAssertEqual(publisher.send(0), .none)
-        XCTAssertEqual(publisher.send(12), .none)
-
-        XCTAssertEqual(tracking.history, [.subscription("Multicast")])
-
-        var connection = multicast.connect()
-
-        XCTAssertEqual(publisher.send(-1), .none)
-        XCTAssertEqual(publisher.send(42), .none)
-
-        connection.cancel()
-
-        XCTAssertEqual(publisher.send(14), .none)
-
-        connection = multicast.connect()
-
-        XCTAssertEqual(publisher.send(15), .none)
-        publisher.send(completion: .finished)
-        publisher.send(completion: .finished)
-
-        connection.cancel()
-
-        XCTAssertEqual(tracking.history, [.subscription("Multicast"),
-                                          .value(-1),
-                                          .value(42),
-                                          .value(15),
-                                          .completion(.finished)])
+        try MulticastTests.testGenericMulticast { $0.multicast(PassthroughSubject.init) }
     }
 
     func testMulticastConnectTwice() {
-
-        let publisher = TrackingSubject<Int>()
-        let multicastSubject = TrackingSubject<Int>()
-        let multicast = publisher.multicast(subject: multicastSubject)
-        let tracking = TrackingSubscriber(
-            receiveSubscription: { $0.request(.max(10)) }
-        )
-
-        multicast.subscribe(tracking)
-
-        publisher.send(-1)
-
-        let connection1 = multicast.connect()
-        let connection2 = multicast.connect()
-
-        publisher.send(42)
-        publisher.send(completion: .finished)
-
-        XCTAssertEqual(tracking.history, [.subscription("Multicast"),
-                                          .value(42),
-                                          .value(42),
-                                          .completion(.finished)])
-
-        connection1.cancel()
-        connection2.cancel()
+        MulticastTests.testGenericMulticastConnectTwice {
+            $0.multicast { TrackingSubjectBase<Int, Never>() }
+        }
     }
 
     func testMulticastDisconnect() {
-
-        let publisher = PassthroughSubject<Int, TestingError>()
-        let multicast = publisher.multicast(PassthroughSubject.init)
-        let tracking = TrackingSubscriber(receiveSubscription: { $0.request(.unlimited) })
-
-        multicast.subscribe(tracking)
-
-        publisher.send(-1)
-
-        var connection = multicast.connect()
-
-        publisher.send(42)
-        connection.cancel()
-        publisher.send(100)
-
-        multicast.subscribe(tracking)
-        connection = multicast.connect()
-        publisher.send(2)
-        publisher.send(completion: .finished)
-
-        XCTAssertEqual(tracking.history, [.subscription("Multicast"),
-                                          .value(42),
-                                          .subscription("Multicast"),
-                                          .value(2),
-                                          .value(2),
-                                          .completion(.finished),
-                                          .completion(.finished)])
-
-        connection.cancel()
+        MulticastTests.testGenericMulticastDisconnect {
+            $0.multicast(PassthroughSubject.init)
+        }
     }
 
     func testLateSubscriber() {
@@ -276,5 +195,113 @@ final class MulticastTests: XCTestCase {
         multicast.subscribe(lateSubscriber)
 
         XCTAssertEqual(lateSubscriber.history, [.subscription("Multicast")])
+    }
+
+    // MARK: - Generic tests for Multicast & MakeConnectable
+
+    static func testGenericMulticast<Multicast: ConnectablePublisher>(
+        _ makeMulticast: (CustomPublisherBase<Int, Never>) -> Multicast
+    ) throws where Multicast.Output == Int, Multicast.Failure == Never {
+
+        let publisher =
+            CustomPublisherBase<Int, Never>(subscription: CustomSubscription())
+        let multicast = makeMulticast(publisher)
+        let tracking = TrackingSubscriberBase<Int, Never>(
+            receiveSubscription: { $0.request(.unlimited) }
+        )
+
+        multicast.subscribe(tracking)
+
+        XCTAssertEqual(publisher.send(0), .none)
+        XCTAssertEqual(publisher.send(12), .none)
+
+        XCTAssertEqual(tracking.history, [.subscription("Multicast")])
+
+        var connection = multicast.connect()
+
+        XCTAssertEqual(publisher.send(-1), .none)
+        XCTAssertEqual(publisher.send(42), .none)
+
+        connection.cancel()
+
+        XCTAssertEqual(publisher.send(14), .none)
+
+        connection = multicast.connect()
+
+        XCTAssertEqual(publisher.send(15), .none)
+        publisher.send(completion: .finished)
+        publisher.send(completion: .finished)
+
+        connection.cancel()
+
+        XCTAssertEqual(tracking.history, [.subscription("Multicast"),
+                                          .value(-1),
+                                          .value(42),
+                                          .value(15),
+                                          .completion(.finished)])
+    }
+
+    static func testGenericMulticastConnectTwice<Multicast: ConnectablePublisher>(
+        _ makeMulticast: (TrackingSubjectBase<Int, Never>) -> Multicast
+    ) where Multicast.Output == Int, Multicast.Failure == Never {
+        let publisher = TrackingSubjectBase<Int, Never>()
+        let multicast = makeMulticast(publisher)
+        let tracking = TrackingSubscriberBase<Int, Never>(
+            receiveSubscription: { $0.request(.max(10)) }
+        )
+
+        multicast.subscribe(tracking)
+
+        publisher.send(-1)
+
+        let connection1 = multicast.connect()
+        let connection2 = multicast.connect()
+
+        publisher.send(42)
+        publisher.send(completion: .finished)
+
+        XCTAssertEqual(tracking.history, [.subscription("Multicast"),
+                                          .value(42),
+                                          .value(42),
+                                          .completion(.finished)])
+
+        connection1.cancel()
+        connection2.cancel()
+    }
+
+    static func testGenericMulticastDisconnect<Multicast: ConnectablePublisher>(
+        _ makeMulticast: (PassthroughSubject<Int, Never>) -> Multicast
+    ) where Multicast.Output == Int, Multicast.Failure == Never {
+
+        let publisher = PassthroughSubject<Int, Never>()
+        let multicast = makeMulticast(publisher)
+        let tracking = TrackingSubscriberBase<Int, Never>(
+            receiveSubscription: { $0.request(.unlimited) }
+        )
+
+        multicast.subscribe(tracking)
+
+        publisher.send(-1)
+
+        var connection = multicast.connect()
+
+        publisher.send(42)
+        connection.cancel()
+        publisher.send(100)
+
+        multicast.subscribe(tracking)
+        connection = multicast.connect()
+        publisher.send(2)
+        publisher.send(completion: .finished)
+
+        XCTAssertEqual(tracking.history, [.subscription("Multicast"),
+                                          .value(42),
+                                          .subscription("Multicast"),
+                                          .value(2),
+                                          .value(2),
+                                          .completion(.finished),
+                                          .completion(.finished)])
+
+        connection.cancel()
     }
 }
