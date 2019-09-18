@@ -63,10 +63,10 @@ internal final class SubjectSubscriber<Downstream: Subject>
     internal var playgroundDescription: Any { return description }
 
     internal var customMirror: Mirror {
-        let children: [(label: String?, value: Any)] = [
-            (label: "downstreamSubject", value: downstreamSubject as Any),
-            (label: "upstreamSubscription", value: upstreamSubscription as Any),
-            (label: "subject", value: downstreamSubject as Any)
+        let children: [Mirror.Child] = [
+            ("downstreamSubject", downstreamSubject as Any),
+            ("upstreamSubscription", upstreamSubscription as Any),
+            ("subject", downstreamSubject as Any)
         ]
         return Mirror(self, children: children)
     }

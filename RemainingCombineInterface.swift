@@ -1,21 +1,6 @@
 // This file contains parts of Apple's Combine that remain unimplemented in OpenCombine
-// Please remove the corresponding piece from this file if you implment something,
+// Please remove the corresponding piece from this file if you implement something,
 // and complement this file as features are added in Apple's Combine
-
-extension ConnectablePublisher {
-
-    /// Automates the process of connecting or disconnecting from this connectable publisher.
-    ///
-    /// Use `autoconnect()` to simplify working with `ConnectablePublisher` instances, such as those created with `makeConnectable()`.
-    ///
-    ///     let autoconnectedPublisher = somePublisher
-    ///         .makeConnectable()
-    ///         .autoconnect()
-    ///         .subscribe(someSubscriber)
-    ///
-    /// - Returns: A publisher which automatically connects to its upstream connectable publisher.
-    public func autoconnect() -> Publishers.Autoconnect<Self>
-}
 
 extension Publishers {
 
@@ -534,34 +519,6 @@ extension Publisher {
     ///   - transform: A closure that receives the most recent value from each publisher and returns a new value to publish.
     /// - Returns: A publisher that receives and combines elements from this publisher and three other publishers.
     public func combineLatest<P, Q, R, T>(_ publisher1: P, _ publisher2: Q, _ publisher3: R, _ transform: @escaping (Self.Output, P.Output, Q.Output, R.Output) -> T) -> Publishers.Map<Publishers.CombineLatest4<Self, P, Q, R>, T> where P : Publisher, Q : Publisher, R : Publisher, Self.Failure == P.Failure, P.Failure == Q.Failure, Q.Failure == R.Failure
-}
-
-extension Publishers {
-
-    /// A publisher that automatically connects and disconnects from this connectable publisher.
-    public class Autoconnect<Upstream> : Publisher where Upstream : ConnectablePublisher {
-
-        /// The kind of values published by this publisher.
-        public typealias Output = Upstream.Output
-
-        /// The kind of errors this publisher might publish.
-        ///
-        /// Use `Never` if this `Publisher` does not publish errors.
-        public typealias Failure = Upstream.Failure
-
-        /// The publisher from which this publisher receives elements.
-        final public let upstream: Upstream
-
-        public init(upstream: Upstream)
-
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
-        ///
-        /// - SeeAlso: `subscribe(_:)`
-        /// - Parameters:
-        ///     - subscriber: The subscriber to attach to this `Publisher`.
-        ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
-    }
 }
 
 extension Publishers {
