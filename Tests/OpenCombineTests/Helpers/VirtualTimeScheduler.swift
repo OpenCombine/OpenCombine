@@ -11,7 +11,7 @@ open class VirtualTimeScheduler: Scheduler {
 
     public struct SchedulerTimeType: Strideable {
 
-        public var date: Int { stride.magnitude }
+        public var date: Int { return stride.magnitude }
         private let stride: Stride
 
         public init(date: Int) {
@@ -91,9 +91,9 @@ open class VirtualTimeScheduler: Scheduler {
                 lhs.magnitude += rhs.magnitude
             }
 
-            public static func seconds(_ val: Int) -> Stride { .init(val) }
+            public static func seconds(_ val: Int) -> Stride { return .init(val) }
 
-            public static func seconds(_ val: Double) -> Stride { .init(Int(val)) }
+            public static func seconds(_ val: Double) -> Stride { return .init(Int(val)) }
 
             public static func milliseconds(_: Int) -> Stride { return 0 }
 
@@ -121,7 +121,7 @@ open class VirtualTimeScheduler: Scheduler {
         add(item: item)
     }
 
-    public var now: SchedulerTimeType { _now }
+    public var now: SchedulerTimeType { return _now }
 
     public var minimumTolerance: SchedulerTimeType.Stride { return 0 }
 
@@ -183,6 +183,6 @@ extension VirtualTimeScheduler {
             action = nil
         }
 
-        var description: String { "\(date)" }
+        var description: String { return "\(date)" }
     }
 }
