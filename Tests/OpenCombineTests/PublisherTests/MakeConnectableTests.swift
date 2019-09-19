@@ -36,4 +36,10 @@ final class MakeConnectableTests: XCTestCase {
             $0.makeConnectable()
         }
     }
+
+    func testReflection() throws {
+        try MulticastTests.testGenericMulticastReflection {
+            $0.makeConnectable()
+        }
+    }
 }

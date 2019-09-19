@@ -150,37 +150,9 @@ final class MulticastTests: XCTestCase {
 
     func testSubscribeAfterCompletion() {
 
-        final class Subj: Subject {
-
-            typealias Output = Int
-
-            typealias Failure = TestingError
-
-            var subscriber: AnySubscriber<Int, TestingError>?
-
-            func receive<Downstream: Subscriber>(subscriber: Downstream)
-                where Downstream.Failure == TestingError, Downstream.Input == Int
-            {
-                subscriber.receive(subscription: CustomSubscription())
-                self.subscriber = AnySubscriber(subscriber)
-            }
-
-            func send(subscription: Subscription) {
-                subscriber?.receive(subscription: subscription)
-            }
-
-            func send(_ value: Int) {
-                _ = subscriber?.receive(value)
-            }
-
-            func send(completion: Subscribers.Completion<TestingError>) {
-                subscriber?.receive(completion: completion)
-            }
-        }
-
         let publisher = CustomPublisher(subscription: CustomSubscription())
 
-        let subject = Subj()
+        let subject = MulticastTestingSubject()
 
         let multicast = publisher.multicast(subject: subject)
 
@@ -195,6 +167,131 @@ final class MulticastTests: XCTestCase {
         multicast.subscribe(lateSubscriber)
 
         XCTAssertEqual(lateSubscriber.history, [.subscription("Multicast")])
+    }
+
+    func testInnerSubscriber() throws {
+
+        let publisher = PassthroughSubject<Int, TestingError>()
+
+        let subject = MulticastTestingSubject()
+
+        let multicast = publisher.multicast(subject: subject)
+        let subscriber = TrackingSubscriberBase<Int, TestingError>(
+            receiveSubscription: { $0.request(.max(42)) },
+            receiveValue: { $0 < 0 ? .unlimited : .max($0) }
+        )
+
+        try withExtendedLifetime(multicast.connect()) {
+            multicast.subscribe(subscriber)
+
+            XCTAssertEqual(subscriber.history, [.subscription("Multicast")])
+            XCTAssertEqual(subject.subscription.history, [.requested(.max(42))])
+
+            // Steal the underlying Multicast subscriber/subscription
+            let innerSubscriber = try XCTUnwrap(subject.subscriber)
+
+            innerSubscriber.receive(subscription: Subscriptions.empty)
+            innerSubscriber.receive(subscription: Subscriptions.empty)
+
+            XCTAssertEqual(subscriber.history,
+                           [.subscription("Multicast")],
+                           "Downstream subscriber should receive subscription once")
+            XCTAssertEqual(subject.subscription.history, [.requested(.max(42))])
+
+            XCTAssertEqual(innerSubscriber.receive(0), .none)
+            XCTAssertEqual(innerSubscriber.receive(0), .none)
+            XCTAssertEqual(innerSubscriber.receive(1), .none)
+            XCTAssertEqual(innerSubscriber.receive(2), .none)
+            XCTAssertEqual(innerSubscriber.receive(-1), .none)
+            XCTAssertEqual(innerSubscriber.receive(3), .none)
+            XCTAssertEqual(innerSubscriber.receive(-1), .none)
+            XCTAssertEqual(innerSubscriber.receive(0), .none)
+
+            XCTAssertEqual(subscriber.history, [.subscription("Multicast"),
+                                                .value(0),
+                                                .value(0),
+                                                .value(1),
+                                                .value(2),
+                                                .value(-1),
+                                                .value(3),
+                                                .value(-1),
+                                                .value(0)])
+            XCTAssertEqual(subject.subscription.history, [.requested(.max(42)),
+                                                          .requested(.max(1)),
+                                                          .requested(.max(2)),
+                                                          .requested(.unlimited),
+                                                          .requested(.max(3)),
+                                                          .requested(.unlimited)])
+
+            innerSubscriber.receive(completion: .failure(.oops))
+            innerSubscriber.receive(completion: .finished)
+            XCTAssertEqual(innerSubscriber.receive(123), .none)
+            innerSubscriber.receive(subscription: Subscriptions.empty)
+
+            XCTAssertEqual(subscriber.history, [.subscription("Multicast"),
+                                                .value(0),
+                                                .value(0),
+                                                .value(1),
+                                                .value(2),
+                                                .value(-1),
+                                                .value(3),
+                                                .value(-1),
+                                                .value(0),
+                                                .completion(.failure(.oops))])
+        }
+    }
+
+    func testInnerSubscription() throws {
+        let publisher = PassthroughSubject<Int, TestingError>()
+
+        let subject = MulticastTestingSubject()
+
+        let multicast = publisher.multicast(subject: subject)
+        let subscriber = TrackingSubscriberBase<Int, TestingError>()
+
+        try withExtendedLifetime(multicast.connect()) {
+            multicast.subscribe(subscriber)
+
+            XCTAssertEqual(subscriber.history, [.subscription("Multicast")])
+            XCTAssertEqual(subject.subscription.history, [])
+
+            // Steal the underlying Multicast subscriber/subscription
+            let innerSubscriber = try XCTUnwrap(subject.subscriber)
+            let innerSubscription =
+                try XCTUnwrap(subscriber.subscriptions.first?.underlying)
+
+            innerSubscription.request(.max(42))
+            innerSubscription.request(.max(43))
+            innerSubscription.request(.unlimited)
+            innerSubscription.request(.max(44))
+
+            XCTAssertEqual(subject.subscription.history, [.requested(.max(42)),
+                                                          .requested(.max(43)),
+                                                          .requested(.unlimited),
+                                                          .requested(.max(44))])
+            XCTAssertEqual(subscriber.history, [.subscription("Multicast")])
+
+            innerSubscription.cancel()
+            innerSubscription.cancel()
+            innerSubscription.request(.max(30))
+            innerSubscription.request(.unlimited)
+            innerSubscriber.receive(subscription: Subscriptions.empty)
+            XCTAssertEqual(innerSubscriber.receive(1000), .none)
+            innerSubscriber.receive(completion: .finished)
+
+            XCTAssertEqual(subject.subscription.history, [.requested(.max(42)),
+                                                          .requested(.max(43)),
+                                                          .requested(.unlimited),
+                                                          .requested(.max(44)),
+                                                          .cancelled])
+            XCTAssertEqual(subscriber.history, [.subscription("Multicast")])
+        }
+    }
+
+    func testReflection() throws {
+        try MulticastTests.testGenericMulticastReflection {
+            $0.multicast(PassthroughSubject.init)
+        }
     }
 
     // MARK: - Generic tests for Multicast & MakeConnectable
@@ -303,5 +400,61 @@ final class MulticastTests: XCTestCase {
                                           .completion(.finished)])
 
         connection.cancel()
+    }
+
+    static func testGenericMulticastReflection<Multicast: ConnectablePublisher>(
+        _ makeMulticast: (PassthroughSubject<Int, Never>) -> Multicast
+    ) throws where Multicast.Output == Int, Multicast.Failure == Never {
+
+        let publisher = PassthroughSubject<Int, Never>()
+        let multicast = makeMulticast(publisher)
+        let tracking = TrackingSubscriberBase<Int, Never>()
+
+        multicast.subscribe(tracking)
+
+        let multicastSubscription =
+            try XCTUnwrap(tracking.subscriptions.first?.underlying)
+
+        let mirror =
+            try XCTUnwrap((multicastSubscription as? CustomReflectable)?.customMirror)
+
+        XCTAssert(mirror.children.isEmpty)
+
+        let playgroundDescription =
+            (multicastSubscription as? CustomPlaygroundDisplayConvertible)?
+                .playgroundDescription as? String
+
+        XCTAssertEqual(playgroundDescription, "Multicast")
+    }
+}
+
+@available(macOS 10.15, iOS 13.0, *)
+private final class MulticastTestingSubject: Subject {
+
+    typealias Output = Int
+
+    typealias Failure = TestingError
+
+    let subscription = CustomSubscription()
+
+    var subscriber: AnySubscriber<Int, TestingError>?
+
+    func receive<Downstream: Subscriber>(subscriber: Downstream)
+        where Downstream.Failure == TestingError, Downstream.Input == Int
+    {
+        subscriber.receive(subscription: subscription)
+        self.subscriber = AnySubscriber(subscriber)
+    }
+
+    func send(subscription: Subscription) {
+        subscriber?.receive(subscription: subscription)
+    }
+
+    func send(_ value: Int) {
+        _ = subscriber?.receive(value)
+    }
+
+    func send(completion: Subscribers.Completion<TestingError>) {
+        subscriber?.receive(completion: completion)
     }
 }
