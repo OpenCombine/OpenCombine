@@ -65,7 +65,7 @@ extension Publishers.Sequence {
             _downstream = downstream
             _sequence = sequence
             _iterator = sequence.makeIterator()
-            _nextValue = iterator.next()
+            _nextValue = _iterator?.next()
         }
 
         var description: String {
