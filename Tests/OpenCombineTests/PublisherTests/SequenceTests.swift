@@ -166,6 +166,17 @@ final class SequenceTests: XCTestCase {
                                             .value(1)])
     }
 
+    func testPublishesCorrectValues() {
+        let sequence: Publishers.Sequence = (1...5).publisher
+
+        var history = [Int]()
+        _ = sequence.sink {
+            history.append($0)
+        }
+
+        XCTAssertEqual(history, [1, 2, 3, 4, 5])
+    }
+
     func testLifecycle() throws {
 
         var deinitCounter = 0
