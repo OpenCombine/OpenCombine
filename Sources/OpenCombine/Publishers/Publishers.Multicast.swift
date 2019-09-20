@@ -31,6 +31,8 @@ extension Publishers {
         where Upstream.Failure == SubjectType.Failure,
               Upstream.Output == SubjectType.Output
     {
+        // NOTE: This class has been audited for thread safety
+
         public typealias Output = Upstream.Output
 
         public typealias Failure = Upstream.Failure
@@ -39,7 +41,22 @@ extension Publishers {
 
         public let createSubject: () -> SubjectType
 
-        private lazy var _subject: SubjectType = self.createSubject()
+        private let lock = Lock(recursive: false)
+
+        private var subject: SubjectType?
+
+        private var lazySubject: SubjectType {
+            lock.lock()
+            if let subject = subject {
+                lock.unlock()
+                return subject
+            }
+
+            let subject = createSubject()
+            self.subject = subject
+            lock.unlock()
+            return subject
+        }
 
         public init(upstream: Upstream, createSubject: @escaping () -> SubjectType) {
             self.upstream = upstream
@@ -50,11 +67,11 @@ extension Publishers {
             where SubjectType.Failure == Downstream.Failure,
                   SubjectType.Output == Downstream.Input
         {
-            _subject.subscribe(Inner(downstream: subscriber))
+            lazySubject.subscribe(Inner(parent: self, downstream: subscriber))
         }
 
         public func connect() -> Cancellable {
-            return upstream.subscribe(_subject)
+            return upstream.subscribe(lazySubject)
         }
     }
 }
@@ -62,32 +79,101 @@ extension Publishers {
 extension Publishers.Multicast {
 
     private final class Inner<Downstream: Subscriber>
-        : OperatorSubscription<Downstream>,
-          Subscriber,
+        : Subscriber,
+          Subscription,
           CustomStringConvertible,
-          Subscription
+          CustomReflectable,
+          CustomPlaygroundDisplayConvertible
         where Upstream.Output == Downstream.Input, Upstream.Failure == Downstream.Failure
     {
+        // NOTE: This class has been audited for thread safety
+
         typealias Input = Upstream.Output
+
         typealias Failure = Upstream.Failure
 
-        var description: String { return "Multicast" }
+        private enum State {
+            case ready(upstream: Upstream, downstream: Downstream)
+            case subscribed(upstream: Upstream,
+                            downstream: Downstream,
+                            subjectSubscription: Subscription)
+            case terminal
+        }
+
+        private let lock = Lock(recursive: false)
+
+        private var state: State
+
+        fileprivate init(parent: Publishers.Multicast<Upstream, SubjectType>,
+                         downstream: Downstream) {
+            state = .ready(upstream: parent.upstream, downstream: downstream)
+        }
+
+        fileprivate var description: String { return "Multicast" }
+
+        fileprivate var customMirror: Mirror {
+            return Mirror(self, children: EmptyCollection())
+        }
+
+        fileprivate var playgroundDescription: Any { return description }
 
         func receive(subscription: Subscription) {
-            upstreamSubscription = subscription
+            lock.lock()
+            guard case let .ready(upstream, downstream) = state else {
+                lock.unlock()
+                return
+            }
+            state = .subscribed(upstream: upstream,
+                                downstream: downstream,
+                                subjectSubscription: subscription)
+            lock.unlock()
             downstream.receive(subscription: self)
         }
 
         func receive(_ input: Input) -> Subscribers.Demand {
-            return downstream.receive(input)
+            lock.lock()
+            guard case let .subscribed(_, downstream, subjectSubscription) = state else {
+                lock.unlock()
+                return .none
+            }
+            lock.unlock()
+            let newDemand = downstream.receive(input)
+            if newDemand > 0 {
+                subjectSubscription.request(newDemand)
+            }
+            return .none
         }
 
         func receive(completion: Subscribers.Completion<Failure>) {
+            lock.lock()
+            guard case let .subscribed(_, downstream, _) = state else {
+                lock.unlock()
+                return
+            }
+            state = .terminal
+            lock.unlock()
             downstream.receive(completion: completion)
         }
 
         func request(_ demand: Subscribers.Demand) {
-            upstreamSubscription?.request(demand)
+            lock.lock()
+            guard case let .subscribed(_, _, subjectSubscription) = state else {
+                lock.unlock()
+                return
+            }
+            lock.unlock()
+            subjectSubscription.request(demand)
+        }
+
+        func cancel() {
+            lock.lock()
+            guard case let .subscribed(_, _, subjectSubscription) = state else {
+                lock.unlock()
+                return
+            }
+            state = .terminal
+            lock.unlock()
+            subjectSubscription.cancel()
         }
     }
 }
