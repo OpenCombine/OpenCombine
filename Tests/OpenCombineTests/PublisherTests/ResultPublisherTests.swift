@@ -100,6 +100,46 @@ final class ResultPublisherTests: XCTestCase {
                                           .completion(.failure("failure"))])
     }
 
+    func testRecursion() {
+        let success = makePublisher(42)
+        var subscription: Subscription?
+        let tracking = TrackingSubscriberBase<Int, TestingError>(
+            receiveSubscription: {
+                subscription = $0
+                $0.request(.unlimited)
+            },
+            receiveValue: { _ in
+                subscription?.request(.unlimited)
+                return .none
+            }
+        )
+        success.subscribe(tracking)
+    }
+
+    func testReflection() throws {
+
+        func testCustomMirror(_ mirror: Mirror) -> Bool {
+            return mirror.children.count == 1 &&
+                mirror.children.first!.label == nil &&
+                (mirror.children.first!.value as? Int) == 42
+        }
+
+        try testSubscriptionReflection(description: "Once",
+                                       customMirror: testCustomMirror,
+                                       playgroundDescription: "Once",
+                                       sut: Sut(42))
+    }
+
+    func testCrashesOnZeroDemand() {
+        assertCrashes {
+            let tracking =
+                TrackingSubscriberBase<Int, TestingError>(receiveSubscription: {
+                    $0.request(.none)
+                })
+            makePublisher(42).subscribe(tracking)
+        }
+    }
+
     func testLifecycle() {
         var deinitCount = 0
         do {
