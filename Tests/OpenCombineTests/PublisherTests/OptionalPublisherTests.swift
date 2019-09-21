@@ -23,9 +23,9 @@ final class OptionalPublisherTests: XCTestCase {
 #endif
 
     func testSuccessNoInitialDemand() {
-        let success = Sut(42)
+        let optional = Sut(42)
         let tracking = TrackingSubscriberBase<Int, Never>()
-        success.subscribe(tracking)
+        optional.subscribe(tracking)
 
         XCTAssertEqual(tracking.history, [.subscription("Optional")])
 
@@ -38,11 +38,11 @@ final class OptionalPublisherTests: XCTestCase {
     }
 
     func testSuccessWithInitialDemand() {
-        let just = Sut(42)
+        let optional = Sut(42)
         let tracking = TrackingSubscriberBase<Int, Never>(
             receiveSubscription: { $0.request(.unlimited) }
         )
-        just.subscribe(tracking)
+        optional.subscribe(tracking)
 
         XCTAssertEqual(tracking.history, [.subscription("Optional"),
                                           .value(42),
@@ -68,6 +68,46 @@ final class OptionalPublisherTests: XCTestCase {
 
         XCTAssertEqual(tracking.history, [.subscription("Empty"),
                                           .completion(.finished)])
+    }
+
+    func testRecursion() {
+        let optional = Sut(42)
+        var subscription: Subscription?
+        let tracking = TrackingSubscriberBase<Int, Never>(
+            receiveSubscription: {
+                subscription = $0
+                $0.request(.unlimited)
+            },
+            receiveValue: { _ in
+                subscription?.request(.unlimited)
+                return .none
+            }
+        )
+        optional.subscribe(tracking)
+    }
+
+    func testReflection() throws {
+
+        func testCustomMirror(_ mirror: Mirror) -> Bool {
+            return mirror.children.count == 1 &&
+                mirror.children.first!.label == nil &&
+                (mirror.children.first!.value as? Int) == 42
+        }
+
+        try testSubscriptionReflection(description: "Optional",
+                                       customMirror: testCustomMirror,
+                                       playgroundDescription: "Optional",
+                                       sut: Sut(42))
+    }
+
+    func testCrashesOnZeroDemand() {
+        assertCrashes {
+            let tracking =
+                TrackingSubscriberBase<Int, Never>(receiveSubscription: {
+                    $0.request(.none)
+                })
+            Sut(42).subscribe(tracking)
+        }
     }
 
     func testLifecycle() {
