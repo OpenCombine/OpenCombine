@@ -311,10 +311,9 @@ final class MapTests: XCTestCase {
         try XCTUnwrap(publisher.subscriber).receive(subscription: secondSubscription)
 
         XCTAssertEqual(firstSubscription.history, [.cancelled])
-        XCTAssertEqual(secondSubscription.history, [.cancelled])
+        XCTAssertEqual(secondSubscription.history, [.cancelled, .cancelled])
         XCTAssertEqual(tracking.history, [.subscription("TryMap"),
-                                          .completion(.failure(TestingError.oops)),
-                                          .subscription("TryMap")])
+                                          .completion(.failure(TestingError.oops))])
     }
 
     func testMapReflection() throws {

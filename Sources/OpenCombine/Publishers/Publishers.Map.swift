@@ -185,7 +185,7 @@ extension Publishers.TryMap {
 
         private let map: (Input) throws -> Output
 
-        private var upstream: Subscription?
+        private var status = SubscriptionStatus.awaitingSubscription
 
         private let lock = Lock(recursive: false)
 
@@ -199,12 +199,12 @@ extension Publishers.TryMap {
 
         func receive(subscription: Subscription) {
             lock.lock()
-            guard upstream == nil else {
+            guard case .awaitingSubscription = status else {
                 lock.unlock()
                 subscription.cancel()
                 return
             }
-            upstream = subscription
+            status = .subscribed(subscription)
             lock.unlock()
             downstream.receive(subscription: self)
         }
@@ -214,8 +214,14 @@ extension Publishers.TryMap {
                 return try downstream.receive(map(input))
             } catch {
                 lock.lock()
-                let subscription = upstream
-                upstream = nil
+                let subscription: Subscription?
+                switch status {
+                case let .subscribed(upstreamSubscription):
+                    subscription = upstreamSubscription
+                case .awaitingSubscription, .terminal:
+                    subscription = nil
+                }
+                status = .terminal
                 lock.unlock()
                 subscription?.cancel()
                 downstream.receive(completion: .failure(error))
@@ -225,18 +231,18 @@ extension Publishers.TryMap {
 
         func receive(completion: Subscribers.Completion<Failure>) {
             lock.lock()
-            guard upstream != nil else {
+            guard case .subscribed = status else {
                 lock.unlock()
                 return
             }
-            upstream = nil
+            status = .terminal
             lock.unlock()
             downstream.receive(completion: completion.eraseError())
         }
 
         func request(_ demand: Subscribers.Demand) {
             lock.lock()
-            guard let subscription = upstream else {
+            guard case let .subscribed(subscription) = status else {
                 lock.unlock()
                 return
             }
@@ -246,11 +252,11 @@ extension Publishers.TryMap {
 
         func cancel() {
             lock.lock()
-            guard let subscription = upstream else {
+            guard case let .subscribed(subscription) = status else {
                 lock.unlock()
                 return
             }
-            upstream = nil
+            status = .terminal
             lock.unlock()
             subscription.cancel()
         }
