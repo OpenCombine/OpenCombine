@@ -41,3 +41,30 @@ internal func testReflection<Operator: Publisher>(
         playgroundDescription
     )
 }
+
+@available(macOS 10.15, iOS 13.0, *)
+internal func testSubscriptionReflection<Sut: Publisher>(
+    description expectedDescription: String,
+    customMirror customMirrorPredicate: (Mirror) -> Bool,
+    playgroundDescription: String,
+    sut: Sut
+) throws where Sut.Output: Equatable {
+    let tracking = TrackingSubscriberBase<Sut.Output, Sut.Failure>()
+    sut.subscribe(tracking)
+
+    let subscription = try XCTUnwrap(tracking.subscriptions.first?.underlying)
+
+    XCTAssertEqual((subscription as? CustomStringConvertible)?.description,
+                   expectedDescription)
+
+    let customMirror =
+        try XCTUnwrap((subscription as? CustomReflectable)?.customMirror)
+
+    XCTAssert(customMirrorPredicate(customMirror))
+
+    XCTAssertEqual(
+        ((subscription as? CustomPlaygroundDisplayConvertible)?
+            .playgroundDescription as? String),
+        playgroundDescription
+    )
+}

@@ -252,34 +252,42 @@ extension Just {
 }
 
 extension Just {
-    private final class Inner<Downstream: Subscriber>: Subscription,
-        CustomStringConvertible,
-        CustomReflectable
+    private final class Inner<Downstream: Subscriber>
+        : Subscription,
+          CustomStringConvertible,
+          CustomReflectable,
+          CustomPlaygroundDisplayConvertible
+    where Downstream.Input == Output
     {
-        private let _output: Downstream.Input
-        private var _downstream: Downstream?
+        // NOTE: this class has been audited for thread safety.
+        // Combine doesn't use any locking here.
 
-        init(value: Downstream.Input, downstream: Downstream) {
-            _output = value
-            _downstream = downstream
+        private var downstream: Downstream?
+        private let value: Output
+
+        fileprivate init(value: Output, downstream: Downstream) {
+            self.downstream = downstream
+            self.value = value
         }
 
         func request(_ demand: Subscribers.Demand) {
-            if let downstream = _downstream, demand > 0 {
-                _ = downstream.receive(_output)
-                downstream.receive(completion: .finished)
-                _downstream = nil
-            }
+            demand.assertNonZero()
+            guard let downstream = self.downstream else { return }
+            self.downstream = nil
+            _ = downstream.receive(value)
+            downstream.receive(completion: .finished)
         }
 
         func cancel() {
-            _downstream = nil
+            downstream = nil
         }
 
         var description: String { return "Just" }
 
         var customMirror: Mirror {
-            return Mirror(self, unlabeledChildren: CollectionOfOne(_output))
+            return Mirror(self, unlabeledChildren: CollectionOfOne(value))
         }
+
+        var playgroundDescription: Any { return description }
     }
 }
