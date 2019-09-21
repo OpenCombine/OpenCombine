@@ -33,22 +33,29 @@ final class JustTests: XCTestCase {
                                           .completion(.finished)])
     }
 
-    func testCustomMirror() throws {
-        let just = Sut(42)
-        var downstreamSubscription: Subscription?
-        let tracking = TrackingSubscriberBase<Int, Never>(
-            receiveSubscription: { downstreamSubscription = $0 }
-        )
-        just.subscribe(tracking)
+    func testReflection() throws {
 
-        var reflected = ""
-        try dump(XCTUnwrap(downstreamSubscription), to: &reflected)
+        func testCustomMirror(_ mirror: Mirror) -> Bool {
+            return mirror.children.count == 1 &&
+                mirror.children.first!.label == nil &&
+                (mirror.children.first!.value as? Int) == 42
+        }
 
-        XCTAssertEqual(reflected, """
-        ▿ Just #0
-          - 42
+        try testSubscriptionReflection(description: "Just",
+                                       customMirror: testCustomMirror,
+                                       playgroundDescription: "Just",
+                                       sut: Sut(42))
+    }
 
-        """)
+    func testCrashesOnZeroDemand() {
+        assertCrashes {
+            let just = Sut(42)
+            let tracking =
+                TrackingSubscriberBase<Int, Never>(receiveSubscription: {
+                    $0.request(.none)
+                })
+            just.subscribe(tracking)
+        }
     }
 
     func testJustWithInitialDemand() {
@@ -67,13 +74,27 @@ final class JustTests: XCTestCase {
     func testCancelOnSubscription() {
         let just = Sut(42)
         let tracking = TrackingSubscriberBase<Int, Never>(
-            receiveSubscription: { $0.request(.max(1)); $0.cancel() }
+            receiveSubscription: { $0.cancel(); $0.request(.max(1)) }
         )
         just.subscribe(tracking)
 
-        XCTAssertEqual(tracking.history, [.subscription("Just"),
-                                          .value(42),
-                                          .completion(.finished)])
+        XCTAssertEqual(tracking.history, [.subscription("Just")])
+    }
+
+    func testRecursion() {
+        let just = Sut(42)
+        var subscription: Subscription?
+        let tracking = TrackingSubscriberBase<Int, Never>(
+            receiveSubscription: {
+                subscription = $0
+                $0.request(.unlimited)
+            },
+            receiveValue: { _ in
+                subscription?.request(.unlimited)
+                return .none
+            }
+        )
+        just.subscribe(tracking)
     }
 
     func testLifecycle() {
