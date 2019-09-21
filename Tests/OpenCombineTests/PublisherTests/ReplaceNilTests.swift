@@ -86,4 +86,13 @@ final class ReplaceNilTests: XCTestCase {
                                             .value(42),
                                             .completion(.finished)])
     }
+
+    func testReplaceNilReflection() throws {
+        try testReflection(parentInput: Int?.self,
+                           parentFailure: Never.self,
+                           description: "Map",
+                           customMirror: { $0.children.isEmpty },
+                           playgroundDescription: "Map",
+                           { $0.replaceNil(with: 0) })
+    }
 }

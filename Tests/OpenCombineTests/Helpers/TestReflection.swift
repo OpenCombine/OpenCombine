@@ -14,13 +14,15 @@ import OpenCombine
 #endif
 
 @available(macOS 10.15, iOS 13.0, *)
-internal func testReflection<Operator: Publisher>(
+internal func testReflection<Output, Failure: Error, Operator: Publisher>(
+    parentInput: Output.Type,
+    parentFailure: Failure.Type,
     description expectedDescription: String,
     customMirror customMirrorPredicate: (Mirror) -> Bool,
     playgroundDescription: String,
-    _ makeOperator: (CustomPublisherBase<Int, Never>) -> Operator
+    _ makeOperator: (CustomPublisherBase<Output, Failure>) -> Operator
 ) throws where Operator.Output: Equatable {
-    let publisher = CustomPublisherBase<Int, Never>(subscription: nil)
+    let publisher = CustomPublisherBase<Output, Failure>(subscription: nil)
     let operatorPublisher = makeOperator(publisher)
     let tracking = TrackingSubscriberBase<Operator.Output, Operator.Failure>()
     operatorPublisher.subscribe(tracking)

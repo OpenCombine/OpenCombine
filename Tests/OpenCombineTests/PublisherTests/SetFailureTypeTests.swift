@@ -160,7 +160,9 @@ final class SetFailureTypeTests: XCTestCase {
     }
 
     func testSetFailureTypeReflection() throws {
-        try testReflection(description: "SetFailureType",
+        try testReflection(parentInput: Int.self,
+                           parentFailure: Never.self,
+                           description: "SetFailureType",
                            customMirror: { $0.children.isEmpty },
                            playgroundDescription: "SetFailureType",
                            { $0.setFailureType(to: Error.self) })

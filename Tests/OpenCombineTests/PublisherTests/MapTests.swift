@@ -317,14 +317,18 @@ final class MapTests: XCTestCase {
     }
 
     func testMapReflection() throws {
-        try testReflection(description: "Map",
+        try testReflection(parentInput: Int.self,
+                           parentFailure: Never.self,
+                           description: "Map",
                            customMirror: { $0.children.isEmpty },
                            playgroundDescription: "Map",
                            { $0.map { $0 * 2 } })
     }
 
     func testTryMapReflection() throws {
-        try testReflection(description: "TryMap",
+        try testReflection(parentInput: Int.self,
+                           parentFailure: Never.self,
+                           description: "TryMap",
                            customMirror: { $0.children.isEmpty },
                            playgroundDescription: "TryMap",
                            { $0.tryMap { $0 * 2 } })
