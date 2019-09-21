@@ -158,4 +158,11 @@ final class SetFailureTypeTests: XCTestCase {
                                               .requested(.unlimited),
                                               .cancelled])
     }
+
+    func testSetFailureTypeReflection() throws {
+        try testReflection(description: "SetFailureType",
+                           customMirror: { $0.children.isEmpty },
+                           playgroundDescription: "SetFailureType",
+                           { $0.setFailureType(to: Error.self) })
+    }
 }

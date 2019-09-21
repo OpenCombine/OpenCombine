@@ -31,8 +31,7 @@ extension Publishers {
         public func receive<Downstream: Subscriber>(subscriber: Downstream)
             where Downstream.Failure == Failure, Downstream.Input == Output
         {
-            let inner = Inner(downstream: subscriber)
-            upstream.subscribe(inner)
+            upstream.subscribe(Inner(downstream: subscriber))
         }
 
         public func setFailureType<NewFailure: Error>(
@@ -63,12 +62,20 @@ extension Publisher where Failure == Never {
 }
 
 extension Publishers.SetFailureType {
-    private final class Inner<Downstream: Subscriber>
-        : OperatorSubscription<Downstream>,
-          Subscriber,
-          CustomStringConvertible
-        where Upstream.Output == Downstream.Input
+    private struct Inner<Downstream: Subscriber>
+        : Subscriber,
+          CustomStringConvertible,
+          CustomReflectable,
+          CustomPlaygroundDisplayConvertible
+        where Upstream.Output == Downstream.Input, Failure == Downstream.Failure
     {
+        private let downstream: Downstream
+        let combineIdentifier = CombineIdentifier()
+
+        fileprivate init(downstream: Downstream) {
+            self.downstream = downstream
+        }
+
         func receive(subscription: Subscription) {
             downstream.receive(subscription: subscription)
         }
@@ -82,5 +89,11 @@ extension Publishers.SetFailureType {
         }
 
         var description: String { return "SetFailureType" }
+
+        var customMirror: Mirror {
+            return Mirror(self, children: EmptyCollection())
+        }
+
+        var playgroundDescription: Any { return description }
     }
 }
