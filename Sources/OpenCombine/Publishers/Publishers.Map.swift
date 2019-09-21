@@ -54,6 +54,12 @@ extension Publishers {
             self.upstream = upstream
             self.transform = transform
         }
+
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where Output == Downstream.Input, Downstream.Failure == Upstream.Failure
+        {
+            upstream.subscribe(Inner(downstream: subscriber, map: transform))
+        }
     }
 
     /// A publisher that transforms all elements from the upstream publisher
@@ -78,12 +84,6 @@ extension Publishers {
 }
 
 extension Publishers.Map {
-    public func receive<Downstream: Subscriber>(subscriber: Downstream)
-        where Output == Downstream.Input, Downstream.Failure == Upstream.Failure
-    {
-        let inner = Inner(downstream: subscriber, transform: catching(transform))
-        upstream.subscribe(inner)
-    }
 
     public func map<Result>(
         _ transform: @escaping (Output) -> Result
@@ -103,8 +103,7 @@ extension Publishers.TryMap {
     public func receive<Downstream: Subscriber>(subscriber: Downstream)
         where Output == Downstream.Input, Downstream.Failure == Error
     {
-        let inner = Inner(downstream: subscriber, transform: catching(transform))
-        upstream.subscribe(inner)
+        upstream.subscribe(Inner(downstream: subscriber, map: transform))
     }
 
     public func map<Result>(
@@ -120,49 +119,36 @@ extension Publishers.TryMap {
     }
 }
 
-private class _Map<Upstream: Publisher, Downstream: Subscriber>
-    : OperatorSubscription<Downstream>
-{
-    typealias Input = Upstream.Output
-    typealias Failure = Upstream.Failure
-    typealias Transform = (Input) -> Result<Downstream.Input, Downstream.Failure>
-
-    fileprivate var _transform: Transform?
-
-    var isCompleted: Bool {
-        return _transform == nil
-    }
-
-    init(downstream: Downstream, transform: @escaping Transform) {
-        _transform = transform
-        super.init(downstream: downstream)
-    }
-
-    func receive(_ input: Input) -> Subscribers.Demand {
-        switch _transform?(input) {
-        case .success(let output)?:
-            return downstream.receive(output)
-        case .failure(let error)?:
-            downstream.receive(completion: .failure(error))
-            _transform = nil
-            return .none
-        case nil:
-            return .none
-        }
-    }
-}
-
 extension Publishers.Map {
 
-    private final class Inner<Downstream: Subscriber>
-        : _Map<Upstream, Downstream>,
+    private struct Inner<Downstream: Subscriber>
+        : Subscriber,
           CustomStringConvertible,
-          Subscriber
-        where Downstream.Failure == Upstream.Failure
+          CustomReflectable,
+          CustomPlaygroundDisplayConvertible
+        where Downstream.Input == Output, Downstream.Failure == Upstream.Failure
     {
+        typealias Input = Upstream.Output
+
+        typealias Failure = Upstream.Failure
+
+        private let downstream: Downstream
+
+        private let map: (Input) -> Output
+
+        let combineIdentifier = CombineIdentifier()
+
+        fileprivate init(downstream: Downstream, map: @escaping (Input) -> Output) {
+            self.downstream = downstream
+            self.map = map
+        }
 
         func receive(subscription: Subscription) {
             downstream.receive(subscription: subscription)
+        }
+
+        func receive(_ input: Input) -> Subscribers.Demand {
+            return downstream.receive(map(input))
         }
 
         func receive(completion: Subscribers.Completion<Failure>) {
@@ -170,39 +156,111 @@ extension Publishers.Map {
         }
 
         var description: String { return "Map" }
+
+        var customMirror: Mirror {
+            return Mirror(self, children: EmptyCollection())
+        }
+
+        var playgroundDescription: Any { return description }
     }
 }
 
 extension Publishers.TryMap {
 
     private final class Inner<Downstream: Subscriber>
-        : _Map<Upstream, Downstream>,
+        : Subscriber,
           Subscription,
           CustomStringConvertible,
-          Subscriber
-        where Downstream.Failure == Error
+          CustomReflectable,
+          CustomPlaygroundDisplayConvertible
+        where Downstream.Input == Output, Downstream.Failure == Error
     {
+        // NOTE: This class has been audited for thread-safety
+
+        typealias Input = Upstream.Output
+
+        typealias Failure = Upstream.Failure
+
+        private let downstream: Downstream
+
+        private let map: (Input) throws -> Output
+
+        private var upstream: Subscription?
+
+        private let lock = Lock(recursive: false)
+
+        let combineIdentifier = CombineIdentifier()
+
+        fileprivate init(downstream: Downstream,
+                         map: @escaping (Input) throws -> Output) {
+            self.downstream = downstream
+            self.map = map
+        }
+
         func receive(subscription: Subscription) {
-            upstreamSubscription = subscription
+            lock.lock()
+            guard upstream == nil else {
+                lock.unlock()
+                subscription.cancel()
+                return
+            }
+            upstream = subscription
+            lock.unlock()
             downstream.receive(subscription: self)
         }
 
-        func receive(completion: Subscribers.Completion<Failure>) {
-            if !isCompleted {
-                _transform = nil
-                downstream.receive(completion: completion.eraseError())
+        func receive(_ input: Input) -> Subscribers.Demand {
+            do {
+                return try downstream.receive(map(input))
+            } catch {
+                lock.lock()
+                let subscription = upstream
+                upstream = nil
+                lock.unlock()
+                subscription?.cancel()
+                downstream.receive(completion: .failure(error))
+                return .none
             }
         }
 
-        func request(_ demand: Subscribers.Demand) {
-            upstreamSubscription?.request(demand)
+        func receive(completion: Subscribers.Completion<Failure>) {
+            lock.lock()
+            guard upstream != nil else {
+                lock.unlock()
+                return
+            }
+            upstream = nil
+            lock.unlock()
+            downstream.receive(completion: completion.eraseError())
         }
 
-        override func cancel() {
-            _transform = nil
-            super.cancel()
+        func request(_ demand: Subscribers.Demand) {
+            lock.lock()
+            guard let subscription = upstream else {
+                lock.unlock()
+                return
+            }
+            lock.unlock()
+            subscription.request(demand)
+        }
+
+        func cancel() {
+            lock.lock()
+            guard let subscription = upstream else {
+                lock.unlock()
+                return
+            }
+            upstream = nil
+            lock.unlock()
+            subscription.cancel()
         }
 
         var description: String { return "TryMap" }
+
+        var customMirror: Mirror {
+            return Mirror(self, children: EmptyCollection())
+        }
+
+        var playgroundDescription: Any { return description }
     }
 }

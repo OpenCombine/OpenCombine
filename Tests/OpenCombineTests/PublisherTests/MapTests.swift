@@ -52,11 +52,12 @@ final class MapTests: XCTestCase {
     func testTryMapFailureBecauseOfThrow() {
         var counter = 0 // How many times the transform is called?
 
-        let publisher = PassthroughSubject<Int, Error>()
+        let subscription = CustomSubscription()
+        let publisher = CustomPublisherBase<Int, Error>(subscription: subscription)
         let map = publisher.tryMap { value -> Int in
             counter += 1
             if value == 100 {
-                throw "too much" as TestingError
+                throw TestingError.oops
             }
             return value * 2
         }
@@ -64,21 +65,28 @@ final class MapTests: XCTestCase {
             receiveSubscription: { $0.request(.unlimited) }
         )
 
-        publisher.send(1)
+        XCTAssertEqual(publisher.send(1), .none)
         map.subscribe(tracking)
-        publisher.send(2)
-        publisher.send(3)
-        publisher.send(100)
-        publisher.send(9)
+        XCTAssertEqual(publisher.send(2), .none)
+        XCTAssertEqual(publisher.send(3), .none)
+        XCTAssertEqual(publisher.send(100), .none)
+        XCTAssertEqual(publisher.send(9), .none)
+        XCTAssertEqual(publisher.send(100), .none)
         publisher.send(completion: .finished)
+        XCTAssertEqual(publisher.send(100), .none)
 
         XCTAssertEqual(tracking.history,
                        [.subscription("TryMap"),
                         .value(4),
                         .value(6),
-                        .completion(.failure("too much" as TestingError))])
+                        .completion(.failure(TestingError.oops)),
+                        .value(18),
+                        .completion(.failure(TestingError.oops)),
+                        .completion(.failure(TestingError.oops))])
 
-        XCTAssertEqual(counter, 3)
+        XCTAssertEqual(subscription.history, [.requested(.unlimited), .cancelled])
+
+        XCTAssertEqual(counter, 6)
     }
 
     func testTryMapFailureOnCompletion() {
@@ -218,7 +226,7 @@ final class MapTests: XCTestCase {
     }
 
     func testTryMapCancel() throws {
-        // Given
+
         let subscription = CustomSubscription()
         let publisher = CustomPublisher(subscription: subscription)
         let map = publisher.tryMap { $0 * 2 }
@@ -227,16 +235,17 @@ final class MapTests: XCTestCase {
             $0.request(.unlimited)
             downstreamSubscription = $0
         })
-        // When
+
         map.subscribe(tracking)
         try XCTUnwrap(downstreamSubscription).cancel()
         XCTAssertEqual(publisher.send(1), .none)
         publisher.send(completion: .finished)
-        // Then
+
         XCTAssertEqual(subscription.history, [.requested(.unlimited), .cancelled])
+        XCTAssertEqual(tracking.history, [.subscription("TryMap"), .value(2)])
     }
 
-    func testCancelAlreadyCancelled() throws {
+    func testMapCancelAlreadyCancelled() throws {
         // Given
         let subscription = CustomSubscription()
         let publisher = CustomPublisher(subscription: subscription)
@@ -256,6 +265,70 @@ final class MapTests: XCTestCase {
                                               .cancelled,
                                               .requested(.unlimited),
                                               .cancelled])
+    }
+
+    func testTryMapCancelAlreadyCancelled() throws {
+        let subscription = CustomSubscription()
+        let publisher = CustomPublisher(subscription: subscription)
+        let map = publisher.tryMap { $0 * 2 }
+        let tracking = TrackingSubscriberBase<Int, Error>()
+        map.subscribe(tracking)
+
+        let downstreamSubscription =
+            try XCTUnwrap(tracking.subscriptions.first?.underlying)
+
+        downstreamSubscription.cancel()
+        downstreamSubscription.request(.unlimited)
+        downstreamSubscription.cancel()
+
+        XCTAssertEqual(subscription.history, [.cancelled])
+    }
+
+    func testTryMapReceiveSubscriptionTwice() throws {
+
+        let firstSubscription = CustomSubscription()
+        let publisher = CustomPublisher(subscription: firstSubscription)
+        let map = publisher.tryMap { _ -> Int in throw TestingError.oops }
+        let tracking = TrackingSubscriberBase<Int, Error>()
+        map.subscribe(tracking)
+
+        XCTAssertEqual(firstSubscription.history, [])
+        XCTAssertEqual(tracking.history, [.subscription("TryMap")])
+
+        let secondSubscription = CustomSubscription()
+        try XCTUnwrap(publisher.subscriber).receive(subscription: secondSubscription)
+
+        XCTAssertEqual(firstSubscription.history, [])
+        XCTAssertEqual(secondSubscription.history, [.cancelled])
+        XCTAssertEqual(tracking.history, [.subscription("TryMap")])
+
+        XCTAssertEqual(publisher.send(0), .none) // Throws an error
+
+        XCTAssertEqual(firstSubscription.history, [.cancelled])
+        XCTAssertEqual(secondSubscription.history, [.cancelled])
+        XCTAssertEqual(tracking.history, [.subscription("TryMap"),
+                                          .completion(.failure(TestingError.oops))])
+        try XCTUnwrap(publisher.subscriber).receive(subscription: secondSubscription)
+
+        XCTAssertEqual(firstSubscription.history, [.cancelled])
+        XCTAssertEqual(secondSubscription.history, [.cancelled])
+        XCTAssertEqual(tracking.history, [.subscription("TryMap"),
+                                          .completion(.failure(TestingError.oops)),
+                                          .subscription("TryMap")])
+    }
+
+    func testMapReflection() throws {
+        try testReflection(description: "Map",
+                           customMirror: { $0.children.isEmpty },
+                           playgroundDescription: "Map",
+                           { $0.map { $0 * 2 } })
+    }
+
+    func testTryMapReflection() throws {
+        try testReflection(description: "TryMap",
+                           customMirror: { $0.children.isEmpty },
+                           playgroundDescription: "TryMap",
+                           { $0.tryMap { $0 * 2 } })
     }
 
     func testLifecycle() throws {
