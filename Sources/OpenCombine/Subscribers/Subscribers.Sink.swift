@@ -15,13 +15,16 @@ extension Subscribers {
           CustomReflectable,
           CustomPlaygroundDisplayConvertible
     {
+        // NOTE: this class has been audited for thread safety.
+        // Combine doesn't use any locking here.
+
         /// The closure to execute on receipt of a value.
         public let receiveValue: (Input) -> Void
 
         /// The closure to execute on completion.
         public let receiveCompletion: (Subscribers.Completion<Failure>) -> Void
 
-        private var _upstreamSubscription: Subscription?
+        private var status = SubscriptionStatus.awaitingSubscription
 
         public var description: String { return "Sink" }
 
@@ -45,11 +48,12 @@ extension Subscribers {
         }
 
         public func receive(subscription: Subscription) {
-            if _upstreamSubscription == nil {
-                _upstreamSubscription = subscription
-                subscription.request(.unlimited)
-            } else {
+            switch status {
+            case .subscribed:
                 subscription.cancel()
+            case .awaitingSubscription, .terminal:
+                status = .subscribed(subscription)
+                subscription.request(.unlimited)
             }
         }
 
@@ -60,11 +64,15 @@ extension Subscribers {
 
         public func receive(completion: Subscribers.Completion<Failure>) {
             receiveCompletion(completion)
+            status = .terminal
         }
 
         public func cancel() {
-            _upstreamSubscription?.cancel()
-            _upstreamSubscription = nil
+            guard case let .subscribed(subscription) = status else {
+                return
+            }
+            subscription.cancel()
+            status = .terminal
         }
     }
 }

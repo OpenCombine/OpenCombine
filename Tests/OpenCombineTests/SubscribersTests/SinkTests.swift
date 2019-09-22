@@ -50,6 +50,19 @@ final class SinkTests: XCTestCase {
         subscription1.cancelled = false
         sink.receive(completion: .finished)
         XCTAssertFalse(subscription1.cancelled)
+
+        let subscription3 = CustomSubscription()
+        sink.receive(subscription: subscription3)
+        XCTAssertEqual(subscription3.lastRequested, .unlimited)
+        XCTAssertFalse(subscription3.cancelled)
+
+        sink.cancel()
+        XCTAssertTrue(subscription3.cancelled)
+
+        let subscription4 = CustomSubscription()
+        sink.receive(subscription: subscription4)
+        XCTAssertEqual(subscription4.lastRequested, .unlimited)
+        XCTAssertFalse(subscription4.cancelled)
     }
 
     func testReceiveValue() {
