@@ -179,6 +179,15 @@ final class MapErrorTests: XCTestCase {
                                               .cancelled])
     }
 
+    func testMapErrorReflection() throws {
+        try testReflection(parentInput: Int.self,
+                           parentFailure: Error.self,
+                           description: "MapError",
+                           customMirror: { $0.children.isEmpty },
+                           playgroundDescription: "MapError",
+                           { $0.mapError { $0 } })
+    }
+
     func testLifecycle() throws {
 
         var deinitCounter = 0

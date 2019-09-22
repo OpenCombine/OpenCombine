@@ -36,7 +36,7 @@ extension Publishers {
             where Failure == Downstream.Failure,
                   Upstream.Output == Downstream.Input
         {
-            upstream.subscribe(Inner(downstream: subscriber, transform: transform))
+            upstream.subscribe(Inner(downstream: subscriber, map: transform))
         }
     }
 }
@@ -62,28 +62,34 @@ extension Publisher {
 
 extension Publishers.MapError {
 
-    private final class Inner<Downstream: Subscriber>
-        : OperatorSubscription<Downstream>,
-          Subscriber,
-          CustomStringConvertible
+    private struct Inner<Downstream: Subscriber>
+        : Subscriber,
+          CustomStringConvertible,
+          CustomReflectable,
+          CustomPlaygroundDisplayConvertible
         where Upstream.Output == Downstream.Input
     {
         typealias Input = Upstream.Output
         typealias Failure = Upstream.Failure
-        typealias Output = Downstream.Input
 
-        private let _transform: (Upstream.Failure) -> Downstream.Failure
+        private let downstream: Downstream
+        private let map: (Upstream.Failure) -> Downstream.Failure
+
+        let combineIdentifier = CombineIdentifier()
 
         var description: String { return "MapError" }
 
+        var customMirror: Mirror { return Mirror(self, children: EmptyCollection()) }
+
+        var playgroundDescription: Any { return description }
+
         init(downstream: Downstream,
-             transform: @escaping (Upstream.Failure) -> Downstream.Failure) {
-            self._transform = transform
-            super.init(downstream: downstream)
+             map: @escaping (Upstream.Failure) -> Downstream.Failure) {
+            self.downstream = downstream
+            self.map = map
         }
 
         func receive(subscription: Subscription) {
-            upstreamSubscription = subscription
             downstream.receive(subscription: subscription)
         }
 
@@ -96,7 +102,7 @@ extension Publishers.MapError {
             case .finished:
                 downstream.receive(completion: .finished)
             case .failure(let error):
-                downstream.receive(completion: .failure(_transform(error)))
+                downstream.receive(completion: .failure(map(error)))
             }
         }
     }
