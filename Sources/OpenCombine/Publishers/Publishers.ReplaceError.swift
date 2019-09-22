@@ -50,14 +50,9 @@ extension Publishers {
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
         public func receive<Downstream: Subscriber>(subscriber: Downstream)
-            where Upstream.Output == Downstream.Input,
-                  Downstream.Failure == Failure
+            where Upstream.Output == Downstream.Input, Downstream.Failure == Failure
         {
-            let replaceErrorSubscriber = _ReplaceError<Upstream, Downstream>(
-                downstream: subscriber,
-                output: output
-            )
-            upstream.subscribe(replaceErrorSubscriber)
+            upstream.subscribe(Inner(downstream: subscriber, output: output))
         }
     }
 }
@@ -66,71 +61,119 @@ extension Publishers.ReplaceError: Equatable
     where Upstream: Equatable, Upstream.Output: Equatable
 {}
 
-private final class _ReplaceError<Upstream: Publisher, Downstream: Subscriber>
-    : OperatorSubscription<Downstream>,
-      Subscriber,
-      CustomStringConvertible,
-      Subscription
-    where Upstream.Output == Downstream.Input
-{
-    typealias Input = Upstream.Output
-    typealias Failure = Upstream.Failure
+extension Publishers.ReplaceError {
 
-    var downstreamDemandCounter: Subscribers.Demand = .none
-    var hasFailed: Bool = false
-    var description: String { return "ReplaceError" }
+    private final class Inner<Downstream: Subscriber>
+        : Subscriber,
+          Subscription,
+          CustomStringConvertible,
+          CustomReflectable,
+          CustomPlaygroundDisplayConvertible
+        where Upstream.Output == Downstream.Input
+    {
+        // NOTE: this class has been audited for thread safety.
 
-    private let output: Downstream.Input
+        typealias Input = Upstream.Output
+        typealias Failure = Upstream.Failure
 
-    init(downstream: Downstream,
-         output: Downstream.Input) {
-        self.output = output
-        super.init(downstream: downstream)
-    }
+        private let output: Upstream.Output
+        private let downstream: Downstream
+        private var status = SubscriptionStatus.awaitingSubscription
+        private var terminated = false
+        private var pendingDemand = Subscribers.Demand.none
+        private var lock = Lock(recursive: false)
 
-    func request(_ demand: Subscribers.Demand) {
-        if hasFailed {
-            _ = downstream.receive(output)
-            downstream?.receive(completion: .finished)
-        } else {
-            downstreamDemandCounter += demand
-            upstreamSubscription?.request(demand)
+        fileprivate init(downstream: Downstream, output: Upstream.Output) {
+            self.downstream = downstream
+            self.output = output
         }
-    }
 
-    func receive(subscription: Subscription) {
-        upstreamSubscription = subscription
-        downstream.receive(subscription: self)
-    }
+        func receive(subscription: Subscription) {
+            lock.lock()
+            guard case .awaitingSubscription = status else {
+                lock.unlock()
+                subscription.cancel()
+                return
+            }
+            status = .subscribed(subscription)
+            lock.unlock()
+            downstream.receive(subscription: self)
+        }
 
-    func receive(_ input: Upstream.Output) -> Subscribers.Demand {
-        downstreamDemandCounter -= 1
+        func receive(_ input: Upstream.Output) -> Subscribers.Demand {
+            lock.lock()
+            guard case .subscribed = status else {
+                lock.unlock()
+                return .none
+            }
+            pendingDemand -= 1
+            lock.unlock()
+            let demand = downstream.receive(input)
+            guard demand > 0 else {
+                return .none
+            }
+            lock.lock()
+            pendingDemand += demand
+            lock.unlock()
+            return demand
+        }
 
-        let demand = downstream.receive(input)
-        downstreamDemandCounter += demand
-
-        return demand
-    }
-
-    func receive(completion: Subscribers.Completion<Upstream.Failure>) {
-        switch completion {
-        case .finished:
-            downstream.receive(completion: .finished)
-        case .failure:
-            hasFailed = true
-
-            // If there was no demand from downstream,
-            // ReplaceError does not forward the value that
-            // replaces the error until it is requested.
-            if downstreamDemandCounter > 0 {
+        func receive(completion: Subscribers.Completion<Upstream.Failure>) {
+            switch completion {
+            case .finished:
+                downstream.receive(completion: .finished)
+            case .failure:
+                lock.lock()
+                // If there was no demand from downstream,
+                // ReplaceError does not forward the value that
+                // replaces the error until it is requested.
+                guard pendingDemand > 0 else {
+                    terminated = true
+                    lock.unlock()
+                    return
+                }
+                lock.unlock()
                 _ = downstream.receive(output)
-                downstream?.receive(completion: .finished)
+                downstream.receive(completion: .finished)
             }
         }
-    }
 
-    override func cancel() {
-        upstreamSubscription?.cancel()
-        upstreamSubscription = nil
+        func request(_ demand: Subscribers.Demand) {
+            demand.assertNonZero()
+            lock.lock()
+            if terminated {
+                status = .terminal
+                lock.unlock()
+                _ = downstream.receive(output)
+                downstream.receive(completion: .finished)
+                return
+            }
+            pendingDemand += demand
+            guard case let .subscribed(subscription) = status else {
+                lock.unlock()
+                return
+            }
+            lock.unlock()
+            subscription.request(demand)
+        }
+
+        func cancel() {
+            lock.lock()
+            guard case let .subscribed(subscription) = status else {
+                lock.unlock()
+                return
+            }
+            status = .terminal
+            lock.unlock()
+            subscription.cancel()
+        }
+
+        var description: String { return "ReplaceError" }
+
+        var customMirror: Mirror {
+            return Mirror(self, children: EmptyCollection())
+        }
+
+        var playgroundDescription: Any { return description }
     }
 }

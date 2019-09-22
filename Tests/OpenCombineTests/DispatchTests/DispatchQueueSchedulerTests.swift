@@ -354,9 +354,9 @@ final class DispatchQueueSchedulerTests: XCTestCase {
             .dispatchTime
             .uptimeNanoseconds
         XCTAssertLessThan(abs(actualNowMainScheduler.distance(to: expectedNow)),
-                          500_000/*nanoseconds*/)
+                          1_000_000/*nanoseconds*/)
         XCTAssertLessThan(abs(actualNowBackgroundScheduler.distance(to: expectedNow)),
-                          500_000/*nanoseconds*/)
+                          1_000_000/*nanoseconds*/)
     }
 
     func testDefaultSchedulerOptions() {

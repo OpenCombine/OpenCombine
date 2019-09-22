@@ -81,6 +81,11 @@ final class ReplaceErrorTests: XCTestCase {
         XCTAssertEqual(helper.tracking.history, [.subscription("ReplaceError"),
                                                  .value(42),
                                                  .completion(.finished)])
+
+        XCTAssertEqual(helper.publisher.send(-1), .none)
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReplaceError"),
+                                                 .value(42),
+                                                 .completion(.finished)])
     }
 
     func testLifecycle() throws {
@@ -154,8 +159,7 @@ final class ReplaceErrorTests: XCTestCase {
         helper.downstreamSubscription?.request(.unlimited)
         try XCTUnwrap(helper.downstreamSubscription).cancel()
 
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
-                                              .cancelled])
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited), .cancelled])
     }
 
     func testErrorWhileDownstreamDemandIsZero() {
@@ -165,7 +169,7 @@ final class ReplaceErrorTests: XCTestCase {
                                         createSut: { $0.replaceError(with: 42) })
 
         // Send demanded value
-        _ = helper.publisher.send(9)
+        XCTAssertEqual(helper.publisher.send(9), .none)
         XCTAssertEqual(helper.tracking.history, [.subscription("ReplaceError"),
                                                  .value(9)])
 
@@ -179,12 +183,71 @@ final class ReplaceErrorTests: XCTestCase {
                                                  .value(42),
                                                  .completion(.finished)])
     }
-}
 
-private struct OtherError: Error {
-    let original: Error
+    func testCrashOnReceiveValueWithZeroPendingDemand() {
+        let publisher = CustomPublisher(subscription: CustomSubscription())
+        let replaceError = publisher.replaceError(with: 0)
+        let tracking = TrackingSubscriberBase<Int, Never>()
+        replaceError.subscribe(tracking)
 
-    init(_ original: Error) {
-        self.original = original
+        assertCrashes {
+            XCTAssertEqual(publisher.send(1), .none)
+        }
+    }
+
+    func testReplaceErrorReflection() throws {
+        try testReflection(parentInput: Int.self,
+                           parentFailure: Error.self,
+                           description: "ReplaceError",
+                           customMirror: { $0.children.isEmpty },
+                           playgroundDescription: "ReplaceError",
+                           { $0.replaceError(with: 0) })
+    }
+
+    func testReceiveSubscriptionTwice() {
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        initialDemand: .max(1),
+                                        receiveValueDemand: .none,
+                                        createSut: { $0.replaceError(with: 42) })
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(1))])
+
+        let anotherSubscription = CustomSubscription()
+        helper.publisher.subscriber?.receive(subscription: anotherSubscription)
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(1))])
+        XCTAssertEqual(anotherSubscription.history, [.cancelled])
+
+        helper.downstreamSubscription?.cancel()
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(1)), .cancelled])
+
+        helper.publisher.subscriber?.receive(subscription: anotherSubscription)
+
+        XCTAssertEqual(anotherSubscription.history, [.cancelled, .cancelled])
+    }
+
+    func testReceiveCompletionTwice() {
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        initialDemand: .max(1),
+                                        receiveValueDemand: .none,
+                                        createSut: { $0.replaceError(with: 42) })
+
+        helper.publisher.send(completion: .finished)
+        helper.publisher.send(completion: .finished)
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReplaceError"),
+                                                 .completion(.finished),
+                                                 .completion(.finished)])
+
+        helper.publisher.send(completion: .failure(.oops))
+        helper.publisher.send(completion: .failure(.oops))
+        XCTAssertEqual(helper.publisher.send(-1), .none)
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReplaceError"),
+                                                 .completion(.finished),
+                                                 .completion(.finished),
+                                                 .value(42),
+                                                 .completion(.finished),
+                                                 .value(42),
+                                                 .completion(.finished),
+                                                 .value(-1)])
     }
 }
