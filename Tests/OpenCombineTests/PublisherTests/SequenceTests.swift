@@ -167,7 +167,7 @@ final class SequenceTests: XCTestCase {
     }
 
     func testPublishesCorrectValues() {
-        let sequence: Publishers.Sequence = (1...5).publisher
+        let sequence = makePublisher(1...5)
 
         var history = [Int]()
         _ = sequence.sink {
@@ -175,6 +175,44 @@ final class SequenceTests: XCTestCase {
         }
 
         XCTAssertEqual(history, [1, 2, 3, 4, 5])
+    }
+
+    func testRecursion() {
+        let sequence = makePublisher(1...5)
+
+        var history = [Int]()
+        var storedSubscription: Subscription?
+
+        let tracking = TrackingSubscriberBase<Int, Never>(
+            receiveSubscription: { subscription in
+                storedSubscription = subscription
+                subscription.request(.none) // Shouldn't crash
+                subscription.request(.max(1))
+            },
+            receiveValue: { value in
+                storedSubscription?.request(.max(1))
+                history.append(value)
+                return .none
+            }
+        )
+
+        sequence.subscribe(tracking)
+
+        XCTAssertEqual(history, [1, 2, 3, 4, 5])
+    }
+
+    func testReflection() throws {
+
+        func testCustomMirror(_ mirror: Mirror) -> Bool {
+            return mirror.children.count == 1 &&
+                mirror.children.first!.label == "sequence" &&
+                (mirror.children.first!.value as! ClosedRange<Int>) == 1...5
+        }
+
+        try testSubscriptionReflection(description: "1...5",
+                                       customMirror: testCustomMirror,
+                                       playgroundDescription: "1...5",
+                                       sut: makePublisher(1...5))
     }
 
     func testLifecycle() throws {
