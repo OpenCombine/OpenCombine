@@ -13,21 +13,24 @@ extension Subscribers {
                                             CustomReflectable,
                                             CustomPlaygroundDisplayConvertible
     {
+        // NOTE: this class has been audited for thread safety.
+        // Combine doesn't use any locking here.
+
         public typealias Failure = Never
 
         public private(set) var object: Root?
 
         public let keyPath: ReferenceWritableKeyPath<Root, Input>
 
-        private var _upstreamSubscription: Subscription?
+        private var status = SubscriptionStatus.awaitingSubscription
 
         public var description: String { return "Assign \(Root.self)." }
 
         public var customMirror: Mirror {
-            let children: [(label: String?, value: Any)] = [
-                (label: "object", value: object as Any),
-                (label: "keyPath", value: keyPath),
-                (label: "status", value: _upstreamSubscription as Any)
+            let children: [Mirror.Child] = [
+                ("object", object as Any),
+                ("keyPath", keyPath),
+                ("status", status as Any)
             ]
             return Mirror(self, children: children)
         }
@@ -40,17 +43,21 @@ extension Subscribers {
         }
 
         public func receive(subscription: Subscription) {
-            if _upstreamSubscription == nil {
-                _upstreamSubscription = subscription
-                subscription.request(.unlimited)
-            } else {
+            switch status {
+            case .subscribed:
                 subscription.cancel()
+            case .awaitingSubscription, .terminal:
+                status = .subscribed(subscription)
+                subscription.request(.unlimited)
             }
         }
 
         public func receive(_ value: Input) -> Subscribers.Demand {
-            if _upstreamSubscription != nil {
+            switch status {
+            case .subscribed:
                 object?[keyPath: keyPath] = value
+            case .awaitingSubscription, .terminal:
+                break
             }
             return .none
         }
@@ -60,8 +67,11 @@ extension Subscribers {
         }
 
         public func cancel() {
-            _upstreamSubscription?.cancel()
-            _upstreamSubscription = nil
+            guard case let .subscribed(subscription) = status else {
+                return
+            }
+            subscription.cancel()
+            status = .terminal
             object = nil
         }
     }
