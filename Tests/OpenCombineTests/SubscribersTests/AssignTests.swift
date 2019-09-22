@@ -75,6 +75,19 @@ final class AssignTests: XCTestCase {
         subscription1.cancelled = false
         assign.receive(completion: .finished)
         XCTAssertTrue(subscription1.cancelled)
+
+        let subscription3 = CustomSubscription()
+        assign.receive(subscription: subscription3)
+        XCTAssertEqual(subscription3.lastRequested, .unlimited)
+        XCTAssertFalse(subscription3.cancelled)
+
+        assign.cancel()
+        XCTAssertTrue(subscription3.cancelled)
+
+        let subscription4 = CustomSubscription()
+        assign.receive(subscription: subscription4)
+        XCTAssertEqual(subscription4.lastRequested, .unlimited)
+        XCTAssertFalse(subscription4.cancelled)
     }
 
     func testReceiveValue() {
