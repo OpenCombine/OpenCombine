@@ -93,9 +93,9 @@ private class PThreadMutexLock
                      "pthread_mutex_lock returned non-zero status: \(status)")
     }
 
-    final var description: String { return String(describing: mutex) }
+    final var description: String { return String(describing: mutex.pointee) }
 
-    final var customMirror: Mirror { return Mirror(reflecting: mutex) }
+    final var customMirror: Mirror { return Mirror(reflecting: mutex.pointee) }
 
     final var playgroundDescription: Any { return description }
 

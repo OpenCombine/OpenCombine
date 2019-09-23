@@ -12,8 +12,8 @@ let package = Package(
         .package(url: "https://github.com/broadwaylamb/GottaGoFast.git", from: "0.1.0")
     ],
     targets: [
-        .target(name: "OpenCombineAtomics"),
-        .target(name: "OpenCombine", dependencies: ["OpenCombineAtomics"]),
+        .target(name: "COpenCombineAtomics"),
+        .target(name: "OpenCombine", dependencies: ["COpenCombineAtomics"]),
         .target(name: "OpenCombineDispatch", dependencies: ["OpenCombine"]),
         .testTarget(name: "OpenCombineTests",
                     dependencies: ["OpenCombine",
