@@ -45,7 +45,7 @@ extension Publishers {
         /// The publisher from which this publisher receives elements.
         public final let upstream: Upstream
 
-        private let lock = Lock(recursive: false)
+        private let lock = unfairLock()
 
         private var state = State.disconnected
 
@@ -73,7 +73,7 @@ extension Publishers {
             }
         }
 
-        fileprivate func cancelled() {
+        fileprivate func willCancel() {
             lock.lock()
             switch state {
             case let .connected(refcount, connection):
@@ -105,7 +105,7 @@ extension Publishers.Autoconnect {
 
         typealias Failure = Upstream.Failure
 
-        fileprivate let combineIdentifier: CombineIdentifier
+        fileprivate let combineIdentifier = CombineIdentifier()
 
         private let parent: Publishers.Autoconnect<Upstream>
 
@@ -113,14 +113,13 @@ extension Publishers.Autoconnect {
 
         fileprivate init(parent: Publishers.Autoconnect<Upstream>,
                          downstream: Downstream) {
-            combineIdentifier = .init()
             self.parent = parent
             self.downstream = downstream
         }
 
         fileprivate func receive(subscription: Subscription) {
-            let sideEffectSubscription =
-                SideEffectSubscription(subscription, onCancel: parent.cancelled)
+            let sideEffectSubscription = SideEffectSubscription(subscription,
+                                                                parent: parent)
             downstream.receive(subscription: sideEffectSubscription)
         }
 
@@ -150,13 +149,13 @@ extension Publishers.Autoconnect {
           CustomStringConvertible,
           CustomPlaygroundDisplayConvertible
     {
-        private let onCancel: () -> Void
+        private let parent: Publishers.Autoconnect<Upstream>
 
         private let upstreamSubscription: Subscription
 
         fileprivate init(_ upstreamSubscription: Subscription,
-                         onCancel: @escaping () -> Void) {
-            self.onCancel = onCancel
+                         parent: Publishers.Autoconnect<Upstream>) {
+            self.parent = parent
             self.upstreamSubscription = upstreamSubscription
         }
 
@@ -165,7 +164,7 @@ extension Publishers.Autoconnect {
         }
 
         fileprivate func cancel() {
-            onCancel()
+            parent.willCancel()
             upstreamSubscription.cancel()
         }
 
