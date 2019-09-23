@@ -34,6 +34,9 @@ class PerformanceTestCase: GottaGoFast.PerformanceTestCase {
                                    block)
 #endif
     }
+
+    @inline(never)
+    func blackHole<T>(_: T) {}
 }
 
 extension XCTestCase {

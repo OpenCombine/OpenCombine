@@ -41,7 +41,7 @@ extension Publishers {
 
         public let createSubject: () -> SubjectType
 
-        private let lock = Lock(recursive: false)
+        private let lock = unfairLock()
 
         private var subject: SubjectType?
 
@@ -100,7 +100,7 @@ extension Publishers.Multicast {
             case terminal
         }
 
-        private let lock = Lock(recursive: false)
+        private let lock = unfairLock()
 
         private var state: State
 
