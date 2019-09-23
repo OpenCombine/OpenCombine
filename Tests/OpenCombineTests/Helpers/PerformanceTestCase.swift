@@ -36,7 +36,7 @@ class PerformanceTestCase: GottaGoFast.PerformanceTestCase {
     }
 
     @inline(never)
-    func blackHole<T>(_: T) {}
+    func blackHole<Value>(_: Value) {}
 }
 
 extension XCTestCase {
