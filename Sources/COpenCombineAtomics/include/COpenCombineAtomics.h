@@ -1,11 +1,13 @@
 //
-//  OpenCombineAtomics.h
+//  COpenCombineAtomics.h
 //  
 //
 //  Created by Sergej Jaskiewicz on 23/09/2019.
 //
 
-#include <stdbool.h>
+#ifndef COPENCOMBINEATOMICS_H
+#define COPENCOMBINEATOMICS_H
+
 #include <stdint.h>
 
 #define OPENCOMBINE_ATOMIC_DECLARATION(type)                                             \
@@ -22,3 +24,5 @@
                                     type value);
 
 OPENCOMBINE_ATOMIC_DECLARATION(uintptr_t)
+
+#endif /* COPENCOMBINEATOMICS_H */
