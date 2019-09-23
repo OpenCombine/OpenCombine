@@ -5,7 +5,7 @@
 //  Created by Sergej Jaskiewicz on 10.06.2019.
 //
 
-import OpenCombineAtomics
+import COpenCombineAtomics
 
 public struct CombineIdentifier: Hashable, CustomStringConvertible {
 

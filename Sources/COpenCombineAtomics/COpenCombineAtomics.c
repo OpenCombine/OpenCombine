@@ -5,7 +5,7 @@
 //  Created by Sergej Jaskiewicz on 23/09/2019.
 //
 
-#include "OpenCombineAtomics.h"
+#include "COpenCombineAtomics.h"
 
 #include <stdatomic.h>
 #include <stdlib.h>
