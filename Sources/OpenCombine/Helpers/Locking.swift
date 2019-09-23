@@ -57,14 +57,14 @@ private class PThreadMutexLock
     private let mutex = UnsafeMutablePointer<pthread_mutex_t>.allocate(capacity: 1)
 
     init() {
-        var status: Int32
+        var status: CInt
         var attributes = pthread_mutexattr_t()
         status = pthread_mutexattr_init(&attributes)
         precondition(status == 0,
                      "pthread_mutexattr_init returned non-zero status: \(status)")
 
         // Enable error detection
-        status = pthread_mutexattr_settype(&attributes, Int32(PTHREAD_MUTEX_ERRORCHECK))
+        status = pthread_mutexattr_settype(&attributes, CInt(PTHREAD_MUTEX_ERRORCHECK))
         precondition(status == 0,
                      "pthread_mutexattr_settype returned non-zero status: \(status)")
 
@@ -111,7 +111,7 @@ private final class PThreadMutexRecursiveLock: PThreadMutexLock, UnfairRecursive
     override func setAdditionalAttributes(
         _ attributes: UnsafeMutablePointer<pthread_mutexattr_t>
     ) {
-        let status = pthread_mutexattr_settype(attributes, Int32(PTHREAD_MUTEX_RECURSIVE))
+        let status = pthread_mutexattr_settype(attributes, CInt(PTHREAD_MUTEX_RECURSIVE))
         precondition(status == 0,
                      "pthread_mutexattr_settype returned non-zero status: \(status)")
     }
