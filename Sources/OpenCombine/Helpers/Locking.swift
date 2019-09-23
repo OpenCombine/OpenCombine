@@ -54,7 +54,7 @@ private class PThreadMutexLock
       CustomReflectable,
       CustomPlaygroundDisplayConvertible
 {
-    private var mutex = pthread_mutex_t()
+    private let mutex = UnsafeMutablePointer<pthread_mutex_t>.allocate(capacity: 1)
 
     init() {
         var status: Int32
@@ -70,7 +70,7 @@ private class PThreadMutexLock
 
         setAdditionalAttributes(&attributes)
 
-        status = pthread_mutex_init(&mutex, &attributes)
+        status = pthread_mutex_init(mutex, &attributes)
         precondition(status == 0,
                      "pthread_mutex_init returned non-zero status: \(status)")
     }
@@ -82,13 +82,13 @@ private class PThreadMutexLock
     }
 
     final func lock() {
-        let status = pthread_mutex_lock(&mutex)
+        let status = pthread_mutex_lock(mutex)
         precondition(status == 0,
                      "pthread_mutex_lock returned non-zero status: \(status)")
     }
 
     final func unlock() {
-        let status = pthread_mutex_unlock(&mutex)
+        let status = pthread_mutex_unlock(mutex)
         precondition(status == 0,
                      "pthread_mutex_lock returned non-zero status: \(status)")
     }
@@ -100,9 +100,10 @@ private class PThreadMutexLock
     final var playgroundDescription: Any { return description }
 
     deinit {
-        let status = pthread_mutex_destroy(&mutex)
+        let status = pthread_mutex_destroy(mutex)
         precondition(status == 0,
                      "pthread_mutex_destroy returned non-zero status: \(status)")
+        mutex.deallocate()
     }
 }
 
