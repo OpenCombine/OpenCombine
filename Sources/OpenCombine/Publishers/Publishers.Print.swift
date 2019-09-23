@@ -88,7 +88,7 @@ extension Publishers.Print {
         private let prefix: String
         private var stream: PrintTarget?
         private var subscription: Subscription?
-        private let lock = Lock(recursive: false)
+        private let lock = unfairLock()
 
         init(downstream: Downstream, prefix: String, stream: TextOutputStream?) {
             self.downstream = downstream

@@ -62,7 +62,7 @@ extension Publishers.Sequence {
         private var next: Element?
         private var pendingDemand = Subscribers.Demand.none
         private var recursion = false
-        private var lock = Lock(recursive: false)
+        private var lock = unfairLock()
 
         fileprivate init(downstream: Downstream, sequence: Elements) {
             self.sequence = sequence

@@ -44,9 +44,9 @@ final class CombineIdentifierTests: PerformanceTestCase {
     }
 
     func testDefaultInitializedPerformance() throws {
-        try benchmark(allowFailure: isDebug, executionCount: 100) {
+        try benchmark(allowFailure: isDebug, executionCount: 500) {
             for _ in 0..<2000 {
-                _ = CombineIdentifier()
+                blackHole(CombineIdentifier())
             }
         }
     }

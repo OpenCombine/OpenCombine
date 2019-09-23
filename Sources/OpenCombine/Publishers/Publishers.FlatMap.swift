@@ -91,7 +91,7 @@ extension Publishers.FlatMap {
             pausedChild: ChildSubscriber?
         )
 
-        private let lock = Lock(recursive: false)
+        private let lock = unfairLock()
         private let maxPublishers: Subscribers.Demand
         private let transform: (Input) -> Child
 

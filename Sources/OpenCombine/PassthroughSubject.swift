@@ -11,7 +11,7 @@
 /// specific values on-demand during tests.
 public final class PassthroughSubject<Output, Failure: Error>: Subject  {
 
-    private let _lock = Lock(recursive: true)
+    private let _lock = unfairRecursiveLock()
 
     private var _completion: Subscribers.Completion<Failure>?
 

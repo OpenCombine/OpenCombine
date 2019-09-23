@@ -9,7 +9,7 @@
 /// changes.
 public final class CurrentValueSubject<Output, Failure: Error>: Subject {
 
-    private let _lock = Lock(recursive: true)
+    private let _lock = unfairRecursiveLock()
 
     // TODO: Combine uses bag data structure
     private var _subscriptions: [Conduit] = []

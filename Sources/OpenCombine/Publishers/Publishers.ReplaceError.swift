@@ -81,7 +81,7 @@ extension Publishers.ReplaceError {
         private var status = SubscriptionStatus.awaitingSubscription
         private var terminated = false
         private var pendingDemand = Subscribers.Demand.none
-        private var lock = Lock(recursive: false)
+        private var lock = unfairLock()
 
         fileprivate init(downstream: Downstream, output: Upstream.Output) {
             self.downstream = downstream

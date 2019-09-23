@@ -187,7 +187,7 @@ extension Publishers.TryMap {
 
         private var status = SubscriptionStatus.awaitingSubscription
 
-        private let lock = Lock(recursive: false)
+        private let lock = unfairLock()
 
         let combineIdentifier = CombineIdentifier()
 

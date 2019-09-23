@@ -13,7 +13,7 @@ internal final class SubjectSubscriber<Downstream: Subject>
       CustomPlaygroundDisplayConvertible,
       Subscription
 {
-    private let lock = Lock(recursive: false)
+    private let lock = unfairLock()
     private var downstreamSubject: Downstream?
     private var upstreamSubscription: Subscription?
 
