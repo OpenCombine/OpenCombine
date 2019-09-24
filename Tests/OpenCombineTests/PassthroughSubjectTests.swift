@@ -43,9 +43,12 @@ final class PassthroughSubjectTests: XCTestCase {
                 }
 
                 switch reason {
-                case .cancelled: (weakSubscription as? Subscription)?.cancel()
-                case .finished: subject.send(completion: .finished)
-                case .failed: subject.send(completion: .failure(.oops))
+                case .cancelled:
+                    (weakSubscription as? Subscription)?.cancel()
+                case .finished:
+                    subject.send(completion: .finished)
+                case .failed:
+                    subject.send(completion: .failure(.oops))
                 }
 
                 XCTAssertNil(weakSubscriber, "Subscriber leaked - \(reason)")
