@@ -18,6 +18,43 @@ final class PassthroughSubjectTests: XCTestCase {
 
     private typealias Sut = PassthroughSubject<Int, TestingError>
 
+    func testReleasesEverythingOnTermination() {
+        enum TerminationReason: CaseIterable {
+            case cancelled
+            case finished
+            case failed
+        }
+
+        for reason in TerminationReason.allCases {
+            weak var weakSubscriber: TrackingSubscriber?
+            weak var weakSubject: Sut?
+            weak var weakSubscription: AnyObject?
+
+            do {
+                let subject = Sut()
+                do {
+                    let subscriber = TrackingSubscriber(receiveSubscription: {
+                        weakSubscription = $0 as AnyObject
+                    })
+                    weakSubscriber = subscriber
+                    weakSubject = subject
+
+                    subject.subscribe(subscriber)
+                }
+
+                switch reason {
+                case .cancelled: (weakSubscription as? Subscription)?.cancel()
+                case .finished: subject.send(completion: .finished)
+                case .failed: subject.send(completion: .failure(.oops))
+                }
+                if weakSubscriber != nil { XCTFail("Subscriber leaked when reason is \(reason)") }
+                if weakSubscription != nil { XCTFail("Subscription leaked when reason is \(reason)") }
+            }
+
+            if weakSubject != nil { XCTFail("Subject leaked when reason is \(reason)") }
+        }
+    }
+
     // Reactive Streams Spec: Rules #1, #2, #9
     func testRequestingDemand() {
 
