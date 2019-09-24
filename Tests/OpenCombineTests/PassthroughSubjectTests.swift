@@ -47,11 +47,12 @@ final class PassthroughSubjectTests: XCTestCase {
                 case .finished: subject.send(completion: .finished)
                 case .failed: subject.send(completion: .failure(.oops))
                 }
-                if weakSubscriber != nil { XCTFail("Subscriber leaked when reason is \(reason)") }
-                if weakSubscription != nil { XCTFail("Subscription leaked when reason is \(reason)") }
+
+                XCTAssertNil(weakSubscriber, "Subscriber leaked - \(reason)")
+                XCTAssertNil(weakSubscription, "Subscription leaked - \(reason)")
             }
 
-            if weakSubject != nil { XCTFail("Subject leaked when reason is \(reason)") }
+            XCTAssertNil(weakSubject, "Subject leaked -  \(reason)")
         }
     }
 
