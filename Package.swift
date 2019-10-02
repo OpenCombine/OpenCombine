@@ -12,13 +12,14 @@ let package = Package(
         .package(url: "https://github.com/broadwaylamb/GottaGoFast.git", from: "0.1.0")
     ],
     targets: [
-        .target(name: "COpenCombineAtomics"),
-        .target(name: "OpenCombine", dependencies: ["COpenCombineAtomics"]),
+        .target(name: "COpenCombineHelpers"),
+        .target(name: "OpenCombine", dependencies: ["COpenCombineHelpers"]),
         .target(name: "OpenCombineDispatch", dependencies: ["OpenCombine"]),
         .testTarget(name: "OpenCombineTests",
                     dependencies: ["OpenCombine",
                                    "OpenCombineDispatch",
                                    "GottaGoFast"],
                     swiftSettings: [.unsafeFlags(["-enable-testing"])])
-    ]
+    ],
+    cxxLanguageStandard: .cxx1z
 )
