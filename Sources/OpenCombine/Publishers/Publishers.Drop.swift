@@ -48,8 +48,8 @@ extension Publishers {
         ///                   once attached it can begin to receive values.
         public func receive<Downstream>(subscriber: Downstream)
             where Downstream: Subscriber,
-                  Upstream.Failure == S.Failure,
-                  Upstream.Output == S.Input {
+                  Upstream.Failure == Downstream.Failure,
+                  Upstream.Output == Downstream.Input {
             upstream.subscribe(
                 _Drop<Upstream, Downstream>(downstream: subscriber, count: count)
             )
