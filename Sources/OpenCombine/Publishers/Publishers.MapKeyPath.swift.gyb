@@ -1,0 +1,160 @@
+${template_header}
+//
+//  Publishers.MapKeyPath.swift.gyb
+//  
+//
+//  Created by Sergej Jaskiewicz on 03/10/2019.
+//
+
+%{
+instantiations = [(1, '', ''),
+                  (2, 'two', 'second '),
+                  (3, 'three', 'third ')]
+
+def suffixed(name, index, arity):
+    return name + ('' if arity == 1 else str(index))
+
+def key_path_var(index, arity):
+    return suffixed('keyPath', index, arity)
+
+def type_name(arity):
+    return suffixed('MapKeyPath', arity, arity)
+
+def make_output_types(arity):
+    return [suffixed('Output', i, arity) for i in range(arity)]
+}%
+extension Publisher {
+% for arity, cardinal, _ in instantiations:
+%     result_types = [suffixed('Result', i, arity) for i in range(arity)]
+%     comma_separated_result_types = ', '.join(result_types)
+%
+%     method_args = \
+%         ['_ {}: KeyPath<Output, {}>'.format(key_path_var(i, arity), result_types[i]) \
+%          for i in range(arity)]
+%     method_args_joined = ',\n        '.join(method_args)
+%
+%     init_args = ['{}: {}'.format(key_path_var(i, arity), key_path_var(i, arity)) \
+%                  for i in range(arity)]
+%     init_args_joined = ',\n            '.join(init_args)     
+
+    /// Returns a publisher that publishes the values of three key paths as a tuple.
+    ///
+    /// - Parameters:
+%     for i in range(arity):
+%         ordinal = 'another ' if i == 1 else 'a ' + instantiations[i][2]
+    ///    - ${key_path_var(i, arity)}: The key path of ${ordinal}property on `Output`
+%     end
+%
+%   doc_comment_suffix = 'value of the key path' \
+%       if arity == 1 else 'values of {} key paths as a tuple'.format(cardinal)
+    /// - Returns: A publisher that publishes the ${doc_comment_suffix}.
+    public func map<${comma_separated_result_types}>(
+        ${method_args_joined}
+    ) -> Publishers.${type_name(arity)}<Self, ${comma_separated_result_types}> {
+        return .init(
+            upstream: self,
+            ${init_args_joined}
+        )
+    }
+% end
+}
+
+extension Publishers {
+% for arity, cardinal, ordinal in instantiations:
+%
+%     doc_comment_suffix = 'value of a key path' \
+%         if arity == 1 else 'values of {} key paths as a tuple'.format(cardinal)
+%
+%     output_types = make_output_types(arity)
+%     comma_separated_output_types = ', '.join(output_types)
+
+    /// A publisher that publishes the ${doc_comment_suffix}.
+    public struct ${type_name(arity)}<Upstream: Publisher, ${comma_separated_output_types}>: Publisher {
+
+%     if arity != 1:
+        public typealias Output = (${comma_separated_output_types})
+
+%     end
+        public typealias Failure = Upstream.Failure
+
+        /// The publisher from which this publisher receives elements.
+        public let upstream: Upstream
+
+%     for i in range(arity):
+%         ordinal = instantiations[i][2]
+        /// The key path of a ${ordinal}property to publish.
+        public let ${key_path_var(i, arity)}: KeyPath<Upstream.Output, ${output_types[i]}>
+
+%     end
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where Output == Downstream.Input, Failure == Downstream.Failure
+        {
+            upstream.subscribe(Inner(downstream: subscriber, parent: self))
+        }
+    }
+% end
+}
+% for arity, _, _ in instantiations:
+%     output_types = make_output_types(arity)
+%     comma_separated_output_types = ', '.join(output_types)
+
+extension Publishers.${type_name(arity)} {
+
+    private struct Inner<Downstream: Subscriber>
+        : Subscriber,
+          CustomStringConvertible,
+          CustomReflectable,
+          CustomPlaygroundDisplayConvertible
+        where Downstream.Input == Output, Downstream.Failure == Upstream.Failure
+    {
+        typealias Input = Upstream.Output
+
+        typealias Failure = Upstream.Failure
+
+        private let downstream: Downstream
+
+%     for i in range(arity):
+        private let ${key_path_var(i, arity)}: KeyPath<Upstream.Output, ${output_types[i]}>
+
+%     end
+        let combineIdentifier = CombineIdentifier()
+
+        fileprivate init(
+            downstream: Downstream,
+            parent: Publishers.${type_name(arity)}<Upstream, ${comma_separated_output_types}>
+        ) {
+            self.downstream = downstream
+%     for i in range(arity):
+            self.${key_path_var(i, arity)} = parent.${key_path_var(i, arity)}
+%     end
+        }
+
+        func receive(subscription: Subscription) {
+            downstream.receive(subscription: subscription)
+        }
+
+        func receive(_ input: Input) -> Subscribers.Demand {
+%     output_components = \
+%         ['input[keyPath: {}]'.format(key_path_var(i, arity)) for i in range(arity)]
+            %     output_components_joined = ',\n                '.join(output_components)
+            let output = (
+                ${output_components_joined}
+            )
+            return downstream.receive(output)
+        }
+
+        func receive(completion: Subscribers.Completion<Failure>) {
+            downstream.receive(completion: completion)
+        }
+
+%     inner_description = 'ValueForKey' + ('' if arity == 1 else 's')
+        var description: String { return "${inner_description}" }
+
+        var customMirror: Mirror {
+            return Mirror(self, children: EmptyCollection())
+        }
+
+        var playgroundDescription: Any { return description }
+    }
+}
+% end
