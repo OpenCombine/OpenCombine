@@ -14,7 +14,7 @@
 extern "C" {
 #endif
 
-uintptr_t opencombine_next_combine_identifier();
+uint64_t opencombine_next_combine_identifier();
 
 #ifdef __cplusplus
 } // extern "C"
