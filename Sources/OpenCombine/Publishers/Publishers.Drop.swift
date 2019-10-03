@@ -57,7 +57,6 @@ extension Publishers {
     }
 }
 
-
 private class _Drop<Upstream: Publisher, Downstream: Subscriber>
     : OperatorSubscription<Downstream>,
       Subscription,
