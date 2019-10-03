@@ -91,7 +91,7 @@ final class ReplaceNilTests: XCTestCase {
         try testReflection(parentInput: Int?.self,
                            parentFailure: Never.self,
                            description: "Map",
-                           customMirror: { $0.children.isEmpty },
+                           customMirror: childrenIsEmpty,
                            playgroundDescription: "Map",
                            { $0.replaceNil(with: 0) })
     }

@@ -87,15 +87,8 @@ final class OptionalPublisherTests: XCTestCase {
     }
 
     func testReflection() throws {
-
-        func testCustomMirror(_ mirror: Mirror) -> Bool {
-            return mirror.children.count == 1 &&
-                mirror.children.first!.label == nil &&
-                (mirror.children.first!.value as? Int) == 42
-        }
-
         try testSubscriptionReflection(description: "Optional",
-                                       customMirror: testCustomMirror,
+                                       customMirror: expectedChildren((nil, "42")),
                                        playgroundDescription: "Optional",
                                        sut: Sut(42))
     }

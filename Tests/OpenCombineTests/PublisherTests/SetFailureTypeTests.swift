@@ -163,7 +163,7 @@ final class SetFailureTypeTests: XCTestCase {
         try testReflection(parentInput: Int.self,
                            parentFailure: Never.self,
                            description: "SetFailureType",
-                           customMirror: { $0.children.isEmpty },
+                           customMirror: childrenIsEmpty,
                            playgroundDescription: "SetFailureType",
                            { $0.setFailureType(to: Error.self) })
     }

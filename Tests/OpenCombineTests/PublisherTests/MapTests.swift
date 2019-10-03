@@ -320,7 +320,7 @@ final class MapTests: XCTestCase {
         try testReflection(parentInput: Int.self,
                            parentFailure: Never.self,
                            description: "Map",
-                           customMirror: { $0.children.isEmpty },
+                           customMirror: childrenIsEmpty,
                            playgroundDescription: "Map",
                            { $0.map { $0 * 2 } })
     }
@@ -329,7 +329,7 @@ final class MapTests: XCTestCase {
         try testReflection(parentInput: Int.self,
                            parentFailure: Never.self,
                            description: "TryMap",
-                           customMirror: { $0.children.isEmpty },
+                           customMirror: childrenIsEmpty,
                            playgroundDescription: "TryMap",
                            { $0.tryMap { $0 * 2 } })
     }

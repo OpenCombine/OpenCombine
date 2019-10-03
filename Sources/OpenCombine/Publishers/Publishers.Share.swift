@@ -19,7 +19,6 @@ extension Publisher {
     }
 }
 
-
 extension Publishers {
 
     /// A publisher implemented as a class, which otherwise behaves like its upstream
@@ -30,13 +29,14 @@ extension Publishers {
 
         public typealias Failure = Upstream.Failure
 
-        private var inner:
-            Autoconnect<Multicast<Upstream, PassthroughSubject<Output, Failure>>>
+        private typealias MulticastSubject = PassthroughSubject<Output, Failure>
+
+        private let inner: Autoconnect<Multicast<Upstream, MulticastSubject>>
 
         public let upstream: Upstream
 
         public init(upstream: Upstream) {
-            inner = upstream.multicast(subject: .init()).autoconnect()
+            self.inner = upstream.multicast(subject: .init()).autoconnect()
             self.upstream = upstream
         }
 

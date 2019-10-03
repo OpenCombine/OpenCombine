@@ -34,13 +34,13 @@ import OpenCombine
 typealias CustomPublisher = CustomPublisherBase<Int, TestingError>
 
 @available(macOS 10.15, iOS 13.0, *)
-final class CustomPublisherBase<Output: Equatable, Failure: Error>: Publisher {
+class CustomPublisherBase<Output: Equatable, Failure: Error>: Publisher {
 
     private(set) var subscriber: AnySubscriber<Output, Failure>?
     private(set) var erasedSubscriber: Any?
     private let subscription: Subscription?
 
-    init(subscription: Subscription?) {
+    required init(subscription: Subscription?) {
         self.subscription = subscription
     }
 
@@ -58,5 +58,42 @@ final class CustomPublisherBase<Output: Equatable, Failure: Error>: Publisher {
 
     func send(completion: Subscribers.Completion<Failure>) {
         subscriber!.receive(completion: completion)
+    }
+}
+
+@available(macOS 10.15, iOS 13.0, *)
+typealias CustomConnectablePublisher = CustomConnectablePublisherBase<Int, TestingError>
+
+@available(macOS 10.15, iOS 13.0, *)
+final class CustomConnectablePublisherBase<Output: Equatable, Failure: Error>
+    : CustomPublisherBase<Output, Failure>,
+      ConnectablePublisher
+{
+
+    enum Event: CustomStringConvertible {
+        case connected, disconnected
+
+        var description: String {
+            switch self {
+            case .connected:
+                return ".connected"
+            case .disconnected:
+                return ".disconnected"
+            }
+        }
+    }
+
+    struct Connection: Cancellable {
+        let onCancel: () -> Void
+        func cancel() {
+            onCancel()
+        }
+    }
+
+    private(set) var connectionHistory: [Event] = []
+
+    func connect() -> Cancellable {
+        connectionHistory.append(.connected)
+        return Connection { self.connectionHistory.append(.disconnected) }
     }
 }

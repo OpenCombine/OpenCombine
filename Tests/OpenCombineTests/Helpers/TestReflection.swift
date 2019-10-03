@@ -13,41 +13,99 @@ import Combine
 import OpenCombine
 #endif
 
+func childrenIsEmpty(_ mirror: Mirror) -> Bool {
+    return mirror.children.isEmpty
+}
+
+enum ExpectedMirrorChildValue: Equatable, ExpressibleByStringLiteral {
+    case anything
+    case matches(String)
+    case contains(String)
+
+    typealias StringLiteralType = String
+
+    init(stringLiteral value: String) {
+        self = .matches(value)
+    }
+}
+
+func expectedChildren(_ expectedChildren: (String?, ExpectedMirrorChildValue)...,
+                      file: StaticString = #file,
+                      line: UInt = #line) -> (Mirror) -> Bool {
+    return { mirror in
+
+        let actualChildren = mirror
+            .children
+            .map { ($0, String(describing: $1)) }
+
+        for (actualChild, expectedChild) in zip(actualChildren, expectedChildren) {
+            XCTAssertEqual(actualChild.0, expectedChild.0, file: file, line: line)
+            switch (actualChild.1, expectedChild.1) {
+            case (_, .anything):
+                continue
+            case let (lhs, .matches(rhs)):
+                XCTAssertEqual(lhs, rhs, file: file, line: line)
+            case let (lhs, .contains(rhs)):
+                XCTAssert(lhs.contains(rhs),
+                          "\"\(lhs)\" doesn't contain substring \"\(rhs)\"",
+                          file: file,
+                          line: line)
+            }
+        }
+        return true
+    }
+}
+
 @available(macOS 10.15, iOS 13.0, *)
 internal func testReflection<Output, Failure: Error, Operator: Publisher>(
+    file: StaticString = #file,
+    line: UInt = #line,
     parentInput: Output.Type,
     parentFailure: Failure.Type,
     description expectedDescription: String,
-    customMirror customMirrorPredicate: (Mirror) -> Bool,
+    customMirror customMirrorPredicate: ((Mirror) -> Bool)?,
     playgroundDescription: String,
-    _ makeOperator: (CustomPublisherBase<Output, Failure>) -> Operator
+    _ makeOperator: (CustomConnectablePublisherBase<Output, Failure>) -> Operator
 ) throws where Operator.Output: Equatable {
-    let publisher = CustomPublisherBase<Output, Failure>(subscription: nil)
+    let publisher = CustomConnectablePublisherBase<Output, Failure>(subscription: nil)
     let operatorPublisher = makeOperator(publisher)
     let tracking = TrackingSubscriberBase<Operator.Output, Operator.Failure>()
     operatorPublisher.subscribe(tracking)
 
-    let erasedSubscriber = try XCTUnwrap(publisher.erasedSubscriber)
+    let erasedSubscriber =
+        try XCTUnwrap(publisher.erasedSubscriber, file: file, line: line)
 
     XCTAssertEqual((erasedSubscriber as? CustomStringConvertible)?.description,
-                   expectedDescription)
+                   expectedDescription,
+                   file: file,
+                   line: line)
 
     let customMirror =
-        try XCTUnwrap((erasedSubscriber as? CustomReflectable)?.customMirror)
+        try XCTUnwrap((erasedSubscriber as? CustomReflectable)?.customMirror,
+                      file: file,
+                      line: line)
 
-    XCTAssert(customMirrorPredicate(customMirror))
+    if let customMirrorPredicate = customMirrorPredicate {
+        XCTAssert(customMirrorPredicate(customMirror),
+                  file: file,
+                  line: line)
+    }
 
     XCTAssertEqual(
         ((erasedSubscriber as? CustomPlaygroundDisplayConvertible)?
             .playgroundDescription as? String),
-        playgroundDescription
+        playgroundDescription,
+        file: file,
+        line: line
     )
 }
 
 @available(macOS 10.15, iOS 13.0, *)
 internal func testSubscriptionReflection<Sut: Publisher>(
+    file: StaticString = #file,
+    line: UInt = #line,
     description expectedDescription: String,
-    customMirror customMirrorPredicate: (Mirror) -> Bool,
+    customMirror customMirrorPredicate: ((Mirror) -> Bool)?,
     playgroundDescription: String,
     sut: Sut
 ) throws where Sut.Output: Equatable {
@@ -57,16 +115,31 @@ internal func testSubscriptionReflection<Sut: Publisher>(
     let subscription = try XCTUnwrap(tracking.subscriptions.first?.underlying)
 
     XCTAssertEqual((subscription as? CustomStringConvertible)?.description,
-                   expectedDescription)
+                   expectedDescription,
+                   file: file,
+                   line: line)
 
-    let customMirror =
-        try XCTUnwrap((subscription as? CustomReflectable)?.customMirror)
-
-    XCTAssert(customMirrorPredicate(customMirror))
+    if let customMirrorPredicate = customMirrorPredicate {
+        let customMirror =
+        try XCTUnwrap((subscription as? CustomReflectable)?.customMirror,
+                      "Subscription doesn't conform to CustomReflectable",
+                      file: file,
+                      line: line)
+        XCTAssert(customMirrorPredicate(customMirror),
+                  file: file,
+                  line: line)
+    } else {
+        XCTAssertFalse(subscription is CustomReflectable,
+                       "Subscription shouldn't conform to CustomReflectable",
+                       file: file,
+                       line: line)
+    }
 
     XCTAssertEqual(
         ((subscription as? CustomPlaygroundDisplayConvertible)?
             .playgroundDescription as? String),
-        playgroundDescription
+        playgroundDescription,
+        file: file,
+        line: line
     )
 }

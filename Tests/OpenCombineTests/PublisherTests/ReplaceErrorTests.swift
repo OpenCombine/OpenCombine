@@ -199,7 +199,7 @@ final class ReplaceErrorTests: XCTestCase {
         try testReflection(parentInput: Int.self,
                            parentFailure: Error.self,
                            description: "ReplaceError",
-                           customMirror: { $0.children.isEmpty },
+                           customMirror: childrenIsEmpty,
                            playgroundDescription: "ReplaceError",
                            { $0.replaceError(with: 0) })
     }

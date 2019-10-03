@@ -125,7 +125,7 @@ final class ResultPublisherTests: XCTestCase {
         }
 
         try testSubscriptionReflection(description: "Once",
-                                       customMirror: testCustomMirror,
+                                       customMirror: expectedChildren((nil, "42")),
                                        playgroundDescription: "Once",
                                        sut: Sut(42))
     }
