@@ -28,6 +28,9 @@ generate-compatibility-xcodeproj:
 generate-xcodeproj:
 	swift package generate-xcodeproj --enable-code-coverage
 
+gyb:
+	$(shell ./utils/recursively_gyb.sh)
+
 clean:
 	rm -rf .build
 
@@ -38,4 +41,5 @@ clean:
 	    test-compatibility-debug \
 	    generate-compatibility-xcodeproj \
 	    generate-xcodeproj \
+	    gyb \
 	    clean
