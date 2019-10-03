@@ -204,7 +204,8 @@ final class SequenceTests: XCTestCase {
     func testReflection() throws {
 
         try testSubscriptionReflection(description: "1...5",
-                                       customMirror: expectedChildren(("sequence", "1...5")),
+                                       customMirror:
+                                           expectedChildren(("sequence", "1...5")),
                                        playgroundDescription: "1...5",
                                        sut: makePublisher(1...5))
     }
