@@ -119,7 +119,7 @@ extension PassthroughSubject {
         fileprivate func request(_ demand: Subscribers.Demand) {
             precondition(demand > 0, "demand must not be zero")
             _parent?._lock.do {
-                _demand = demand
+                _demand += demand
             }
             _parent?._acknowledgeDownstreamDemand()
         }

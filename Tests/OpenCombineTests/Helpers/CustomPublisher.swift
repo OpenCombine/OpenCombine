@@ -84,7 +84,9 @@ final class CustomConnectablePublisherBase<Output: Equatable, Failure: Error>
     }
 
     struct Connection: Cancellable {
+
         let onCancel: () -> Void
+
         func cancel() {
             onCancel()
         }
