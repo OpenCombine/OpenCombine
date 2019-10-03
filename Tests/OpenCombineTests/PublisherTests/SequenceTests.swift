@@ -203,14 +203,8 @@ final class SequenceTests: XCTestCase {
 
     func testReflection() throws {
 
-        func testCustomMirror(_ mirror: Mirror) -> Bool {
-            return mirror.children.count == 1 &&
-                mirror.children.first!.label == "sequence" &&
-                (mirror.children.first!.value as! ClosedRange<Int>) == 1...5
-        }
-
         try testSubscriptionReflection(description: "1...5",
-                                       customMirror: testCustomMirror,
+                                       customMirror: expectedChildren(("sequence", "1...5")),
                                        playgroundDescription: "1...5",
                                        sut: makePublisher(1...5))
     }

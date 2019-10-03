@@ -34,15 +34,8 @@ final class JustTests: XCTestCase {
     }
 
     func testReflection() throws {
-
-        func testCustomMirror(_ mirror: Mirror) -> Bool {
-            return mirror.children.count == 1 &&
-                mirror.children.first!.label == nil &&
-                (mirror.children.first!.value as? Int) == 42
-        }
-
         try testSubscriptionReflection(description: "Just",
-                                       customMirror: testCustomMirror,
+                                       customMirror: expectedChildren((nil, "42")),
                                        playgroundDescription: "Just",
                                        sut: Sut(42))
     }

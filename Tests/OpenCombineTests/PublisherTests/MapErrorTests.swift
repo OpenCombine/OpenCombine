@@ -183,7 +183,7 @@ final class MapErrorTests: XCTestCase {
         try testReflection(parentInput: Int.self,
                            parentFailure: Error.self,
                            description: "MapError",
-                           customMirror: { $0.children.isEmpty },
+                           customMirror: childrenIsEmpty,
                            playgroundDescription: "MapError",
                            { $0.mapError { $0 } })
     }
