@@ -136,7 +136,7 @@ extension Publishers.${type_name(arity)} {
         func receive(_ input: Input) -> Subscribers.Demand {
 %     output_components = \
 %         ['input[keyPath: {}]'.format(key_path_var(i, arity)) for i in range(arity)]
-            %     output_components_joined = ',\n                '.join(output_components)
+%     output_components_joined = ',\n                '.join(output_components)
             let output = (
                 ${output_components_joined}
             )
