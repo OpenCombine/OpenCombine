@@ -20,18 +20,21 @@ final class DropTests: XCTestCase {
         var received : [String] = []
         _ = AnyPublisher(["a", "b", "c"].publisher)
             .dropFirst(2)
-            .sink(receiveValue: { received.append($0)})
-         
+            .sink {
+                received.append($0)
+            }
+
         XCTAssertEqual(["c"], received, "Expect the first 2 elements to be dropped")
     }
-    
+
     func testDroppingNothing() {
         var received : [String] = []
         _ = AnyPublisher(["a", "b", "c"].publisher)
             .dropFirst(0)
-            .sink(receiveValue: { received.append($0)})
-         
+            .sink {
+                received.append($0)
+            }
+
         XCTAssertEqual(["a", "b", "c"], received, "Expect nothing to be dropped")
     }
-
 }

@@ -6,7 +6,6 @@
 //
 
 extension Publisher {
-
     /// Omits the specified number of elements before republishing subsequent elements.
     ///
     /// - Parameter count: The number of elements to omit.
@@ -17,9 +16,9 @@ extension Publisher {
 }
 
 extension Publishers {
-    
-    /// A publisher that omits a specified number of elements before republishing later elements.
-    public struct Drop<Upstream> : Publisher where Upstream : Publisher {
+    /// A publisher that omits a specified number of elements before republishing
+    /// later elements.
+    public struct Drop<Upstream>: Publisher where Upstream: Publisher {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
@@ -40,14 +39,20 @@ extension Publishers {
             self.count = count
         }
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
         ///     - subscriber: The subscriber to attach to this `Publisher`.
         ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input {
-            upstream.subscribe(_Drop<Upstream, S>(downstream: subscriber, count: count))
+        public func receive<Downstream>(subscriber: Downstream)
+            where Downstream: Subscriber,
+                  Upstream.Failure == S.Failure,
+                  Upstream.Output == S.Input {
+            upstream.subscribe(
+                _Drop<Upstream, Downstream>(downstream: subscriber, count: count)
+            )
         }
     }
 }
@@ -64,7 +69,7 @@ private class _Drop<Upstream: Publisher, Downstream: Subscriber>
     typealias Failure = Upstream.Failure
 
     var count: Int
-    
+
     init(downstream: Downstream, count: Int) {
         self.count = count
         super.init(downstream: downstream)
@@ -78,24 +83,22 @@ private class _Drop<Upstream: Publisher, Downstream: Subscriber>
         upstreamSubscription = subscription
         downstream.receive(subscription: self)
     }
-    
+
     func receive(_ input: Upstream.Output) -> Subscribers.Demand {
         guard upstreamSubscription != nil else {
             return .none
         }
-        
+
         guard count > 0 else {
             return downstream.receive(input)
         }
-        
+
         count -= 1
-        
+
         return .max(count)
     }
-    
+
     func receive(completion: Subscribers.Completion<Upstream.Failure>) {
         downstream.receive(completion: completion)
     }
-    
 }
-
