@@ -150,7 +150,7 @@ extension Publishers.MapKeyPath {
 
         private let downstream: Downstream
 
-        private let keyPath: KeyPath<Upstream.Output, Output>
+        private let keyPath: KeyPath<Input, Output>
 
         let combineIdentifier = CombineIdentifier()
 
@@ -202,9 +202,9 @@ extension Publishers.MapKeyPath2 {
 
         private let downstream: Downstream
 
-        private let keyPath0: KeyPath<Upstream.Output, Output0>
+        private let keyPath0: KeyPath<Input, Output0>
 
-        private let keyPath1: KeyPath<Upstream.Output, Output1>
+        private let keyPath1: KeyPath<Input, Output1>
 
         let combineIdentifier = CombineIdentifier()
 
@@ -258,11 +258,11 @@ extension Publishers.MapKeyPath3 {
 
         private let downstream: Downstream
 
-        private let keyPath0: KeyPath<Upstream.Output, Output0>
+        private let keyPath0: KeyPath<Input, Output0>
 
-        private let keyPath1: KeyPath<Upstream.Output, Output1>
+        private let keyPath1: KeyPath<Input, Output1>
 
-        private let keyPath2: KeyPath<Upstream.Output, Output2>
+        private let keyPath2: KeyPath<Input, Output2>
 
         let combineIdentifier = CombineIdentifier()
 
