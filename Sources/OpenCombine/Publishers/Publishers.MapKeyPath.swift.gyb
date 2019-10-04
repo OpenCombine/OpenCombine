@@ -7,26 +7,28 @@ ${template_header}
 //
 
 %{
+from gyb_opencombine_support import (
+    suffix_variadic,
+    list_with_suffix_variadic
+)
+
 instantiations = [(1, '', ''),
                   (2, 'two', 'second '),
                   (3, 'three', 'third ')]
 
-def suffixed(name, index, arity):
-    return name + ('' if arity == 1 else str(index))
-
 def key_path_var(index, arity):
-    return suffixed('keyPath', index, arity)
+    return suffix_variadic('keyPath', index, arity)
 
-def type_name(arity):
-    return suffixed('MapKeyPath', arity, arity)
+def make_publisher_name(arity):
+    return suffix_variadic('MapKeyPath', arity, arity)
 
 def make_output_types(arity):
-    return [suffixed('Output', i, arity) for i in range(arity)]
+    return list_with_suffix_variadic('Output', arity)
 }%
 extension Publisher {
 % for arity, cardinal, _ in instantiations:
-%     result_types = [suffixed('Result', i, arity) for i in range(arity)]
-%     comma_separated_result_types = ', '.join(result_types)
+%     result_types = list_with_suffix_variadic('Result', arity)
+%     cs_result_types = ', '.join(result_types)
 %
 %     method_args = \
 %         ['_ {}: KeyPath<Output, {}>'.format(key_path_var(i, arity), result_types[i]) \
@@ -35,7 +37,9 @@ extension Publisher {
 %
 %     init_args = ['{}: {}'.format(key_path_var(i, arity), key_path_var(i, arity)) \
 %                  for i in range(arity)]
-%     init_args_joined = ',\n            '.join(init_args)     
+%     init_args_joined = ',\n            '.join(init_args)
+%
+%     publisher_name = make_publisher_name(arity)
 
     /// Returns a publisher that publishes the values of three key paths as a tuple.
     ///
@@ -48,9 +52,9 @@ extension Publisher {
 %   doc_comment_suffix = 'value of the key path' \
 %       if arity == 1 else 'values of {} key paths as a tuple'.format(cardinal)
     /// - Returns: A publisher that publishes the ${doc_comment_suffix}.
-    public func map<${comma_separated_result_types}>(
+    public func map<${cs_result_types}>(
         ${method_args_joined}
-    ) -> Publishers.${type_name(arity)}<Self, ${comma_separated_result_types}> {
+    ) -> Publishers.${publisher_name}<Self, ${cs_result_types}> {
         return .init(
             upstream: self,
             ${init_args_joined}
@@ -66,13 +70,15 @@ extension Publishers {
 %         if arity == 1 else 'values of {} key paths as a tuple'.format(cardinal)
 %
 %     output_types = make_output_types(arity)
-%     comma_separated_output_types = ', '.join(output_types)
+%     cs_output_types = ', '.join(output_types)
+%
+%     publisher_name = make_publisher_name(arity)
 
     /// A publisher that publishes the ${doc_comment_suffix}.
-    public struct ${type_name(arity)}<Upstream: Publisher, ${comma_separated_output_types}>: Publisher {
+    public struct ${publisher_name}<Upstream: Publisher, ${cs_output_types}>: Publisher {
 
 %     if arity != 1:
-        public typealias Output = (${comma_separated_output_types})
+        public typealias Output = (${cs_output_types})
 
 %     end
         public typealias Failure = Upstream.Failure
@@ -96,9 +102,11 @@ extension Publishers {
 }
 % for arity, _, _ in instantiations:
 %     output_types = make_output_types(arity)
-%     comma_separated_output_types = ', '.join(output_types)
+%     cs_output_types = ', '.join(output_types)
+%
+%     publisher_name = make_publisher_name(arity)
 
-extension Publishers.${type_name(arity)} {
+extension Publishers.${publisher_name} {
 
     private struct Inner<Downstream: Subscriber>
         : Subscriber,
@@ -114,14 +122,14 @@ extension Publishers.${type_name(arity)} {
         private let downstream: Downstream
 
 %     for i in range(arity):
-        private let ${key_path_var(i, arity)}: KeyPath<Upstream.Output, ${output_types[i]}>
+        private let ${key_path_var(i, arity)}: KeyPath<Input, ${output_types[i]}>
 
 %     end
         let combineIdentifier = CombineIdentifier()
 
         fileprivate init(
             downstream: Downstream,
-            parent: Publishers.${type_name(arity)}<Upstream, ${comma_separated_output_types}>
+            parent: Publishers.${publisher_name}<Upstream, ${cs_output_types}>
         ) {
             self.downstream = downstream
 %     for i in range(arity):

@@ -2,6 +2,8 @@
 # GYB: Generate Your Boilerplate (improved names welcome; at least
 # this one's short).  See -h output for instructions
 
+# This file was taken from https://github.com/apple/swift/blob/master/utils/gyb.py
+
 from __future__ import print_function
 
 import os
