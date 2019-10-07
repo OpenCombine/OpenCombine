@@ -85,7 +85,7 @@ extension Publishers.Sequence {
 
         func request(_ demand: Subscribers.Demand) {
             lock.lock()
-            guard let downstream = self.downstream else {
+            guard downstream != nil else {
                 lock.unlock()
                 return
             }
@@ -95,7 +95,7 @@ extension Publishers.Sequence {
                 return
             }
 
-            while pendingDemand > 0 {
+            while let downstream = self.downstream, pendingDemand > 0 {
                 if let current = self.next {
                     pendingDemand -= 1
 

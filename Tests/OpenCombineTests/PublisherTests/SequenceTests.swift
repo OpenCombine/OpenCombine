@@ -166,6 +166,31 @@ final class SequenceTests: XCTestCase {
                                             .value(1)])
     }
 
+    func testCancelOnValue() {
+        let counter = Counter(upperBound: 3)
+        let publisher = makePublisher(counter)
+        var subscription: Subscription?
+        let subscriber = TrackingSubscriberBase<Int, Never>(
+            receiveSubscription: {
+                subscription = $0
+                $0.request(.unlimited)
+            },
+            receiveValue: { _ in
+                subscription?.cancel()
+                return .unlimited
+            }
+        )
+        publisher.subscribe(subscriber)
+
+        XCTAssertEqual(subscriber.history, [.subscription("Sequence"),
+                                            .value(1)])
+
+        subscriber.subscriptions.first?.request(.max(1))
+
+        XCTAssertEqual(subscriber.history, [.subscription("Sequence"),
+                                            .value(1)])
+    }
+
     func testPublishesCorrectValues() {
         let sequence = makePublisher(1...5)
 
