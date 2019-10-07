@@ -169,7 +169,7 @@ final class SequenceTests: XCTestCase {
     func testCancelOnValue() {
         let counter = Counter(upperBound: 3)
         let publisher = makePublisher(counter)
-        var subscription: Subscription? = nil
+        var subscription: Subscription?
         let subscriber = TrackingSubscriberBase<Int, Never>(
             receiveSubscription: {
                 subscription = $0
