@@ -15,17 +15,57 @@ import OpenCombine
 
 @available(macOS 10.15, iOS 13.0, *)
 final class PrintTests: XCTestCase {
-
+    
     func testPrintWithoutPrefix() {
+        PrintTests.testPrintWithoutPrefix(stream: HistoryStream(), stdout: false)
+    }
+    
+    func testPrintWithoutPrefixStdout() {
+        let stream = HistoryStream()
+        stealingStdout(to: stream) {
+            PrintTests.testPrintWithoutPrefix(stream: stream, stdout: true)
+        }
+    }
+    
+    func testPrintWithPrefix() {
+        PrintTests.testPrintWithPrefix(stream: HistoryStream(), stdout: false)
+    }
+    
+    func testPrintWithPrefixStdout() {
+        let stream = HistoryStream()
+        stealingStdout(to: stream) {
+            PrintTests.testPrintWithPrefix(stream: stream, stdout: true)
+        }
+    }
+    
+    func testSynchronization() {
 
         let stream = HistoryStream()
+        let publisher = CustomPublisherBase<Int, Never>(subscription: nil)
+        let printer = publisher.print(to: stream)
+
+        let counter = Atomic(0)
+        _ = printer.sink(receiveValue: { _ in counter.do { $0 += 1 } })
+
+        race(
+            { _ = publisher.send(12) },
+            { _ = publisher.send(34) }
+        )
+
+        XCTAssertEqual(counter.value, 200)
+    }
+    
+    // MARK: - Generic tests
+
+    private static func testPrintWithoutPrefix(stream: HistoryStream, stdout: Bool) {
+
         let subscription = CustomSubscription(
             onRequest: { _ in stream.write("callback request demand\n") },
             onCancel: { stream.write("callback cancel subscription\n") }
         )
         var downstreamSubscription: Subscription?
         let publisher = CustomPublisher(subscription: subscription)
-        let printer = publisher.print(to: stream)
+        let printer = publisher.print(to: stdout ? nil : stream)
         let tracking = TrackingSubscriber(
             receiveSubscription: {
                 stream.write("callback subscription\n")
@@ -140,16 +180,15 @@ final class PrintTests: XCTestCase {
         XCTAssertEqual(stream.output.value, expectedOutput)
     }
 
-    func testPrintWithPrefix() {
+    private static func testPrintWithPrefix(stream: HistoryStream, stdout: Bool) {
 
-        let stream = HistoryStream()
         let subscription = CustomSubscription(
             onRequest: { _ in stream.write("callback request demand\n") },
             onCancel: { stream.write("callback cancel subscription\n") }
         )
         var downstreamSubscription: Subscription?
         let publisher = CustomPublisher(subscription: subscription)
-        let printer = publisher.print("👉", to: stream)
+        let printer = publisher.print("👉", to: stdout ? nil : stream)
         let tracking = TrackingSubscriber(
             receiveSubscription: {
                 stream.write("callback subscription\n")
@@ -263,23 +302,6 @@ final class PrintTests: XCTestCase {
 
         XCTAssertEqual(stream.output.value, expectedOutput)
     }
-
-    func testSynchronization() {
-
-        let stream = HistoryStream()
-        let publisher = CustomPublisherBase<Int, Never>(subscription: nil)
-        let printer = publisher.print(to: stream)
-
-        let counter = Atomic(0)
-        _ = printer.sink(receiveValue: { _ in counter.do { $0 += 1 } })
-
-        race(
-            { _ = publisher.send(12) },
-            { _ = publisher.send(34) }
-        )
-
-        XCTAssertEqual(counter.value, 200)
-    }
 }
 
 private final class HistoryStream: TextOutputStream {
@@ -289,4 +311,19 @@ private final class HistoryStream: TextOutputStream {
     func write(_ string: String) {
         output.do { $0.append(string) }
     }
+}
+
+private func stealingStdout(to stream: HistoryStream, _ body: () -> Void) {
+    // See https://oleb.net/blog/2016/09/playground-print-hook/ for details
+    let oldValue = _playgroundPrintHook
+    _playgroundPrintHook = { string in
+        stream.write("")
+        if string.last == "\n" {
+            // Trailing newline is actually always written separately.
+            stream.write(String(string[..<string.index(before: string.endIndex)]))
+            stream.write("\n")
+        }
+    }
+    body()
+    _playgroundPrintHook = oldValue
 }

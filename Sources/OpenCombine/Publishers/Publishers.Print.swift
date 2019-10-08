@@ -150,7 +150,7 @@ extension Publishers.Print {
             if var stream = stream {
                 Swift.print(text, to: &stream)
             } else {
-                Swift.print("", text)
+                Swift.print(text)
             }
         }
     }
