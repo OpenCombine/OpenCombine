@@ -15,29 +15,29 @@ import OpenCombine
 
 @available(macOS 10.15, iOS 13.0, *)
 final class PrintTests: XCTestCase {
-    
+
     func testPrintWithoutPrefix() {
         PrintTests.testPrintWithoutPrefix(stream: HistoryStream(), stdout: false)
     }
-    
+
     func testPrintWithoutPrefixStdout() {
         let stream = HistoryStream()
         stealingStdout(to: stream) {
             PrintTests.testPrintWithoutPrefix(stream: stream, stdout: true)
         }
     }
-    
+
     func testPrintWithPrefix() {
         PrintTests.testPrintWithPrefix(stream: HistoryStream(), stdout: false)
     }
-    
+
     func testPrintWithPrefixStdout() {
         let stream = HistoryStream()
         stealingStdout(to: stream) {
             PrintTests.testPrintWithPrefix(stream: stream, stdout: true)
         }
     }
-    
+
     func testSynchronization() {
 
         let stream = HistoryStream()
@@ -54,7 +54,7 @@ final class PrintTests: XCTestCase {
 
         XCTAssertEqual(counter.value, 200)
     }
-    
+
     // MARK: - Generic tests
 
     private static func testPrintWithoutPrefix(stream: HistoryStream, stdout: Bool) {
