@@ -36,7 +36,7 @@ final class SinkTests: XCTestCase {
 
         let subscription1 = CustomSubscription()
         sink.receive(subscription: subscription1)
-        XCTAssertEqual(subscription1.lastRequested, .unlimited)
+        XCTAssertEqual(subscription1.history, [.requested(.unlimited)])
         XCTAssertFalse(subscription1.cancelled)
 
         let subscription2 = CustomSubscription()
@@ -53,16 +53,8 @@ final class SinkTests: XCTestCase {
 
         let subscription3 = CustomSubscription()
         sink.receive(subscription: subscription3)
-        XCTAssertEqual(subscription3.lastRequested, .unlimited)
-        XCTAssertFalse(subscription3.cancelled)
-
-        sink.cancel()
+        XCTAssertEqual(subscription3.history, [.cancelled])
         XCTAssertTrue(subscription3.cancelled)
-
-        let subscription4 = CustomSubscription()
-        sink.receive(subscription: subscription4)
-        XCTAssertEqual(subscription4.lastRequested, .unlimited)
-        XCTAssertFalse(subscription4.cancelled)
     }
 
     func testReceiveValue() {

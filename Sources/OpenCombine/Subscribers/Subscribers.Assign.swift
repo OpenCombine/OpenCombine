@@ -44,9 +44,9 @@ extension Subscribers {
 
         public func receive(subscription: Subscription) {
             switch status {
-            case .subscribed:
+            case .subscribed, .terminal:
                 subscription.cancel()
-            case .awaitingSubscription, .terminal:
+            case .awaitingSubscription:
                 status = .subscribed(subscription)
                 subscription.request(.unlimited)
             }
