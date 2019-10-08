@@ -88,64 +88,10 @@ final class ReplaceErrorTests: XCTestCase {
                                                  .completion(.finished)])
     }
 
-    func testLifecycle() throws {
-        var deinitCounter = 0
-
-        let onDeinit = { deinitCounter += 1 }
-
-        do {
-            let passthrough = PassthroughSubject<Int, TestingError>()
-            let replaceError = passthrough.replaceError(with: 10)
-            let emptySubscriber = TrackingSubscriberBase<Int, Never>(
-                onDeinit: onDeinit
-            )
-            XCTAssertTrue(emptySubscriber.history.isEmpty)
-            replaceError.print("test").subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
-            passthrough.send(31)
-            XCTAssertEqual(emptySubscriber.inputs.count, 0)
-            passthrough.send(completion: .failure("failure"))
-            XCTAssertEqual(emptySubscriber.completions.count, 0)
-        }
-
-        XCTAssertEqual(deinitCounter, 0)
-
-        do {
-            let passthrough = PassthroughSubject<Int, TestingError>()
-            let replaceError = passthrough.replaceError(with: 10)
-            let emptySubscriber = TrackingSubscriberBase<Int, Never>(
-                onDeinit: onDeinit
-            )
-            XCTAssertTrue(emptySubscriber.history.isEmpty)
-            replaceError.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
-            XCTAssertEqual(emptySubscriber.inputs.count, 0)
-            XCTAssertEqual(emptySubscriber.completions.count, 0)
-        }
-
-        XCTAssertEqual(deinitCounter, 0)
-
-        var subscription: Subscription?
-
-        do {
-            let passthrough = PassthroughSubject<Int, TestingError>()
-            let replaceError = passthrough.replaceError(with: 10)
-            let emptySubscriber = TrackingSubscriberBase<Int, Never>(
-                receiveSubscription: { subscription = $0; $0.request(.unlimited) },
-                onDeinit: onDeinit
-            )
-            XCTAssertTrue(emptySubscriber.history.isEmpty)
-            replaceError.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
-            passthrough.send(31)
-            XCTAssertEqual(emptySubscriber.inputs.count, 1)
-            XCTAssertEqual(emptySubscriber.completions.count, 0)
-            XCTAssertNotNil(subscription)
-        }
-
-        XCTAssertEqual(deinitCounter, 0)
-        try XCTUnwrap(subscription).cancel()
-        XCTAssertEqual(deinitCounter, 0)
+    func testReplaceErrorLifecycle() throws {
+        try testLifecycle(sendValue: 31,
+                          cancellingSubscriptionReleasesSubscriber: false,
+                          { $0.replaceError(with: 10) })
     }
 
     func testCancelAlreadyCancelled() throws {

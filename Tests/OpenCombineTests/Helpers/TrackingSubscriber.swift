@@ -5,6 +5,8 @@
 //  Created by Sergej Jaskiewicz on 11.06.2019.
 //
 
+import XCTest
+
 #if OPENCOMBINE_COMPATIBILITY_TEST
 import Combine
 #else
@@ -37,35 +39,15 @@ typealias TrackingSubscriber = TrackingSubscriberBase<Int, TestingError>
 /// is considered equal to any other subscription no matter what the subscription object
 /// actually is.
 @available(macOS 10.15, iOS 13.0, *)
-final class TrackingSubscriberBase<Value: Equatable, Failure: Error>
+final class TrackingSubscriberBase<Value, Failure: Error>
     : Subscriber,
       CustomStringConvertible
 {
 
-    enum Event: Equatable, CustomStringConvertible {
+    enum Event: CustomStringConvertible {
         case subscription(StringSubscription)
         case value(Value)
         case completion(Subscribers.Completion<Failure>)
-
-        static func == (lhs: Event, rhs: Event) -> Bool {
-            switch (lhs, rhs) {
-            case let (.subscription(lhs), .subscription(rhs)):
-                return lhs == rhs
-            case let (.value(lhs), .value(rhs)):
-                return lhs == rhs
-            case let (.completion(lhs), .completion(rhs)):
-                switch (lhs, rhs) {
-                case (.finished, .finished):
-                    return true
-                case let (.failure(lhs), .failure(rhs)):
-                    return (lhs as? TestingError) == (rhs as? TestingError)
-                default:
-                    return false
-                }
-            default:
-                return false
-            }
-        }
 
         var description: String {
             switch self {
@@ -175,9 +157,66 @@ final class TrackingSubscriberBase<Value: Equatable, Failure: Error>
         return "\(type(of: self)): \(history)"
     }
 
+    func assertHistoryEqual(_ expected: [Event],
+                            valueComparator: (Value, Value) -> Bool,
+                            file: StaticString = #file,
+                            line: UInt = #line) {
+
+        let equals = history.count == expected.count &&
+            zip(history, expected)
+                .allSatisfy { $0.isEqual(to: $1, valueComparator: valueComparator) }
+
+        XCTAssert(equals,
+                  "\(history) is not equal to \(expected)",
+                  file: file,
+                  line: line)
+    }
+
     deinit {
         onDeinit?()
         _onDeinit?()
+    }
+}
+
+@available(macOS 10.15, iOS 13.0, *)
+extension TrackingSubscriberBase where Value: Equatable {
+    func assertHistoryEqual(_ expected: [Event],
+                            file: StaticString = #file,
+                            line: UInt = #line) {
+        assertHistoryEqual(expected, valueComparator: ==, file: file, line: line)
+    }
+}
+
+@available(macOS 10.15, iOS 13.0, *)
+extension TrackingSubscriberBase.Event {
+    func isEqual(to other: TrackingSubscriberBase<Value, Failure>.Event,
+                 valueComparator: (Value, Value) -> Bool) -> Bool {
+        switch (self, other) {
+        case let (.subscription(lhs), .subscription(rhs)):
+            return lhs == rhs
+        case let (.value(lhs), .value(rhs)):
+            return valueComparator(lhs, rhs)
+        case let (.completion(lhs), .completion(rhs)):
+            switch (lhs, rhs) {
+            case (.finished, .finished):
+                return true
+            case let (.failure(lhs), .failure(rhs)):
+                return (lhs as? TestingError) == (rhs as? TestingError)
+            default:
+                return false
+            }
+        default:
+            return false
+        }
+    }
+}
+
+@available(macOS 10.15, iOS 13.0, *)
+extension TrackingSubscriberBase.Event: Equatable where Value: Equatable {
+
+    static func == (lhs: TrackingSubscriberBase<Value, Failure>.Event,
+                    rhs: TrackingSubscriberBase<Value, Failure>.Event) -> Bool {
+        return lhs.isEqual(to: rhs, valueComparator: ==)
     }
 }
 

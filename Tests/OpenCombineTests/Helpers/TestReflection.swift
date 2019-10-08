@@ -66,7 +66,7 @@ internal func testReflection<Output, Failure: Error, Operator: Publisher>(
     customMirror customMirrorPredicate: ((Mirror) -> Bool)?,
     playgroundDescription: String,
     _ makeOperator: (CustomConnectablePublisherBase<Output, Failure>) -> Operator
-) throws where Operator.Output: Equatable {
+) throws {
     let publisher = CustomConnectablePublisherBase<Output, Failure>(subscription: nil)
     let operatorPublisher = makeOperator(publisher)
     let tracking = TrackingSubscriberBase<Operator.Output, Operator.Failure>()
@@ -87,6 +87,7 @@ internal func testReflection<Output, Failure: Error, Operator: Publisher>(
 
     if let customMirrorPredicate = customMirrorPredicate {
         XCTAssert(customMirrorPredicate(customMirror),
+                  "customMirror doesn't satisfy the predicate",
                   file: file,
                   line: line)
     }

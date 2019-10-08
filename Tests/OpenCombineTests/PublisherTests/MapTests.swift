@@ -17,36 +17,13 @@ import OpenCombine
 final class MapTests: XCTestCase {
 
     func testEmpty() {
-        // Given
-        let tracking = TrackingSubscriberBase<String, TestingError>(
-            receiveSubscription: { $0.request(.unlimited) }
-        )
-        let publisher = TrackingSubject<Int>(
-            receiveSubscriber: {
-                XCTAssertEqual(String(describing: $0), "Map")
-            }
-        )
-        // When
-        publisher.map(String.init).subscribe(tracking)
-        // Then
-        XCTAssertEqual(tracking.history, [.subscription("PassthroughSubject")])
+        MapTests.testEmpty(valueComparator: ==) {
+            $0.map(String.init)
+        }
     }
 
     func testError() {
-        // Given
-        let expectedError = TestingError.oops
-        let tracking = TrackingSubscriber(receiveSubscription: { $0.request(.unlimited) })
-        let publisher = CustomPublisher(subscription: CustomSubscription())
-        // When
-        publisher.map { $0 * 2 }.subscribe(tracking)
-        publisher.send(completion: .failure(expectedError))
-        publisher.send(completion: .failure(expectedError))
-        // Then
-        XCTAssertEqual(tracking.history, [
-            .subscription("CustomSubscription"),
-            .completion(.failure(expectedError)),
-            .completion(.failure(expectedError))
-        ])
+        MapTests.testError(valueComparator: ==) { $0.map { $0 * 2 } }
     }
 
     func testTryMapFailureBecauseOfThrow() {
@@ -123,106 +100,30 @@ final class MapTests: XCTestCase {
     }
 
     func testRange() {
-        // Given
-        let publisher = PassthroughSubject<Int, TestingError>()
-        let map = publisher.map { $0 * 2 }
-        let tracking = TrackingSubscriber(receiveSubscription: { $0.request(.unlimited) })
-        // When
-        publisher.send(1)
-        map.subscribe(tracking)
-        publisher.send(2)
-        publisher.send(3)
-        publisher.send(completion: .finished)
-        publisher.send(5)
-        // Then
-        XCTAssertEqual(tracking.history, [
-            .subscription("PassthroughSubject"),
-            .value(4),
-            .value(6),
-            .completion(.finished)
-        ])
+        let mapping: (Int) -> Int = { $0 * 2 }
+        MapTests.testRange(valueComparator: ==, mapping: mapping) {
+            $0.map(mapping)
+        }
     }
 
     func testNoDemand() {
-        // Given
-        let subscription = CustomSubscription()
-        let publisher = CustomPublisher(subscription: subscription)
-        let map = publisher.map { $0 * 2 }
-        let tracking = TrackingSubscriber()
-        // When
-        map.subscribe(tracking)
-        // Then
-        XCTAssertTrue(subscription.history.isEmpty)
+        MapTests.testNoDemand { $0.map { $0 * 2 } }
     }
 
-    func testDemandSubscribe() {
-        // Given
-        let expectedSubscribeDemand = 42
-        let subscription = CustomSubscription()
-        let publisher = CustomPublisher(subscription: subscription)
-        let map = publisher.map { $0 * 2 }
-        let tracking = TrackingSubscriber(
-            receiveSubscription: { $0.request(.max(expectedSubscribeDemand)) }
-        )
-        // When
-        map.subscribe(tracking)
-        // Then
-        XCTAssertEqual(subscription.history, [.requested(.max(expectedSubscribeDemand))])
+    func testRequestDemandOnSubscribe() {
+        MapTests.testRequestDemandOnSubscribe { $0.map { $0 * 2 } }
     }
 
-    func testDemandSend() {
-        var expectedReceiveValueDemand = 4
-        let subscription = CustomSubscription()
-        let publisher = CustomPublisher(subscription: subscription)
-        let map = publisher.map { $0 * 2 }
-        let tracking = TrackingSubscriber(
-            receiveSubscription: { $0.request(.unlimited) },
-            receiveValue: { _ in .max(expectedReceiveValueDemand) }
-        )
-
-        map.subscribe(tracking)
-
-        XCTAssertEqual(publisher.send(0), .max(4))
-
-        expectedReceiveValueDemand = 120
-
-        XCTAssertEqual(publisher.send(0), .max(120))
+    func testDemandOnReceive() {
+        MapTests.testDemandOnReceive { $0.map { $0 * 2 } }
     }
 
     func testCompletion() {
-        // Given
-        let subscription = CustomSubscription()
-        let publisher = CustomPublisher(subscription: subscription)
-        let map = publisher.map { $0 * 2 }
-        let tracking = TrackingSubscriber(receiveSubscription: { $0.request(.unlimited) })
-        // When
-        map.subscribe(tracking)
-        publisher.send(completion: .finished)
-        // Then
-        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
-        XCTAssertEqual(
-            tracking.history,
-            [.subscription("CustomSubscription"), .completion(.finished)]
-        )
+        MapTests.testCompletion(valueComparator: ==) { $0.map { $0 * 2 } }
     }
 
     func testMapCancel() throws {
-        // Given
-        let subscription = CustomSubscription()
-        let publisher = CustomPublisher(subscription: subscription)
-        let map = publisher.map { $0 * 2 }
-        var downstreamSubscription: Subscription?
-        let tracking = TrackingSubscriber(receiveSubscription: {
-            $0.request(.unlimited)
-            downstreamSubscription = $0
-        })
-        // When
-        map.subscribe(tracking)
-        try XCTUnwrap(downstreamSubscription).cancel()
-        XCTAssertEqual(publisher.send(1), .none)
-        publisher.send(completion: .finished)
-        // Then
-        XCTAssertEqual(subscription.history, [.requested(.unlimited), .cancelled])
+        try MapTests.testCancel { $0.map { $0 * 2 } }
     }
 
     func testTryMapCancel() throws {
@@ -246,25 +147,7 @@ final class MapTests: XCTestCase {
     }
 
     func testMapCancelAlreadyCancelled() throws {
-        // Given
-        let subscription = CustomSubscription()
-        let publisher = CustomPublisher(subscription: subscription)
-        let map = publisher.map { $0 * 2 }
-        var downstreamSubscription: Subscription?
-        let tracking = TrackingSubscriber(receiveSubscription: {
-            $0.request(.unlimited)
-            downstreamSubscription = $0
-        })
-        // When
-        map.subscribe(tracking)
-        try XCTUnwrap(downstreamSubscription).cancel()
-        downstreamSubscription?.request(.unlimited)
-        try XCTUnwrap(downstreamSubscription).cancel()
-        // Then
-        XCTAssertEqual(subscription.history, [.requested(.unlimited),
-                                              .cancelled,
-                                              .requested(.unlimited),
-                                              .cancelled])
+        try MapTests.testCancelAldreadyCancelled { $0.map { $0 * 2 } }
     }
 
     func testTryMapCancelAlreadyCancelled() throws {
@@ -334,61 +217,17 @@ final class MapTests: XCTestCase {
                            { $0.tryMap { $0 * 2 } })
     }
 
-    func testLifecycle() throws {
-
-        var deinitCounter = 0
-
-        let onDeinit = { deinitCounter += 1 }
-
-        do {
-            let passthrough = PassthroughSubject<Int, TestingError>()
-            let map = passthrough.map { $0 * 2 }
-            let emptySubscriber = TrackingSubscriber(onDeinit: onDeinit)
-            XCTAssertTrue(emptySubscriber.history.isEmpty)
-            map.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
-            passthrough.send(31)
-            XCTAssertEqual(emptySubscriber.inputs.count, 0)
-            passthrough.send(completion: .failure("failure"))
-            XCTAssertEqual(emptySubscriber.completions.count, 1)
+    func testMapLifecycle() throws {
+        try testLifecycle(sendValue: 31, cancellingSubscriptionReleasesSubscriber: true) {
+            $0.map { $0 * 2 }
         }
+    }
 
-        XCTAssertEqual(deinitCounter, 1)
-
-        do {
-            let passthrough = PassthroughSubject<Int, TestingError>()
-            let map = passthrough.map { $0 * 2 }
-            let emptySubscriber = TrackingSubscriber(onDeinit: onDeinit)
-            XCTAssertTrue(emptySubscriber.history.isEmpty)
-            map.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
-            XCTAssertEqual(emptySubscriber.inputs.count, 0)
-            XCTAssertEqual(emptySubscriber.completions.count, 0)
+    func testTryMapLifecycle() throws {
+        try testLifecycle(sendValue: 31,
+                          cancellingSubscriptionReleasesSubscriber: false) {
+            $0.tryMap { $0 * 2 }
         }
-
-        XCTAssertEqual(deinitCounter, 1)
-
-        var subscription: Subscription?
-
-        do {
-            let passthrough = PassthroughSubject<Int, TestingError>()
-            let map = passthrough.map { $0 * 2 }
-            let emptySubscriber = TrackingSubscriber(
-                receiveSubscription: { subscription = $0; $0.request(.unlimited) },
-                onDeinit: onDeinit
-            )
-            XCTAssertTrue(emptySubscriber.history.isEmpty)
-            map.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
-            passthrough.send(31)
-            XCTAssertEqual(emptySubscriber.inputs.count, 1)
-            XCTAssertEqual(emptySubscriber.completions.count, 0)
-            XCTAssertNotNil(subscription)
-        }
-
-        XCTAssertEqual(deinitCounter, 1)
-        try XCTUnwrap(subscription).cancel()
-        XCTAssertEqual(deinitCounter, 2)
     }
 
     func testMapOperatorSpecializationForMap() {
@@ -512,5 +351,230 @@ final class MapTests: XCTestCase {
                                           .value(7),
                                           .value(11),
                                           .completion(.failure(TestingError.oops))])
+    }
+
+    // MARK: - Generic tests (for supporting Publishers.MapKeyPath)
+
+    static func testEmpty<Map: Publisher>(
+        file: StaticString = #file,
+        line: UInt = #line,
+        valueComparator: (Map.Output, Map.Output) -> Bool,
+        _ map: (TrackingSubject<Int>) -> Map
+    ) where Map.Failure == TestingError {
+        let tracking = TrackingSubscriberBase<Map.Output, TestingError>(
+            receiveSubscription: { $0.request(.unlimited) }
+        )
+        let publisher = TrackingSubject<Int>()
+
+        map(publisher).subscribe(tracking)
+
+        tracking.assertHistoryEqual([.subscription("PassthroughSubject")],
+                                    valueComparator: valueComparator,
+                                    file: file,
+                                    line: line)
+    }
+
+    static func testError<Map: Publisher>(
+        file: StaticString = #file,
+        line: UInt = #line,
+        valueComparator: (Map.Output, Map.Output) -> Bool,
+        _ map: (CustomPublisher) -> Map
+    ) where Map.Failure == TestingError {
+        let expectedError = TestingError.oops
+        let tracking = TrackingSubscriberBase<Map.Output, TestingError>(
+            receiveSubscription: { $0.request(.unlimited) }
+        )
+        let publisher = CustomPublisher(subscription: CustomSubscription())
+
+        map(publisher).subscribe(tracking)
+        publisher.send(completion: .failure(expectedError))
+        publisher.send(completion: .failure(expectedError))
+
+        tracking.assertHistoryEqual([.subscription("CustomSubscription"),
+                                     .completion(.failure(expectedError)),
+                                     .completion(.failure(expectedError))],
+                                    valueComparator: valueComparator,
+                                    file: file,
+                                    line: line)
+    }
+
+    static func testRange<Map: Publisher>(
+        file: StaticString = #file,
+        line: UInt = #line,
+        valueComparator: (Map.Output, Map.Output) -> Bool,
+        mapping: (Int) -> Map.Output,
+        _ map: (PassthroughSubject<Int, TestingError>) -> Map
+    ) where Map.Failure == TestingError {
+        let publisher = PassthroughSubject<Int, TestingError>()
+        let map = map(publisher)
+        let tracking = TrackingSubscriberBase<Map.Output, TestingError>(
+            receiveSubscription: { $0.request(.unlimited) }
+        )
+
+        publisher.send(1)
+        map.subscribe(tracking)
+        publisher.send(2)
+        publisher.send(3)
+        publisher.send(completion: .finished)
+        publisher.send(5)
+
+        tracking.assertHistoryEqual([.subscription("PassthroughSubject"),
+                                     .value(mapping(2)),
+                                     .value(mapping(3)),
+                                     .completion(.finished)],
+                                    valueComparator: valueComparator,
+                                    file: file,
+                                    line: line)
+    }
+
+    static func testNoDemand<Map: Publisher>(
+        file: StaticString = #file,
+        line: UInt = #line,
+        _ map: (CustomPublisher) -> Map
+    ) where Map.Failure == TestingError {
+        let subscription = CustomSubscription()
+        let publisher = CustomPublisher(subscription: subscription)
+        let map = map(publisher)
+        let tracking = TrackingSubscriberBase<Map.Output, TestingError>()
+
+        map.subscribe(tracking)
+
+        XCTAssertTrue(subscription.history.isEmpty, file: file, line: line)
+    }
+
+    static func testRequestDemandOnSubscribe<Map: Publisher>(
+        file: StaticString = #file,
+        line: UInt = #line,
+        _ map: (CustomPublisher) -> Map
+    ) where Map.Failure == TestingError {
+        let expectedSubscribeDemand = 42
+        let subscription = CustomSubscription()
+        let publisher = CustomPublisher(subscription: subscription)
+        let map = map(publisher)
+        let tracking = TrackingSubscriberBase<Map.Output, TestingError>(
+            receiveSubscription: { $0.request(.max(expectedSubscribeDemand)) }
+        )
+
+        map.subscribe(tracking)
+
+        XCTAssertEqual(subscription.history,
+                       [.requested(.max(expectedSubscribeDemand))],
+                       file: file,
+                       line: line)
+    }
+
+    static func testDemandOnReceive<Map: Publisher>(
+        file: StaticString = #file,
+        line: UInt = #line,
+        _ map: (CustomPublisher) -> Map
+    ) where Map.Failure == TestingError {
+        var expectedReceiveValueDemand = 4
+        let subscription = CustomSubscription()
+        let publisher = CustomPublisher(subscription: subscription)
+        let map = map(publisher)
+        let tracking = TrackingSubscriberBase<Map.Output, TestingError>(
+            receiveSubscription: { $0.request(.unlimited) },
+            receiveValue: { _ in .max(expectedReceiveValueDemand) }
+        )
+
+        map.subscribe(tracking)
+
+        XCTAssertEqual(publisher.send(0), .max(4), file: file, line: line)
+
+        expectedReceiveValueDemand = 120
+
+        XCTAssertEqual(publisher.send(0), .max(120), file: file, line: line)
+
+        XCTAssertEqual(subscription.history,
+                       [.requested(.unlimited)],
+                       file: file,
+                       line: line)
+    }
+
+    static func testCompletion<Map: Publisher>(
+        file: StaticString = #file,
+        line: UInt = #line,
+        valueComparator: (Map.Output, Map.Output) -> Bool,
+        _ map: (CustomPublisher) -> Map
+    ) where Map.Failure == TestingError {
+        let subscription = CustomSubscription()
+        let publisher = CustomPublisher(subscription: subscription)
+        let map = map(publisher)
+        let tracking = TrackingSubscriberBase<Map.Output, TestingError>(
+            receiveSubscription: { $0.request(.unlimited) }
+        )
+
+        map.subscribe(tracking)
+        publisher.send(completion: .finished)
+
+        XCTAssertEqual(subscription.history,
+                       [.requested(.unlimited)],
+                       file: file,
+                       line: line)
+
+        tracking.assertHistoryEqual([.subscription("CustomSubscription"),
+                                     .completion(.finished)],
+                                    valueComparator: valueComparator,
+                                    file: file,
+                                    line: line)
+    }
+
+    static func testCancel<Map: Publisher>(
+        file: StaticString = #file,
+        line: UInt = #line,
+        _ map: (CustomPublisher) -> Map
+    ) throws where Map.Failure == TestingError {
+        let subscription = CustomSubscription()
+        let publisher = CustomPublisher(subscription: subscription)
+        let map = map(publisher)
+        var downstreamSubscription: Subscription?
+        let tracking = TrackingSubscriberBase<Map.Output, TestingError>(
+            receiveSubscription: {
+                $0.request(.unlimited)
+                downstreamSubscription = $0
+            },
+            receiveValue: { _ in .max(111) }
+        )
+
+        map.subscribe(tracking)
+        try XCTUnwrap(downstreamSubscription, file: file, line: line).cancel()
+        XCTAssertEqual(publisher.send(1), .max(111), file: file, line: line)
+
+        publisher.send(completion: .finished)
+
+        XCTAssertEqual(subscription.history,
+                       [.requested(.unlimited), .cancelled],
+                       file: file,
+                       line: line)
+    }
+
+    static func testCancelAldreadyCancelled<Map: Publisher>(
+        file: StaticString = #file,
+        line: UInt = #line,
+        _ map: (CustomPublisher) -> Map
+    ) throws where Map.Failure == TestingError {
+        let subscription = CustomSubscription()
+        let publisher = CustomPublisher(subscription: subscription)
+        let map = map(publisher)
+        var downstreamSubscription: Subscription?
+        let tracking = TrackingSubscriberBase<Map.Output, TestingError>(
+            receiveSubscription: {
+                $0.request(.unlimited)
+                downstreamSubscription = $0
+            }
+        )
+
+        map.subscribe(tracking)
+        try XCTUnwrap(downstreamSubscription, file: file, line: line).cancel()
+        downstreamSubscription?.request(.unlimited)
+        try XCTUnwrap(downstreamSubscription, file: file, line: line).cancel()
+
+        XCTAssertEqual(subscription.history,
+                       [.requested(.unlimited),
+                        .cancelled,
+                        .requested(.unlimited),
+                        .cancelled],
+                       file: file,
+                       line: line)
     }
 }

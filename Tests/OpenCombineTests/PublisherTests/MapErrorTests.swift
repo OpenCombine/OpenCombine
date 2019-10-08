@@ -188,65 +188,10 @@ final class MapErrorTests: XCTestCase {
                            { $0.mapError { $0 } })
     }
 
-    func testLifecycle() throws {
-
-        var deinitCounter = 0
-
-        let onDeinit = { deinitCounter += 1 }
-
-        do {
-            let passthrough = PassthroughSubject<Int, TestingError>()
-            let mapError = passthrough.mapError(OtherError.init)
-            let emptySubscriber = TrackingSubscriberBase<Int, OtherError>(
-                onDeinit: onDeinit
-            )
-            XCTAssertTrue(emptySubscriber.history.isEmpty)
-            mapError.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
-            passthrough.send(31)
-            XCTAssertEqual(emptySubscriber.inputs.count, 0)
-            passthrough.send(completion: .failure("failure"))
-            XCTAssertEqual(emptySubscriber.completions.count, 1)
-        }
-
-        XCTAssertEqual(deinitCounter, 1)
-
-        do {
-            let passthrough = PassthroughSubject<Int, TestingError>()
-            let mapError = passthrough.mapError(OtherError.init)
-            let emptySubscriber = TrackingSubscriberBase<Int, OtherError>(
-                onDeinit: onDeinit
-            )
-            XCTAssertTrue(emptySubscriber.history.isEmpty)
-            mapError.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
-            XCTAssertEqual(emptySubscriber.inputs.count, 0)
-            XCTAssertEqual(emptySubscriber.completions.count, 0)
-        }
-
-        XCTAssertEqual(deinitCounter, 1)
-
-        var subscription: Subscription?
-
-        do {
-            let passthrough = PassthroughSubject<Int, TestingError>()
-            let mapError = passthrough.mapError(OtherError.init)
-            let emptySubscriber = TrackingSubscriberBase<Int, OtherError>(
-                receiveSubscription: { subscription = $0; $0.request(.unlimited) },
-                onDeinit: onDeinit
-            )
-            XCTAssertTrue(emptySubscriber.history.isEmpty)
-            mapError.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
-            passthrough.send(31)
-            XCTAssertEqual(emptySubscriber.inputs.count, 1)
-            XCTAssertEqual(emptySubscriber.completions.count, 0)
-            XCTAssertNotNil(subscription)
-        }
-
-        XCTAssertEqual(deinitCounter, 1)
-        try XCTUnwrap(subscription).cancel()
-        XCTAssertEqual(deinitCounter, 2)
+    func testMapErrorLifecycle() throws {
+        try testLifecycle(sendValue: 31,
+                          cancellingSubscriptionReleasesSubscriber: true,
+                          { $0.mapError(OtherError.init) })
     }
 }
 
