@@ -230,61 +230,16 @@ final class FilterTests: XCTestCase {
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited), .cancelled])
     }
 
-    func testLifecycle() throws {
+    func testFilterLifecycle() throws {
+        try testLifecycle(sendValue: 31,
+                          cancellingSubscriptionReleasesSubscriber: false,
+                          { $0.filter { _ in true } })
+    }
 
-        var deinitCounter = 0
-
-        let onDeinit = { deinitCounter += 1 }
-
-        do {
-            let passthrough = PassthroughSubject<Int, TestingError>()
-            let filter = passthrough.filter { $0.isMultiple(of: 2) }
-            let emptySubscriber = TrackingSubscriber(onDeinit: onDeinit)
-            XCTAssertTrue(emptySubscriber.history.isEmpty)
-            filter.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
-            passthrough.send(31)
-            XCTAssertEqual(emptySubscriber.inputs.count, 0)
-            passthrough.send(completion: .failure("failure"))
-            XCTAssertEqual(emptySubscriber.completions.count, 1)
-        }
-
-        XCTAssertEqual(deinitCounter, 0)
-
-        do {
-            let passthrough = PassthroughSubject<Int, TestingError>()
-            let filter = passthrough.filter { $0.isMultiple(of: 2) }
-            let emptySubscriber = TrackingSubscriber(onDeinit: onDeinit)
-            XCTAssertTrue(emptySubscriber.history.isEmpty)
-            filter.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
-            XCTAssertEqual(emptySubscriber.inputs.count, 0)
-            XCTAssertEqual(emptySubscriber.completions.count, 0)
-        }
-
-        XCTAssertEqual(deinitCounter, 0)
-
-        var subscription: Subscription?
-
-        do {
-            let passthrough = PassthroughSubject<Int, TestingError>()
-            let filter = passthrough.filter { $0.isMultiple(of: 2) }
-            let emptySubscriber = TrackingSubscriber(
-                receiveSubscription: { subscription = $0; $0.request(.unlimited) },
-                onDeinit: onDeinit
-            )
-            XCTAssertTrue(emptySubscriber.history.isEmpty)
-            filter.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
-            passthrough.send(32)
-            XCTAssertEqual(emptySubscriber.inputs.count, 1)
-            XCTAssertEqual(emptySubscriber.completions.count, 0)
-            XCTAssertNotNil(subscription)
-        }
-
-        XCTAssertEqual(deinitCounter, 0)
-        try XCTUnwrap(subscription).cancel()
-        XCTAssertEqual(deinitCounter, 0)
+    func testTryFilterLifecycle() throws {
+        try testLifecycle(sendValue: 31,
+                          cancellingSubscriptionReleasesSubscriber: false,
+                          { $0.tryFilter { _ in true } })
     }
 
     func testFilterOperatorSpecializationForFilter() {

@@ -13,7 +13,7 @@
 
 extension Publisher {
 
-    /// Returns a publisher that publishes the values of three key paths as a tuple.
+    /// Returns a publisher that publishes the values of a keyt path as a tuple.
     ///
     /// - Parameters:
     ///    - keyPath: The key path of a property on `Output`
@@ -27,7 +27,7 @@ extension Publisher {
         )
     }
 
-    /// Returns a publisher that publishes the values of three key paths as a tuple.
+    /// Returns a publisher that publishes the values of two key paths as a tuple.
     ///
     /// - Parameters:
     ///    - keyPath0: The key path of a property on `Output`
@@ -180,7 +180,10 @@ extension Publishers.MapKeyPath {
         var description: String { return "ValueForKey" }
 
         var customMirror: Mirror {
-            return Mirror(self, children: EmptyCollection())
+            let children: [Mirror.Child] = [
+                ("keyPath", keyPath),
+            ]
+            return Mirror(self, children: children)
         }
 
         var playgroundDescription: Any { return description }
@@ -236,7 +239,11 @@ extension Publishers.MapKeyPath2 {
         var description: String { return "ValueForKeys" }
 
         var customMirror: Mirror {
-            return Mirror(self, children: EmptyCollection())
+            let children: [Mirror.Child] = [
+                ("keyPath0", keyPath0),
+                ("keyPath1", keyPath1),
+            ]
+            return Mirror(self, children: children)
         }
 
         var playgroundDescription: Any { return description }
@@ -296,7 +303,12 @@ extension Publishers.MapKeyPath3 {
         var description: String { return "ValueForKeys" }
 
         var customMirror: Mirror {
-            return Mirror(self, children: EmptyCollection())
+            let children: [Mirror.Child] = [
+                ("keyPath0", keyPath0),
+                ("keyPath1", keyPath1),
+                ("keyPath2", keyPath2),
+            ]
+            return Mirror(self, children: children)
         }
 
         var playgroundDescription: Any { return description }

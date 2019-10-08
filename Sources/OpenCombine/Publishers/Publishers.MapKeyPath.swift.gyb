@@ -40,8 +40,10 @@ extension Publisher {
 %     init_args_joined = ',\n            '.join(init_args)
 %
 %     publisher_name = make_publisher_name(arity)
+%
+%     doc_cardinal = 'a keyt path' if arity == 1 else cardinal + ' key paths'
 
-    /// Returns a publisher that publishes the values of three key paths as a tuple.
+    /// Returns a publisher that publishes the values of ${doc_cardinal} as a tuple.
     ///
     /// - Parameters:
 %     for i in range(arity):
@@ -159,7 +161,12 @@ extension Publishers.${publisher_name} {
         var description: String { return "${inner_description}" }
 
         var customMirror: Mirror {
-            return Mirror(self, children: EmptyCollection())
+            let children: [Mirror.Child] = [
+%     for i in range(arity):
+                ("${key_path_var(i, arity)}", ${key_path_var(i, arity)}),
+%     end
+            ]
+            return Mirror(self, children: children)
         }
 
         var playgroundDescription: Any { return description }

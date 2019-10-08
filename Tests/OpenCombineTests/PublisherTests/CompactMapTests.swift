@@ -47,7 +47,7 @@ final class CompactMapTests: XCTestCase {
                                           .completion(.failure(.oops))])
     }
 
-    func testTryMapFailureBecauseOfThrow() {
+    func testTryCompactMapFailureBecauseOfThrow() {
         var counter = 0 // How many times the transform is called?
 
         let publisher = PassthroughSubject<String, Error>()
@@ -79,7 +79,7 @@ final class CompactMapTests: XCTestCase {
         XCTAssertEqual(counter, 3)
     }
 
-    func testTryMapFailureOnCompletion() {
+    func testTryCompactMapFailureOnCompletion() {
 
         let publisher = PassthroughSubject<String, Error>()
         let compactMap = publisher.tryCompactMap(Int.init)
@@ -313,61 +313,18 @@ final class CompactMapTests: XCTestCase {
                                               .cancelled])
     }
 
-    func testLifecycle() throws {
-
-        var deinitCounter = 0
-
-        let onDeinit = { deinitCounter += 1 }
-
-        do {
-            let passthrough = PassthroughSubject<String, TestingError>()
-            let compactMap = passthrough.compactMap(Int.init)
-            let emptySubscriber = TrackingSubscriber(onDeinit: onDeinit)
-            XCTAssertTrue(emptySubscriber.history.isEmpty)
-            compactMap.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
-            passthrough.send("31")
-            XCTAssertEqual(emptySubscriber.inputs.count, 0)
-            passthrough.send(completion: .failure("failure"))
-            XCTAssertEqual(emptySubscriber.completions.count, 1)
+    func testCompactMapLifecycle() throws {
+        try testLifecycle(sendValue: "31",
+                          cancellingSubscriptionReleasesSubscriber: false) {
+            $0.compactMap(Int.init)
         }
+    }
 
-        XCTAssertEqual(deinitCounter, 0)
-
-        do {
-            let passthrough = PassthroughSubject<String, TestingError>()
-            let compactMap = passthrough.compactMap(Int.init)
-            let emptySubscriber = TrackingSubscriber(onDeinit: onDeinit)
-            XCTAssertTrue(emptySubscriber.history.isEmpty)
-            compactMap.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
-            XCTAssertEqual(emptySubscriber.inputs.count, 0)
-            XCTAssertEqual(emptySubscriber.completions.count, 0)
+    func testTryCompactMapLifecycle() throws {
+        try testLifecycle(sendValue: "31",
+                          cancellingSubscriptionReleasesSubscriber: false) {
+            $0.tryCompactMap(Int.init)
         }
-
-        XCTAssertEqual(deinitCounter, 0)
-
-        var subscription: Subscription?
-
-        do {
-            let passthrough = PassthroughSubject<String, TestingError>()
-            let compactMap = passthrough.compactMap(Int.init)
-            let emptySubscriber = TrackingSubscriber(
-                receiveSubscription: { subscription = $0; $0.request(.unlimited) },
-                onDeinit: onDeinit
-            )
-            XCTAssertTrue(emptySubscriber.history.isEmpty)
-            compactMap.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
-            passthrough.send("31")
-            XCTAssertEqual(emptySubscriber.inputs.count, 1)
-            XCTAssertEqual(emptySubscriber.completions.count, 0)
-            XCTAssertNotNil(subscription)
-        }
-
-        XCTAssertEqual(deinitCounter, 0)
-        try XCTUnwrap(subscription).cancel()
-        XCTAssertEqual(deinitCounter, 0)
     }
 
     func testCompactMapOperatorSpecializationForCompactMap() {

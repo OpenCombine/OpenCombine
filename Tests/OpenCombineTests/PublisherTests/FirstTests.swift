@@ -120,59 +120,9 @@ final class FirstTests: XCTestCase {
     }
 
     func testFirstLifecycle() throws {
-
-        var deinitCounter = 0
-
-        let onDeinit = { deinitCounter += 1 }
-
-        do {
-            let passthrough = PassthroughSubject<Int, TestingError>()
-            let first = passthrough.first()
-            let emptySubscriber = TrackingSubscriber(onDeinit: onDeinit)
-            XCTAssertTrue(emptySubscriber.history.isEmpty)
-            first.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
-            passthrough.send(31)
-            XCTAssertEqual(emptySubscriber.inputs.count, 0)
-            XCTAssertEqual(emptySubscriber.completions.count, 0)
-        }
-
-        XCTAssertEqual(deinitCounter, 0)
-
-        do {
-            let passthrough = PassthroughSubject<Int, TestingError>()
-            let first = passthrough.first()
-            let emptySubscriber = TrackingSubscriber(onDeinit: onDeinit)
-            XCTAssertTrue(emptySubscriber.history.isEmpty)
-            first.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
-            XCTAssertEqual(emptySubscriber.inputs.count, 0)
-            XCTAssertEqual(emptySubscriber.completions.count, 0)
-        }
-
-        XCTAssertEqual(deinitCounter, 0)
-
-        var subscription: Subscription?
-
-        do {
-            let passthrough = PassthroughSubject<Int, TestingError>()
-            let first = passthrough.first()
-            let emptySubscriber = TrackingSubscriber(
-                receiveSubscription: { subscription = $0; $0.request(.unlimited) },
-                onDeinit: onDeinit
-            )
-            XCTAssertTrue(emptySubscriber.history.isEmpty)
-            first.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
-            passthrough.send(32)
-            XCTAssertEqual(emptySubscriber.inputs.count, 1)
-            XCTAssertEqual(emptySubscriber.completions.count, 1)
-            XCTAssertNotNil(subscription)
-        }
-
-        XCTAssertEqual(deinitCounter, 0)
-        try XCTUnwrap(subscription).cancel()
-        XCTAssertEqual(deinitCounter, 0)
+        try testLifecycle(sendValue: 31,
+                          cancellingSubscriptionReleasesSubscriber: false,
+                          { $0.first() })
     }
 
     func testFirstWhereDemand() throws {
@@ -276,84 +226,9 @@ final class FirstTests: XCTestCase {
     }
 
     func testFirstWhereLifecycle() throws {
-
-        var deinitCounter = 0
-        let onDeinit = { deinitCounter += 1 }
-
-        do {
-            let passthrough = PassthroughSubject<Int, TestingError>()
-            let firstWhere = passthrough.first { $0 > 1 }
-
-            let emptySubscriber = TrackingSubscriber(onDeinit: onDeinit)
-            XCTAssertTrue(emptySubscriber.history.isEmpty)
-            firstWhere.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
-            passthrough.send(31)
-            XCTAssertEqual(emptySubscriber.inputs.count, 0)
-            XCTAssertEqual(emptySubscriber.completions.count, 0)
-        }
-
-        XCTAssertEqual(deinitCounter, 0)
-
-        do {
-            let passthrough = PassthroughSubject<Int, TestingError>()
-            let firstWhere = passthrough.first { $0 > 1 }
-            let emptySubscriber = TrackingSubscriber(onDeinit: onDeinit)
-            XCTAssertTrue(emptySubscriber.history.isEmpty)
-            firstWhere.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
-            XCTAssertEqual(emptySubscriber.inputs.count, 0)
-            XCTAssertEqual(emptySubscriber.completions.count, 0)
-        }
-
-        XCTAssertEqual(deinitCounter, 0)
-
-        var subscription: Subscription?
-
-        do {
-            let passthrough = PassthroughSubject<Int, TestingError>()
-            let firstWhere = passthrough.first { $0 > 1 }
-            let emptySubscriber = TrackingSubscriber(
-                receiveSubscription: { subscription = $0; $0.request(.unlimited) },
-                onDeinit: onDeinit
-            )
-            XCTAssertTrue(emptySubscriber.history.isEmpty)
-            firstWhere.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
-            passthrough.send(32)
-            XCTAssertEqual(emptySubscriber.inputs.count, 1)
-            XCTAssertEqual(emptySubscriber.completions.count, 1)
-            XCTAssertNotNil(subscription)
-        }
-
-        XCTAssertEqual(deinitCounter, 0)
-        try XCTUnwrap(subscription).cancel()
-        XCTAssertEqual(deinitCounter, 0)
-
-        var predicateDeinitCounter = 0
-        let onPredicateDeinit = {
-            predicateDeinitCounter += 1
-        }
-
-        do {
-            let passthrough = PassthroughSubject<Int, TestingError>()
-            let firstWhere = passthrough.first { _ in
-                _ = TrackingSubscriber(onDeinit: onPredicateDeinit)
-                return true
-            }
-
-            XCTAssertEqual(predicateDeinitCounter, 0)
-
-            let subscriber =
-                TrackingSubscriber(receiveSubscription: { $0.request(.max(1)) })
-            XCTAssertTrue(subscriber.history.isEmpty)
-            firstWhere.subscribe(subscriber)
-            XCTAssertEqual(subscriber.subscriptions.count, 1)
-            passthrough.send(31)
-            XCTAssertEqual(subscriber.inputs.count, 1)
-            XCTAssertEqual(subscriber.completions.count, 1)
-            XCTAssertEqual(predicateDeinitCounter, 1)
-        }
+        try testLifecycle(sendValue: 31,
+                          cancellingSubscriptionReleasesSubscriber: false,
+                          { $0.first { $0 > 1 } })
     }
 
     func testTryFirstWhereDemand() throws {
@@ -489,106 +364,9 @@ final class FirstTests: XCTestCase {
     }
 
     func testTryFirstWhereLifecycle() throws {
-
-        var deinitCounter = 0
-        let onDeinit = { deinitCounter += 1 }
-
-        do {
-            let passthrough = PassthroughSubject<Int, TestingError>()
-            let tryFirstWhere = passthrough.tryFirst { $0 > 1 }
-
-            let emptySubscriber = TrackingSubscriberBase<Int, Error>(onDeinit: onDeinit)
-            XCTAssertTrue(emptySubscriber.history.isEmpty)
-            tryFirstWhere.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
-            passthrough.send(31)
-            XCTAssertEqual(emptySubscriber.inputs.count, 0)
-            XCTAssertEqual(emptySubscriber.completions.count, 0)
-        }
-
-        XCTAssertEqual(deinitCounter, 0)
-
-        do {
-            let passthrough = PassthroughSubject<Int, TestingError>()
-            let tryFirstWhere = passthrough.tryFirst { $0 > 1 }
-            let emptySubscriber = TrackingSubscriberBase<Int, Error>(onDeinit: onDeinit)
-            XCTAssertTrue(emptySubscriber.history.isEmpty)
-            tryFirstWhere.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
-            XCTAssertEqual(emptySubscriber.inputs.count, 0)
-            XCTAssertEqual(emptySubscriber.completions.count, 0)
-        }
-
-        XCTAssertEqual(deinitCounter, 0)
-
-        var subscription: Subscription?
-
-        do {
-            let passthrough = PassthroughSubject<Int, TestingError>()
-            let tryFirstWhere = passthrough.tryFirst { $0 > 1 }
-            let emptySubscriber = TrackingSubscriberBase<Int, Error>(
-                receiveSubscription: { subscription = $0; $0.request(.unlimited) },
-                onDeinit: onDeinit
-            )
-            XCTAssertTrue(emptySubscriber.history.isEmpty)
-            tryFirstWhere.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
-            passthrough.send(32)
-            XCTAssertEqual(emptySubscriber.inputs.count, 1)
-            XCTAssertEqual(emptySubscriber.completions.count, 1)
-            XCTAssertNotNil(subscription)
-        }
-
-        XCTAssertEqual(deinitCounter, 0)
-        try XCTUnwrap(subscription).cancel()
-        XCTAssertEqual(deinitCounter, 0)
-
-        var predicateDeinitCounter = 0
-        let onPredicateDeinit = {
-            predicateDeinitCounter += 1
-        }
-
-        do {
-            let passthrough = PassthroughSubject<Int, TestingError>()
-            let tryFirstWhere = passthrough.tryFirst { _ in
-                _ = TrackingSubscriber(onDeinit: onPredicateDeinit)
-                return true
-            }
-
-            XCTAssertEqual(predicateDeinitCounter, 0)
-
-            let subscriber = TrackingSubscriberBase<Int, Error>(
-                receiveSubscription: { $0.request(.max(1)) }
-            )
-            XCTAssertTrue(subscriber.history.isEmpty)
-            tryFirstWhere.subscribe(subscriber)
-            XCTAssertEqual(subscriber.subscriptions.count, 1)
-            passthrough.send(31)
-            XCTAssertEqual(subscriber.inputs.count, 1)
-            XCTAssertEqual(subscriber.completions.count, 1)
-            XCTAssertEqual(predicateDeinitCounter, 1)
-        }
-
-        do {
-            let passthrough = PassthroughSubject<Int, TestingError>()
-            let tryFirstWhere = passthrough.tryFirst { _ in
-                _ = TrackingSubscriber(onDeinit: onPredicateDeinit)
-                throw TestingError.oops
-            }
-
-            XCTAssertEqual(predicateDeinitCounter, 1)
-
-            let subscriber = TrackingSubscriberBase<Int, Error>(
-                receiveSubscription: { $0.request(.max(1)) }
-            )
-            XCTAssertTrue(subscriber.history.isEmpty)
-            tryFirstWhere.subscribe(subscriber)
-            XCTAssertEqual(subscriber.subscriptions.count, 1)
-            passthrough.send(31)
-            XCTAssertEqual(subscriber.inputs.count, 0)
-            XCTAssertEqual(subscriber.completions.count, 1)
-            XCTAssertEqual(predicateDeinitCounter, 2)
-        }
+        try testLifecycle(sendValue: 31,
+                          cancellingSubscriptionReleasesSubscriber: false,
+                          { $0.tryFirst { $0 > 1 } })
     }
 
     func testCancelAlreadyCancelled() throws {
