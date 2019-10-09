@@ -106,7 +106,8 @@ private final class PThreadMutexRecursiveLock: PThreadMutexLock, UnfairRecursive
 private func assertPThreadFunctionSucceeds(_ returnCode: CInt,
                                            file: StaticString = #file,
                                            line: UInt = #line) {
-    // swiftlint:disable inheritance_colon — false positive here
+    // SwiftLint has a false positive here
+    // swiftlint:disable inheritance_colon
     let abbreviation: String
     switch returnCode {
     case 0:
