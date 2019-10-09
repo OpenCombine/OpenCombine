@@ -65,11 +65,9 @@ extension Publishers {
         }
 
         public func receive<Downstream: Subscriber>(subscriber: Downstream)
-            where Failure == Downstream.Failure,
-                  Output == Downstream.Input
+            where Failure == Downstream.Failure, Output == Downstream.Input
         {
-            let inner = Inner(downstream: subscriber, predicate: { _ in .success(true) })
-            upstream.receive(subscriber: inner)
+            upstream.subscribe(Inner(downstream: subscriber))
         }
     }
 
@@ -93,11 +91,9 @@ extension Publishers {
         }
 
         public func receive<Downstream: Subscriber>(subscriber: Downstream)
-            where Failure == Downstream.Failure,
-                  Output == Downstream.Input
+            where Failure == Downstream.Failure, Output == Downstream.Input
         {
-            let inner = Inner(downstream: subscriber, predicate: catching(predicate))
-            upstream.receive(subscriber: inner)
+            upstream.subscribe(Inner(downstream: subscriber, predicate: predicate))
         }
     }
 
@@ -121,175 +117,94 @@ extension Publishers {
         }
 
         public func receive<Downstream: Subscriber>(subscriber: Downstream)
-            where Failure == Downstream.Failure,
-                  Output == Downstream.Input
+            where Failure == Downstream.Failure, Output == Downstream.Input
         {
-            let inner = Inner(downstream: subscriber, predicate: catching(predicate))
-            upstream.receive(subscriber: inner)
+            upstream.subscribe(Inner(downstream: subscriber, predicate: predicate))
         }
     }
 }
 
 extension Publishers.First: Equatable where Upstream: Equatable {}
 
-private class _FirstWhere<Upstream: Publisher, Downstream: Subscriber>
-    : OperatorSubscription<Downstream>,
-      Subscription
-    where Downstream.Input == Upstream.Output
-{
-    typealias Input = Upstream.Output
-    typealias Failure = Upstream.Failure
-    typealias Predicate = (Input) -> Result<Bool, Downstream.Failure>
-
-    //                         ┌──────────────────┐
-    //                 ┌──────▶│ .pending(input)  │───────────┐
-    //                 │       └──────────────────┘           │
-    //   receive(input)│                                      │request(demand)
-    //                 │                                      │
-    //                 │                                      │
-    //                 │                                      ▼
-    //       ┌──────────────────┐                     ┌──────────────┐
-    //  ●───▶│.waitingForDemand │                     │  .finished   │
-    //       └──────────────────┘                     └──────────────┘
-    //                 │                                      ▲
-    //                 │                                      │
-    //                 │                                      │
-    //  request(demand)│                                      │receive(input)
-    //                 │    ┌──────────────────────────┐      │
-    //                 └───▶│ .downstreamHasRequested  │──────┘
-    //                      └──────────────────────────┘
-    enum State {
-        case waitingForDemand
-        case pending(Input)
-        case downstreamHasRequested
-        case finished
-    }
-
-    var predicate: Predicate?
-    private var _state: State = .waitingForDemand
-
-    var isCompleted: Bool {
-        return predicate == nil
-    }
-
-    init(downstream: Downstream, predicate: @escaping Predicate) {
-        self.predicate = predicate
-        super.init(downstream: downstream)
-    }
-
-    func receive(subscription: Subscription) {
-        upstreamSubscription = subscription
-        subscription.request(.unlimited)
-        downstream.receive(subscription: self)
-    }
-
-    func receive(_ input: Input) -> Subscribers.Demand {
-        switch _state {
-        case .pending, .finished:
-            break
-        case .downstreamHasRequested:
-            _ifSatisfiesPredicate(input) {
-                _state = .finished
-                _sendDownstream(input)
-            }
-        case .waitingForDemand:
-            _ifSatisfiesPredicate(input) {
-                _state = .pending(input)
-            }
-        }
-        return .none
-    }
-
-    private func _ifSatisfiesPredicate(_ input: Input, _ onSuccess: () -> Void) {
-        guard let predicate = self.predicate else { return }
-        switch predicate(input) {
-        case .success(true):
-            onSuccess()
-        case .success(false):
-            return
-        case .failure(let error):
-            cancel()
-            downstream.receive(completion: .failure(error))
-            return
-        }
-    }
-
-    private func _sendDownstream(_ input: Input) {
-        _ = downstream.receive(input)
-        cancel()
-        downstream.receive(completion: .finished)
-    }
-
-    func request(_ demand: Subscribers.Demand) {
-        precondition(demand > 0, "demand must not be zero")
-        switch _state {
-        case .waitingForDemand:
-            _state = .downstreamHasRequested
-        case .pending(let input):
-            _state = .finished
-            _sendDownstream(input)
-        case .finished, .downstreamHasRequested:
-            break
-        }
-    }
-
-    override func cancel() {
-        predicate = nil
-        upstreamSubscription?.cancel()
-        upstreamSubscription = nil
-    }
-}
-
 extension Publishers.First {
     private final class Inner<Downstream: Subscriber>
-        : _FirstWhere<Upstream, Downstream>,
-          Subscriber,
-          CustomStringConvertible
+        : ReduceProducer<Downstream,
+                         Upstream.Output,
+                         Upstream.Output,
+                         Upstream.Failure,
+                         Void>
         where Upstream.Output == Downstream.Input,
               Upstream.Failure == Downstream.Failure
     {
-        var description: String { return "First" }
-
-        func receive(completion: Subscribers.Completion<Failure>) {
-            guard !isCompleted else { return }
-            predicate = nil
-            downstream.receive(completion: completion)
+        fileprivate init(downstream: Downstream) {
+            super.init(downstream: downstream, initial: nil, reduce: ())
         }
+
+        override func receive(
+            newValue: Upstream.Output
+        ) -> PartialCompletion<Void, Downstream.Failure> {
+            result = newValue
+            return .finished
+        }
+
+        override var description: String { return "First" }
     }
 }
 
 extension Publishers.FirstWhere {
     private final class Inner<Downstream: Subscriber>
-        : _FirstWhere<Upstream, Downstream>,
-          Subscriber,
-          CustomStringConvertible
+        : ReduceProducer<Downstream, Output, Output, Failure, (Output) -> Bool>
         where Upstream.Output == Downstream.Input,
               Upstream.Failure == Downstream.Failure
     {
-        var description: String { return "TryFirst" }
-
-        func receive(completion: Subscribers.Completion<Failure>) {
-            guard !isCompleted else { return }
-            predicate = nil
-            downstream.receive(completion: completion)
+        fileprivate init(downstream: Downstream, predicate: @escaping (Output) -> Bool) {
+            super.init(downstream: downstream, initial: nil, reduce: predicate)
         }
+
+        override func receive(
+            newValue: Output
+        ) -> PartialCompletion<Void, Downstream.Failure> {
+            if reduce(newValue) {
+                result = newValue
+                return .finished
+            } else {
+                return .continue
+            }
+        }
+
+        override var description: String { return "TryFirst" }
     }
 }
 
 extension Publishers.TryFirstWhere {
     private final class Inner<Downstream: Subscriber>
-        : _FirstWhere<Upstream, Downstream>,
-          Subscriber,
-          CustomStringConvertible
-        where Upstream.Output == Downstream.Input,
-              Downstream.Failure == Error
+        : ReduceProducer<Downstream,
+                         Output,
+                         Output,
+                         Upstream.Failure,
+                         (Output) throws -> Bool>
+        where Upstream.Output == Downstream.Input, Downstream.Failure == Error
     {
-        var description: String { return "TryFirstWhere" }
-
-        func receive(completion: Subscribers.Completion<Failure>) {
-            guard !isCompleted else { return }
-            predicate = nil
-            downstream.receive(completion: completion.eraseError())
+        fileprivate init(downstream: Downstream,
+                         predicate: @escaping (Output) throws -> Bool) {
+            super.init(downstream: downstream, initial: nil, reduce: predicate)
         }
+
+        override func receive(
+            newValue: Output
+        ) -> PartialCompletion<Void, Error> {
+            do {
+                if try reduce(newValue) {
+                    result = newValue
+                    return .finished
+                } else {
+                    return .continue
+                }
+            } catch {
+                return .failure(error)
+            }
+        }
+
+        override var description: String { return "TryFirstWhere" }
     }
 }

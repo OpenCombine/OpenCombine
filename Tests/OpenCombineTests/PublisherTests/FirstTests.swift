@@ -16,6 +16,8 @@ import OpenCombine
 @available(macOS 10.15, iOS 13.0, *)
 final class FirstTests: XCTestCase {
 
+    // MARK: - First
+
     func testFirstDemand() throws {
 
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
@@ -70,53 +72,28 @@ final class FirstTests: XCTestCase {
     }
 
     func testFirstFinishesWithError() {
-        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
-                                        initialDemand: .max(3),
-                                        receiveValueDemand: .max(1),
-                                        createSut: { $0.first() })
-
-        XCTAssertEqual(helper.tracking.history, [.subscription("First")])
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
-
-        helper.publisher.send(completion: .failure(.oops))
-        XCTAssertEqual(helper.tracking.history, [.subscription("First"),
-                                                 .completion(.failure(.oops))])
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
-
-        helper.publisher.send(completion: .failure(.oops))
-        XCTAssertEqual(helper.tracking.history, [.subscription("First"),
-                                                 .completion(.failure(.oops))])
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
-
-        XCTAssertEqual(helper.publisher.send(73), .none)
-        XCTAssertEqual(helper.tracking.history, [.subscription("First"),
-                                                 .completion(.failure(.oops))])
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+        ReduceTests.testUpstreamFinishesWithError(expectedSubscription: "First") {
+            $0.first()
+        }
     }
 
     func testFirstFinishesImmediately() {
-        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
-                                        initialDemand: .max(3),
-                                        receiveValueDemand: .max(1),
-                                        createSut: { $0.first() })
+        ReduceTests.testUpstreamFinishesImmediately(expectedSubscription: "First",
+                                                    expectedResult: nil) {
+            $0.first()
+        }
+    }
 
-        XCTAssertEqual(helper.tracking.history, [.subscription("First")])
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+    func testFirstRequestsUnlimitedThenSendsSubscription() {
+        ReduceTests.testRequestsUnlimitedThenSendsSubscription { $0.first() }
+    }
 
-        helper.publisher.send(completion: .finished)
-        XCTAssertEqual(helper.tracking.history, [.subscription("First"),
-                                                 .completion(.finished)])
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
-
-        helper.publisher.send(completion: .failure(.oops))
-        XCTAssertEqual(helper.tracking.history, [.subscription("First"),
-                                                 .completion(.finished)])
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
-
-        XCTAssertEqual(helper.publisher.send(73), .none)
-        XCTAssertEqual(helper.tracking.history, [.subscription("First"),
-                                                 .completion(.finished)])
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+    func testFirstReceiveSubscriptionTwice() throws {
+        try ReduceTests.testReceiveSubscriptionTwice(
+            expectedSubscription: "First",
+            expectedResult: .earlyCompletion(0),
+            { $0.first() }
+        )
     }
 
     func testFirstLifecycle() throws {
@@ -124,6 +101,21 @@ final class FirstTests: XCTestCase {
                           cancellingSubscriptionReleasesSubscriber: false,
                           { $0.first() })
     }
+
+    func testFirstCancelAlreadyCancelled() throws {
+        try ReduceTests.testCancelAlreadyCancelled { $0.first() }
+    }
+
+    func testFirstReflection() throws {
+        try testReflection(parentInput: Int.self,
+                           parentFailure: Error.self,
+                           description: "First",
+                           customMirror: reduceLikeOperatorMirror(),
+                           playgroundDescription: "First",
+                           { $0.first() })
+    }
+
+    // MARK: - FirstWhere
 
     func testFirstWhereDemand() throws {
 
@@ -199,30 +191,36 @@ final class FirstTests: XCTestCase {
     }
 
     func testFirstWhereFinishesWithError() {
-        let helper = OperatorTestHelper(
-            publisherType: CustomPublisher.self,
-            initialDemand: .max(5),
-            receiveValueDemand: .max(1),
-            createSut: { $0.first(where: { $0 > 2 }) }
+        ReduceTests.testUpstreamFinishesWithError(expectedSubscription: "TryFirst") {
+            $0.first(where: { $0 > 2 })
+        }
+    }
+
+    func testFirstWhereFinishesImmediately() {
+        ReduceTests.testUpstreamFinishesImmediately(expectedSubscription: "TryFirst",
+                                                    expectedResult: nil) {
+            $0.first(where: { $0 > 2 })
+        }
+    }
+
+    func testFirstWhereRequestsUnlimitedThenSendsSubscription() {
+        ReduceTests.testRequestsUnlimitedThenSendsSubscription {
+            $0.first(where: { $0 > 0 })
+        }
+    }
+
+    func testFirstWhereReceiveSubscriptionTwice() throws {
+        try ReduceTests.testReceiveSubscriptionTwice(
+            expectedSubscription: "TryFirst",
+            expectedResult: .normalCompletion(nil),
+            { $0.first(where: { _ in false }) }
         )
 
-        XCTAssertEqual(helper.tracking.history, [.subscription("TryFirst")])
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
-
-        helper.publisher.send(completion: .failure(.oops))
-        XCTAssertEqual(helper.tracking.history, [.subscription("TryFirst"),
-                                                 .completion(.failure(.oops))])
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
-
-        helper.publisher.send(completion: .failure(.oops))
-        XCTAssertEqual(helper.tracking.history, [.subscription("TryFirst"),
-                                                 .completion(.failure(.oops))])
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
-
-        XCTAssertEqual(helper.publisher.send(73), .none)
-        XCTAssertEqual(helper.tracking.history, [.subscription("TryFirst"),
-                                                 .completion(.failure(.oops))])
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+        try ReduceTests.testReceiveSubscriptionTwice(
+            expectedSubscription: "TryFirst",
+            expectedResult: .earlyCompletion(0),
+            { $0.first(where: { _ in true }) }
+        )
     }
 
     func testFirstWhereLifecycle() throws {
@@ -230,6 +228,21 @@ final class FirstTests: XCTestCase {
                           cancellingSubscriptionReleasesSubscriber: false,
                           { $0.first { $0 > 1 } })
     }
+
+    func testFirstWhereCancelAlreadyCancelled() throws {
+        try ReduceTests.testCancelAlreadyCancelled { $0.first(where: { $0 > 2 }) }
+    }
+
+    func testFirstWhereReflection() throws {
+        try testReflection(parentInput: Int.self,
+                           parentFailure: Error.self,
+                           description: "TryFirst",
+                           customMirror: reduceLikeOperatorMirror(),
+                           playgroundDescription: "TryFirst",
+                           { $0.first(where: { $0 > 2 }) })
+    }
+
+    // MARK: - TryFirstWhere
 
     func testTryFirstWhereDemand() throws {
 
@@ -299,68 +312,57 @@ final class FirstTests: XCTestCase {
     }
 
     func testTryFirstWhereFinishesWithError() {
-        let helper = OperatorTestHelper(
-            publisherType: CustomPublisher.self,
-            initialDemand: .max(5),
-            receiveValueDemand: .max(1),
-            createSut: { $0.tryFirst(where: { $0 > 6 }) }
-        )
-
-        XCTAssertEqual(helper.tracking.history, [.subscription("TryFirstWhere")])
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
-
-        helper.publisher.send(completion: .failure(.oops))
-        XCTAssertEqual(helper.tracking.history,
-                       [.subscription("TryFirstWhere"),
-                        .completion(.failure(TestingError.oops))])
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
-
-        helper.publisher.send(completion: .failure(.oops))
-        XCTAssertEqual(helper.tracking.history,
-                       [.subscription("TryFirstWhere"),
-                        .completion(.failure(TestingError.oops))])
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
-
-        XCTAssertEqual(helper.publisher.send(73), .none)
-        XCTAssertEqual(helper.tracking.history,
-                       [.subscription("TryFirstWhere"),
-                        .completion(.failure(TestingError.oops))])
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+        ReduceTests.testUpstreamFinishesWithError(expectedSubscription: "TryFirstWhere") {
+            $0.tryFirst(where: { $0 > 2 })
+        }
     }
 
-    func testTryFirstWhereFinishesWhenErrorThrown() {
-        let helper = OperatorTestHelper(
-            publisherType: CustomPublisher.self,
-            initialDemand: .max(5),
-            receiveValueDemand: .max(1),
-            createSut: {
-                $0.tryFirst(where: {
-                    if $0 == 3 {
-                        throw TestingError.oops
-                    }
-                    return $0 > 3
-                })
+    func testTryFirstWhereFinishesImmediately() {
+        ReduceTests
+            .testUpstreamFinishesImmediately(expectedSubscription: "TryFirstWhere",
+                                             expectedResult: nil) {
+                $0.tryFirst(where: { $0 > 2 })
             }
+    }
+
+    func testTryFirstWhereRequestsUnlimitedThenSendsSubscription() {
+        ReduceTests.testRequestsUnlimitedThenSendsSubscription {
+            $0.tryFirst(where: { $0 > 0 })
+        }
+    }
+
+    func testTryFirstWhereFinishesWhenErrorThrown() throws {
+
+        func predicate(_ input: Int) throws -> Bool {
+            if input == 3 {
+                throw TestingError.oops
+            }
+            return input > 3
+        }
+
+        try ReduceTests.testFailureBecauseOfThrow(expectedSubscription: "TryFirstWhere",
+                                                  expectedFailure: TestingError.oops,
+                                                  { $0.tryFirst(where: predicate) })
+    }
+
+    func testTryFirstWhereReceiveSubscriptionTwice() throws {
+        try ReduceTests.testReceiveSubscriptionTwice(
+            expectedSubscription: "TryFirstWhere",
+            expectedResult: .normalCompletion(nil),
+            { $0.tryFirst(where: { _ in false }) }
         )
 
-        XCTAssertEqual(helper.tracking.history, [.subscription("TryFirstWhere")])
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+        try ReduceTests.testReceiveSubscriptionTwice(
+            expectedSubscription: "TryFirstWhere",
+            expectedResult: .earlyCompletion(0),
+            { $0.tryFirst(where: { _ in true }) }
+        )
 
-        XCTAssertEqual(helper.publisher.send(2), .none)
-        XCTAssertEqual(helper.tracking.history, [.subscription("TryFirstWhere")])
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
-
-        XCTAssertEqual(helper.publisher.send(3), .none)
-        XCTAssertEqual(helper.tracking.history,
-                       [.subscription("TryFirstWhere"),
-                        .completion(.failure(TestingError.oops))])
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited), .cancelled])
-
-        XCTAssertEqual(helper.publisher.send(4), .none)
-        XCTAssertEqual(helper.tracking.history,
-                       [.subscription("TryFirstWhere"),
-                        .completion(.failure(TestingError.oops))])
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited), .cancelled])
+        try ReduceTests.testReceiveSubscriptionTwice(
+            expectedSubscription: "TryFirstWhere",
+            expectedResult: .failure(TestingError.oops),
+            { $0.tryFirst(where: { _ in throw TestingError.oops }) }
+        )
     }
 
     func testTryFirstWhereLifecycle() throws {
@@ -369,16 +371,16 @@ final class FirstTests: XCTestCase {
                           { $0.tryFirst { $0 > 1 } })
     }
 
-    func testCancelAlreadyCancelled() throws {
-        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
-                                        initialDemand: .unlimited,
-                                        receiveValueDemand: .none,
-                                        createSut: { $0.first() })
+    func testTryFirstCancelAlreadyCancelled() throws {
+        try ReduceTests.testCancelAlreadyCancelled { $0.tryFirst(where: { $0 > 2 }) }
+    }
 
-        try XCTUnwrap(helper.downstreamSubscription).cancel()
-        try XCTUnwrap(helper.downstreamSubscription).request(.unlimited)
-        try XCTUnwrap(helper.downstreamSubscription).cancel()
-
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited), .cancelled])
+    func testTryFirstWhereReflection() throws {
+        try testReflection(parentInput: Int.self,
+                           parentFailure: Error.self,
+                           description: "TryFirstWhere",
+                           customMirror: reduceLikeOperatorMirror(),
+                           playgroundDescription: "TryFirstWhere",
+                           { $0.tryFirst(where: { $0 > 2 }) })
     }
 }
