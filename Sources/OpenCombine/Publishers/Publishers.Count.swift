@@ -5,6 +5,17 @@
 //  Created by Joseph Spadafora on 6/25/19.
 //
 
+extension Publisher {
+
+    /// Publishes the number of elements received from the upstream publisher.
+    ///
+    /// - Returns: A publisher that consumes all elements until the upstream publisher
+    /// finishes, then emits a single value with the total number of elements received.
+    public func count() -> Publishers.Count<Self> {
+        return Publishers.Count(upstream: self)
+    }
+}
+
 extension Publishers {
 
     /// A publisher that publishes the number of elements received
@@ -37,58 +48,28 @@ extension Publishers {
             where Upstream.Failure == Downstream.Failure,
                   Downstream.Input == Output
         {
-            let count = _Count<Upstream, Downstream>(downstream: subscriber)
-            upstream.subscribe(count)
+            upstream.subscribe(Inner(downstream: subscriber))
         }
     }
 }
 
-extension Publisher {
-
-    /// Publishes the number of elements received from the upstream publisher.
-    ///
-    /// - Returns: A publisher that consumes all elements until the upstream publisher
-    /// finishes, then emits a single value with the total number of elements received.
-    public func count() -> Publishers.Count<Self> {
-        return Publishers.Count(upstream: self)
-    }
-}
-
-private final class _Count<Upstream: Publisher, Downstream: Subscriber>
-    : OperatorSubscription<Downstream>,
-      Subscriber,
-      CustomStringConvertible,
-      Subscription
-    where Downstream.Input == Int,
-          Upstream.Failure == Downstream.Failure
-{
-
-    typealias Input = Upstream.Output
-    typealias Output = Int
-    typealias Failure = Downstream.Failure
-
-    private var _count = 0
-
-    var description: String { return "Count" }
-
-    func receive(subscription: Subscription) {
-        upstreamSubscription = subscription
-        downstream.receive(subscription: self)
-        upstreamSubscription?.request(.unlimited)
-    }
-
-    func receive(_ input: Input) -> Subscribers.Demand {
-        _count += 1
-        return .none
-    }
-
-    func receive(completion: Subscribers.Completion<Upstream.Failure>) {
-        if case .finished = completion {
-            _ = downstream.receive(_count)
+extension Publishers.Count {
+    private final class Inner<Downstream: Subscriber>
+        : ReduceProducer<Downstream, Upstream.Output, Int, Failure, Void>
+        where Downstream.Input == Int,
+              Upstream.Failure == Downstream.Failure
+    {
+        fileprivate init(downstream: Downstream) {
+            super.init(downstream: downstream, initial: 0, reduce: ())
         }
-        downstream.receive(completion: completion)
-    }
 
-    func request(_ demand: Subscribers.Demand) {
+        override func receive(
+            newValue: Upstream.Output
+        ) -> PartialCompletion<Void, Downstream.Failure> {
+            result! += 1
+            return .continue
+        }
+
+        override var description: String { return "Count" }
     }
 }
