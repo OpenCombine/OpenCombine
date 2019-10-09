@@ -13,9 +13,7 @@ import Combine
 import OpenCombine
 #endif
 
-func childrenIsEmpty(_ mirror: Mirror) -> Bool {
-    return mirror.children.isEmpty
-}
+let childrenIsEmpty: (Mirror) -> Bool = { $0.children.isEmpty }
 
 enum ExpectedMirrorChildValue: Equatable, ExpressibleByStringLiteral {
     case anything
@@ -54,6 +52,18 @@ func expectedChildren(_ expectedChildren: (String?, ExpectedMirrorChildValue)...
         }
         return true
     }
+}
+
+func reduceLikeOperatorMirror(file: StaticString = #file,
+                              line: UInt = #line) -> (Mirror) -> Bool {
+    return expectedChildren(
+        ("downstream", .contains("TrackingSubscriberBase")),
+        ("result", .anything),
+        ("initial", .anything),
+        ("status", .contains("awaitingSubscription")),
+        file: file,
+        line: line
+    )
 }
 
 @available(macOS 10.15, iOS 13.0, *)

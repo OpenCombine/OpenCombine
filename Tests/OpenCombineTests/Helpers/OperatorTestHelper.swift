@@ -18,10 +18,10 @@ import OpenCombine
 /// `CustomSubscription`, `CustomPublisherBase` and `TrackingSubscriberBase`.
 @available(macOS 10.15, iOS 13.0, *)
 class OperatorTestHelper<SourceValue: Equatable,
+                         SourceError: Error,
                          SourcePublisher,
                          Sut: Publisher>
-    where Sut.Output: Equatable,
-          SourcePublisher: CustomPublisherBase<SourceValue, TestingError>
+    where SourcePublisher: CustomPublisherBase<SourceValue, SourceError>
 {
     typealias Value = Sut.Output
     typealias Failure = Sut.Failure
