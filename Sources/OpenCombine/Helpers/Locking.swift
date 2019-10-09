@@ -61,7 +61,7 @@ private class PThreadMutexLock
         assertPThreadFunctionSucceeds(pthread_mutexattr_init(&attributes))
         // Enable error detection
         assertPThreadFunctionSucceeds(
-            pthread_mutexattr_settype(&attributes, PTHREAD_MUTEX_ERRORCHECK)
+            pthread_mutexattr_settype(&attributes, CInt(PTHREAD_MUTEX_ERRORCHECK))
         )
         setAdditionalAttributes(&attributes)
         assertPThreadFunctionSucceeds(pthread_mutex_init(mutex, &attributes))
@@ -103,9 +103,10 @@ private final class PThreadMutexRecursiveLock: PThreadMutexLock, UnfairRecursive
     }
 }
 
-func assertPThreadFunctionSucceeds(_ returnCode: CInt,
-                                   file: StaticString = #file,
-                                   line: UInt = #line) {
+private func assertPThreadFunctionSucceeds(_ returnCode: CInt,
+                                           file: StaticString = #file,
+                                           line: UInt = #line) {
+    // swiftlint:disable inheritance_colon — false positive here
     let abbreviation: String
     switch returnCode {
     case 0:
@@ -125,6 +126,7 @@ func assertPThreadFunctionSucceeds(_ returnCode: CInt,
     default:
         abbreviation = "\(returnCode)"
     }
+    // swiftlint:enable inheritance_colon
 
     preconditionFailure("A pthread call failed with error code \(abbreviation)",
                         file: file,
