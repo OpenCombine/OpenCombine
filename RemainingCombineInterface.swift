@@ -255,6 +255,7 @@ extension Publisher {
 
 extension Publishers {
 
+    /// A publisher that publishes only elements that don’t match the previous element.
     public struct RemoveDuplicates<Upstream> : Publisher where Upstream : Publisher {
 
         /// The kind of values published by this publisher.
@@ -265,10 +266,15 @@ extension Publishers {
         /// Use `Never` if this `Publisher` does not publish errors.
         public typealias Failure = Upstream.Failure
 
+        /// The publisher from which this publisher receives elements.
         public let upstream: Upstream
 
+        /// A closure to evaluate whether two elements are equivalent, for purposes of filtering.
         public let predicate: (Upstream.Output, Upstream.Output) -> Bool
 
+        /// Creates a publisher that publishes only elements that don’t match the previous element, as evaluated by a provided closure.
+        /// - Parameter upstream: The publisher from which this publisher receives elements.
+        /// - Parameter predicate: A closure to evaluate whether two elements are equivalent, for purposes of filtering. Return `true` from this closure to indicate that the second element is a duplicate of the first.
         public init(upstream: Upstream, predicate: @escaping (Publishers.RemoveDuplicates<Upstream>.Output, Publishers.RemoveDuplicates<Upstream>.Output) -> Bool)
 
         /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
@@ -280,6 +286,7 @@ extension Publishers {
         public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
     }
 
+    /// A publisher that publishes only elements that don’t match the previous element, as evaluated by a provided error-throwing closure.
     public struct TryRemoveDuplicates<Upstream> : Publisher where Upstream : Publisher {
 
         /// The kind of values published by this publisher.
@@ -290,10 +297,15 @@ extension Publishers {
         /// Use `Never` if this `Publisher` does not publish errors.
         public typealias Failure = Error
 
+        /// The publisher from which this publisher receives elements.
         public let upstream: Upstream
 
+        /// An error-throwing closure to evaluate whether two elements are equivalent, for purposes of filtering.
         public let predicate: (Upstream.Output, Upstream.Output) throws -> Bool
 
+        /// Creates a publisher that publishes only elements that don’t match the previous element, as evaluated by a provided error-throwing closure.
+        /// - Parameter upstream: The publisher from which this publisher receives elements.
+        /// - Parameter predicate: An error-throwing closure to evaluate whether two elements are equivalent, for purposes of filtering. Return `true` from this closure to indicate that the second element is a duplicate of the first. If this closure throws an error, the publisher terminates with the thrown error.
         public init(upstream: Upstream, predicate: @escaping (Publishers.TryRemoveDuplicates<Upstream>.Output, Publishers.TryRemoveDuplicates<Upstream>.Output) throws -> Bool)
 
         /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
@@ -316,8 +328,12 @@ extension Publisher where Self.Output : Equatable {
 
 extension Publisher {
 
+    /// Publishes only elements that don’t match the previous element, as evaluated by a provided closure.
+    /// - Parameter predicate: A closure to evaluate whether two elements are equivalent, for purposes of filtering. Return `true` from this closure to indicate that the second element is a duplicate of the first.
     public func removeDuplicates(by predicate: @escaping (Self.Output, Self.Output) -> Bool) -> Publishers.RemoveDuplicates<Self>
 
+    /// Publishes only elements that don’t match the previous element, as evaluated by a provided error-throwing closure.
+    /// - Parameter predicate: A closure to evaluate whether two elements are equivalent, for purposes of filtering. Return `true` from this closure to indicate that the second element is a duplicate of the first. If this closure throws an error, the publisher terminates with the thrown error.
     public func tryRemoveDuplicates(by predicate: @escaping (Self.Output, Self.Output) throws -> Bool) -> Publishers.TryRemoveDuplicates<Self>
 }
 
@@ -2204,6 +2220,10 @@ extension Publisher {
 
 extension Publishers {
 
+    /// A strategy for filling a buffer.
+    ///
+    /// * keepFull: A strategy to fill the buffer at subscription time, and keep it full thereafter.
+    /// * byRequest: A strategy that avoids prefetching and instead performs requests on demand.
     public enum PrefetchStrategy {
 
         case keepFull
@@ -2245,6 +2265,11 @@ extension Publishers {
         public func hash(into hasher: inout Hasher)
     }
 
+    /// A strategy for handling exhaustion of a buffer’s capacity.
+    ///
+    /// * dropNewest: When full, discard the newly-received element without buffering it.
+    /// * dropOldest: When full, remove the least recently-received element from the buffer.
+    /// * customError: When full, execute the closure to provide a custom error.
     public enum BufferingStrategy<Failure> where Failure : Error {
 
         case dropNewest
@@ -2254,6 +2279,7 @@ extension Publishers {
         case customError(() -> Failure)
     }
 
+    /// A publisher that buffers elements received from an upstream publisher.
     public struct Buffer<Upstream> : Publisher where Upstream : Publisher {
 
         /// The kind of values published by this publisher.
@@ -2264,14 +2290,23 @@ extension Publishers {
         /// Use `Never` if this `Publisher` does not publish errors.
         public typealias Failure = Upstream.Failure
 
+        /// The publisher from which this publisher receives elements.
         public let upstream: Upstream
 
+        /// The maximum number of elements to store.
         public let size: Int
 
+        /// The strategy for initially populating the buffer.
         public let prefetch: Publishers.PrefetchStrategy
 
+        /// The action to take when the buffer becomes full.
         public let whenFull: Publishers.BufferingStrategy<Upstream.Failure>
 
+        /// Creates a publisher that buffers elements received from an upstream publisher.
+        /// - Parameter upstream: The publisher from which this publisher receives elements.
+        /// - Parameter size: The maximum number of elements to store.
+        /// - Parameter prefetch: The strategy for initially populating the buffer.
+        /// - Parameter whenFull: The action to take when the buffer becomes full.
         public init(upstream: Upstream, size: Int, prefetch: Publishers.PrefetchStrategy, whenFull: Publishers.BufferingStrategy<Publishers.Buffer<Upstream>.Failure>)
 
         /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
@@ -2292,6 +2327,10 @@ extension Publishers.PrefetchStrategy : Hashable {
 
 extension Publisher {
 
+    /// Buffers elements received from an upstream publisher.
+    /// - Parameter size: The maximum number of elements to store.
+    /// - Parameter prefetch: The strategy for initially populating the buffer.
+    /// - Parameter whenFull: The action to take when the buffer becomes full.
     public func buffer(size: Int, prefetch: Publishers.PrefetchStrategy, whenFull: Publishers.BufferingStrategy<Self.Failure>) -> Publishers.Buffer<Self>
 }
 
@@ -3023,7 +3062,7 @@ extension Publishers.Drop : Equatable where Upstream : Equatable {
 /// By default an `ObservableObject` will synthesize an `objectWillChange`
 /// publisher that emits before any of its `@Published` properties changes:
 ///
-///     class Contact : ObservableObject {
+///     class Contact: ObservableObject {
 ///         @Published var name: String
 ///         @Published var age: Int
 ///
@@ -3034,13 +3073,14 @@ extension Publishers.Drop : Equatable where Upstream : Equatable {
 ///
 ///         func haveBirthday() -> Int {
 ///             age += 1
+///             return age
 ///         }
 ///     }
 ///
 ///     let john = Contact(name: "John Appleseed", age: 24)
-///     john.objectWillChange.sink { _ in print("will change") }
-///     print(john.haveBirthday)
-///     // Prints "will change"
+///     john.objectWillChange.sink { _ in print("\(john.age) will change") }
+///     print(john.haveBirthday())
+///     // Prints "24 will change"
 ///     // Prints "25"
 ///
 public protocol ObservableObject : AnyObject {

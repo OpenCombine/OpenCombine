@@ -288,6 +288,26 @@ final class MulticastTests: XCTestCase {
         }
     }
 
+    func testLazySubjectCreation() {
+        let publisher = PassthroughSubject<Int, TestingError>()
+        var counter = 0
+        let multicast = publisher
+            .multicast { () -> PassthroughSubject<Int, TestingError> in
+                counter += 1
+                return .init()
+            }
+
+        multicast.subscribe(TrackingSubscriber())
+        multicast.subscribe(TrackingSubscriber())
+        multicast.subscribe(TrackingSubscriber())
+
+        XCTAssertEqual(counter, 1, "The createSubject closure should be called once")
+
+        _ = multicast.connect()
+
+        XCTAssertEqual(counter, 1, "The createSubject closure should be called once")
+    }
+
     func testReflection() throws {
         try MulticastTests.testGenericMulticastReflection {
             $0.multicast(PassthroughSubject.init)
