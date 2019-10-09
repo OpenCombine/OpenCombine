@@ -12,6 +12,8 @@
 /// and a publisher which sends any new values after the property value
 /// has been sent. New subscribers will receive the current value
 /// of the property first.
+/// Note that the `@Published` property is class-constrained.
+/// Use it with properties of classes, not with non-class types like structures.
 @propertyWrapper public struct Published<Value> {
 
     /// Initialize the storage of the Published
@@ -25,6 +27,7 @@
         value = wrappedValue
     }
 
+    /// A publisher for properties marked with the `@Published` attribute.
     public struct Publisher: OpenCombine.Publisher {
 
         /// The kind of values published by this publisher.

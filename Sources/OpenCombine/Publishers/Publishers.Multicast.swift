@@ -7,6 +7,15 @@
 
 extension Publisher {
 
+    /// Applies a closure to create a subject that delivers elements to subscribers.
+    ///
+    /// Use a multicast publisher when you have multiple downstream subscribers, but you
+    /// want upstream publishers to only process one `receive(_:)` call per event.
+    /// In contrast with `multicast(subject:)`, this method produces a publisher that
+    /// creates a separate Subject for each subscriber.
+    ///
+    /// - Parameter createSubject: A closure to create a new Subject each time
+    ///   a subscriber attaches to the multicast publisher.
     public func multicast<SubjectType: Subject>(
         _ createSubject: @escaping () -> SubjectType
     ) -> Publishers.Multicast<Self, SubjectType>
@@ -15,6 +24,14 @@ extension Publisher {
         return Publishers.Multicast(upstream: self, createSubject: createSubject)
     }
 
+    /// Provides a subject to deliver elements to multiple subscribers.
+    ///
+    /// Use a multicast publisher when you have multiple downstream subscribers, but you
+    /// want upstream publishers to only process one `receive(_:)` call per event.
+    /// In contrast with `multicast(_:)`, this method produces a publisher shares
+    /// the provided Subject among all the downstream subscribers.
+    ///
+    /// - Parameter subject: A subject to deliver elements to downstream subscribers.
     public func multicast<SubjectType: Subject>(
         subject: SubjectType
     ) -> Publishers.Multicast<Self, SubjectType>
@@ -26,6 +43,7 @@ extension Publisher {
 
 extension Publishers {
 
+    /// A publisher that uses a subject to deliver elements to multiple subscribers.
     public final class Multicast<Upstream: Publisher, SubjectType: Subject>
         : ConnectablePublisher
         where Upstream.Failure == SubjectType.Failure,
@@ -37,8 +55,11 @@ extension Publishers {
 
         public typealias Failure = Upstream.Failure
 
+        /// The publisher from which this publisher receives elements.
         public let upstream: Upstream
 
+        /// A closure to create a new Subject each time a subscriber attaches
+        /// to the multicast publisher.
         public let createSubject: () -> SubjectType
 
         private let lock = unfairLock()
@@ -58,6 +79,13 @@ extension Publishers {
             return subject
         }
 
+        /// Creates a multicast publisher that applies a closure to create a subject
+        /// that delivers elements to subscribers.
+        ///
+        /// - Parameter upstream: The publisher from which this publisher receives
+        ///   elements.
+        /// - Parameter createSubject: A closure to create a new Subject each time
+        ///   a subscriber attaches to the multicast publisher.
         public init(upstream: Upstream, createSubject: @escaping () -> SubjectType) {
             self.upstream = upstream
             self.createSubject = createSubject
