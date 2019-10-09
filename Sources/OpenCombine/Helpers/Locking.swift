@@ -57,22 +57,14 @@ private class PThreadMutexLock
     private let mutex = UnsafeMutablePointer<pthread_mutex_t>.allocate(capacity: 1)
 
     init() {
-        var status: CInt
         var attributes = pthread_mutexattr_t()
-        status = pthread_mutexattr_init(&attributes)
-        precondition(status == 0,
-                     "pthread_mutexattr_init returned non-zero status: \(status)")
-
+        assertPThreadFunctionSucceeds(pthread_mutexattr_init(&attributes))
         // Enable error detection
-        status = pthread_mutexattr_settype(&attributes, CInt(PTHREAD_MUTEX_ERRORCHECK))
-        precondition(status == 0,
-                     "pthread_mutexattr_settype returned non-zero status: \(status)")
-
+        assertPThreadFunctionSucceeds(
+            pthread_mutexattr_settype(&attributes, PTHREAD_MUTEX_ERRORCHECK)
+        )
         setAdditionalAttributes(&attributes)
-
-        status = pthread_mutex_init(mutex, &attributes)
-        precondition(status == 0,
-                     "pthread_mutex_init returned non-zero status: \(status)")
+        assertPThreadFunctionSucceeds(pthread_mutex_init(mutex, &attributes))
     }
 
     fileprivate func setAdditionalAttributes(
@@ -82,15 +74,11 @@ private class PThreadMutexLock
     }
 
     final func lock() {
-        let status = pthread_mutex_lock(mutex)
-        precondition(status == 0,
-                     "pthread_mutex_lock returned non-zero status: \(status)")
+        assertPThreadFunctionSucceeds(pthread_mutex_lock(mutex))
     }
 
     final func unlock() {
-        let status = pthread_mutex_unlock(mutex)
-        precondition(status == 0,
-                     "pthread_mutex_lock returned non-zero status: \(status)")
+        assertPThreadFunctionSucceeds(pthread_mutex_unlock(mutex))
     }
 
     final var description: String { return String(describing: mutex.pointee) }
@@ -100,9 +88,7 @@ private class PThreadMutexLock
     final var playgroundDescription: Any { return description }
 
     deinit {
-        let status = pthread_mutex_destroy(mutex)
-        precondition(status == 0,
-                     "pthread_mutex_destroy returned non-zero status: \(status)")
+        assertPThreadFunctionSucceeds(pthread_mutex_destroy(mutex))
         mutex.deallocate()
     }
 }
@@ -111,10 +97,38 @@ private final class PThreadMutexRecursiveLock: PThreadMutexLock, UnfairRecursive
     override func setAdditionalAttributes(
         _ attributes: UnsafeMutablePointer<pthread_mutexattr_t>
     ) {
-        let status = pthread_mutexattr_settype(attributes, CInt(PTHREAD_MUTEX_RECURSIVE))
-        precondition(status == 0,
-                     "pthread_mutexattr_settype returned non-zero status: \(status)")
+        assertPThreadFunctionSucceeds(
+            pthread_mutexattr_settype(attributes, CInt(PTHREAD_MUTEX_RECURSIVE))
+        )
     }
+}
+
+func assertPThreadFunctionSucceeds(_ returnCode: CInt,
+                                   file: StaticString = #file,
+                                   line: UInt = #line) {
+    let abbreviation: String
+    switch returnCode {
+    case 0:
+        return
+    case EINVAL:
+        abbreviation = "EINVAL"
+    case EBUSY:
+        abbreviation = "EBUSY"
+    case EAGAIN:
+        abbreviation = "EAGAIN"
+    case EDEADLK:
+        abbreviation = "EDEADLK"
+    case EPERM:
+        abbreviation = "EPERM"
+    case ENOMEM:
+        abbreviation = "ENOMEM"
+    default:
+        abbreviation = "\(returnCode)"
+    }
+
+    preconditionFailure("A pthread call failed with error code \(abbreviation)",
+                        file: file,
+                        line: line)
 }
 
 #if canImport(Darwin)
