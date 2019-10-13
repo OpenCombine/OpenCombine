@@ -27,10 +27,10 @@ matrix:
       os: osx
       osx_image: xcode10.2
       env: SWIFT_VERSION="5.0" CODE_COVERAGE="YES" OPENCOMBINE_TEST="YES"
-    # - name: "iOS 13.0 | Swift 5.1 | Compatibility Tests"
-    #   os: osx
-    #   osx_image: xcode11
-    #   env: SWIFT_VERSION="5.1" OPENCOMBINE_COMPATIBILITY_TEST="YES"
+    - name: "iOS 13.1 | Swift 5.1 | Compatibility Tests"
+      os: osx
+      osx_image: xcode11.1
+      env: SWIFT_VERSION="5.1" OPENCOMBINE_COMPATIBILITY_TEST="YES"
     - name: "macOS 10.14 | Swift 5.0 | Code Quality"
       os: osx
       osx_image: xcode10.2
@@ -74,11 +74,7 @@ script:
     fi
   - if [[ $OPENCOMBINE_COMPATIBILITY_TEST == "YES" ]]; then
       make generate-compatibility-xcodeproj;
-      set -o pipefail && xcodebuild \
-          -scheme OpenCombine-Package \
-          -sdk iphonesimulator13.0 \
-          -destination "platform=iOS Simulator,name=iPhone Xs,OS=13.0" \
-          build test | xcpretty;
+      set -o pipefail && xcodebuild -scheme OpenCombine-Package -sdk iphonesimulator13.1 -destination "platform=iOS Simulator,name=iPhone 11,OS=13.1" build test | xcpretty;
     fi
   - if [[ $SWIFT_LINT == "YES" ]]; then
       swiftlint lint --strict --reporter "emoji";
