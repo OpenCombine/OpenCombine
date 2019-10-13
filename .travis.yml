@@ -18,19 +18,19 @@ cache:
 
 matrix:
   include:
-    - name: "Ubuntu 16.04 | Swift 5.1 | Tests"
+    - name: "Ubuntu 16.04 | Swift 5.1.1 | Tests"
       os: linux
       dist: xenial
       sudo: required
-      env: SWIFT_VERSION="5.1" OPENCOMBINE_TEST="YES"
+      env: SWIFT_VERSION="5.1.1" OPENCOMBINE_TEST="YES"
     - name: "macOS 10.14 | Swift 5.0 | Tests"
       os: osx
       osx_image: xcode10.2
       env: SWIFT_VERSION="5.0" CODE_COVERAGE="YES" OPENCOMBINE_TEST="YES"
-    - name: "iOS 13.1 | Swift 5.1 | Compatibility Tests"
+    - name: "iOS 13.1 | Swift 5.1.1 | Compatibility Tests"
       os: osx
       osx_image: xcode11.1
-      env: SWIFT_VERSION="5.1" OPENCOMBINE_COMPATIBILITY_TEST="YES"
+      env: SWIFT_VERSION="5.1.1" OPENCOMBINE_COMPATIBILITY_TEST="YES"
     - name: "macOS 10.14 | Swift 5.0 | Code Quality"
       os: osx
       osx_image: xcode10.2
