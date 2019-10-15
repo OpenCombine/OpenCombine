@@ -19,9 +19,8 @@ internal func APIViolationUnexpectedCompletion(file: StaticString = #file,
     fatalError("API Violation: received an unexpected completion", file: file, line: line)
 }
 
-@inline(__always)
 internal func abstractMethod(file: StaticString = #file, line: UInt = #line) -> Never {
-    unreachable("Abstract method call", file: file, line: line)
+    fatalError("Abstract method call", file: file, line: line)
 }
 
 extension Subscribers.Demand {
