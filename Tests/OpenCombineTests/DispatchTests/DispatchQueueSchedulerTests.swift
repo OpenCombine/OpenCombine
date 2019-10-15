@@ -388,7 +388,7 @@ final class DispatchQueueSchedulerTests: XCTestCase {
         XCTAssertFalse(didExecuteMainAction, "action should be executed asynchronously")
 
         // Wait for the background scheduler to execute the work.
-        XCTAssertEqual(group.wait(timeout: .now() + 0.1), .success)
+        XCTAssertEqual(group.wait(timeout: .now() + 5.0), .success)
 
         XCTAssertFalse(didExecuteMainAction, "action should be executed asynchronously")
         XCTAssertTrue(didExecuteBackgroundAction.value)
