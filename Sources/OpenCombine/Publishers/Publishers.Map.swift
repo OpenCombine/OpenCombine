@@ -5,6 +5,8 @@
 //  Created by Anton Nazarov on 25.06.2019.
 //
 
+import COpenCombineHelpers
+
 extension Publisher {
 
     /// Transforms all elements from the upstream publisher with a provided closure.
@@ -187,7 +189,7 @@ extension Publishers.TryMap {
 
         private var status = SubscriptionStatus.awaitingSubscription
 
-        private let lock = unfairLock()
+        private let lock = UnfairLock.allocate()
 
         let combineIdentifier = CombineIdentifier()
 
@@ -195,6 +197,10 @@ extension Publishers.TryMap {
                          map: @escaping (Input) throws -> Output) {
             self.downstream = downstream
             self.map = map
+        }
+
+        deinit {
+            lock.deallocate()
         }
 
         func receive(subscription: Subscription) {

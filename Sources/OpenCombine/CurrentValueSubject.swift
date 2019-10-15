@@ -5,11 +5,13 @@
 //  Created by Sergej Jaskiewicz on 11.06.2019.
 //
 
+import COpenCombineHelpers
+
 /// A subject that wraps a single value and publishes a new element whenever the value
 /// changes.
 public final class CurrentValueSubject<Output, Failure: Error>: Subject {
 
-    private let _lock = unfairRecursiveLock()
+    private let _lock = UnfairRecursiveLock.allocate()
 
     // TODO: Combine uses bag data structure
     private var _subscriptions: [Conduit] = []
@@ -43,6 +45,7 @@ public final class CurrentValueSubject<Output, Failure: Error>: Subject {
         for subscription in _subscriptions {
             subscription._downstream = nil
         }
+        _lock.deallocate()
     }
 
     public func send(subscription: Subscription) {

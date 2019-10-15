@@ -5,6 +5,8 @@
 //  Created by Sergej Jaskiewicz on 14.06.2019.
 //
 
+import COpenCombineHelpers
+
 extension Publisher {
 
     /// Applies a closure to create a subject that delivers elements to subscribers.
@@ -62,7 +64,7 @@ extension Publishers {
         /// to the multicast publisher.
         public let createSubject: () -> SubjectType
 
-        private let lock = unfairLock()
+        private let lock = UnfairLock.allocate()
 
         private var subject: SubjectType?
 
@@ -89,6 +91,10 @@ extension Publishers {
         public init(upstream: Upstream, createSubject: @escaping () -> SubjectType) {
             self.upstream = upstream
             self.createSubject = createSubject
+        }
+
+        deinit {
+            lock.deallocate()
         }
 
         public func receive<Downstream: Subscriber>(subscriber: Downstream)
@@ -128,13 +134,17 @@ extension Publishers.Multicast {
             case terminal
         }
 
-        private let lock = unfairLock()
+        private let lock = UnfairLock.allocate()
 
         private var state: State
 
         fileprivate init(parent: Publishers.Multicast<Upstream, SubjectType>,
                          downstream: Downstream) {
             state = .ready(upstream: parent.upstream, downstream: downstream)
+        }
+
+        deinit {
+            lock.deallocate()
         }
 
         fileprivate var description: String { return "Multicast" }

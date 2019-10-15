@@ -5,14 +5,14 @@
 //  Created by Sergej Jaskiewicz on 10.06.2019.
 //
 
-import func COpenCombineHelpers.opencombine_next_combine_identifier
+import func COpenCombineHelpers.nextCombineIdentifier
 
 public struct CombineIdentifier: Hashable, CustomStringConvertible {
 
     private let id: UInt64
 
     public init() {
-        self.id = opencombine_next_combine_identifier()
+        self.id = nextCombineIdentifier()
     }
 
     public init(_ obj: AnyObject) {

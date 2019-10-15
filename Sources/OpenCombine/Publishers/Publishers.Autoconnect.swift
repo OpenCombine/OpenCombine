@@ -5,6 +5,8 @@
 //  Created by Sergej Jaskiewicz on 18/09/2019.
 //
 
+import COpenCombineHelpers
+
 extension ConnectablePublisher {
 
     /// Automates the process of connecting or disconnecting from this connectable
@@ -45,12 +47,16 @@ extension Publishers {
         /// The publisher from which this publisher receives elements.
         public final let upstream: Upstream
 
-        private let lock = unfairLock()
+        private let lock = UnfairLock.allocate()
 
         private var state = State.disconnected
 
         public init(upstream: Upstream) {
             self.upstream = upstream
+        }
+
+        deinit {
+            lock.deallocate()
         }
 
         public func receive<Downstream: Subscriber>(subscriber: Downstream)

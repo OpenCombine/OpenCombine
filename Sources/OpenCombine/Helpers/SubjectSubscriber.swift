@@ -5,6 +5,8 @@
 //  Created by Sergej Jaskiewicz on 16/09/2019.
 //
 
+import COpenCombineHelpers
+
 // NOTE: This class has been audited for thread safety.
 internal final class SubjectSubscriber<Downstream: Subject>
     : Subscriber,
@@ -13,7 +15,7 @@ internal final class SubjectSubscriber<Downstream: Subject>
       CustomPlaygroundDisplayConvertible,
       Subscription
 {
-    private let lock = unfairLock()
+    private let lock = UnfairLock.allocate()
     private var downstreamSubject: Downstream?
     private var upstreamSubscription: Subscription?
 
@@ -21,6 +23,10 @@ internal final class SubjectSubscriber<Downstream: Subject>
 
     internal init(_ parent: Downstream) {
         self.downstreamSubject = parent
+    }
+
+    deinit {
+        lock.deallocate()
     }
 
     internal func receive(subscription: Subscription) {

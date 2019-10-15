@@ -7,19 +7,19 @@ release:
 	swift build -c release
 
 test-debug:
-	swift test --parallel -c debug $(SWIFT_TEST_FLAGS)
+	swift test -c debug $(SWIFT_TEST_FLAGS)
 
 test-debug-sanitize-thread:
-	swift test --parallel -c debug --sanitize thread $(SWIFT_TEST_FLAGS)
+	swift test -c debug --sanitize thread $(SWIFT_TEST_FLAGS)
 
 test-release:
-	swift test --parallel -c release $(SWIFT_TEST_FLAGS)
+	swift test -c release $(SWIFT_TEST_FLAGS)
 
 swift-version:
 	swift -version
 
 test-compatibility:
-	swift test --parallel -Xswiftc -DOPENCOMBINE_COMPATIBILITY_TEST
+	swift test -Xswiftc -DOPENCOMBINE_COMPATIBILITY_TEST
 
 generate-compatibility-xcodeproj:
 	swift package generate-xcodeproj --xcconfig-overrides Combine-Compatibility.xcconfig; \

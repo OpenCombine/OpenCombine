@@ -5,6 +5,8 @@
 //  Created by Sergej Jaskiewicz on 22.09.2019.
 //
 
+import COpenCombineHelpers
+
 /// A helper class that acts like both subscriber and subscription.
 ///
 /// Reduce-like operators send an instance of their `Inner` class that is subclass
@@ -38,7 +40,7 @@ internal class ReduceProducer<Downstream: Subscriber,
 
     private let downstream: Downstream
 
-    private let lock = unfairLock()
+    private let lock = UnfairLock.allocate()
 
     private var downstreamRequested = false
 
@@ -55,6 +57,10 @@ internal class ReduceProducer<Downstream: Subscriber,
         self.initial = initial
         self.result = initial
         self.reduce = reduce
+    }
+
+    deinit {
+        lock.deallocate()
     }
 
     // MARK: - Abstract methods

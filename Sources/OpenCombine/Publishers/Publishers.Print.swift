@@ -5,6 +5,8 @@
 //  Created by Sergej Jaskiewicz on 16.06.2019.
 //
 
+import COpenCombineHelpers
+
 extension Publishers {
 
     /// A publisher that prints log messages for all publishing events, optionally
@@ -88,12 +90,16 @@ extension Publishers.Print {
         private let prefix: String
         private var stream: PrintTarget?
         private var subscription: Subscription?
-        private let lock = unfairLock()
+        private let lock = UnfairLock.allocate()
 
         init(downstream: Downstream, prefix: String, stream: TextOutputStream?) {
             self.downstream = downstream
             self.prefix = prefix.isEmpty ? "" : "\(prefix): "
             self.stream = stream.map(PrintTarget.init)
+        }
+
+        deinit {
+            lock.deallocate()
         }
 
         func receive(subscription: Subscription) {
