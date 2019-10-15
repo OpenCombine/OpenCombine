@@ -201,7 +201,7 @@ extension Publishers.ContainsWhere {
 }
 
 extension Publishers.TryContainsWhere {
-    private class Inner<Downstream: Subscriber>
+    private final class Inner<Downstream: Subscriber>
         : ReduceProducer<Downstream,
                          Upstream.Output, Bool,
                          Upstream.Failure,
