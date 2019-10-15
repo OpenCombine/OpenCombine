@@ -4,6 +4,8 @@
 //  Created by Eric Patey on 16.08.2019.
 //
 
+import COpenCombineHelpers
+
 extension Publisher {
 
     /// Transforms all elements from an upstream publisher into a new or existing
@@ -91,7 +93,7 @@ extension Publishers.FlatMap {
             pausedChild: ChildSubscriber?
         )
 
-        private let lock = unfairLock()
+        private let lock = UnfairLock.allocate()
         private let maxPublishers: Subscribers.Demand
         private let transform: (Input) -> Child
 
@@ -116,6 +118,10 @@ extension Publishers.FlatMap {
             self.downstream = downstream
             self.maxPublishers = maxPublishers
             self.transform = transform
+        }
+
+        deinit {
+            lock.deallocate()
         }
 
         final func cancel() {

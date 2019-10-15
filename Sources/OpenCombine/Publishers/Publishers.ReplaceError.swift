@@ -5,6 +5,8 @@
 //  Created by Bogdan Vlad on 8/29/19.
 //
 
+import COpenCombineHelpers
+
 extension Publisher {
     /// Replaces any errors in the stream with the provided element.
     ///
@@ -81,11 +83,15 @@ extension Publishers.ReplaceError {
         private var status = SubscriptionStatus.awaitingSubscription
         private var terminated = false
         private var pendingDemand = Subscribers.Demand.none
-        private var lock = unfairLock()
+        private var lock = UnfairLock.allocate()
 
         fileprivate init(downstream: Downstream, output: Upstream.Output) {
             self.downstream = downstream
             self.output = output
+        }
+
+        deinit {
+            lock.deallocate()
         }
 
         func receive(subscription: Subscription) {

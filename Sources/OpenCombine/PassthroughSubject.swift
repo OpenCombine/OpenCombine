@@ -5,13 +5,15 @@
 //  Created by Sergej Jaskiewicz on 11.06.2019.
 //
 
+import COpenCombineHelpers
+
 /// A subject that passes along values and completion.
 ///
 /// Use a `PassthroughSubject` in unit tests when you want a publisher than can publish
 /// specific values on-demand during tests.
 public final class PassthroughSubject<Output, Failure: Error>: Subject  {
 
-    private let _lock = unfairRecursiveLock()
+    private let _lock = UnfairRecursiveLock.allocate()
 
     private var _completion: Subscribers.Completion<Failure>?
 
@@ -28,6 +30,7 @@ public final class PassthroughSubject<Output, Failure: Error>: Subject  {
         for subscription in _subscriptions {
             subscription._downstream = nil
         }
+        _lock.deallocate()
     }
 
     public func send(subscription: Subscription) {

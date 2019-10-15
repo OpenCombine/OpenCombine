@@ -5,6 +5,8 @@
 //  Created by Sergej Jaskiewicz on 19.06.2019.
 //
 
+import COpenCombineHelpers
+
 extension Publishers {
 
     /// A publisher that publishes a given sequence of elements.
@@ -62,13 +64,17 @@ extension Publishers.Sequence {
         private var next: Element?
         private var pendingDemand = Subscribers.Demand.none
         private var recursion = false
-        private var lock = unfairLock()
+        private var lock = UnfairLock.allocate()
 
         fileprivate init(downstream: Downstream, sequence: Elements) {
             self.sequence = sequence
             self.downstream = downstream
             self.iterator = sequence.makeIterator()
             next = iterator.next()
+        }
+
+        deinit {
+            lock.deallocate()
         }
 
         var description: String {
