@@ -5,27 +5,25 @@
 //  Created by Sven Weidauer on 03.10.2019.
 //
 
+import COpenCombineHelpers
+
 extension Publisher {
     /// Omits the specified number of elements before republishing subsequent elements.
     ///
     /// - Parameter count: The number of elements to omit.
     /// - Returns: A publisher that does not republish the first `count` elements.
     public func dropFirst(_ count: Int = 1) -> Publishers.Drop<Self> {
-        return Publishers.Drop(upstream: self, count: count)
+        return .init(upstream: self, count: count)
     }
 }
 
 extension Publishers {
     /// A publisher that omits a specified number of elements before republishing
     /// later elements.
-    public struct Drop<Upstream>: Publisher where Upstream: Publisher {
+    public struct Drop<Upstream: Publisher>: Publisher {
 
-        /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
 
-        /// The kind of errors this publisher might publish.
-        ///
-        /// Use `Never` if this `Publisher` does not publish errors.
         public typealias Failure = Upstream.Failure
 
         /// The publisher from which this publisher receives elements.
@@ -39,65 +37,107 @@ extension Publishers {
             self.count = count
         }
 
-        /// This function is called to attach the specified `Subscriber`
-        /// to this `Publisher` by `subscribe(_:)`
-        ///
-        /// - SeeAlso: `subscribe(_:)`
-        /// - Parameters:
-        ///     - subscriber: The subscriber to attach to this `Publisher`.
-        ///                   once attached it can begin to receive values.
-        public func receive<Downstream>(subscriber: Downstream)
-            where Downstream: Subscriber,
-                  Upstream.Failure == Downstream.Failure,
-                  Upstream.Output == Downstream.Input {
-            upstream.subscribe(
-                _Drop<Upstream, Downstream>(downstream: subscriber, count: count)
-            )
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where Upstream.Failure == Downstream.Failure,
+                  Upstream.Output == Downstream.Input
+        {
+            let inner = Inner(downstream: subscriber, count: count)
+            upstream.subscribe(inner)
+            subscriber.receive(subscription: inner)
         }
     }
 }
 
-private class _Drop<Upstream: Publisher, Downstream: Subscriber>
-    : OperatorSubscription<Downstream>,
-      Subscription,
-      Subscriber
-    where Upstream.Output == Downstream.Input,
-          Upstream.Failure == Downstream.Failure
-{
-    typealias Input = Upstream.Output
-    typealias Failure = Upstream.Failure
+extension Publishers.Drop {
+    private final class Inner<Downstream: Subscriber>
+        : Subscription,
+          Subscriber,
+          CustomStringConvertible,
+          CustomReflectable,
+          CustomPlaygroundDisplayConvertible
+        where Upstream.Output == Downstream.Input,
+              Upstream.Failure == Downstream.Failure
+    {
+        // NOTE: This class has been audited for thread safety.
 
-    var count: Int
+        typealias Input = Upstream.Output
 
-    init(downstream: Downstream, count: Int) {
-        self.count = count
-        super.init(downstream: downstream)
-    }
+        typealias Failure = Upstream.Failure
 
-    func request(_ demand: Subscribers.Demand) {
-        upstreamSubscription?.request(demand)
-    }
+        private let downstream: Downstream
 
-    func receive(subscription: Subscription) {
-        upstreamSubscription = subscription
-        downstream.receive(subscription: self)
-    }
+        private let lock = UnfairLock.allocate()
 
-    func receive(_ input: Upstream.Output) -> Subscribers.Demand {
-        guard upstreamSubscription != nil else {
-            return .none
+        private var subscription: Subscription?
+
+        private var pendingDemand = Subscribers.Demand.none
+
+        private var count: Int
+
+        fileprivate init(downstream: Downstream, count: Int) {
+            self.downstream = downstream
+            self.count = count
         }
 
-        guard count > 0 else {
+        deinit {
+            lock.deallocate()
+        }
+
+        func receive(subscription: Subscription) {
+            lock.lock()
+            guard self.subscription == nil else {
+                lock.unlock()
+                subscription.cancel()
+                return
+            }
+            self.subscription = subscription
+            precondition(count >= 0, "count must not be negative")
+            let demandToRequestFromUpstream = pendingDemand + count
+            lock.unlock()
+            if demandToRequestFromUpstream > 0 {
+                subscription.request(demandToRequestFromUpstream)
+            }
+        }
+
+        func receive(_ input: Upstream.Output) -> Subscribers.Demand {
+            // Combine doesn't lock here!
+            if count > 0 {
+                count -= 1
+                return .none
+            }
             return downstream.receive(input)
         }
 
-        count -= 1
+        func receive(completion: Subscribers.Completion<Upstream.Failure>) {
+            // Combine doesn't lock here!
+            subscription = nil
+            downstream.receive(completion: completion)
+        }
 
-        return .max(count)
-    }
+        func request(_ demand: Subscribers.Demand) {
+            demand.assertNonZero()
+            lock.lock()
+            guard let subscription = self.subscription else {
+                self.pendingDemand += demand
+                lock.unlock()
+                return
+            }
+            lock.unlock()
+            subscription.request(demand)
+        }
 
-    func receive(completion: Subscribers.Completion<Upstream.Failure>) {
-        downstream.receive(completion: completion)
+        func cancel() {
+            // Combine doesn't lock here!
+            subscription?.cancel()
+            subscription = nil
+        }
+
+        var description: String { return "Drop" }
+
+        var customMirror: Mirror {
+            return Mirror(self, children: EmptyCollection())
+        }
+
+        var playgroundDescription: Any { return description }
     }
 }
