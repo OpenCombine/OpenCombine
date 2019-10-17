@@ -48,6 +48,8 @@ extension Publishers {
     }
 }
 
+extension Publishers.Drop: Equatable where Upstream: Equatable {}
+
 extension Publishers.Drop {
     private final class Inner<Downstream: Subscriber>
         : Subscription,

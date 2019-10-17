@@ -312,8 +312,10 @@ final class ScanTests: XCTestCase {
     }
 }
 
-private func shouldNotBeCalled<T, U>(file: StaticString = #file,
-                                     line: UInt = #line) -> (T, U) -> T {
+private func shouldNotBeCalled<Accumulator, Value>(
+    file: StaticString = #file,
+    line: UInt = #line
+) -> (Accumulator, Value) -> Accumulator {
     return { accumulator, _ in
         XCTFail("should not be called", file: file, line: line)
         return accumulator

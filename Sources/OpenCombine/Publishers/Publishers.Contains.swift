@@ -172,6 +172,8 @@ extension Publishers.Contains {
     }
 }
 
+extension Publishers.Contains : Equatable where Upstream: Equatable {}
+
 extension Publishers.ContainsWhere {
     private final class Inner<Downstream: Subscriber>
         : ReduceProducer<Downstream,

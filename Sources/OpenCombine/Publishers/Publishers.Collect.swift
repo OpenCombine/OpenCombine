@@ -50,6 +50,8 @@ extension Publishers {
     }
 }
 
+extension Publishers.Collect: Equatable where Upstream: Equatable {}
+
 extension Publishers.Collect {
     private final class Inner<Downstream: Subscriber>
         : ReduceProducer<Downstream,
