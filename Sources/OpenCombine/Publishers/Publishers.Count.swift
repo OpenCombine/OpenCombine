@@ -53,6 +53,8 @@ extension Publishers {
     }
 }
 
+extension Publishers.Count: Equatable where Upstream: Equatable {}
+
 extension Publishers.Count {
     private final class Inner<Downstream: Subscriber>
         : ReduceProducer<Downstream, Upstream.Output, Int, Failure, Void>

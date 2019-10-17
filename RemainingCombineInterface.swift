@@ -2100,17 +2100,6 @@ extension Just {
     public func append<S>(_ elements: S) -> Publishers.Sequence<[Output], Just<Output>.Failure> where Output == S.Element, S : Sequence
 }
 
-extension Publishers.Contains : Equatable where Upstream : Equatable {
-
-    /// Returns a Boolean value that indicates whether two publishers are equivalent.
-    ///
-    /// - Parameters:
-    ///   - lhs: A contains publisher to compare for equality.
-    ///   - rhs: Another contains publisher to compare for equality.
-    /// - Returns: `true` if the two publishers’ upstream and output properties are equal, `false` otherwise.
-    public static func == (lhs: Publishers.Contains<Upstream>, rhs: Publishers.Contains<Upstream>) -> Bool
-}
-
 extension Publishers.CombineLatest : Equatable where A : Equatable, B : Equatable {
 
     /// Returns a Boolean value that indicates whether two publishers are equivalent.
@@ -2146,19 +2135,6 @@ extension Publishers.CombineLatest4 : Equatable where A : Equatable, B : Equatab
     ///   - lhs: A value to compare.
     ///   - rhs: Another value to compare.
     public static func == (lhs: Publishers.CombineLatest4<A, B, C, D>, rhs: Publishers.CombineLatest4<A, B, C, D>) -> Bool
-}
-
-extension Publishers.Collect : Equatable where Upstream : Equatable {
-
-    /// Returns a Boolean value indicating whether two values are equal.
-    ///
-    /// Equality is the inverse of inequality. For any values `a` and `b`,
-    /// `a == b` implies that `a != b` is `false`.
-    ///
-    /// - Parameters:
-    ///   - lhs: A value to compare.
-    ///   - rhs: Another value to compare.
-    public static func == (lhs: Publishers.Collect<Upstream>, rhs: Publishers.Collect<Upstream>) -> Bool
 }
 
 extension Publishers.CollectByCount : Equatable where Upstream : Equatable {
@@ -2264,19 +2240,6 @@ extension Publishers.MergeMany : Equatable where Upstream : Equatable {
     public static func == (lhs: Publishers.MergeMany<Upstream>, rhs: Publishers.MergeMany<Upstream>) -> Bool
 }
 
-extension Publishers.Count : Equatable where Upstream : Equatable {
-
-    /// Returns a Boolean value indicating whether two values are equal.
-    ///
-    /// Equality is the inverse of inequality. For any values `a` and `b`,
-    /// `a == b` implies that `a != b` is `false`.
-    ///
-    /// - Parameters:
-    ///   - lhs: A value to compare.
-    ///   - rhs: Another value to compare.
-    public static func == (lhs: Publishers.Count<Upstream>, rhs: Publishers.Count<Upstream>) -> Bool
-}
-
 extension Publishers.Retry : Equatable where Upstream : Equatable {
 
     /// Returns a Boolean value indicating whether two values are equal.
@@ -2323,17 +2286,6 @@ extension Publishers.Concatenate : Equatable where Prefix : Equatable, Suffix : 
     ///   - rhs: Another concatenate publisher to compare for equality.
     /// - Returns: `true` if the two publishers’ prefix and suffix properties are equal, `false` otherwise.
     public static func == (lhs: Publishers.Concatenate<Prefix, Suffix>, rhs: Publishers.Concatenate<Prefix, Suffix>) -> Bool
-}
-
-extension Publishers.Last : Equatable where Upstream : Equatable {
-
-    /// Returns a Boolean value that indicates whether two publishers are equivalent.
-    ///
-    /// - Parameters:
-    ///   - lhs: A last publisher to compare for equality.
-    ///   - rhs: Another last publisher to compare for equality.
-    /// - Returns: `true` if the two publishers have equal upstream publishers, `false` otherwise.
-    public static func == (lhs: Publishers.Last<Upstream>, rhs: Publishers.Last<Upstream>) -> Bool
 }
 
 extension Publishers.Zip : Equatable where A : Equatable, B : Equatable {
@@ -2396,17 +2348,6 @@ extension Publishers.Output : Equatable where Upstream : Equatable {
     ///   - lhs: A value to compare.
     ///   - rhs: Another value to compare.
     public static func == (lhs: Publishers.Output<Upstream>, rhs: Publishers.Output<Upstream>) -> Bool
-}
-
-extension Publishers.Drop : Equatable where Upstream : Equatable {
-
-    /// Returns a Boolean value that indicates whether the two publishers are equivalent.
-    ///
-    /// - Parameters:
-    ///   - lhs: A drop publisher to compare for equality..
-    ///   - rhs: Another drop publisher to compare for equality..
-    /// - Returns: `true` if the publishers have equal upstream and count properties, `false` otherwise.
-    public static func == (lhs: Publishers.Drop<Upstream>, rhs: Publishers.Drop<Upstream>) -> Bool
 }
 
 /// A type of object with a publisher that emits before the object has changed.

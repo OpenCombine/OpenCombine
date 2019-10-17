@@ -118,6 +118,8 @@ extension Publishers {
     }
 }
 
+extension Publishers.Last: Equatable where Upstream: Equatable {}
+
 extension Publishers.Last {
     private final class Inner<Downstream: Subscriber>
         : ReduceProducer<Downstream,
