@@ -56,7 +56,7 @@ def create_benchmark_file(name):
     formatted_template = benchmark_template.format(name=name)
 
     relative_path = create_relative_path('../test-cases/')
-    source_file_path = os.path.join(relative_path, name + '.swift')
+    source_file_path = os.path.join(relative_path, name + '.swift.gyb')
     with open(source_file_path, 'w') as f:
         f.write(formatted_template)
 

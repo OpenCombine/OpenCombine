@@ -16,7 +16,9 @@ import TestsUtils
 import DriverUtils
 
 import CombineIdentifierCreation
+import DeepMap
 import PassthroughSubject_SendValue
+import SequenceDelivery
 
 @inline(__always)
 private func registerBenchmark(_ bench: BenchmarkInfo) {
@@ -31,6 +33,8 @@ private func registerBenchmark<
 }
 
 registerBenchmark(CombineIdentifierCreation)
+registerBenchmark(DeepMap)
 registerBenchmark(PassthroughSubject_SendValue)
+registerBenchmark(SequenceDelivery)
 
 main()

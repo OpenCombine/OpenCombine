@@ -1,64 +1,23 @@
-//
-//  {name}.swift
-//
-//
+${{template_header}}
+%{{
+from gyb_opencombine_support import (
+    if_canimport_combine,
+    endif_canimport_combine,
+    benchmark_preamble,
+    frameworks_under_test
+)
 
-import OpenCombine
-import CombineX
-
-#if canImport(Combine)
-import Combine
-#endif
-
-import TestsUtils
-
-private let {name}_OpenCombine =
-    BenchmarkInfo(name: "{name}_OpenCombine",
-                  runFunction: run_{name}_OpenCombine,
-                  tags: [.validation, .api])
-
-private let {name}_CombineX =
-    BenchmarkInfo(name: "{name}_CombineX",
-                  runFunction: run_{name}_CombineX,
-                  tags: [.validation, .api])
-
-#if canImport(Combine)
-private let {name}_Combine =
-    BenchmarkInfo(name: "{name}_Combine",
-                  runFunction: run_{name}_Combine,
-                  tags: [.validation, .api])
-
-public let {name} = [{name}_OpenCombine,
-                     {name}_CombineX,
-                     {name}_Combine]
-#else
-public let {name} = [{name}_OpenCombine,
-                     {name}_CombineX]
-#endif
-
+benchmark_name = '{name}'
+}}%
+${{benchmark_preamble(benchmark_name)}}
 let factor = 10000
-
+% for framework_under_test in frameworks_under_test:
+${{if_canimport_combine(framework_under_test)}}
 @inline(never)
-public func run_{name}_OpenCombine(N: Int) {{
-    for _ in 1...factor*N {{
+public func run_${{benchmark_name}}_${{framework_under_test}}(N: Int) {{
+    for i in 1...(factor * N) {{
         // TODO
     }}
 }}
-
-@inline(never)
-public func run_{name}_CombineX(N: Int) {{
-    for _ in 1...factor*N {{
-        // TODO
-    }}
-}}
-
-#if canImport(Combine)
-
-@inline(never)
-public func run_{name}_Combine(N: Int) {{
-    for _ in 1...factor*N {{
-        // TODO
-    }}
-}}
-
-#endif
+${{endif_canimport_combine(framework_under_test)}}
+% end

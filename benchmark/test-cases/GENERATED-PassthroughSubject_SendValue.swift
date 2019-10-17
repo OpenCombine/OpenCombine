@@ -1,7 +1,9 @@
-//
-//  PassthroughSubject_SendValue.swift
-//
-//
+// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+// ┃                                                                                     ┃
+// ┃                   Auto-generated from GYB template. DO NOT EDIT!                    ┃
+// ┃                                                                                     ┃
+// ┃                                                                                     ┃
+// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 import OpenCombine
 import CombineX
@@ -21,20 +23,23 @@ private let PassthroughSubject_SendValue_CombineX =
     BenchmarkInfo(name: "PassthroughSubject_SendValue_CombineX",
                   runFunction: run_PassthroughSubject_SendValue_CombineX,
                   tags: [.validation, .api])
-
 #if canImport(Combine)
 private let PassthroughSubject_SendValue_Combine =
     BenchmarkInfo(name: "PassthroughSubject_SendValue_Combine",
                   runFunction: run_PassthroughSubject_SendValue_Combine,
                   tags: [.validation, .api])
-
-public let PassthroughSubject_SendValue = [PassthroughSubject_SendValue_OpenCombine,
-                                           PassthroughSubject_SendValue_CombineX,
-                                           PassthroughSubject_SendValue_Combine]
-#else
-public let PassthroughSubject_SendValue = [PassthroughSubject_SendValue_OpenCombine,
-                                           PassthroughSubject_SendValue_CombineX]
 #endif
+public var PassthroughSubject_SendValue: [BenchmarkInfo] {
+    var tests = [BenchmarkInfo]()
+
+    tests.append(PassthroughSubject_SendValue_OpenCombine)
+
+    tests.append(PassthroughSubject_SendValue_CombineX)
+#if canImport(Combine)
+    tests.append(PassthroughSubject_SendValue_Combine)
+#endif
+    return tests
+}
 
 let factor = 10000
 
@@ -58,6 +63,7 @@ public func run_PassthroughSubject_SendValue_OpenCombine(N: Int) {
     CheckResults(counter == sequenceLength * (sequenceLength + 1) / 2)
 }
 
+
 @inline(never)
 public func run_PassthroughSubject_SendValue_CombineX(N: Int) {
     let subject = CombineX.PassthroughSubject<Int, Never>()
@@ -79,7 +85,6 @@ public func run_PassthroughSubject_SendValue_CombineX(N: Int) {
 }
 
 #if canImport(Combine)
-
 @inline(never)
 public func run_PassthroughSubject_SendValue_Combine(N: Int) {
     let subject = Combine.PassthroughSubject<Int, Never>()
@@ -99,5 +104,4 @@ public func run_PassthroughSubject_SendValue_Combine(N: Int) {
 
     CheckResults(counter == sequenceLength * (sequenceLength + 1) / 2)
 }
-
 #endif

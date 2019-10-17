@@ -1,0 +1,36 @@
+${template_header}
+%{
+from gyb_opencombine_support import (
+    if_canimport_combine,
+    endif_canimport_combine,
+    benchmark_preamble,
+    frameworks_under_test
+)
+
+benchmark_name = 'PassthroughSubject_SendValue'
+}%
+${benchmark_preamble(benchmark_name)}
+let factor = 10000
+% for framework_under_test in frameworks_under_test:
+${if_canimport_combine(framework_under_test)}
+@inline(never)
+public func run_${benchmark_name}_${framework_under_test}(N: Int) {
+    let subject = ${framework_under_test}.PassthroughSubject<Int, Never>()
+    var counter = 0
+
+    let cancellable = subject.sink {
+        counter += $0
+    }
+
+    let sequenceLength = factor * N
+
+    withExtendedLifetime(cancellable) {
+        for i in 1...sequenceLength {
+            subject.send(i)
+        }
+    }
+
+    CheckResults(counter == sequenceLength * (sequenceLength + 1) / 2)
+}
+${endif_canimport_combine(framework_under_test)}
+% end

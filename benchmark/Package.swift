@@ -9,7 +9,9 @@ import PackageDescription
 var testCases = [String]()
 
 testCases.append("CombineIdentifierCreation")
+testCases.append("DeepMap")
 testCases.append("PassthroughSubject_SendValue")
+testCases.append("SequenceDelivery")
 
 //===---
 // Products
@@ -52,7 +54,7 @@ targets += testCases.map { name in
     .target(name: name,
             dependencies: ["OpenCombine", "CombineX", "TestsUtils"],
             path: "test-cases",
-            sources: ["\(name).swift"])
+            sources: ["GENERATED-\(name).swift"])
 }
 
 //===---

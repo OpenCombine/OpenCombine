@@ -1,0 +1,30 @@
+${template_header}
+%{
+from gyb_opencombine_support import (
+    if_canimport_combine,
+    endif_canimport_combine,
+    benchmark_preamble,
+    frameworks_under_test
+)
+
+benchmark_name = 'SequenceDelivery'
+}%
+${benchmark_preamble(benchmark_name)}
+% for framework_under_test in frameworks_under_test:
+${if_canimport_combine(framework_under_test)}
+@inline(never)
+public func run_${benchmark_name}_${framework_under_test}(N: Int) {
+    let sequenceLength = 1_000_000 * N
+    let sequence = ${framework_under_test}
+        .Publishers
+        .Sequence<ClosedRange<Int>, Never>(sequence: 1...sequenceLength)
+
+    var counter = 0
+    _ = sequence.sink { value in
+        counter += value
+    }
+
+    CheckResults(counter == sequenceLength * (sequenceLength + 1) / 2)
+}
+${endif_canimport_combine(framework_under_test)}
+% end
