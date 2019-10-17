@@ -16,6 +16,7 @@ import TestsUtils
 import DriverUtils
 
 import CombineIdentifierCreation
+import PassthroughSubject_SendValue
 
 @inline(__always)
 private func registerBenchmark(_ bench: BenchmarkInfo) {
@@ -30,5 +31,6 @@ private func registerBenchmark<
 }
 
 registerBenchmark(CombineIdentifierCreation)
+registerBenchmark(PassthroughSubject_SendValue)
 
 main()

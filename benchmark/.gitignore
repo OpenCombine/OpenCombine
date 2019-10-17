@@ -193,3 +193,4 @@ dmypy.json
 
 # End of https://www.gitignore.io/api/Python
 .swiftpm/
+Package.resolved

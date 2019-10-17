@@ -9,6 +9,7 @@ import PackageDescription
 var testCases = [String]()
 
 testCases.append("CombineIdentifierCreation")
+testCases.append("PassthroughSubject_SendValue")
 
 //===---
 // Products
@@ -49,7 +50,7 @@ targets.append(
 
 targets += testCases.map { name in
     .target(name: name,
-            dependencies: ["OpenCombine", "TestsUtils"],
+            dependencies: ["OpenCombine", "CombineX", "TestsUtils"],
             path: "test-cases",
             sources: ["\(name).swift"])
 }
@@ -63,7 +64,8 @@ let p = Package.init(
     platforms: [.macOS("10.15"), .iOS("13.0")],
     products: products,
     dependencies: [
-        .package(path: "..")
+        .package(path: ".."),
+        .package(url: "https://github.com/cx-org/CombineX.git", .branch("master"))
     ],
     targets: targets
 )
