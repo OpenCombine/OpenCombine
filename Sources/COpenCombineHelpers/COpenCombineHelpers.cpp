@@ -54,6 +54,10 @@ template <>
 class GenericMutex<os_unfair_lock> final : PlatformIndependentMutex {
     os_unfair_lock mutex_ = OS_UNFAIR_LOCK_INIT;
 public:
+    GenericMutex() = default;
+    GenericMutex(const GenericMutex&) = delete;
+    GenericMutex& operator=(const GenericMutex&) = delete;
+
     void lock() override {
         os_unfair_lock_lock(&mutex_);
     }

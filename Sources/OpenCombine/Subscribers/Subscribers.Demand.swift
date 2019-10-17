@@ -30,12 +30,18 @@ extension Subscribers {
         }
 
         /// Requests as many values as the `Publisher` can produce.
-        public static let unlimited = Demand(rawValue: .max)
+        @inline(__always)
+        @inlinable
+        public static var unlimited: Demand {
+            return Demand(rawValue: .max)
+        }
 
         /// A demand for no items.
         ///
         /// This is equivalent to `Demand.max(0)`.
-        public static let none = Demand.max(0)
+        @inline(__always)
+        @inlinable
+        public static var none: Demand { return .max(0) }
 
         /// Limits the maximum number of values.
         /// The `Publisher` may send fewer than the requested number.

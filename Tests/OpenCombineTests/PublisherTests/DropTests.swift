@@ -17,24 +17,250 @@ import OpenCombine
 final class DropTests: XCTestCase {
 
     func testDroppingTwoElements() {
-        var received : [String] = []
-        _ = AnyPublisher(["a", "b", "c"].publisher)
-            .dropFirst(2)
-            .sink {
-                received.append($0)
-            }
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        initialDemand: .max(42),
+                                        receiveValueDemand: .max(3),
+                                        createSut: { $0.dropFirst(2) })
 
-        XCTAssertEqual(["c"], received, "Expect the first 2 elements to be dropped")
+        XCTAssertEqual(helper.tracking.history, [.subscription("Drop")])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(2)),
+                                                     .requested(.max(42))])
+
+        XCTAssertEqual(helper.publisher.send(1), .none)
+        XCTAssertEqual(helper.publisher.send(2), .none)
+        XCTAssertEqual(helper.publisher.send(3), .max(3))
+        XCTAssertEqual(helper.publisher.send(4), .max(3))
+        XCTAssertEqual(helper.publisher.send(5), .max(3))
+
+        XCTAssertEqual(helper.tracking.history, [.subscription("Drop"),
+                                                 .value(3),
+                                                 .value(4),
+                                                 .value(5)])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(2)),
+                                                     .requested(.max(42))])
+
+        helper.publisher.send(completion: .finished)
+
+        XCTAssertEqual(helper.tracking.history, [.subscription("Drop"),
+                                                 .value(3),
+                                                 .value(4),
+                                                 .value(5),
+                                                 .completion(.finished)])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(2)),
+                                                     .requested(.max(42))])
+
+        helper.publisher.send(completion: .finished)
+        helper.publisher.send(completion: .failure(.oops))
+        helper.publisher.send(completion: .failure(.oops))
+
+        XCTAssertEqual(helper.tracking.history, [.subscription("Drop"),
+                                                 .value(3),
+                                                 .value(4),
+                                                 .value(5),
+                                                 .completion(.finished),
+                                                 .completion(.finished),
+                                                 .completion(.failure(.oops)),
+                                                 .completion(.failure(.oops))])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(2)),
+                                                     .requested(.max(42))])
     }
 
-    func testDroppingNothing() {
-        var received : [String] = []
-        _ = AnyPublisher(["a", "b", "c"].publisher)
-            .dropFirst(0)
-            .sink {
-                received.append($0)
-            }
+    func testDroppingNothing() throws {
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        initialDemand: nil,
+                                        receiveValueDemand: .max(1),
+                                        createSut: { $0.dropFirst(0) })
 
-        XCTAssertEqual(["a", "b", "c"], received, "Expect nothing to be dropped")
+        XCTAssertEqual(helper.tracking.history, [.subscription("Drop")])
+        XCTAssertEqual(helper.subscription.history, [])
+
+        try XCTUnwrap(helper.downstreamSubscription).request(.max(42))
+
+        XCTAssertEqual(helper.tracking.history, [.subscription("Drop")])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(42))])
+
+        XCTAssertEqual(helper.publisher.send(1), .max(1))
+        XCTAssertEqual(helper.publisher.send(2), .max(1))
+        XCTAssertEqual(helper.publisher.send(3), .max(1))
+
+        XCTAssertEqual(helper.tracking.history, [.subscription("Drop"),
+                                                 .value(1),
+                                                 .value(2),
+                                                 .value(3)])
+        helper.publisher.send(completion: .failure(.oops))
+
+        XCTAssertEqual(helper.tracking.history, [.subscription("Drop"),
+                                                 .value(1),
+                                                 .value(2),
+                                                 .value(3),
+                                                 .completion(.failure(.oops))])
+    }
+
+    func testDropNegativeNumberOfItemsCrash() {
+        let publisher = CustomPublisher(subscription: CustomSubscription())
+        let drop = publisher.dropFirst(-1)
+        let tracking = TrackingSubscriber()
+
+        assertCrashes {
+            drop.subscribe(tracking)
+        }
+    }
+
+    func testCrashesOnZeroDemand() {
+        let publisher = CustomPublisher(subscription: CustomSubscription())
+        let drop = publisher.dropFirst()
+        let tracking = TrackingSubscriber(receiveSubscription: { $0.request(.none) })
+        assertCrashes {
+            drop.subscribe(tracking)
+        }
+    }
+
+    func testReceiveSubscriptionTwice() throws {
+        let subscription1 = CustomSubscription()
+        let publisher = CustomPublisher(subscription: subscription1)
+        let drop = publisher.dropFirst()
+        let tracking = TrackingSubscriber(receiveSubscription: { $0.request(.max(2)) })
+
+        drop.subscribe(tracking)
+
+        XCTAssertEqual(subscription1.history, [.requested(.max(1)),
+                                               .requested(.max(2))])
+
+        let subscription2 = CustomSubscription()
+
+        try XCTUnwrap(publisher.subscriber).receive(subscription: subscription2)
+
+        XCTAssertEqual(subscription2.history, [.cancelled])
+
+        try XCTUnwrap(publisher.subscriber).receive(subscription: subscription1)
+
+        XCTAssertEqual(subscription1.history, [.requested(.max(1)),
+                                               .requested(.max(2)),
+                                               .cancelled])
+    }
+
+    func testCancelAlreadyCancelled() throws {
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisher.self,
+            initialDemand: nil,
+            receiveValueDemand: .none,
+            createSut: { $0.dropFirst() }
+        )
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(1))])
+
+        try XCTUnwrap(helper.downstreamSubscription).cancel()
+        try XCTUnwrap(helper.downstreamSubscription).request(.unlimited)
+        try XCTUnwrap(helper.downstreamSubscription).cancel()
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(1)), .cancelled])
+    }
+
+    func testRequestsFromUpstreamThenSendsSubscriptionDownstream() {
+        var didReceiveSubscription = false
+        let subscription = CustomSubscription()
+        let publisher = CustomPublisher(subscription: subscription)
+        let drop = publisher.dropFirst()
+        let tracking = TrackingSubscriber(
+            receiveSubscription: { _ in
+                XCTAssertEqual(subscription.history, [.requested(.max(1))])
+                didReceiveSubscription = true
+            }
+        )
+        XCTAssertFalse(didReceiveSubscription)
+        XCTAssertEqual(subscription.history, [])
+
+        drop.subscribe(tracking)
+
+        XCTAssertTrue(didReceiveSubscription)
+        XCTAssertEqual(subscription.history, [.requested(.max(1))])
+    }
+
+    func testReusableSubscription() throws {
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        initialDemand: nil,
+                                        receiveValueDemand: .max(3),
+                                        createSut: { $0.dropFirst(3) })
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(3))])
+        XCTAssertEqual(helper.tracking.history, [.subscription("Drop")])
+
+        helper.publisher.send(completion: .finished)
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(3))])
+        XCTAssertEqual(helper.tracking.history, [.subscription("Drop"),
+                                                 .completion(.finished)])
+
+        try XCTUnwrap(helper.downstreamSubscription).cancel()
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(3))])
+        XCTAssertEqual(helper.tracking.history, [.subscription("Drop"),
+                                                 .completion(.finished)])
+
+        try XCTUnwrap(helper.downstreamSubscription).request(.max(312))
+        try XCTUnwrap(helper.downstreamSubscription).request(.max(100))
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(3))])
+        XCTAssertEqual(helper.tracking.history, [.subscription("Drop"),
+                                                 .completion(.finished)])
+
+        XCTAssertEqual(helper.publisher.send(1), .none)
+        XCTAssertEqual(helper.publisher.send(2), .none)
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(3))])
+        XCTAssertEqual(helper.tracking.history, [.subscription("Drop"),
+                                                 .completion(.finished)])
+
+        let secondSubscription = CustomSubscription()
+
+        try XCTUnwrap(helper.publisher.subscriber)
+            .receive(subscription: secondSubscription)
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(3))])
+        XCTAssertEqual(secondSubscription.history, [.requested(.max(413))])
+        XCTAssertEqual(helper.tracking.history, [.subscription("Drop"),
+                                                 .completion(.finished)])
+
+        XCTAssertEqual(helper.publisher.send(3), .none)
+        XCTAssertEqual(helper.publisher.send(4), .max(3))
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(3))])
+        XCTAssertEqual(secondSubscription.history, [.requested(.max(413))])
+        XCTAssertEqual(helper.tracking.history, [.subscription("Drop"),
+                                                 .completion(.finished),
+                                                 .value(4)])
+    }
+
+    func testLateSubscription() throws {
+
+        // This publisher doesn't send a subscription when it receives a subscriber
+        let publisher = CustomPublisher(subscription: nil)
+        let drop = publisher.dropFirst(4)
+        let tracking = TrackingSubscriber(receiveSubscription: { $0.request(.max(10)) })
+
+        drop.subscribe(tracking)
+
+        XCTAssertEqual(tracking.history, [.subscription("Drop")])
+
+        let subscription = CustomSubscription()
+        try XCTUnwrap(publisher.subscriber).receive(subscription: subscription)
+
+        XCTAssertEqual(subscription.history, [.requested(.max(14))])
+        XCTAssertEqual(tracking.history, [.subscription("Drop")])
+    }
+
+    func testDropLifecycle() throws {
+        try testLifecycle(sendValue: 31,
+                          cancellingSubscriptionReleasesSubscriber: false,
+                          { $0.dropFirst(42) })
+    }
+
+    func testDropReflection() throws {
+        try testReflection(parentInput: Int.self,
+                           parentFailure: Never.self,
+                           description: "Drop",
+                           customMirror: childrenIsEmpty,
+                           playgroundDescription: "Drop",
+                           { $0.dropFirst(42) })
     }
 }

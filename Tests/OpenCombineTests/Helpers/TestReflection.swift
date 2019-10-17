@@ -102,6 +102,11 @@ internal func testReflection<Output, Failure: Error, Operator: Publisher>(
                   line: line)
     }
 
+    XCTAssertFalse(erasedSubscriber is CustomDebugStringConvertible,
+                   "subscriber shouldn't conform to CustomDebugStringConvertible",
+                   file: file,
+                   line: line)
+
     XCTAssertEqual(
         ((erasedSubscriber as? CustomPlaygroundDisplayConvertible)?
             .playgroundDescription as? String),
@@ -145,6 +150,11 @@ internal func testSubscriptionReflection<Sut: Publisher>(
                        file: file,
                        line: line)
     }
+
+    XCTAssertFalse(subscription is CustomDebugStringConvertible,
+                   "subscriber shouldn't conform to CustomDebugStringConvertible",
+                   file: file,
+                   line: line)
 
     XCTAssertEqual(
         ((subscription as? CustomPlaygroundDisplayConvertible)?

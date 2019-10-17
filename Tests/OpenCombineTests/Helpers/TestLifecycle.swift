@@ -119,4 +119,23 @@ func testLifecycle<UpstreamOutput, Operator: Publisher>(
                        file: file,
                        line: line)
     }
+
+    // Lifecycle test #4
+
+    var subscriberDestroyed = false
+
+    do {
+        let passthrough = PassthroughSubject<UpstreamOutput, TestingError>()
+        let operatorPublisher = makeOperator(passthrough)
+        let emptySubscriber = CleaningUpSubscriber<Operator.Output, Operator.Failure> {
+            subscriberDestroyed = true
+        }
+        operatorPublisher.subscribe(emptySubscriber)
+        passthrough.send(completion: .finished)
+    }
+
+    XCTAssertTrue(subscriberDestroyed,
+                  "Lifecycle test #4: deinit should be called",
+                  file: file,
+                  line: line)
 }
