@@ -8,17 +8,13 @@ let package = Package(
         .library(name: "OpenCombine", targets: ["OpenCombine"]),
         .library(name: "OpenCombineDispatch", targets: ["OpenCombineDispatch"]),
     ],
-    dependencies: [
-        .package(url: "https://github.com/broadwaylamb/GottaGoFast.git", from: "0.1.0")
-    ],
     targets: [
         .target(name: "COpenCombineHelpers"),
         .target(name: "OpenCombine", dependencies: ["COpenCombineHelpers"]),
         .target(name: "OpenCombineDispatch", dependencies: ["OpenCombine"]),
         .testTarget(name: "OpenCombineTests",
                     dependencies: ["OpenCombine",
-                                   "OpenCombineDispatch",
-                                   "GottaGoFast"],
+                                   "OpenCombineDispatch"],
                     swiftSettings: [.unsafeFlags(["-enable-testing"])])
     ],
     cxxLanguageStandard: .cxx1z

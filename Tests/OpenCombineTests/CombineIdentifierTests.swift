@@ -5,7 +5,6 @@
 //  Created by Sergej Jaskiewicz on 13.06.2019.
 //
 
-import GottaGoFast
 import XCTest
 
 #if OPENCOMBINE_COMPATIBILITY_TEST
@@ -15,7 +14,7 @@ import OpenCombine
 #endif
 
 @available(macOS 10.15, iOS 13.0, *)
-final class CombineIdentifierTests: PerformanceTestCase {
+final class CombineIdentifierTests: XCTestCase {
 
     func testDefaultInitialized() {
         let id1 = CombineIdentifier()
@@ -41,13 +40,5 @@ final class CombineIdentifierTests: PerformanceTestCase {
 
         XCTAssertEqual(id1.description,
                        "0x\(String(UInt(bitPattern: ObjectIdentifier(c1)), radix: 16))")
-    }
-
-    func testDefaultInitializedPerformance() throws {
-        try benchmark(allowFailure: isDebug, executionCount: 500) {
-            for _ in 0..<2000 {
-                blackHole(CombineIdentifier())
-            }
-        }
     }
 }
