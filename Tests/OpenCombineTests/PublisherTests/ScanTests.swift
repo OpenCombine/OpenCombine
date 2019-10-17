@@ -15,151 +15,6 @@ import OpenCombine
 
 @available(macOS 10.15, iOS 13.0, *)
 final class ScanTests: XCTestCase {
-    func testEmpty() {
-        // Given
-        let tracking = TrackingSubscriberBase<String, TestingError>(
-            receiveSubscription: { $0.request(.unlimited) }
-        )
-        let publisher = TrackingSubject<Int>(
-            receiveSubscriber: {
-                XCTAssertEqual(String(describing: $0), "Scan")
-            }
-        )
-        // When
-        publisher.scan("", String.init).subscribe(tracking)
-        // Then
-        XCTAssertEqual(tracking.history, [.subscription("PassthroughSubject")])
-    }
-
-    func testError() {
-        // Given
-        let expectedError = TestingError.oops
-        let tracking = TrackingSubscriber(receiveSubscription: { $0.request(.unlimited) })
-        let publisher = CustomPublisher(subscription: CustomSubscription())
-        // When
-        publisher.scan(666, { $0 + $1 * 2 }).subscribe(tracking)
-        publisher.send(completion: .failure(expectedError))
-        publisher.send(completion: .failure(expectedError))
-        // Then
-        XCTAssertEqual(tracking.history, [
-            .subscription("CustomSubscription"),
-            .completion(.failure(expectedError)),
-            .completion(.failure(expectedError))
-        ])
-    }
-
-    func testTryScanFailureBecauseOfThrow() {
-        var counter = 0 // How many times the transform is called?
-
-        let publisher = PassthroughSubject<Int, Error>()
-        let scan = publisher.tryScan(0) { _, value -> Int in
-            counter += 1
-            if value == 100 {
-                throw "too much" as TestingError
-            }
-            return value * 2
-        }
-        let tracking = TrackingSubscriberBase<Int, Error>(
-            receiveSubscription: { $0.request(.unlimited) }
-        )
-
-        publisher.send(1)
-        scan.subscribe(tracking)
-        publisher.send(2)
-        publisher.send(3)
-        publisher.send(100)
-        publisher.send(9)
-        publisher.send(completion: .finished)
-
-        XCTAssertEqual(tracking.history,
-                       [.subscription("TryScan"),
-                        .value(4),
-                        .value(6),
-                        .completion(.failure("too much" as TestingError))])
-
-        XCTAssertEqual(counter, 3)
-    }
-
-    func testTryScanFailureOnCompletion() {
-
-        let publisher = PassthroughSubject<Int, Error>()
-        let scan = publisher.tryScan(0) { $0 + $1 * 2 }
-
-        let tracking = TrackingSubscriberBase<Int, Error>()
-
-        publisher.send(1)
-        scan.subscribe(tracking)
-        publisher.send(completion: .failure(TestingError.oops))
-        publisher.send(2)
-
-        XCTAssertEqual(tracking.history,
-                       [.subscription("TryScan"),
-                        .completion(.failure(TestingError.oops))])
-    }
-
-    func testTryScanSuccess() {
-        let publisher = PassthroughSubject<Int, Error>()
-        let scan = publisher.tryScan(0) { $0 + $1 * 2 }
-
-        let tracking = TrackingSubscriberBase<Int, Error>()
-
-        publisher.send(1)
-        scan.subscribe(tracking)
-        publisher.send(completion: .finished)
-        publisher.send(2)
-
-        XCTAssertEqual(tracking.history,
-                       [.subscription("TryScan"),
-                        .completion(.finished)])
-    }
-
-    func testRange() {
-        // Given
-        let publisher = PassthroughSubject<Int, TestingError>()
-        let scan = publisher.scan(0) { $0 + $1 * 2 }
-        let tracking = TrackingSubscriber(receiveSubscription: { $0.request(.unlimited) })
-        // When
-        publisher.send(1)
-        scan.subscribe(tracking)
-        publisher.send(2)
-        publisher.send(3)
-        publisher.send(completion: .finished)
-        publisher.send(5)
-        // Then
-        XCTAssertEqual(tracking.history, [
-            .subscription("PassthroughSubject"),
-            .value(4),
-            .value(10),
-            .completion(.finished)
-        ])
-    }
-
-    func testNoDemand() {
-        // Given
-        let subscription = CustomSubscription()
-        let publisher = CustomPublisher(subscription: subscription)
-        let scan = publisher.scan(0) { $0 + $1 * 2 }
-        let tracking = TrackingSubscriber()
-        // When
-        scan.subscribe(tracking)
-        // Then
-        XCTAssertTrue(subscription.history.isEmpty)
-    }
-
-    func testDemandSubscribe() {
-        // Given
-        let expectedSubscribeDemand = 42
-        let subscription = CustomSubscription()
-        let publisher = CustomPublisher(subscription: subscription)
-        let scan = publisher.scan(0) { $0 + $1 * 2 }
-        let tracking = TrackingSubscriber(
-            receiveSubscription: { $0.request(.max(expectedSubscribeDemand)) }
-        )
-        // When
-        scan.subscribe(tracking)
-        // Then
-        XCTAssertEqual(subscription.history, [.requested(.max(expectedSubscribeDemand))])
-    }
 
     func testDemandSend() {
         var expectedReceiveValueDemand = 4
@@ -180,137 +35,287 @@ final class ScanTests: XCTestCase {
         XCTAssertEqual(publisher.send(0), .max(120))
     }
 
-    func testCompletion() {
-        // Given
-        let subscription = CustomSubscription()
-        let publisher = CustomPublisher(subscription: subscription)
+    // MARK: - Scan
+
+    func testScanEmpty() {
+        let tracking = TrackingSubscriberBase<String, TestingError>(
+            receiveSubscription: { $0.request(.unlimited) }
+        )
+        let publisher = TrackingSubject<Int>(
+            receiveSubscriber: {
+                XCTAssertEqual(String(describing: $0), "Scan")
+            }
+        )
+
+        publisher.scan("", String.init(repeating:count:)).subscribe(tracking)
+        // Then
+        XCTAssertEqual(tracking.history, [.subscription("PassthroughSubject")])
+    }
+
+    func testScanError() {
+        let expectedError = TestingError.oops
+        let tracking = TrackingSubscriber(receiveSubscription: { $0.request(.unlimited) })
+        let publisher = CustomPublisher(subscription: CustomSubscription())
+
+        publisher.scan(666, { $0 + $1 * 2 }).subscribe(tracking)
+        publisher.send(completion: .failure(expectedError))
+        publisher.send(completion: .failure(expectedError))
+
+        XCTAssertEqual(tracking.history, [
+            .subscription("CustomSubscription"),
+            .completion(.failure(expectedError)),
+            .completion(.failure(expectedError))
+        ])
+    }
+
+    func testScanRange() {
+        let publisher = CustomPublisher(subscription: CustomSubscription())
         let scan = publisher.scan(0) { $0 + $1 * 2 }
         let tracking = TrackingSubscriber(receiveSubscription: { $0.request(.unlimited) })
-        // When
+
+        XCTAssertEqual(publisher.send(1), .none)
         scan.subscribe(tracking)
+        XCTAssertEqual(publisher.send(2), .none)
+        XCTAssertEqual(publisher.send(3), .none)
+        XCTAssertEqual(publisher.send(4), .none)
+        XCTAssertEqual(publisher.send(5), .none)
         publisher.send(completion: .finished)
-        // Then
-        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
-        XCTAssertEqual(
-            tracking.history,
-            [.subscription("CustomSubscription"), .completion(.finished)]
-        )
+        XCTAssertEqual(publisher.send(6), .none)
+
+        XCTAssertEqual(tracking.history, [
+            .subscription("CustomSubscription"),
+            .value(4),
+            .value(10),
+            .value(18),
+            .value(28),
+            .completion(.finished),
+            .value(40)
+        ])
+    }
+
+    func testScanImmediateCompletion() {
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        initialDemand: .max(3),
+                                        receiveValueDemand: .none,
+                                        createSut: { $0.scan(0) { $0 + $1 * 2 } })
+        helper.publisher.send(completion: .finished)
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(3))])
+        XCTAssertEqual(helper.tracking.history, [.subscription("CustomSubscription"),
+                                                 .completion(.finished)])
     }
 
     func testScanCancel() throws {
-        // Given
-        let subscription = CustomSubscription()
-        let publisher = CustomPublisher(subscription: subscription)
-        let scan = publisher.scan(0) { $0 + $1 * 2 }
-        var downstreamSubscription: Subscription?
-        let tracking = TrackingSubscriber(receiveSubscription: {
-            $0.request(.unlimited)
-            downstreamSubscription = $0
-        })
-        // When
-        scan.subscribe(tracking)
-        try XCTUnwrap(downstreamSubscription).cancel()
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        initialDemand: .unlimited,
+                                        receiveValueDemand: .none,
+                                        createSut: { $0.scan(0) { $0 + $1 * 2 } })
+
+        try XCTUnwrap(helper.downstreamSubscription).cancel()
+        XCTAssertEqual(helper.publisher.send(1), .none)
+        helper.publisher.send(completion: .finished)
+        helper.publisher.send(completion: .finished)
+        helper.publisher.send(completion: .failure(.oops))
+        helper.publisher.send(completion: .failure(.oops))
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited), .cancelled])
+        XCTAssertEqual(helper.tracking.history, [.subscription("CustomSubscription"),
+                                                 .value(2),
+                                                 .completion(.finished),
+                                                 .completion(.finished),
+                                                 .completion(.failure(.oops)),
+                                                 .completion(.failure(.oops))])
+    }
+
+    func testScanCancelAlreadyCancelled() throws {
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        initialDemand: .unlimited,
+                                        receiveValueDemand: .none,
+                                        createSut: { $0.scan(0, shouldNotBeCalled()) })
+
+        try XCTUnwrap(helper.downstreamSubscription).cancel()
+        try XCTUnwrap(helper.downstreamSubscription).request(.max(42))
+        try XCTUnwrap(helper.downstreamSubscription).cancel()
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
+                                                     .cancelled,
+                                                     .requested(.max(42)),
+                                                     .cancelled])
+    }
+
+    func testScanReflection() throws {
+        try testReflection(parentInput: Int.self,
+                           parentFailure: Error.self,
+                           description: "Scan",
+                           customMirror: expectedChildren(
+                               ("downstream", .contains("TrackingSubscriber")),
+                               ("result", "0")
+                           ),
+                           playgroundDescription: "Scan",
+                           { $0.scan(0, +) })
+    }
+
+    func testScanLifecycle() throws {
+        try testLifecycle(sendValue: 31,
+                          cancellingSubscriptionReleasesSubscriber: true,
+                          { $0.scan(0, +) })
+    }
+
+    // MARK: - TryScan
+
+    func testTryScanFailureOnCompletion() {
+
+        let publisher = CustomPublisher(subscription: CustomSubscription())
+        let scan = publisher.tryScan(0) { $0 + $1 * 2 }
+
+        let tracking = TrackingSubscriberBase<Int, Error>()
+
         XCTAssertEqual(publisher.send(1), .none)
+        scan.subscribe(tracking)
+        publisher.send(completion: .failure(TestingError.oops))
+        XCTAssertEqual(publisher.send(2), .none)
+
+        XCTAssertEqual(tracking.history,
+                       [.subscription("TryScan"),
+                        .completion(.failure(TestingError.oops)),
+                        .value(4)])
+    }
+
+    func testTryScanSuccess() {
+        let publisher = CustomPublisher(subscription: CustomSubscription())
+        let scan = publisher.tryScan(0) { $0 + $1 * 2 }
+
+        let tracking = TrackingSubscriberBase<Int, Error>()
+
+        XCTAssertEqual(publisher.send(1), .none)
+        scan.subscribe(tracking)
         publisher.send(completion: .finished)
-        // Then
-        XCTAssertEqual(subscription.history, [.requested(.unlimited), .cancelled])
+        XCTAssertEqual(publisher.send(2), .none)
+
+        XCTAssertEqual(tracking.history,
+                       [.subscription("TryScan"),
+                        .completion(.finished),
+                        .value(4)])
+    }
+
+    func testTryScanReceiveSubscriptionTwice() throws {
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        initialDemand: nil,
+                                        receiveValueDemand: .none,
+                                        createSut: { $0.tryScan(0, shouldNotBeCalled()) })
+
+        XCTAssertEqual(helper.subscription.history, [])
+
+        let secondSubscription = CustomSubscription()
+        try XCTUnwrap(helper.publisher.subscriber)
+            .receive(subscription: secondSubscription)
+
+        XCTAssertEqual(helper.subscription.history, [])
+        XCTAssertEqual(secondSubscription.history, [.cancelled])
+
+        try XCTUnwrap(helper.publisher.subscriber)
+            .receive(subscription: helper.subscription)
+
+        XCTAssertEqual(helper.subscription.history, [.cancelled])
+    }
+
+    func testTryScanFailureBecauseOfThrow() {
+        var counter = 0 // How many times the transform is called?
+
+        func reducer(_ acc: Int, _ newValue: Int) throws -> Int {
+            counter += 1
+            if newValue == 100 {
+                throw "too much" as TestingError
+            }
+            return newValue * 2
+        }
+
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        initialDemand: .unlimited,
+                                        receiveValueDemand: .max(3),
+                                        createSut: { $0.tryScan(0, reducer) })
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+
+        XCTAssertEqual(helper.publisher.send(2), .max(3))
+        XCTAssertEqual(helper.publisher.send(3), .max(3))
+        XCTAssertEqual(helper.publisher.send(100), .none)
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited), .cancelled])
+
+        XCTAssertEqual(helper.publisher.send(9), .max(3))
+        XCTAssertEqual(helper.publisher.send(100), .none)
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited), .cancelled])
+
+        helper.publisher.send(completion: .finished)
+
+        XCTAssertEqual(helper.tracking.history,
+                       [.subscription("TryScan"),
+                        .value(4),
+                        .value(6),
+                        .completion(.failure("too much" as TestingError)),
+                        .value(18)])
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited), .cancelled])
+
+        XCTAssertEqual(counter, 5)
     }
 
     func testTryScanCancel() throws {
-        // Given
-        let subscription = CustomSubscription()
-        let publisher = CustomPublisher(subscription: subscription)
-        let scan = publisher.tryScan(0) { $0 + $1 * 2 }
-        var downstreamSubscription: Subscription?
-        let tracking = TrackingSubscriberBase<Int, Error>(receiveSubscription: {
-            $0.request(.unlimited)
-            downstreamSubscription = $0
-        })
-        // When
-        scan.subscribe(tracking)
-        try XCTUnwrap(downstreamSubscription).cancel()
-        XCTAssertEqual(publisher.send(1), .none)
-        publisher.send(completion: .finished)
-        // Then
-        XCTAssertEqual(subscription.history, [.requested(.unlimited), .cancelled])
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        initialDemand: .unlimited,
+                                        receiveValueDemand: .none,
+                                        createSut: { $0.tryScan(0) { $0 + $1 * 2 } })
+
+        try XCTUnwrap(helper.downstreamSubscription).cancel()
+        XCTAssertEqual(helper.publisher.send(1), .none)
+        helper.publisher.send(completion: .finished)
+        helper.publisher.send(completion: .finished)
+        helper.publisher.send(completion: .failure(.oops))
+        helper.publisher.send(completion: .failure(.oops))
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited), .cancelled])
+        XCTAssertEqual(helper.tracking.history, [.subscription("TryScan"),
+                                                 .value(2)])
     }
 
-    func testCancelAlreadyCancelled() throws {
-        // Given
-        let subscription = CustomSubscription()
-        let publisher = CustomPublisher(subscription: subscription)
-        let scan = publisher.scan(0) { $0 + $1 * 2 }
-        var downstreamSubscription: Subscription?
-        let tracking = TrackingSubscriber(receiveSubscription: {
-            $0.request(.unlimited)
-            downstreamSubscription = $0
-        })
-        // When
-        scan.subscribe(tracking)
-        try XCTUnwrap(downstreamSubscription).cancel()
-        downstreamSubscription?.request(.unlimited)
-        try XCTUnwrap(downstreamSubscription).cancel()
-        // Then
-        XCTAssertEqual(subscription.history, [.requested(.unlimited),
-                                              .cancelled,
-                                              .requested(.unlimited),
-                                              .cancelled])
+    func testTryScanCancelAlreadyCancelled() throws {
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        initialDemand: .unlimited,
+                                        receiveValueDemand: .none,
+                                        createSut: { $0.tryScan(0, shouldNotBeCalled()) })
+
+        try XCTUnwrap(helper.downstreamSubscription).cancel()
+        try XCTUnwrap(helper.downstreamSubscription).request(.max(42))
+        try XCTUnwrap(helper.downstreamSubscription).cancel()
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
+                                                     .cancelled])
     }
 
-    func testLifecycle() throws {
+    func testTryScanReflection() throws {
+        try testReflection(parentInput: Int.self,
+                           parentFailure: Error.self,
+                           description: "TryScan",
+                           customMirror: expectedChildren(
+                               ("downstream", .contains("TrackingSubscriber")),
+                               ("status", .contains("awaitingSubscription")),
+                               ("result", "0")
+                           ),
+                           playgroundDescription: "TryScan",
+                           { $0.tryScan(0, +) })
+    }
 
-        var deinitCounter = 0
+    func testTryScanLifecycle() throws {
+        try testLifecycle(sendValue: 31,
+                          cancellingSubscriptionReleasesSubscriber: false,
+                          { $0.tryScan(0, +) })
+    }
+}
 
-        let onDeinit = { deinitCounter += 1 }
-
-        do {
-            let passthrough = PassthroughSubject<Int, TestingError>()
-            let scan = passthrough.scan(0) { $0 + $1 * 2 }
-            let emptySubscriber = TrackingSubscriber(onDeinit: onDeinit)
-            XCTAssertTrue(emptySubscriber.history.isEmpty)
-            scan.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
-            passthrough.send(31)
-            XCTAssertEqual(emptySubscriber.inputs.count, 0)
-            passthrough.send(completion: .failure("failure"))
-            XCTAssertEqual(emptySubscriber.completions.count, 1)
-        }
-
-        XCTAssertEqual(deinitCounter, 1)
-
-        do {
-            let passthrough = PassthroughSubject<Int, TestingError>()
-            let scan = passthrough.scan(0) { $0 + $1 * 2 }
-            let emptySubscriber = TrackingSubscriber(onDeinit: onDeinit)
-            XCTAssertTrue(emptySubscriber.history.isEmpty)
-            scan.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
-            XCTAssertEqual(emptySubscriber.inputs.count, 0)
-            XCTAssertEqual(emptySubscriber.completions.count, 0)
-        }
-
-        XCTAssertEqual(deinitCounter, 1)
-
-        var subscription: Subscription?
-
-        do {
-            let passthrough = PassthroughSubject<Int, TestingError>()
-            let scan = passthrough.scan(0) { $0 + $1 * 2 }
-            let emptySubscriber = TrackingSubscriber(
-                receiveSubscription: { subscription = $0; $0.request(.unlimited) },
-                onDeinit: onDeinit
-            )
-            XCTAssertTrue(emptySubscriber.history.isEmpty)
-            scan.subscribe(emptySubscriber)
-            XCTAssertEqual(emptySubscriber.subscriptions.count, 1)
-            passthrough.send(31)
-            XCTAssertEqual(emptySubscriber.inputs.count, 1)
-            XCTAssertEqual(emptySubscriber.completions.count, 0)
-            XCTAssertNotNil(subscription)
-        }
-
-        XCTAssertEqual(deinitCounter, 1)
-        try XCTUnwrap(subscription).cancel()
-        XCTAssertEqual(deinitCounter, 2)
+private func shouldNotBeCalled<T, U>(file: StaticString = #file,
+                                     line: UInt = #line) -> (T, U) -> T {
+    return { accumulator, _ in
+        XCTFail("should not be called", file: file, line: line)
+        return accumulator
     }
 }
