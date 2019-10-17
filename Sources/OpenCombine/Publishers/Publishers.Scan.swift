@@ -164,7 +164,7 @@ extension Publishers.Scan {
             downstream.receive(completion: completion)
         }
 
-        var description: String { "Scan" }
+        var description: String { return "Scan" }
 
         var customMirror: Mirror {
             let children: [Mirror.Child] = [
@@ -280,7 +280,7 @@ extension Publishers.TryScan {
             subscription.cancel()
         }
 
-        var description: String { "TryScan" }
+        var description: String { return "TryScan" }
 
         var customMirror: Mirror {
             lock.lock()
