@@ -36,13 +36,13 @@ final class CustomSubscription: Subscription, CustomStringConvertible {
     /// The history of requests and cancellations of this subscription.
     private(set) var history: [Event] = []
 
-    private let _requested: ((Subscribers.Demand) -> Void)?
-    private let _cancelled: (() -> Void)?
+    var onRequest: ((Subscribers.Demand) -> Void)?
+    var onCancel: (() -> Void)?
 
     init(onRequest: ((Subscribers.Demand) -> Void)? = nil,
          onCancel: (() -> Void)? = nil) {
-        _requested = onRequest
-        _cancelled = onCancel
+        self.onRequest = onRequest
+        self.onCancel = onCancel
     }
 
     var lastRequested: Subscribers.Demand? {
@@ -60,13 +60,13 @@ final class CustomSubscription: Subscription, CustomStringConvertible {
 
     func request(_ demand: Subscribers.Demand) {
         history.append(.requested(demand))
-        _requested?(demand)
+        onRequest?(demand)
     }
 
     func cancel() {
         history.append(.cancelled)
         cancelled = true
-        _cancelled?()
+        onCancel?()
     }
 
     var description: String { return "CustomSubscription" }

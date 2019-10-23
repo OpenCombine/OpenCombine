@@ -36,6 +36,12 @@ func expectedChildren(_ expectedChildren: (String?, ExpectedMirrorChildValue)...
             .children
             .map { ($0, String(describing: $1)) }
 
+        XCTAssertEqual(actualChildren.count,
+                       expectedChildren.count,
+                       "The children collections are of different sizes",
+                       file: file,
+                       line: line)
+
         for (actualChild, expectedChild) in zip(actualChildren, expectedChildren) {
             XCTAssertEqual(actualChild.0, expectedChild.0, file: file, line: line)
             switch (actualChild.1, expectedChild.1) {
