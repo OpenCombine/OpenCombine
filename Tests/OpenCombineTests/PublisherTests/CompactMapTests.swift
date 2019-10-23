@@ -16,307 +16,81 @@ import OpenCombine
 @available(macOS 10.15, iOS 13.0, *)
 final class CompactMapTests: XCTestCase {
 
-    func testEmpty() {
-        let tracking = TrackingSubscriberBase<Int, TestingError>(
-            receiveSubscription: { $0.request(.unlimited) }
-        )
-        let publisher = TrackingSubject<String>(
-            receiveSubscriber: {
-                XCTAssertEqual(String(describing: $0), "CompactMap")
-            }
-        )
+    // MARK: - CompactMap
 
-        publisher.compactMap(Int.init).subscribe(tracking)
-
-        XCTAssertEqual(tracking.history, [.subscription("CompactMap")])
+    func testCompactMapBasicBehavior() {
+        var counter = 0
+        // swiftlint:disable comma
+        FilterTests.testBasicBehavior(input: [("1",    expectedDemand: .max(4)),
+                                              ("2",    expectedDemand: .max(4)),
+                                              ("a",    expectedDemand: .max(1)),
+                                              ("6",    expectedDemand: .max(4)),
+                                              ("b",    expectedDemand: .max(1)),
+                                              ("b",    expectedDemand: .max(1)),
+                                              ("12.4", expectedDemand: .max(1))],
+                                      expectedSubscription: "CompactMap",
+                                      expectedOutput: [1, 2, 6],
+                                      { $0.compactMap { counter += 1; return Int($0) } })
+        // swiftlint:enable comma
+        XCTAssertEqual(counter, 7)
     }
 
-    func testError() {
-        let expectedError = TestingError.oops
-        let tracking = TrackingSubscriberBase<Int, TestingError>(
-            receiveSubscription: { $0.request(.unlimited) }
-        )
-        let publisher =
-            CustomPublisherBase<String, TestingError>(subscription: CustomSubscription())
-
-        publisher.compactMap(Int.init).subscribe(tracking)
-        publisher.send(completion: .failure(expectedError))
-        publisher.send(completion: .failure(expectedError))
-
-        XCTAssertEqual(tracking.history, [.subscription("CompactMap"),
-                                          .completion(.failure(.oops))])
+    func testCompactMapUpstreamFinishesImmediately() {
+        FilterTests
+            .testUpstreamFinishesImmediately(expectedSubscription: "CompactMap",
+                                             { $0.compactMap(shouldNotBeCalled()) })
     }
 
-    func testTryCompactMapFailureBecauseOfThrow() {
-        var counter = 0 // How many times the transform is called?
+    func testCompactMapUpstreamFinishesWithError() {
+        FilterTests.testUpstreamFinishesWithError(expectedSubscription: "CompactMap",
+                                                  { $0.compactMap(shouldNotBeCalled()) })
+    }
 
-        let publisher = PassthroughSubject<String, Error>()
-        let compactMap = publisher.tryCompactMap { value -> Int? in
-            counter += 1
-            if value == "throw" {
-                throw "too much" as TestingError
-            }
-            return Int(value)
+    func testCompactMapDemand() {
+        FilterTests.testDemand { publisher, filter in
+            publisher.compactMap(filter)
         }
-        let tracking = TrackingSubscriberBase<Int, Error>(
-            receiveSubscription: { $0.request(.unlimited) }
+    }
+
+    func testCompactMapNoDemand() {
+        FilterTests.testNoDemand { $0.compactMap(shouldNotBeCalled()) }
+    }
+
+    func testCompactMapCancelAlreadyCancelled() throws {
+        try FilterTests.testCancelAlreadyCancelled(
+            expectedSubscription: "CompactMap",
+            { $0.compactMap(shouldNotBeCalled()) }
         )
-
-        publisher.send("1")
-        compactMap.subscribe(tracking)
-        publisher.send("2")
-        publisher.send("3")
-        publisher.send("throw")
-        publisher.send("9")
-        publisher.send(completion: .finished)
-
-        XCTAssertEqual(tracking.history,
-                       [.subscription("TryCompactMap"),
-                        .value(2),
-                        .value(3),
-                        .completion(.failure("too much" as TestingError))])
-
-        XCTAssertEqual(counter, 3)
-    }
-
-    func testTryCompactMapFailureOnCompletion() {
-
-        let publisher = PassthroughSubject<String, Error>()
-        let compactMap = publisher.tryCompactMap(Int.init)
-
-        let tracking = TrackingSubscriberBase<Int, Error>()
-
-        publisher.send("1")
-        compactMap.subscribe(tracking)
-        publisher.send(completion: .failure(TestingError.oops))
-        publisher.send("2")
-
-        XCTAssertEqual(tracking.history,
-                       [.subscription("TryCompactMap"),
-                        .completion(.failure(TestingError.oops))])
-    }
-
-    func testRange() {
-
-        let publisher = PassthroughSubject<String, TestingError>()
-        let compactMap = publisher.compactMap(Int.init)
-        let tracking = TrackingSubscriber(receiveSubscription: { $0.request(.unlimited) })
-
-        publisher.send("1")
-        compactMap.subscribe(tracking)
-        publisher.send("2")
-        publisher.send("a")
-        publisher.send("b")
-        publisher.send("a")
-        publisher.send("3")
-        publisher.send("4")
-        publisher.send("5")
-        publisher.send("!")
-        publisher.send(completion: .finished)
-        publisher.send("6")
-
-        XCTAssertEqual(tracking.history, [.subscription("CompactMap"),
-                                          .value(2),
-                                          .value(3),
-                                          .value(4),
-                                          .value(5),
-                                          .completion(.finished)])
-    }
-
-    func testNoDemand() {
-        let subscription = CustomSubscription()
-        let publisher =
-            CustomPublisherBase<String, TestingError>(subscription: subscription)
-        let compactMap = publisher.compactMap(Int.init)
-        let tracking = TrackingSubscriber()
-        compactMap.subscribe(tracking)
-        XCTAssertTrue(subscription.history.isEmpty)
-    }
-
-    func testDemandOnSubscribe() {
-        let subscription = CustomSubscription()
-        let publisher =
-            CustomPublisherBase<String, TestingError>(subscription: subscription)
-        let compactMap = publisher.compactMap(Int.init)
-        let tracking = TrackingSubscriber(
-            receiveSubscription: { $0.request(.max(42)) }
-        )
-        compactMap.subscribe(tracking)
-        XCTAssertEqual(subscription.history, [.requested(.max(42))])
-    }
-
-    func testDemand() {
-
-        let subscription = CustomSubscription()
-        let publisher =
-            CustomPublisherBase<String, TestingError>(subscription: subscription)
-        let compactMap = publisher.compactMap(Int.init)
-        var downstreamSubscription: Subscription?
-
-        var demandOnReceiveValue = Subscribers.Demand.max(3)
-        let tracking = TrackingSubscriber(
-            receiveSubscription: {
-                $0.request(.max(5))
-                downstreamSubscription = $0
-            },
-            receiveValue: { _ in demandOnReceiveValue }
-        )
-
-        compactMap.subscribe(tracking)
-
-        XCTAssertNotNil(downstreamSubscription)
-
-        XCTAssertEqual(subscription.history, [.requested(.max(5))])
-        // unsatisfied demand = 5
-
-        XCTAssertEqual(publisher.send("a"), .max(1))
-        XCTAssertEqual(subscription.history, [.requested(.max(5))])
-        // unsatisfied demand = 5
-
-        XCTAssertEqual(publisher.send("1"), .max(3))
-        XCTAssertEqual(subscription.history, [.requested(.max(5))])
-        // unsatisfied demand = 5 - 1 + 3 = 7
-
-        demandOnReceiveValue = .max(2)
-        XCTAssertEqual(publisher.send("2"), demandOnReceiveValue)
-        XCTAssertEqual(subscription.history, [.requested(.max(5))])
-        // unsatisfied demand = 7 - 1 + 2 = 8
-
-        demandOnReceiveValue = .max(1)
-        XCTAssertEqual(publisher.send("3"), demandOnReceiveValue)
-        XCTAssertEqual(subscription.history, [.requested(.max(5))])
-        // unsatisfied demand = 8 - 1 + 1 = 8
-
-        XCTAssertEqual(publisher.send("b"), .max(1))
-        XCTAssertEqual(subscription.history, [.requested(.max(5))])
-        // unsatisfied demand = 8
-
-        downstreamSubscription?.request(.max(15))
-        downstreamSubscription?.request(.max(5))
-        XCTAssertEqual(subscription.history, [.requested(.max(5)),
-                                              .requested(.max(15)),
-                                              .requested(.max(5))])
-        // unsatisfied demand = 8 + 15 + 5 = 28
-
-        demandOnReceiveValue = .none
-        XCTAssertEqual(publisher.send("4"), demandOnReceiveValue)
-        XCTAssertEqual(subscription.history, [.requested(.max(5)),
-                                              .requested(.max(15)),
-                                              .requested(.max(5))])
-        // unsatisfied demand = 28 - 1 + 0 = 27
-
-        downstreamSubscription?.request(.max(121))
-        XCTAssertEqual(subscription.history, [.requested(.max(5)),
-                                              .requested(.max(15)),
-                                              .requested(.max(5)),
-                                              .requested(.max(121))])
-        // unsatisfied demand = 27 + 121 = 148
-
-        XCTAssertEqual(publisher.send("c"), .max(1))
-        XCTAssertEqual(subscription.history, [.requested(.max(5)),
-                                              .requested(.max(15)),
-                                              .requested(.max(5)),
-                                              .requested(.max(121))])
-        // unsatisfied demand = 148
-
-        downstreamSubscription?.cancel()
-        downstreamSubscription?.cancel()
-        XCTAssertEqual(subscription.history, [.requested(.max(5)),
-                                              .requested(.max(15)),
-                                              .requested(.max(5)),
-                                              .requested(.max(121)),
-                                              .cancelled])
-        downstreamSubscription?.request(.max(3))
-        XCTAssertEqual(subscription.history, [.requested(.max(5)),
-                                              .requested(.max(15)),
-                                              .requested(.max(5)),
-                                              .requested(.max(121)),
-                                              .cancelled])
-        demandOnReceiveValue = .max(80)
-        XCTAssertEqual(publisher.send("8"), .none)
-    }
-
-    func testCompletion() {
-        let subscription = CustomSubscription()
-        let publisher =
-            CustomPublisherBase<String, TestingError>(subscription: subscription)
-        let compactMap = publisher.compactMap(Int.init)
-        let tracking = TrackingSubscriber(receiveSubscription: { $0.request(.unlimited) })
-
-        compactMap.subscribe(tracking)
-        publisher.send(completion: .finished)
-
-        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
-        XCTAssertEqual(tracking.history, [.subscription("CompactMap"),
-                                          .completion(.finished)])
-    }
-
-    func testCompactMapCancel() throws {
-        let subscription = CustomSubscription()
-        let publisher =
-            CustomPublisherBase<String, TestingError>(subscription: subscription)
-        let compactMap = publisher.compactMap(Int.init)
-        var downstreamSubscription: Subscription?
-        let tracking = TrackingSubscriber(
-            receiveSubscription: {
-                $0.request(.unlimited)
-                downstreamSubscription = $0
-            }
-        )
-
-        compactMap.subscribe(tracking)
-        try XCTUnwrap(downstreamSubscription).cancel()
-        XCTAssertEqual(publisher.send("1"), .none)
-        publisher.send(completion: .finished)
-
-        XCTAssertEqual(subscription.history, [.requested(.unlimited), .cancelled])
-    }
-
-    func testTryCompactMapCancel() throws {
-        let subscription = CustomSubscription()
-        let publisher =
-            CustomPublisherBase<String, TestingError>(subscription: subscription)
-        let tryCompactMap = publisher.tryCompactMap(Int.init)
-        var downstreamSubscription: Subscription?
-        let tracking = TrackingSubscriberBase<Int, Error>(
-            receiveSubscription: {
-                $0.request(.unlimited)
-                downstreamSubscription = $0
-            }
-        )
-
-        tryCompactMap.subscribe(tracking)
-        try XCTUnwrap(downstreamSubscription).cancel()
-        XCTAssertEqual(publisher.send("1"), .none)
-        publisher.send(completion: .finished)
-        XCTAssertEqual(subscription.history, [.requested(.unlimited), .cancelled])
-    }
-
-    func testCancelAlreadyCancelled() throws {
-        let subscription = CustomSubscription()
-        let publisher =
-            CustomPublisherBase<String, TestingError>(subscription: subscription)
-        let compactMap = publisher.compactMap(Int.init)
-        var downstreamSubscription: Subscription?
-        let tracking = TrackingSubscriber(
-            receiveSubscription: {
-                $0.request(.unlimited)
-                downstreamSubscription = $0
-            }
-        )
-
-        compactMap.subscribe(tracking)
-        try XCTUnwrap(downstreamSubscription).cancel()
-        downstreamSubscription?.request(.unlimited)
-        try XCTUnwrap(downstreamSubscription).cancel()
-        XCTAssertEqual(subscription.history, [.requested(.unlimited),
-                                              .cancelled])
     }
 
     func testCompactMapReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: true,
+                                           expected: .crash,
                                            { $0.compactMap(shouldNotBeCalled()) })
+    }
+
+    func testCompactMapReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .crash,
+            { $0.compactMap(shouldNotBeCalled()) }
+        )
+    }
+
+    func testCompactMapRequestBeforeSubscription() {
+        testRequestBeforeSubscription(inputType: Int.self,
+                                      shouldCrash: true,
+                                      { $0.compactMap(shouldNotBeCalled()) })
+    }
+
+    func testCompactMapCancelBeforeSubscription() {
+        testCancelBeforeSubscription(inputType: Int.self,
+                                     shouldCrash: false,
+                                     { $0.compactMap(shouldNotBeCalled()) })
+    }
+
+    func testCompactMapReceiveSubscriptionTwice() throws {
+        try testReceiveSubscriptionTwice { $0.compactMap(shouldNotBeCalled()) }
     }
 
     func testCompactMapLifecycle() throws {
@@ -326,10 +100,135 @@ final class CompactMapTests: XCTestCase {
         }
     }
 
+    func testCompactMapReflection() throws {
+        try testReflection(parentInput: Int.self,
+                           parentFailure: Error.self,
+                           description: "CompactMap",
+                           customMirror: expectedChildren(
+                               ("downstream", .contains("TrackingSubscriberBase"))
+                           ),
+                           playgroundDescription: "CompactMap",
+                           { $0.compactMap(shouldNotBeCalled()) })
+    }
+
+    // MARK: - TryCompactMap
+
+    func testTryCompactMapBasicBehavior() {
+        var counter = 0
+        // swiftlint:disable comma
+        FilterTests.testBasicBehavior(
+            input: [("1",    expectedDemand: .max(4)),
+                    ("2",    expectedDemand: .max(4)),
+                    ("a",    expectedDemand: .max(1)),
+                    ("6",    expectedDemand: .max(4)),
+                    ("b",    expectedDemand: .max(1)),
+                    ("b",    expectedDemand: .max(1)),
+                    ("12.4", expectedDemand: .max(1))],
+            expectedSubscription: "TryCompactMap",
+            expectedOutput: [1, 2, 6],
+            { $0.tryCompactMap { counter += 1; return Int($0) } }
+        )
+        // swiftlint:enable comma
+        XCTAssertEqual(counter, 7)
+    }
+
+    func testTryCompactMapUpstreamFinishesImmediately() {
+        FilterTests
+            .testUpstreamFinishesImmediately(expectedSubscription: "TryCompactMap",
+                                             { $0.tryCompactMap(shouldNotBeCalled()) })
+    }
+
+    func testTryCompactMapUpstreamFinishesWithError() {
+        FilterTests
+            .testUpstreamFinishesWithError(expectedSubscription: "TryCompactMap",
+                                           { $0.tryCompactMap(shouldNotBeCalled()) })
+    }
+
+    func testTryCompactMapFailureBecauseOfThrow() {
+        var counter = 0 // How many times the transform is called?
+
+        func transform(_ value: String) throws -> Int? {
+            counter += 1
+            if value == "throw" {
+                throw TestingError.oops
+            }
+            return Int(value)
+        }
+
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisherBase<String, TestingError>.self,
+            initialDemand: .max(3),
+            receiveValueDemand: .max(10),
+            createSut: { $0.tryCompactMap(transform) }
+        )
+
+        XCTAssertEqual(helper.publisher.send("2"), .max(10))
+        XCTAssertEqual(helper.publisher.send("3"), .max(10))
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(3))])
+        XCTAssertEqual(helper.publisher.send("throw"), .none)
+        XCTAssertEqual(helper.publisher.send("9"), .none)
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(3)), .cancelled])
+
+        helper.publisher.send(completion: .finished)
+        helper.publisher.send(completion: .failure(.oops))
+
+        helper.downstreamSubscription?.request(.max(1000))
+        helper.downstreamSubscription?.cancel()
+
+        XCTAssertEqual(helper.tracking.history,
+                       [.subscription("TryCompactMap"),
+                        .value(2),
+                        .value(3),
+                        .completion(.failure(TestingError.oops))])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(3)), .cancelled])
+        XCTAssertEqual(counter, 3)
+    }
+
+    func testTryCompactMapDemand() {
+        FilterTests.testDemand { publisher, filter in
+            publisher.tryCompactMap(filter)
+        }
+    }
+
+    func testTryCompactMapNoDemand() {
+        FilterTests.testNoDemand { $0.tryCompactMap(shouldNotBeCalled()) }
+    }
+
+    func testTryCompactMapCancelAlreadyCancelled() throws {
+        try FilterTests.testCancelAlreadyCancelled(
+            expectedSubscription: "TryCompactMap",
+            { $0.tryCompactMap(shouldNotBeCalled()) }
+        )
+    }
+
     func testTryCompactMapReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: true,
+                                           expected: .crash,
                                            { $0.tryCompactMap(shouldNotBeCalled()) })
+    }
+
+    func testTryCompactMapReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .crash,
+            { $0.tryCompactMap(shouldNotBeCalled()) }
+        )
+    }
+
+    func testTryCompactMapRequestBeforeSubscription() {
+        testRequestBeforeSubscription(inputType: Int.self,
+                                      shouldCrash: true,
+                                      { $0.tryCompactMap(shouldNotBeCalled()) })
+    }
+
+    func testTryCompactMapCancelBeforeSubscription() {
+        testCancelBeforeSubscription(inputType: Int.self,
+                                     shouldCrash: false,
+                                     { $0.tryCompactMap(shouldNotBeCalled()) })
+    }
+
+    func testTryCompactMapReceiveSubscriptionTwice() throws {
+        try testReceiveSubscriptionTwice { $0.tryCompactMap(shouldNotBeCalled()) }
     }
 
     func testTryCompactMapLifecycle() throws {
@@ -338,6 +237,19 @@ final class CompactMapTests: XCTestCase {
             $0.tryCompactMap(Int.init)
         }
     }
+
+    func testTryCompactMapReflection() throws {
+        try testReflection(parentInput: Int.self,
+                           parentFailure: Error.self,
+                           description: "TryCompactMap",
+                           customMirror: expectedChildren(
+                               ("downstream", .contains("TrackingSubscriberBase"))
+                           ),
+                           playgroundDescription: "TryCompactMap",
+                           { $0.tryCompactMap(shouldNotBeCalled()) })
+    }
+
+    // MARK: - Operator Specializations
 
     func testCompactMapOperatorSpecializationForCompactMap() {
         let tracking = TrackingSubscriber(
