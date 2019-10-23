@@ -41,6 +41,7 @@ typealias TrackingSubscriber = TrackingSubscriberBase<Int, TestingError>
 @available(macOS 10.15, iOS 13.0, *)
 final class TrackingSubscriberBase<Value, Failure: Error>
     : Subscriber,
+      Cancellable,
       CustomStringConvertible
 {
 
@@ -170,6 +171,13 @@ final class TrackingSubscriberBase<Value, Failure: Error>
                   "\(history) is not equal to \(expected)",
                   file: file,
                   line: line)
+    }
+
+    func cancel() {
+        for subscription in subscriptions {
+            subscription.cancel()
+        }
+        history = []
     }
 
     deinit {
