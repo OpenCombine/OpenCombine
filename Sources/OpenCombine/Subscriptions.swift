@@ -13,22 +13,29 @@ extension Subscriptions {
     ///
     /// Use the empty subscription when you need a `Subscription` that ignores requests
     /// and cancellation.
-    public static var empty: Subscription { return EmptySubscription.shared }
+    public static let empty: Subscription = _EmptySubscription.singleton
 }
 
-private final class EmptySubscription: Subscription,
+extension Subscriptions {
+    private struct _EmptySubscription: Subscription,
                                        CustomStringConvertible,
-                                       CustomReflectable
-{
-    private init() {}
+                                       CustomReflectable,
+                                       CustomPlaygroundDisplayConvertible
+    {
+        let combineIdentifier = CombineIdentifier()
 
-    func request(_ demand: Subscribers.Demand) {}
+        private init() {}
 
-    func cancel() {}
+        func request(_ demand: Subscribers.Demand) {}
 
-    fileprivate static let shared = EmptySubscription()
+        func cancel() {}
 
-    var description: String { return "Empty" }
+        fileprivate static let singleton = _EmptySubscription()
 
-    var customMirror: Mirror { return Mirror(self, children: EmptyCollection()) }
+        var description: String { return "Empty" }
+
+        var customMirror: Mirror { return Mirror(self, children: EmptyCollection()) }
+
+        var playgroundDescription: Any { return description }
+    }
 }
