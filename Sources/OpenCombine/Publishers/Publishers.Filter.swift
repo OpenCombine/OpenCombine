@@ -97,8 +97,7 @@ extension Publishers {
             where Upstream.Failure == Downstream.Failure,
                   Upstream.Output == Downstream.Input
         {
-            let filter = Inner(downstream: subscriber, isIncluded: catching(isIncluded))
-            upstream.receive(subscriber: filter)
+            upstream.subscribe(Inner(downstream: subscriber, filter: isIncluded))
         }
     }
 
@@ -137,97 +136,53 @@ extension Publishers {
             where Upstream.Output == Downstream.Input,
                   Downstream.Failure == Failure
         {
-            let filter = Inner(downstream: subscriber, isIncluded: catching(isIncluded))
-            upstream.receive(subscriber: filter)
+            upstream.subscribe(Inner(downstream: subscriber, filter: isIncluded))
         }
-    }
-}
-
-private class _Filter<Upstream: Publisher, Downstream: Subscriber>
-    : OperatorSubscription<Downstream>,
-      Subscription
-    where Upstream.Output == Downstream.Input
-{
-    typealias Input = Upstream.Output
-    typealias Failure = Upstream.Failure
-    typealias Predicate = (Input) -> Result<Bool, Downstream.Failure>
-
-    private var _isIncluded: Predicate?
-
-    var isFinished: Bool {
-        return _isIncluded == nil
-    }
-
-    init(downstream: Downstream, isIncluded: @escaping Predicate) {
-        _isIncluded = isIncluded
-        super.init(downstream: downstream)
-    }
-
-    func receive(subscription: Subscription) {
-        upstreamSubscription = subscription
-        downstream.receive(subscription: self)
-    }
-
-    func receive(_ input: Input) -> Subscribers.Demand {
-        guard let isIncluded = _isIncluded else { return .none }
-
-        if upstreamSubscription == nil {
-            fatalError("Received input before subscription")
-        }
-
-        switch isIncluded(input) {
-        case .success(let isIncluded):
-            return isIncluded ? downstream.receive(input) : .max(1)
-        case .failure(let error):
-            downstream.receive(completion: .failure(error))
-            cancel()
-            return .none
-        }
-    }
-
-    func request(_ demand: Subscribers.Demand) {
-        guard !isFinished else { return }
-        upstreamSubscription?.request(demand)
-    }
-
-    override func cancel() {
-        _isIncluded = nil
-        upstreamSubscription?.cancel()
-        upstreamSubscription = nil
     }
 }
 
 extension Publishers.Filter {
-
     private final class Inner<Downstream: Subscriber>
-        : _Filter<Upstream, Downstream>,
-          Subscriber,
-          CustomStringConvertible
-        where Upstream.Output == Downstream.Input,
-              Upstream.Failure == Downstream.Failure {
+        : FilterProducer<Downstream,
+                         Upstream.Output,
+                         Upstream.Output,
+                         Upstream.Failure,
+                         (Upstream.Output) -> Bool>
+        where Upstream.Output == Downstream.Input, Upstream.Failure == Downstream.Failure
+    {
+        // NOTE: This class has been audited for thread safety
 
-        var description: String { return "Filter" }
-
-        func receive(completion: Subscribers.Completion<Failure>) {
-            guard !isFinished else { return }
-            downstream.receive(completion: completion)
+        override func receive(
+            newValue: Upstream.Output
+        ) -> PartialCompletion<Upstream.Output?, Downstream.Failure> {
+            return filter(newValue) ? .continue(newValue) : .continue(nil)
         }
+
+        override var description: String { return "Filter" }
     }
 }
 
 extension Publishers.TryFilter {
-
     private final class Inner<Downstream: Subscriber>
-        : _Filter<Upstream, Downstream>,
-          Subscriber,
-          CustomStringConvertible
-        where Upstream.Output == Downstream.Input, Downstream.Failure == Error {
+        : FilterProducer<Downstream,
+                         Upstream.Output,
+                         Upstream.Output,
+                         Upstream.Failure,
+                         (Upstream.Output) throws -> Bool>
+        where Downstream.Input == Upstream.Output, Downstream.Failure == Error
+    {
+        // NOTE: This class has been audited for thread safety
 
-        var description: String { return "TryFilter" }
-
-        func receive(completion: Subscribers.Completion<Failure>) {
-            guard !isFinished else { return }
-            downstream.receive(completion: completion.eraseError())
+        override func receive(
+            newValue: Upstream.Output
+        ) -> PartialCompletion<Upstream.Output?, Error> {
+            do {
+                return try filter(newValue) ? .continue(newValue) : .continue(nil)
+            } catch {
+                return .failure(error)
+            }
         }
+
+        override var description: String { return "TryFilter" }
     }
 }

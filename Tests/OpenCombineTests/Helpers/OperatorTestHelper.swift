@@ -65,7 +65,14 @@ class OperatorTestHelper<SourceValue,
             },
             receiveValue: { _ in receiveValueDemand }
         )
-        tracking.onSubscribe = { self.downstreamSubscription = $0 }
+        tracking.onSubscribe = { [weak self] in
+            self?.downstreamSubscription = $0
+        }
         sut.subscribe(tracking)
+    }
+
+    deinit {
+        downstreamSubscription?.cancel()
+        tracking.cancel()
     }
 }
