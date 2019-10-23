@@ -29,6 +29,7 @@ final class IgnoreOutputTests: XCTestCase {
         XCTAssertEqual(tracking.history, [.subscription("IgnoreOutput")])
 
         publisher.send(completion: .finished)
+        publisher.send(completion: .finished)
         XCTAssertEqual(tracking.history, [.subscription("IgnoreOutput"),
                                           .completion(.finished)])
     }
@@ -52,6 +53,10 @@ final class IgnoreOutputTests: XCTestCase {
         upstreamPublisher.send(completion: .finished)
         XCTAssertEqual(tracking.history, [.subscription("IgnoreOutput"),
                                           .completion(.finished)])
+
+        upstreamPublisher.send(completion: .failure(.oops))
+        XCTAssertEqual(tracking.history, [.subscription("IgnoreOutput"),
+                                          .completion(.finished)])
     }
 
     func testCompletionWithError() {
@@ -71,68 +76,115 @@ final class IgnoreOutputTests: XCTestCase {
         XCTAssertEqual(tracking.history, [.subscription("IgnoreOutput")])
 
         publisher.send(completion: .failure(.oops))
+        publisher.send(completion: .failure(.oops))
+        publisher.send(completion: .finished)
 
         XCTAssertEqual(tracking.history, [.subscription("IgnoreOutput"),
                                           .completion(.failure(.oops))])
     }
 
-    func testDemand() {
+    func testDemand() throws {
         // demand from downstream is ignored since no values are ever
         // sent. upstream demand is set to unlimited and left alone.
-        let subscription = CustomSubscription()
-        let publisher = CustomPublisher(subscription: subscription)
-        let ignoreOutput = publisher.ignoreOutput()
-        var downstreamSubscription: Subscription?
-        let tracking = TrackingSubscriberBase<Never, TestingError>(
-            receiveSubscription: {
-                $0.request(.max(42))
-                downstreamSubscription = $0
-            })
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        initialDemand: .max(42),
+                                        receiveValueDemand: .max(1),
+                                        createSut: { $0.ignoreOutput() })
 
-        ignoreOutput.subscribe(tracking)
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
 
-        XCTAssertNotNil(downstreamSubscription)
+        XCTAssertEqual(helper.publisher.send(0), .none)
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
 
-        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
+        XCTAssertEqual(helper.publisher.send(2), .none)
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
 
-        XCTAssertEqual(publisher.send(0), .none)
-        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
+        try XCTUnwrap(helper.downstreamSubscription).request(.max(95))
+        try XCTUnwrap(helper.downstreamSubscription).request(.max(5))
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
 
-        XCTAssertEqual(publisher.send(2), .none)
-        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
+        try XCTUnwrap(helper.downstreamSubscription).cancel()
+        try XCTUnwrap(helper.downstreamSubscription).cancel()
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
+                                                     .cancelled])
 
-        downstreamSubscription?.request(.max(95))
-        downstreamSubscription?.request(.max(5))
-        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
-
-        downstreamSubscription?.cancel()
-        downstreamSubscription?.cancel()
-        XCTAssertEqual(subscription.history, [.requested(.unlimited),
-                                              .cancelled])
-
-        downstreamSubscription?.request(.max(50))
-        XCTAssertEqual(subscription.history, [.requested(.unlimited),
-                                              .cancelled])
+        try XCTUnwrap(helper.downstreamSubscription).request(.max(50))
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
+                                                     .cancelled])
     }
 
     func testSendsSubcriptionDownstreamBeforeDemandUpstream() {
-        let sentDemandRequestUpstream = "Sent demand request upstream"
-        let sentSubscriptionDownstream = "Sent subcription downstream"
-        var receiveOrder: [String] = []
+        var didReceiveSubscription = false
+        let subscription = CustomSubscription()
+        let publisher = CustomPublisherBase<Int, Error>(subscription: subscription)
+        let ignoreOutput = publisher.ignoreOutput()
+        let tracking = TrackingSubscriberBase<Never, Error>(
+            receiveSubscription: { _ in
+                XCTAssertEqual(subscription.history, [])
+                didReceiveSubscription = true
+            }
+        )
+        XCTAssertFalse(didReceiveSubscription)
+        XCTAssertEqual(subscription.history, [])
 
-        let subscription = CustomSubscription(onRequest: { _ in
-            receiveOrder.append(sentDemandRequestUpstream)
-        })
-        let publisher = CustomPublisher(subscription: subscription)
-        let ignoreOutputPublisher = publisher.ignoreOutput()
-        let tracking =
-            TrackingSubscriberBase<Never, TestingError>(receiveSubscription: { _ in
-                receiveOrder.append(sentSubscriptionDownstream)
-            })
+        ignoreOutput.subscribe(tracking)
 
-        ignoreOutputPublisher.subscribe(tracking)
+        XCTAssertTrue(didReceiveSubscription)
+        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
+    }
 
-        XCTAssertEqual(receiveOrder, [sentSubscriptionDownstream,
-                                      sentDemandRequestUpstream])
+    func testReceiveSubscriptionTwice() throws {
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisher.self,
+            initialDemand: nil,
+            receiveValueDemand: .none,
+            createSut: { $0.ignoreOutput() }
+        )
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+
+        let secondSubscription = CustomSubscription()
+
+        try XCTUnwrap(helper.publisher.subscriber)
+            .receive(subscription: secondSubscription)
+
+        XCTAssertEqual(secondSubscription.history, [.cancelled])
+
+        try XCTUnwrap(helper.publisher.subscriber)
+            .receive(subscription: helper.subscription)
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
+                                                     .cancelled])
+
+        try XCTUnwrap(helper.downstreamSubscription).cancel()
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
+                                                     .cancelled,
+                                                     .cancelled])
+
+        let thirdSubscription = CustomSubscription()
+
+        try XCTUnwrap(helper.publisher.subscriber)
+            .receive(subscription: thirdSubscription)
+
+        XCTAssertEqual(thirdSubscription.history, [.cancelled])
+    }
+
+    func testIgnoreOutputLifecycle() throws {
+        try testLifecycle(sendValue: 31,
+                          cancellingSubscriptionReleasesSubscriber: false,
+                          { $0.ignoreOutput() })
+    }
+
+    func testIgnoreOutputReflection() throws {
+        try testReflection(parentInput: Int.self,
+                           parentFailure: TestingError.self,
+                           description: "IgnoreOutput",
+                           customMirror: expectedChildren(
+                               ("downstream", .contains("TrackingSubscriberBase")),
+                               ("status", .contains("awaitingSubscription"))
+                           ),
+                           playgroundDescription: "IgnoreOutput",
+                           { $0.ignoreOutput() })
     }
 }
