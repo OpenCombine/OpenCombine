@@ -5,65 +5,6 @@
 //  Created by Sergej Jaskiewicz on 11.07.2019.
 //
 
-extension Publishers {
-
-    /// A publisher that republishes all non-`nil` results of calling a closure
-    /// with each received element.
-    public struct CompactMap<Upstream: Publisher, Output>: Publisher {
-
-        public typealias Failure = Upstream.Failure
-
-        /// The publisher from which this publisher receives elements.
-        public let upstream: Upstream
-
-        /// A closure that receives values from the upstream publisher
-        /// and returns optional values.
-        public let transform: (Upstream.Output) -> Output?
-
-        public init(upstream: Upstream,
-                    transform: @escaping (Upstream.Output) -> Output?) {
-            self.upstream = upstream
-            self.transform = transform
-        }
-
-        public func receive<Downstream: Subscriber>(subscriber: Downstream)
-            where Downstream.Input == Output, Downstream.Failure == Failure
-        {
-            let inner = Inner(downstream: subscriber, transform: catching(transform))
-            upstream.subscribe(inner)
-        }
-    }
-
-    /// A publisher that republishes all non-`nil` results of calling an error-throwing
-    /// closure with each received element.
-    public struct TryCompactMap<Upstream: Publisher, Output>: Publisher {
-
-        public typealias Failure = Error
-
-        /// The publisher from which this publisher receives elements.
-        public let upstream: Upstream
-
-        /// An error-throwing closure that receives values from the upstream publisher
-        /// and returns optional values.
-        ///
-        /// If this closure throws an error, the publisher fails.
-        public let transform: (Upstream.Output) throws -> Output?
-
-        public init(upstream: Upstream,
-                    transform: @escaping (Upstream.Output) throws -> Output?) {
-            self.upstream = upstream
-            self.transform = transform
-        }
-
-        public func receive<Downstream: Subscriber>(subscriber: Downstream)
-            where Downstream.Input == Output, Downstream.Failure == Failure
-        {
-            let inner = Inner(downstream: subscriber, transform: catching(transform))
-            upstream.subscribe(inner)
-        }
-    }
-}
-
 extension Publisher {
 
     /// Calls a closure with each received element and publishes any returned
@@ -123,95 +64,105 @@ extension Publishers.TryCompactMap {
     }
 }
 
-private class _CompactMap<Upstream: Publisher, Downstream: Subscriber>
-    : OperatorSubscription<Downstream>,
-      Subscription
-{
-    typealias Input = Upstream.Output
-    typealias Failure = Upstream.Failure
-    typealias Transform = (Input) -> Result<Downstream.Input?, Downstream.Failure>
+extension Publishers {
 
-    fileprivate var _transform: Transform?
+    /// A publisher that republishes all non-`nil` results of calling a closure
+    /// with each received element.
+    public struct CompactMap<Upstream: Publisher, Output>: Publisher {
 
-    var _isCompleted: Bool {
-        return _transform == nil
-    }
+        public typealias Failure = Upstream.Failure
 
-    init(downstream: Downstream, transform: @escaping Transform) {
-        _transform = transform
-        super.init(downstream: downstream)
-    }
+        /// The publisher from which this publisher receives elements.
+        public let upstream: Upstream
 
-    func receive(subscription: Subscription) {
-        upstreamSubscription = subscription
-        downstream.receive(subscription: self)
-    }
+        /// A closure that receives values from the upstream publisher
+        /// and returns optional values.
+        public let transform: (Upstream.Output) -> Output?
 
-    func receive(_ input: Input) -> Subscribers.Demand {
-        guard let transform = _transform else {
-            return .none
+        public init(upstream: Upstream,
+                    transform: @escaping (Upstream.Output) -> Output?) {
+            self.upstream = upstream
+            self.transform = transform
         }
 
-        if upstreamSubscription == nil {
-            fatalError("Received value before subscription")
-        }
-
-        switch transform(input) {
-        case .success(let output?):
-            return downstream.receive(output)
-        case .success(nil):
-            return .max(1)
-        case .failure(let error):
-            downstream.receive(completion: .failure(error))
-            _transform = nil
-            return .none
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where Downstream.Input == Output, Downstream.Failure == Failure
+        {
+            upstream.subscribe(Inner(downstream: subscriber, filter: transform))
         }
     }
 
-    func request(_ demand: Subscribers.Demand) {
-        guard !_isCompleted else { return }
-        upstreamSubscription?.request(demand)
-    }
+    /// A publisher that republishes all non-`nil` results of calling an error-throwing
+    /// closure with each received element.
+    public struct TryCompactMap<Upstream: Publisher, Output>: Publisher {
 
-    override func cancel() {
-        _transform = nil
-        upstreamSubscription?.cancel()
-        upstreamSubscription = nil
+        public typealias Failure = Error
+
+        /// The publisher from which this publisher receives elements.
+        public let upstream: Upstream
+
+        /// An error-throwing closure that receives values from the upstream publisher
+        /// and returns optional values.
+        ///
+        /// If this closure throws an error, the publisher fails.
+        public let transform: (Upstream.Output) throws -> Output?
+
+        public init(upstream: Upstream,
+                    transform: @escaping (Upstream.Output) throws -> Output?) {
+            self.upstream = upstream
+            self.transform = transform
+        }
+
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where Downstream.Input == Output, Downstream.Failure == Failure
+        {
+            upstream.subscribe(Inner(downstream: subscriber, filter: transform))
+        }
     }
 }
 
 extension Publishers.CompactMap {
     private final class Inner<Downstream: Subscriber>
-        : _CompactMap<Upstream, Downstream>,
-          Subscriber,
-          CustomStringConvertible
-        where Downstream.Failure == Upstream.Failure
+        : FilterProducer<Downstream,
+                         Upstream.Output,
+                         Output,
+                         Upstream.Failure,
+                         (Upstream.Output) -> Output?>
+        where Downstream.Failure == Upstream.Failure, Downstream.Input == Output
     {
-        var description: String { return "CompactMap" }
+        // NOTE: This class has been audited for thread safety
 
-        func receive(completion: Subscribers.Completion<Upstream.Failure>) {
-            if !_isCompleted {
-                _transform = nil
-                downstream.receive(completion: completion)
-            }
+        override func receive(
+            newValue: Upstream.Output
+        ) -> PartialCompletion<Output?, Downstream.Failure> {
+            return .continue(filter(newValue))
         }
+
+        override var description: String { return "CompactMap" }
     }
 }
 
 extension Publishers.TryCompactMap {
     private final class Inner<Downstream: Subscriber>
-        : _CompactMap<Upstream, Downstream>,
-          Subscriber,
-          CustomStringConvertible
-        where Downstream.Failure == Error
+        : FilterProducer<Downstream,
+                         Upstream.Output,
+                         Output,
+                         Upstream.Failure,
+                         (Upstream.Output) throws -> Output?>
+        where Downstream.Failure == Error, Downstream.Input == Output
     {
-        var description: String { return "TryCompactMap" }
+        // NOTE: This class has been audited for thread safety
 
-        func receive(completion: Subscribers.Completion<Upstream.Failure>) {
-            if !_isCompleted {
-                _transform = nil
-                downstream.receive(completion: completion.eraseError())
+        override func receive(
+            newValue: Upstream.Output
+        ) -> PartialCompletion<Output?, Error> {
+            do {
+                return try .continue(filter(newValue))
+            } catch {
+                return .failure(error)
             }
         }
+
+        override var description: String { return "TryCompactMap" }
     }
 }
