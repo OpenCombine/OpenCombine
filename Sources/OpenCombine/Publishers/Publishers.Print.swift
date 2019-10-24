@@ -7,6 +7,19 @@
 
 import COpenCombineHelpers
 
+extension Publisher {
+
+    /// Prints log messages for all publishing events.
+    ///
+    /// - Parameter prefix: A string with which to prefix all log messages. Defaults to
+    ///   an empty string.
+    /// - Returns: A publisher that prints log messages for all publishing events.
+    public func print(_ prefix: String = "",
+                      to stream: TextOutputStream? = nil) -> Publishers.Print<Self> {
+        return .init(upstream: self, prefix: prefix, to: stream)
+    }
+}
+
 extension Publishers {
 
     /// A publisher that prints log messages for all publishing events, optionally
@@ -54,24 +67,12 @@ extension Publishers {
     }
 }
 
-extension Publisher {
-
-    /// Prints log messages for all publishing events.
-    ///
-    /// - Parameter prefix: A string with which to prefix all log messages. Defaults to
-    ///   an empty string.
-    /// - Returns: A publisher that prints log messages for all publishing events.
-    public func print(_ prefix: String = "",
-                      to stream: TextOutputStream? = nil) -> Publishers.Print<Self> {
-        return Publishers.Print(upstream: self, prefix: prefix, to: stream)
-    }
-}
-
 extension Publishers.Print {
     private final class Inner<Downstream: Subscriber>: Subscriber,
                                                        Subscription,
                                                        CustomStringConvertible,
-                                                       CustomReflectable
+                                                       CustomReflectable,
+                                                       CustomPlaygroundDisplayConvertible
     {
         typealias Input = Downstream.Input
         typealias Failure = Downstream.Failure
@@ -89,7 +90,7 @@ extension Publishers.Print {
         private var downstream: Downstream
         private let prefix: String
         private var stream: PrintTarget?
-        private var subscription: Subscription?
+        private var status = SubscriptionStatus.awaitingSubscription
         private let lock = UnfairLock.allocate()
 
         init(downstream: Downstream, prefix: String, stream: TextOutputStream?) {
@@ -104,9 +105,14 @@ extension Publishers.Print {
 
         func receive(subscription: Subscription) {
             log("\(prefix)receive subscription: (\(subscription))")
-            lock.do {
-                self.subscription = subscription
+            lock.lock()
+            guard case .awaitingSubscription = status else {
+                lock.unlock()
+                subscription.cancel()
+                return
             }
+            status = .subscribed(subscription)
+            lock.unlock()
             downstream.receive(subscription: self)
         }
 
@@ -130,6 +136,9 @@ extension Publishers.Print {
             case .failure(let error):
                 log("\(prefix)receive error: (\(error))")
             }
+            lock.lock()
+            status = .terminal
+            lock.unlock()
             downstream.receive(completion: completion)
         }
 
@@ -139,18 +148,34 @@ extension Publishers.Print {
             } else {
                 log("\(prefix)request unlimited")
             }
-            subscription?.request(demand)
+            lock.lock()
+            guard case let .subscribed(subscription) = status else {
+                lock.unlock()
+                return
+            }
+            lock.unlock()
+            subscription.request(demand)
         }
 
         func cancel() {
             log("\(prefix)receive cancel")
-            subscription?.cancel()
-            subscription = nil
+            lock.lock()
+            guard case let .subscribed(subscription) = status else {
+                lock.unlock()
+                return
+            }
+            status = .terminal
+            lock.unlock()
+            subscription.cancel()
         }
 
         var description: String { return "Print" }
 
         var customMirror: Mirror { return Mirror(self, children: EmptyCollection()) }
+
+        var playgroundDescription: Any { return description }
+
+        // MARK: - Private
 
         private func log(_ text: String) {
             if var stream = stream {

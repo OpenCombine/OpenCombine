@@ -38,8 +38,59 @@ final class PrintTests: XCTestCase {
         }
     }
 
-    func testSynchronization() {
+    func testReceiveSubscriptionTwice() throws {
+        let stream = HistoryStream()
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisher.self,
+            initialDemand: nil,
+            receiveValueDemand: .none,
+            createSut: { $0.print(to: stream) }
+        )
 
+        XCTAssertEqual(helper.subscription.history, [])
+
+        let secondSubscription = CustomSubscription()
+
+        try XCTUnwrap(helper.publisher.subscriber)
+            .receive(subscription: secondSubscription)
+
+        XCTAssertEqual(secondSubscription.history, [.cancelled])
+
+        try XCTUnwrap(helper.publisher.subscriber)
+            .receive(subscription: helper.subscription)
+
+        XCTAssertEqual(helper.subscription.history, [.cancelled])
+
+        try XCTUnwrap(helper.downstreamSubscription).cancel()
+
+        XCTAssertEqual(helper.subscription.history, [.cancelled, .cancelled])
+
+        let thirdSubscription = CustomSubscription()
+
+        try XCTUnwrap(helper.publisher.subscriber)
+            .receive(subscription: thirdSubscription)
+
+        XCTAssertEqual(thirdSubscription.history, [.cancelled])
+
+        XCTAssertEqual(stream.output.value,
+                       ["",
+                        "receive subscription: (CustomSubscription)",
+                        "\n",
+                        "",
+                        "receive subscription: (CustomSubscription)",
+                        "\n",
+                        "",
+                        "receive subscription: (CustomSubscription)",
+                        "\n",
+                        "",
+                        "receive cancel",
+                        "\n",
+                        "",
+                        "receive subscription: (CustomSubscription)",
+                        "\n"])
+    }
+
+    func testSynchronization() {
         let stream = HistoryStream()
         let publisher = CustomPublisherBase<Int, Never>(subscription: nil)
         let printer = publisher.print(to: stream)
@@ -53,6 +104,21 @@ final class PrintTests: XCTestCase {
         )
 
         XCTAssertEqual(counter.value, 200)
+    }
+
+    func testPrintReflection() throws {
+        try testReflection(parentInput: Int.self,
+                           parentFailure: Error.self,
+                           description: "Print",
+                           customMirror: childrenIsEmpty,
+                           playgroundDescription: "Print",
+                           { $0.print(to: HistoryStream()) })
+    }
+
+    func testPrintLifecycle() throws {
+        try testLifecycle(sendValue: 31,
+                          cancellingSubscriptionReleasesSubscriber: false,
+                          { $0.print(to: HistoryStream()) })
     }
 
     // MARK: - Generic tests
@@ -96,6 +162,8 @@ final class PrintTests: XCTestCase {
         publisher.send(completion: .failure("failure"))
         XCTAssertEqual(publisher.send(10), .unlimited)
         downstreamSubscription?.cancel()
+        downstreamSubscription?.cancel()
+        downstreamSubscription?.request(.max(1))
 
         XCTAssertEqual(tracking.history, [.subscription("Print"),
                                           .value(1),
@@ -174,9 +242,14 @@ final class PrintTests: XCTestCase {
             "\n",
             "",
             "receive cancel",
+            "\n",
+            "",
+            "receive cancel",
+            "\n",
+            "",
+            "request max: (1)",
             "\n"
         ]
-
         XCTAssertEqual(stream.output.value, expectedOutput)
     }
 
