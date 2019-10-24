@@ -193,6 +193,12 @@ final class JustTests: XCTestCase {
         XCTAssertEqual(Sut<Int>(10000).dropFirst(0), .init(10000))
     }
 
+    func testDropFirstOperatorSpecializationCrashesOnNegativeCount() {
+        assertCrashes {
+            _ = Sut<Int>(10000).dropFirst(-1)
+        }
+    }
+
     func testDropWhileOperatorSpecialization() {
         XCTAssertEqual(Sut<Int>(42).drop { $0 != 42 }, .init(42))
         XCTAssertEqual(Sut<Int>(-13).drop { $0 != 42 }, .init(nil))
@@ -289,6 +295,12 @@ final class JustTests: XCTestCase {
         XCTAssertEqual(Sut<Int>(12).output(at: 42), .init(nil))
     }
 
+    func testOutputAtIndexOperatorSpecializationCrashesOnNegativeIndex() {
+        assertCrashes {
+            _ = Sut<Int>(12).output(at: -1)
+        }
+    }
+
     func testOutputInRangeOperatorSpecialization() {
         // TODO: Broken in Apple's Combine? (FB6169621)
         // Empty range should result in a nil
@@ -302,12 +314,19 @@ final class JustTests: XCTestCase {
         XCTAssertEqual(Sut<Int>(12).output(in: 0 ..< 0), .init(12))
         XCTAssertEqual(Sut<Int>(12).output(in: 0 ... 0), .init(12))
         XCTAssertEqual(Sut<Int>(12).output(in: 1 ..< 10), .init(nil))
+        XCTAssertEqual(Sut<Int>(12).output(in: 0 ..< .max), .init(12))
     }
 
     func testPrefixOperatorSpecialization() {
         XCTAssertEqual(Sut<Int>(98).prefix(0), .init(nil))
         XCTAssertEqual(Sut<Int>(98).prefix(1), .init(98))
         XCTAssertEqual(Sut<Int>(98).prefix(1000), .init(98))
+    }
+
+    func testPrefixOperatorSpecializationCrashesOnNegativeLength() {
+        assertCrashes {
+            _ = Sut<Int>(98).prefix(-1)
+        }
     }
 
     func testPrefixWhileOperatorSpecialization() {
