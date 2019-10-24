@@ -326,6 +326,12 @@ final class OptionalPublisherTests: XCTestCase {
         XCTAssertEqual(Sut<Int>(12).output(at: 42), Sut(nil))
     }
 
+    func testOutputAtIndexOperatorSpecializationCrashesOnNegativeIndex() {
+        assertCrashes {
+            _ = Sut<Int>(12).output(at: -1)
+        }
+    }
+
     func testOutputInRangeOperatorSpecialization() {
         XCTAssertEqual(Sut<Int>(12).output(in: 0 ..< 10), Sut(12))
         XCTAssertEqual(Sut<Int>(12).output(in: 0 ..< (.max - 2)), Sut(12))
@@ -336,10 +342,24 @@ final class OptionalPublisherTests: XCTestCase {
         XCTAssertEqual(Sut<Int>(12).output(in: ...0), Sut(12))
         XCTAssertEqual(Sut<Int>(12).output(in: ..<0), Sut(nil))
         XCTAssertEqual(Sut<Int>(12).output(in: ..<1), Sut(12))
+        XCTAssertEqual(Sut<Int>(12).output(in: Range(uncheckedBounds: (0, -1))), Sut(12))
+        XCTAssertEqual(Sut<Int>(12).output(in: Range(uncheckedBounds: (1, -1))), Sut(nil))
 
         let trackingRange = TrackingRangeExpression(0 ..< 10)
         _ = Sut<Int>(12).output(in: trackingRange)
         XCTAssertEqual(trackingRange.history, [.relativeTo(0 ..< .max)])
+    }
+
+    func testOutputInRangeOperatorSpecializationCrashesOnNegativeLowerBound() {
+        assertCrashes {
+            _ = Sut<Int>(12).output(in: (-1) ... 4)
+        }
+    }
+
+    func testOutputInRangeOperatorSpecializationCrashesOnTooBigUpperBound() {
+        assertCrashes {
+            _ = Sut<Int>(12).output(in: 0 ..< (.max - 1))
+        }
     }
 
     func testPrefixOperatorSpecialization() {
@@ -348,6 +368,12 @@ final class OptionalPublisherTests: XCTestCase {
         XCTAssertEqual(Sut<Int>(98).prefix(1000), Sut(98))
         XCTAssertEqual(Sut<Int>(nil).prefix(0), Sut(nil))
         XCTAssertEqual(Sut<Int>(nil).prefix(1), Sut(nil))
+    }
+
+    func testPrefixOperatorSpecializationCrashesOnNegativeLength() {
+        assertCrashes {
+            _ = Sut<Int>(12).prefix(-1)
+        }
     }
 
     func testPrefixWhileOperatorSpecialization() {

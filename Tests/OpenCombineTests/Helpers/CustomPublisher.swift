@@ -52,6 +52,10 @@ class CustomPublisherBase<Output: Equatable, Failure: Error>: Publisher {
         subscription.map(subscriber.receive(subscription:))
     }
 
+    func send(subscription: CustomSubscription) {
+        subscriber!.receive(subscription: subscription)
+    }
+
     func send(_ value: Output) -> Subscribers.Demand {
         return subscriber?.receive(value) ?? .none
     }

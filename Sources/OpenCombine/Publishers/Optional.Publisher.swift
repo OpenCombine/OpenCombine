@@ -239,7 +239,9 @@ extension Optional.OCombine.Publisher {
 
         // I don't know why, but Combine has this precondition
         precondition(range.upperBound < .max - 1)
-        return .init(output.flatMap { range.contains(0) ? $0 : nil })
+        return .init(
+            output.flatMap { (range.lowerBound == 0 && range.upperBound != 0) ? $0 : nil }
+        )
     }
 
     public func prefix(_ maxLength: Int) -> Optional<Output>.OCombine.Publisher {
