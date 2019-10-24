@@ -19,6 +19,7 @@ func testLifecycle<UpstreamOutput, Operator: Publisher>(
     line: UInt = #line,
     sendValue valueToBeSent: UpstreamOutput,
     cancellingSubscriptionReleasesSubscriber: Bool,
+    finishingIsPassedThrough: Bool = true,
     _ makeOperator: (PassthroughSubject<UpstreamOutput, TestingError>) -> Operator
 ) throws {
     var deinitCounter = 0
@@ -101,7 +102,11 @@ func testLifecycle<UpstreamOutput, Operator: Publisher>(
                    file: file,
                    line: line)
 
-    try XCTUnwrap(subscription, file: file, line: line).cancel()
+    try XCTUnwrap(subscription,
+                  "Lifecycle test #3: subscription should be saved",
+                  file: file,
+                  line: line)
+        .cancel()
 
     if cancellingSubscriptionReleasesSubscriber {
         XCTAssertEqual(deinitCounter,
@@ -134,8 +139,15 @@ func testLifecycle<UpstreamOutput, Operator: Publisher>(
         passthrough.send(completion: .finished)
     }
 
-    XCTAssertTrue(subscriberDestroyed,
-                  "Lifecycle test #4: deinit should be called",
-                  file: file,
-                  line: line)
+    if finishingIsPassedThrough {
+        XCTAssertTrue(subscriberDestroyed,
+                      "Lifecycle test #4: deinit should be called",
+                      file: file,
+                      line: line)
+    } else {
+        XCTAssertFalse(subscriberDestroyed,
+                       "Lifecycle test #4: deinit should not be called",
+                       file: file,
+                       line: line)
+    }
 }

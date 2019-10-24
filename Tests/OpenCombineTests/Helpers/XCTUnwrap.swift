@@ -9,7 +9,19 @@ import XCTest
 
 // FIXME: XCTUnwrap is unavailable in Swift Package Manager yet.
 
-private struct UnwrappingFailure: Error {}
+private struct UnwrappingFailure: Error, LocalizedError {
+
+    let message: String
+
+    var errorDescription: String? {
+        var failureDescription = "XCTUnwrap failed"
+        if !message.isEmpty {
+            failureDescription += ": "
+            failureDescription += message
+        }
+        return failureDescription
+    }
+}
 
 /// Asserts that an expression is not `nil`, and returns its unwrapped value.
 ///
@@ -32,10 +44,11 @@ public func XCTUnwrap<Result>(_ expression: @autoclosure () throws -> Result?,
                               file: StaticString = #file,
                               line: UInt = #line) throws -> Result {
     let result = try expression()
-    XCTAssertNotNil(result, message(), file: file, line: line)
     if let result = result {
         return result
     } else {
-        throw UnwrappingFailure()
+        let error = UnwrappingFailure(message: message())
+        XCTFail(error.errorDescription ?? "", file: file, line: line)
+        throw error
     }
 }

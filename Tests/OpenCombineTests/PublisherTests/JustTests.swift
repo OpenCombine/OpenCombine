@@ -339,4 +339,29 @@ final class JustTests: XCTestCase {
     func testSetFailureTypeOperatorSpecialization() {
         XCTAssertEqual(try Sut(73).setFailureType(to: TestingError.self).result.get(), 73)
     }
+
+    func testPrependOperatorSpecialization() {
+        XCTAssertEqual(Sut<Int>(5).prepend(1, 2, 3, 4), .init(sequence: [1, 2, 3, 4, 5]))
+
+        let trackingCollection = TrackingCollection<Int>([1, 2, 3, 4])
+        XCTAssertEqual(Sut<Int>(5).prepend(trackingCollection),
+                       .init(sequence: [1, 2, 3, 4, 5]))
+
+        XCTAssertEqual(trackingCollection.history, [.initFromSequence,
+                                                    .underestimatedCount,
+                                                    .underestimatedCount,
+                                                    .makeIterator])
+    }
+
+    func testAppendOperatorSpecialization() {
+        XCTAssertEqual(Sut<Int>(1).append(2, 3, 4, 5), .init(sequence: [1, 2, 3, 4, 5]))
+
+        let trackingCollection = TrackingCollection<Int>([2, 3, 4, 5])
+        XCTAssertEqual(Sut<Int>(1).append(trackingCollection),
+                       .init(sequence: [1, 2, 3, 4, 5]))
+
+        XCTAssertEqual(trackingCollection.history, [.initFromSequence,
+                                                    .underestimatedCount,
+                                                    .makeIterator])
+    }
 }
