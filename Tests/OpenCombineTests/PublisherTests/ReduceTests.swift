@@ -49,6 +49,12 @@ final class ReduceTests: XCTestCase {
         )
     }
 
+    func testReduceReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.reduce(0, shouldNotBeCalled()) })
+    }
+
     func testReduceLifecycle() throws {
         try testLifecycle(sendValue: 42,
                           cancellingSubscriptionReleasesSubscriber: false,
@@ -115,6 +121,12 @@ final class ReduceTests: XCTestCase {
             expectedResult: .failure(TestingError.oops),
             { $0.tryReduce(0, { _, _ in throw TestingError.oops }) }
         )
+    }
+
+    func testTryReduceReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.tryReduce(0, shouldNotBeCalled()) })
     }
 
     func testTryReduceLifecycle() throws {

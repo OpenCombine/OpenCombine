@@ -119,6 +119,12 @@ final class AutoconnectTests: XCTestCase {
                                                      .disconnected])
     }
 
+    func testAutoconnectReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.autoconnect() })
+    }
+
     func testAutoconnectReflection() throws {
 
         let customMirrorPredicate = expectedChildren(

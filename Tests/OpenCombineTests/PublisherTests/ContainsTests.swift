@@ -70,6 +70,12 @@ final class ContainsTests: XCTestCase {
         )
     }
 
+    func testContainsReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.contains(0) })
+    }
+
     func testContainsLifecycle() throws {
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,
@@ -112,7 +118,7 @@ final class ContainsTests: XCTestCase {
     func testContainsWhereUpstreamFinishesWithError() {
         ReduceTests.testUpstreamFinishesWithError(
             expectedSubscription: "ContainsWhere",
-            { $0.contains(where: AllSatisfyTests.shouldNotBeCalled()) }
+            { $0.contains(where: shouldNotBeCalled()) }
         )
     }
 
@@ -121,19 +127,19 @@ final class ContainsTests: XCTestCase {
             .testUpstreamFinishesImmediately(
                 expectedSubscription: "ContainsWhere",
                 expectedResult: false,
-                { $0.contains(where: AllSatisfyTests.shouldNotBeCalled()) }
+                { $0.contains(where: shouldNotBeCalled()) }
         )
     }
 
     func testContainsWhereCancelAlreadyCancelled() throws {
         try ReduceTests.testCancelAlreadyCancelled {
-            $0.contains(where: AllSatisfyTests.shouldNotBeCalled())
+            $0.contains(where: shouldNotBeCalled())
         }
     }
 
     func testContainsWhereRequestsUnlimitedThenSendsSubscription() {
         ReduceTests.testRequestsUnlimitedThenSendsSubscription {
-            $0.contains(where: AllSatisfyTests.shouldNotBeCalled())
+            $0.contains(where: shouldNotBeCalled())
         }
     }
 
@@ -151,6 +157,12 @@ final class ContainsTests: XCTestCase {
         )
     }
 
+    func testContainsWhereReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.contains(where: shouldNotBeCalled()) })
+    }
+
     func testContainsWhereLifecycle() throws {
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,
@@ -163,7 +175,7 @@ final class ContainsTests: XCTestCase {
                            description: "ContainsWhere",
                            customMirror: reduceLikeOperatorMirror(),
                            playgroundDescription: "ContainsWhere",
-                           { $0.contains(where: AllSatisfyTests.shouldNotBeCalled()) })
+                           { $0.contains(where: shouldNotBeCalled()) })
     }
 
     // MARK: - TryContainsWhere
@@ -208,7 +220,7 @@ final class ContainsTests: XCTestCase {
     func testTryContainsWhereUpstreamFinishesWithError() {
         ReduceTests.testUpstreamFinishesWithError(
             expectedSubscription: "TryContainsWhere",
-            { $0.tryContains(where: AllSatisfyTests.shouldNotBeCalled()) }
+            { $0.tryContains(where: shouldNotBeCalled()) }
         )
     }
 
@@ -216,18 +228,18 @@ final class ContainsTests: XCTestCase {
         ReduceTests .testUpstreamFinishesImmediately(
             expectedSubscription: "TryContainsWhere",
             expectedResult: false,
-            { $0.tryContains(where: AllSatisfyTests.shouldNotBeCalled()) })
+            { $0.tryContains(where: shouldNotBeCalled()) })
     }
 
     func testTryContainsWhereCancelAlreadyCancelled() throws {
         try ReduceTests.testCancelAlreadyCancelled {
-            $0.tryContains(where: AllSatisfyTests.shouldNotBeCalled())
+            $0.tryContains(where: shouldNotBeCalled())
         }
     }
 
     func testTryContainsWhereRequestsUnlimitedThenSendsSubscription() {
         ReduceTests.testRequestsUnlimitedThenSendsSubscription {
-            $0.tryContains(where: AllSatisfyTests.shouldNotBeCalled())
+            $0.tryContains(where: shouldNotBeCalled())
         }
     }
 
@@ -251,6 +263,12 @@ final class ContainsTests: XCTestCase {
         )
     }
 
+    func testTryContainsWhereReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.tryContains(where: shouldNotBeCalled()) })
+    }
+
     func testTryContainsWhereLifecycle() throws {
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,
@@ -263,6 +281,6 @@ final class ContainsTests: XCTestCase {
                            description: "TryContainsWhere",
                            customMirror: reduceLikeOperatorMirror(),
                            playgroundDescription: "TryContainsWhere",
-                           { $0.tryContains(where: AllSatisfyTests.shouldNotBeCalled()) })
+                           { $0.tryContains(where: shouldNotBeCalled()) })
     }
 }

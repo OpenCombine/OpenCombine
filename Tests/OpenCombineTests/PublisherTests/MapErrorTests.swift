@@ -188,6 +188,12 @@ final class MapErrorTests: XCTestCase {
                            { $0.mapError { $0 } })
     }
 
+    func testMapErrorReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.mapError(unreachable) })
+    }
+
     func testMapErrorLifecycle() throws {
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: true,

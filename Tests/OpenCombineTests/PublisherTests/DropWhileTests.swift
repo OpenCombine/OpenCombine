@@ -16,246 +16,45 @@ import OpenCombine
 @available(macOS 10.15, iOS 13.0, *)
 final class DropWhileTests: XCTestCase {
 
-    func testDropWhile() {
+    // MARK: - DropWhile
 
-        var counter = 0 // How many times the predicate is called?
-
-        let publisher = PassthroughSubject<Int, TestingError>()
-        let drop = publisher.drop(while: { counter += 1; return $0.isMultiple(of: 2) })
-        let tracking = TrackingSubscriber(receiveSubscription: { $0.request(.unlimited) })
-
-        publisher.send(1)
-        drop.subscribe(tracking)
-        publisher.send(2)
-        publisher.send(4)
-        publisher.send(6)
-        publisher.send(7)
-        publisher.send(8)
-        publisher.send(9)
-        publisher.send(completion: .finished)
-        publisher.send(10)
-
-        XCTAssertEqual(tracking.history, [.subscription("DropWhile"),
-                                          .value(7),
-                                          .value(8),
-                                          .value(9),
-                                          .completion(.finished)])
-
-        XCTAssertEqual(counter, 4)
+    func testDropWhileBasicBehavior() {
+        DropWhileTests.testBasicBehavior(
+            expectedSubscription: "DropWhile",
+            { publisher, predicate in publisher.drop(while: predicate) }
+        )
     }
 
-    func testTryDropWhileFailureBecauseOfThrow() {
-
-        var counter = 0 // How many times the predicate is called?
-
-        let publisher = PassthroughSubject<Int, Error>()
-        let drop = publisher.tryDrop {
-            counter += 1
-            if $0 == 100 {
-                throw "too much" as TestingError
-            }
-            return $0.isMultiple(of: 2)
+    func testDropWhileDemand() throws {
+        try DropWhileTests.testDemand { publisher, predicate in
+            publisher.drop(while: predicate)
         }
-        let tracking = TrackingSubscriberBase<Int, Error>(
-            receiveSubscription: { $0.request(.unlimited) }
-        )
-
-        publisher.send(1)
-        drop.subscribe(tracking)
-        publisher.send(2)
-        publisher.send(4)
-        publisher.send(100)
-        publisher.send(9)
-        publisher.send(completion: .finished)
-
-        XCTAssertEqual(tracking.history,
-                       [.subscription("TryDropWhile"),
-                        .completion(.failure("too much" as TestingError))])
-
-        XCTAssertEqual(counter, 3)
     }
 
-    func testTryDropWhileFailureOnCompletion() {
-
-        let publisher = PassthroughSubject<Int, Error>()
-        let drop = publisher.tryDrop { $0.isMultiple(of: 2) }
-
-        let tracking = TrackingSubscriberBase<Int, Error>()
-
-        publisher.send(1)
-        drop.subscribe(tracking)
-        publisher.send(completion: .failure(TestingError.oops))
-        publisher.send(2)
-
-        XCTAssertEqual(tracking.history,
-                       [.subscription("TryDropWhile"),
-                        .completion(.failure(TestingError.oops))])
-    }
-
-    func testTryDropWhileSuccess() {
-
-        let publisher = PassthroughSubject<Int, Error>()
-        let drop = publisher.tryDrop { $0.isMultiple(of: 2) }
-
-        let tracking = TrackingSubscriberBase<Int, Error>(
-            receiveSubscription: { $0.request(.max(2)) }
-        )
-
-        publisher.send(1)
-        drop.subscribe(tracking)
-        publisher.send(0)
-        publisher.send(2)
-        publisher.send(3)
-        publisher.send(4)
-        publisher.send(5)
-        publisher.send(completion: .finished)
-        publisher.send(8)
-
-        XCTAssertEqual(tracking.history,
-                       [.subscription("TryDropWhile"),
-                        .value(3),
-                        .value(4),
-                        .completion(.finished)])
-    }
-
-    func testDemand() {
-
-        let subscription = CustomSubscription()
-        let publisher = CustomPublisher(subscription: subscription)
-        let drop = publisher.drop(while: { $0.isMultiple(of: 2) })
-        var downstreamSubscription: Subscription?
-        let tracking = TrackingSubscriber(
-            receiveSubscription: {
-                $0.request(.max(42))
-                downstreamSubscription = $0
-            },
-            receiveValue: { _ in .max(4) }
-        )
-
-        drop.subscribe(tracking)
-
-        XCTAssertNotNil(downstreamSubscription)
-
-        XCTAssertEqual(subscription.history, [.requested(.max(42))])
-
-        XCTAssertEqual(publisher.send(0), .max(1))
-        XCTAssertEqual(subscription.history, [.requested(.max(42))])
-
-        XCTAssertEqual(publisher.send(2), .max(1))
-        XCTAssertEqual(subscription.history, [.requested(.max(42))])
-
-        downstreamSubscription?.request(.max(95))
-        downstreamSubscription?.request(.max(5))
-        XCTAssertEqual(subscription.history, [.requested(.max(42)),
-                                              .requested(.max(95)),
-                                              .requested(.max(5))])
-
-        XCTAssertEqual(publisher.send(3), .max(4))
-        XCTAssertEqual(subscription.history, [.requested(.max(42)),
-                                              .requested(.max(95)),
-                                              .requested(.max(5))])
-
-        downstreamSubscription?.request(.max(121))
-        XCTAssertEqual(subscription.history, [.requested(.max(42)),
-                                              .requested(.max(95)),
-                                              .requested(.max(5)),
-                                              .requested(.max(121))])
-
-        XCTAssertEqual(publisher.send(7), .max(4))
-        XCTAssertEqual(subscription.history, [.requested(.max(42)),
-                                              .requested(.max(95)),
-                                              .requested(.max(5)),
-                                              .requested(.max(121))])
-
-        downstreamSubscription?.cancel()
-        downstreamSubscription?.cancel()
-        XCTAssertEqual(subscription.history, [.requested(.max(42)),
-                                              .requested(.max(95)),
-                                              .requested(.max(5)),
-                                              .requested(.max(121)),
-                                              .cancelled])
-
-        downstreamSubscription?.request(.max(50))
-        XCTAssertEqual(subscription.history, [.requested(.max(42)),
-                                              .requested(.max(95)),
-                                              .requested(.max(5)),
-                                              .requested(.max(121)),
-                                              .cancelled])
-
-        XCTAssertEqual(publisher.send(8), .none)
-    }
-
-    func testTryDropWhileCancelsUpstreamOnThrow() {
-
-        let subscription = CustomSubscription()
-        let publisher = CustomPublisher(subscription: subscription)
-        let drop = publisher.tryDrop(while: { _ in throw "too much" as TestingError })
-        let tracking = TrackingSubscriberBase<Int, Error>(
-            receiveSubscription: { $0.request(.unlimited) },
-            receiveValue: { _ in .max(42) }
-        )
-
-        drop.subscribe(tracking)
-        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
-        XCTAssertEqual(publisher.send(100), .none)
-        XCTAssertEqual(subscription.history, [.requested(.unlimited), .cancelled])
-        publisher.send(completion: .finished)
-        XCTAssertEqual(subscription.history, [.requested(.unlimited), .cancelled])
-        XCTAssertEqual(tracking.history,
-                       [.subscription("TryDropWhile"),
-                        .completion(.failure("too much" as TestingError))])
-        XCTAssertEqual(publisher.send(12), .none)
-        XCTAssertEqual(tracking.history,
-                       [.subscription("TryDropWhile"),
-                        .completion(.failure("too much" as TestingError))])
+    func testDropWhileCrashesOnZeroRequest() {
+        testCrashesOnEmptyRequest { $0.drop(while: shouldNotBeCalled()) }
     }
 
     func testDropWhileCompletion() {
-
-        let subscription = CustomSubscription()
-        let publisher = CustomPublisher(subscription: subscription)
-        let drop = publisher.drop(while: { _ in true })
-        let tracking = TrackingSubscriber(
-            receiveSubscription: { $0.request(.unlimited) }
-        )
-
-        drop.subscribe(tracking)
-        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
-        publisher.send(completion: .finished)
-        publisher.send(completion: .finished)
-        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
-        XCTAssertEqual(tracking.history, [.subscription("DropWhile"),
-                                          .completion(.finished)])
-
-        publisher.send(completion: .failure(.oops))
-        publisher.send(completion: .failure(.oops))
-        XCTAssertEqual(tracking.history, [.subscription("DropWhile"),
-                                          .completion(.finished)])
+        DropWhileTests.testImmediateCompletion(expectedSubscription: "DropWhile",
+                                               { $0.drop(while: shouldNotBeCalled()) })
     }
 
-    func testCancelAlreadyCancelled() throws {
-        // Given
-        let subscription = CustomSubscription()
-        let publisher = CustomPublisher(subscription: subscription)
-        let dropWhile = publisher.drop(while: { _ in true })
-        var downstreamSubscription: Subscription?
-        let tracking = TrackingSubscriber(receiveSubscription: {
-            $0.request(.unlimited)
-            downstreamSubscription = $0
-        })
+    func testDropWhileReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.drop(while: shouldNotBeCalled()) })
+    }
 
-        dropWhile.subscribe(tracking)
-        try XCTUnwrap(downstreamSubscription).cancel()
-        downstreamSubscription?.request(.unlimited)
-        try XCTUnwrap(downstreamSubscription).cancel()
+    func testDropWhileReceiveSubscriptionTwice() throws {
+        try testReceiveSubscriptionTwice { $0.drop(while: shouldNotBeCalled()) }
+    }
 
-        XCTAssertEqual(subscription.history, [.requested(.unlimited), .cancelled])
-
-        publisher.send(completion: .failure(.oops))
-        publisher.send(completion: .finished)
-
-        XCTAssertEqual(subscription.history, [.requested(.unlimited), .cancelled])
-        XCTAssertEqual(tracking.history, [.subscription("DropWhile")])
+    func testDropWhileCancelAlreadyCancelled() throws {
+        try DropWhileTests.testCancelAlreadyCancelled(
+            expectedSubscription: "DropWhile",
+            { $0.drop(while: shouldNotBeCalled()) }
+        )
     }
 
     func testDropWhileLifecycle() throws {
@@ -264,9 +63,315 @@ final class DropWhileTests: XCTestCase {
                           { $0.drop(while: { _ in false }) })
     }
 
+    func testDropWhileReflection() throws {
+        try testReflection(parentInput: Int.self,
+                           parentFailure: Never.self,
+                           description: "DropWhile",
+                           customMirror: childrenIsEmpty,
+                           playgroundDescription: "DropWhile",
+                           { $0.drop(while: shouldNotBeCalled()) })
+    }
+
+    // MARK: - TryDropWhile
+
+    func testTryDropWhileBasicBehavior() {
+        DropWhileTests.testBasicBehavior(
+            expectedSubscription: "TryDropWhile",
+            { publisher, predicate in publisher.tryDrop(while: predicate) }
+        )
+    }
+
+    func testTryDropWhileDemand() throws {
+        try DropWhileTests.testDemand { publisher, predicate in
+            publisher.tryDrop(while: predicate)
+        }
+    }
+
+    func testTryDropWhileCrashesOnZeroRequest() {
+        testCrashesOnEmptyRequest { $0.tryDrop(while: shouldNotBeCalled()) }
+    }
+
+    func testTryDropWhileCompletion() {
+        DropWhileTests.testImmediateCompletion(expectedSubscription: "TryDropWhile",
+                                               { $0.tryDrop(while: shouldNotBeCalled()) })
+    }
+
+    func testTryDropWhileReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.tryDrop(while: shouldNotBeCalled()) })
+    }
+
+    func testTryDropWhileReceiveSubscriptionTwice() throws {
+        try testReceiveSubscriptionTwice { $0.tryDrop(while: shouldNotBeCalled()) }
+    }
+
+    func testTryDropWhileCancelAlreadyCancelled() throws {
+        try DropWhileTests.testCancelAlreadyCancelled(
+            expectedSubscription: "TryDropWhile",
+            { $0.tryDrop(while: shouldNotBeCalled()) }
+        )
+    }
+
+    func testTryDropWhileFailureBecauseOfThrow() {
+        var counter = 0 // How many times the predicate is called?
+
+        let predicate: (Int) throws -> Bool = {
+            counter += 1
+            if $0 == 100 {
+                throw "too much" as TestingError
+            }
+            return $0.isMultiple(of: 2)
+        }
+
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        initialDemand: .unlimited,
+                                        receiveValueDemand: .none,
+                                        createSut: { $0.tryDrop(while: predicate) })
+
+        XCTAssertEqual(helper.tracking.history, [.subscription("TryDropWhile")])
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+
+        XCTAssertEqual(helper.publisher.send(2), .max(1))
+        XCTAssertEqual(helper.publisher.send(4), .max(1))
+        XCTAssertEqual(helper.publisher.send(100), .none)
+        XCTAssertEqual(helper.publisher.send(9), .none)
+        XCTAssertEqual(helper.publisher.send(8), .none)
+
+        XCTAssertEqual(helper.tracking.history,
+                       [.subscription("TryDropWhile"),
+                        .completion(.failure("too much" as TestingError))])
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
+                                                     .cancelled])
+
+        helper.publisher.send(completion: .finished)
+
+        XCTAssertEqual(helper.tracking.history,
+                       [.subscription("TryDropWhile"),
+                        .completion(.failure("too much" as TestingError))])
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
+                                                     .cancelled])
+
+        XCTAssertEqual(counter, 3)
+    }
+
+    func testTryDropWhileFailureOnCompletion() {
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisher.self,
+            initialDemand: .unlimited,
+            receiveValueDemand: .none,
+            createSut: { $0.tryDrop(while: shouldNotBeCalled()) }
+        )
+
+        XCTAssertEqual(helper.tracking.history, [.subscription("TryDropWhile")])
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+
+        helper.publisher.send(completion: .failure(TestingError.oops))
+        XCTAssertEqual(helper.publisher.send(2), .none)
+
+        XCTAssertEqual(helper.tracking.history,
+                       [.subscription("TryDropWhile"),
+                        .completion(.failure(TestingError.oops))])
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+    }
+
+    func testTryDropWhileSuccess() {
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisher.self,
+            initialDemand: .max(2),
+            receiveValueDemand: .none,
+            createSut: { $0.tryDrop { $0.isMultiple(of: 2) } }
+        )
+
+        XCTAssertEqual(helper.publisher.send(0), .max(1))
+        XCTAssertEqual(helper.publisher.send(2), .max(1))
+        XCTAssertEqual(helper.publisher.send(3), .none)
+        XCTAssertEqual(helper.publisher.send(4), .none)
+        XCTAssertEqual(helper.publisher.send(5), .none)
+
+        XCTAssertEqual(helper.tracking.history,
+                       [.subscription("TryDropWhile"),
+                        .value(3),
+                        .value(4),
+                        .value(5)])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(2))])
+
+        helper.publisher.send(completion: .finished)
+
+        XCTAssertEqual(helper.publisher.send(8), .none)
+
+        XCTAssertEqual(helper.tracking.history,
+                       [.subscription("TryDropWhile"),
+                        .value(3),
+                        .value(4),
+                        .value(5),
+                        .completion(.finished)])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(2))])
+    }
+
     func testTryDropWhileLifecycle() throws {
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,
                           { $0.tryDrop(while: { _ in false }) })
+    }
+
+    func testTryDropWhileReflection() throws {
+        try testReflection(parentInput: Int.self,
+                           parentFailure: Never.self,
+                           description: "TryDropWhile",
+                           customMirror: childrenIsEmpty,
+                           playgroundDescription: "TryDropWhile",
+                           { $0.tryDrop(while: shouldNotBeCalled()) })
+    }
+
+    // MARK: - Generic
+
+    private static func testBasicBehavior<Operator: Publisher>(
+        expectedSubscription: StringSubscription,
+        _ makeOperator: (CustomPublisher, @escaping (Int) -> Bool) -> Operator
+    ) where Operator.Output == Int {
+        var counter = 0 // How many times the predicate was called?
+
+        let predicate: (Int) -> Bool = { counter += 1; return $0.isMultiple(of: 2) }
+
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        initialDemand: .unlimited,
+                                        receiveValueDemand: .none,
+                                        createSut: { makeOperator($0, predicate) })
+        XCTAssertEqual(helper.publisher.send(2), .max(1))
+        XCTAssertEqual(helper.publisher.send(4), .max(1))
+        XCTAssertEqual(helper.publisher.send(6), .max(1))
+        XCTAssertEqual(helper.publisher.send(7), .none)
+        XCTAssertEqual(helper.publisher.send(8), .none)
+        XCTAssertEqual(helper.publisher.send(9), .none)
+        helper.publisher.send(completion: .finished)
+        XCTAssertEqual(helper.publisher.send(10), .none)
+
+        XCTAssertEqual(helper.tracking.history, [.subscription(expectedSubscription),
+                                                 .value(7),
+                                                 .value(8),
+                                                 .value(9),
+                                                 .completion(.finished)])
+
+        XCTAssertEqual(counter, 4)
+    }
+
+    private static func testDemand<Operator: Publisher>(
+        _ makeOperator: (CustomPublisher, @escaping (Int) -> Bool) -> Operator
+    ) throws {
+
+        let predicate: (Int) -> Bool = { $0.isMultiple(of: 2) }
+
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        initialDemand: .max(42),
+                                        receiveValueDemand: .max(4),
+                                        createSut: { makeOperator($0, predicate) })
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(42))])
+
+        XCTAssertEqual(helper.publisher.send(0), .max(1))
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(42))])
+
+        XCTAssertEqual(helper.publisher.send(2), .max(1))
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(42))])
+
+        try XCTUnwrap(helper.downstreamSubscription).request(.max(95))
+        try XCTUnwrap(helper.downstreamSubscription).request(.max(5))
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(42)),
+                                                     .requested(.max(95)),
+                                                     .requested(.max(5))])
+
+        XCTAssertEqual(helper.publisher.send(3), .max(4))
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(42)),
+                                                     .requested(.max(95)),
+                                                     .requested(.max(5))])
+
+        try XCTUnwrap(helper.downstreamSubscription).request(.max(121))
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(42)),
+                                                     .requested(.max(95)),
+                                                     .requested(.max(5)),
+                                                     .requested(.max(121))])
+
+        XCTAssertEqual(helper.publisher.send(7), .max(4))
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(42)),
+                                                     .requested(.max(95)),
+                                                     .requested(.max(5)),
+                                                     .requested(.max(121))])
+
+        try XCTUnwrap(helper.downstreamSubscription).cancel()
+        try XCTUnwrap(helper.downstreamSubscription).cancel()
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(42)),
+                                                     .requested(.max(95)),
+                                                     .requested(.max(5)),
+                                                     .requested(.max(121)),
+                                                     .cancelled])
+
+        try XCTUnwrap(helper.downstreamSubscription).request(.max(50))
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(42)),
+                                                     .requested(.max(95)),
+                                                     .requested(.max(5)),
+                                                     .requested(.max(121)),
+                                                     .cancelled])
+
+        XCTAssertEqual(helper.publisher.send(8), .none)
+    }
+
+    private static func testImmediateCompletion<Operator: Publisher>(
+        expectedSubscription: StringSubscription,
+        _ makeOperator: (CustomPublisher) -> Operator
+    ) where Operator.Output == Int {
+
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        initialDemand: .unlimited,
+                                        receiveValueDemand: .none,
+                                        createSut: makeOperator)
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+        helper.publisher.send(completion: .finished)
+        helper.publisher.send(completion: .finished)
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+        XCTAssertEqual(helper.tracking.history, [.subscription(expectedSubscription),
+                                                 .completion(.finished)])
+
+        helper.publisher.send(completion: .failure(.oops))
+        helper.publisher.send(completion: .failure(.oops))
+        XCTAssertEqual(helper.tracking.history, [.subscription(expectedSubscription),
+                                                 .completion(.finished)])
+    }
+
+    private func testCrashesOnEmptyRequest<Operator: Publisher>(
+        _ makeOperator: (CustomPublisher) -> Operator
+    ) where Operator.Output == Int {
+
+        let publisher = CustomPublisher(subscription: CustomSubscription())
+        let drop = makeOperator(publisher)
+        let tracking = TrackingSubscriberBase<Operator.Output, Operator.Failure>(
+            receiveSubscription: { $0.request(.none) }
+        )
+        assertCrashes {
+            drop.subscribe(tracking)
+        }
+    }
+
+    private static func testCancelAlreadyCancelled<Operator: Publisher>(
+        expectedSubscription: StringSubscription,
+        _ makeOperator: (CustomPublisher) -> Operator
+    ) throws where Operator.Output == Int {
+
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        initialDemand: .unlimited,
+                                        receiveValueDemand: .none,
+                                        createSut: makeOperator)
+
+        try XCTUnwrap(helper.downstreamSubscription).cancel()
+        try XCTUnwrap(helper.downstreamSubscription).request(.unlimited)
+        try XCTUnwrap(helper.downstreamSubscription).cancel()
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited), .cancelled])
+
+        helper.publisher.send(completion: .failure(.oops))
+        helper.publisher.send(completion: .finished)
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited), .cancelled])
+        XCTAssertEqual(helper.tracking.history, [.subscription(expectedSubscription)])
     }
 }

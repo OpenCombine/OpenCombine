@@ -139,6 +139,12 @@ final class DropTests: XCTestCase {
                                                .cancelled])
     }
 
+    func testCountReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.dropFirst(1) })
+    }
+
     func testCancelAlreadyCancelled() throws {
         let helper = OperatorTestHelper(
             publisherType: CustomPublisher.self,

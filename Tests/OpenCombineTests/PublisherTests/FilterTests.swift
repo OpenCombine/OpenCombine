@@ -230,10 +230,22 @@ final class FilterTests: XCTestCase {
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited), .cancelled])
     }
 
+    func testFilterReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: true,
+                                           { $0.filter(shouldNotBeCalled()) })
+    }
+
     func testFilterLifecycle() throws {
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,
                           { $0.filter { _ in true } })
+    }
+
+    func testTryFilterReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: true,
+                                           { $0.tryFilter(shouldNotBeCalled()) })
     }
 
     func testTryFilterLifecycle() throws {

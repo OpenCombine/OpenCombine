@@ -170,6 +170,12 @@ final class IgnoreOutputTests: XCTestCase {
         XCTAssertEqual(thirdSubscription.history, [.cancelled])
     }
 
+    func testIgnoreOutputReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.ignoreOutput() })
+    }
+
     func testIgnoreOutputLifecycle() throws {
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,

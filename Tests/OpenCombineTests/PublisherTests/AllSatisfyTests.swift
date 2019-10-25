@@ -37,7 +37,7 @@ final class AllSatisfyTests: XCTestCase {
     func testAllSatisfyUpstreamFinishesWithError() {
         ReduceTests.testUpstreamFinishesWithError(
             expectedSubscription: "AllSatisfy",
-            { $0.allSatisfy(AllSatisfyTests.shouldNotBeCalled()) }
+            { $0.allSatisfy(shouldNotBeCalled()) }
         )
     }
 
@@ -45,19 +45,19 @@ final class AllSatisfyTests: XCTestCase {
         ReduceTests.testUpstreamFinishesImmediately(
             expectedSubscription: "AllSatisfy",
             expectedResult: true,
-            { $0.allSatisfy(AllSatisfyTests.shouldNotBeCalled()) }
+            { $0.allSatisfy(shouldNotBeCalled()) }
         )
     }
 
     func testAllSatisfyCancelAlreadyCancelled() throws {
         try ReduceTests.testCancelAlreadyCancelled {
-            $0.allSatisfy(AllSatisfyTests.shouldNotBeCalled())
+            $0.allSatisfy(shouldNotBeCalled())
         }
     }
 
     func testAllSatisfyRequestsUnlimitedThenSendsSubscription() {
         ReduceTests.testRequestsUnlimitedThenSendsSubscription {
-            $0.allSatisfy(AllSatisfyTests.shouldNotBeCalled())
+            $0.allSatisfy(shouldNotBeCalled())
         }
     }
 
@@ -75,6 +75,12 @@ final class AllSatisfyTests: XCTestCase {
         )
     }
 
+    func testAllSatisfyReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.allSatisfy(shouldNotBeCalled()) })
+    }
+
     func testAllSatisfyLifecycle() throws {
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,
@@ -87,7 +93,7 @@ final class AllSatisfyTests: XCTestCase {
                            description: "AllSatisfy",
                            customMirror: reduceLikeOperatorMirror(),
                            playgroundDescription: "AllSatisfy",
-                           { $0.allSatisfy(AllSatisfyTests.shouldNotBeCalled()) })
+                           { $0.allSatisfy(shouldNotBeCalled()) })
     }
 
     // MARK: - TryAllSatisfy
@@ -125,7 +131,7 @@ final class AllSatisfyTests: XCTestCase {
     func testTryAllSatisfyUpstreamFinishesWithError() {
         ReduceTests.testUpstreamFinishesWithError(
             expectedSubscription: "TryAllSatisfy",
-            { $0.tryAllSatisfy(AllSatisfyTests.shouldNotBeCalled()) }
+            { $0.tryAllSatisfy(shouldNotBeCalled()) }
         )
     }
 
@@ -133,19 +139,19 @@ final class AllSatisfyTests: XCTestCase {
         ReduceTests.testUpstreamFinishesImmediately(
             expectedSubscription: "TryAllSatisfy",
             expectedResult: true,
-            { $0.tryAllSatisfy(AllSatisfyTests.shouldNotBeCalled()) }
+            { $0.tryAllSatisfy(shouldNotBeCalled()) }
         )
     }
 
     func testTryAllSatisfyCancelAlreadyCancelled() throws {
         try ReduceTests.testCancelAlreadyCancelled {
-            $0.tryAllSatisfy(AllSatisfyTests.shouldNotBeCalled())
+            $0.tryAllSatisfy(shouldNotBeCalled())
         }
     }
 
     func testTryAllSatisfyRequestsUnlimitedThenSendsSubscription() {
         ReduceTests.testRequestsUnlimitedThenSendsSubscription {
-            $0.tryAllSatisfy(AllSatisfyTests.shouldNotBeCalled())
+            $0.tryAllSatisfy(shouldNotBeCalled())
         }
     }
 
@@ -169,6 +175,12 @@ final class AllSatisfyTests: XCTestCase {
         )
     }
 
+    func testTryAllSatisfyReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.tryAllSatisfy(shouldNotBeCalled()) })
+    }
+
     func testTryAllSatisfyLifecycle() throws {
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,
@@ -181,7 +193,7 @@ final class AllSatisfyTests: XCTestCase {
                            description: "TryAllSatisfy",
                            customMirror: reduceLikeOperatorMirror(),
                            playgroundDescription: "TryAllSatisfy",
-                           { $0.tryAllSatisfy(AllSatisfyTests.shouldNotBeCalled()) })
+                           { $0.tryAllSatisfy(shouldNotBeCalled()) })
     }
 
     // MARK: - Generic tests
@@ -300,15 +312,6 @@ final class AllSatisfyTests: XCTestCase {
 
         if countPredicateCalls {
             XCTAssertEqual(predicateCounter, 5)
-        }
-    }
-
-    static func shouldNotBeCalled(
-        file: StaticString = #file, line: UInt = #line
-    ) -> (Int) -> Bool {
-        return { _ in
-            XCTFail("Should not be called", file: file, line: line)
-            return true
         }
     }
 }

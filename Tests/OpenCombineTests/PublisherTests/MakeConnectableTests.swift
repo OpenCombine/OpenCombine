@@ -42,4 +42,10 @@ final class MakeConnectableTests: XCTestCase {
             $0.makeConnectable()
         }
     }
+
+    func testMakeConnectableReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.makeConnectable() })
+    }
 }

@@ -233,10 +233,23 @@ final class MapTests: XCTestCase {
                            { $0.tryMap { $0 * 2 } })
     }
 
+    func testMapReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.map { $0 } })
+        // swiftlint:disable:previous array_init
+    }
+
     func testMapLifecycle() throws {
         try testLifecycle(sendValue: 31, cancellingSubscriptionReleasesSubscriber: true) {
             $0.map { $0 * 2 }
         }
+    }
+
+    func testTryMapReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.tryMap { $0 } })
     }
 
     func testTryMapLifecycle() throws {
