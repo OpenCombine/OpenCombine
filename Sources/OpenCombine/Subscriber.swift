@@ -45,18 +45,3 @@ extension Subscriber where Input == Void {
         return receive(())
     }
 }
-
-extension Optional where Wrapped: Subscriber {
-
-    internal func receive(subscription: Subscription) {
-        self?.receive(subscription: subscription)
-    }
-
-    internal func receive(_ input: Wrapped.Input) -> Subscribers.Demand {
-        return self?.receive(input) ?? .none
-    }
-
-    internal func receive(completion: Subscribers.Completion<Wrapped.Failure>) {
-        self?.receive(completion: completion)
-    }
-}
