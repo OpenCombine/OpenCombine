@@ -150,6 +150,20 @@ final class MapKeyPathTests: XCTestCase {
                            { $0.map(\.doubled, \.tripled, \.quadripled) })
     }
 
+    func testMapKeyPathReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.map(\.doubled) })
+
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.map(\.doubled, \.tripled) })
+
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.map(\.doubled, \.tripled, \.quadripled) })
+    }
+
     func testMapKeyPathLifecycle() throws {
         try testLifecycle(sendValue: 31, cancellingSubscriptionReleasesSubscriber: true) {
             $0.map(\.doubled)

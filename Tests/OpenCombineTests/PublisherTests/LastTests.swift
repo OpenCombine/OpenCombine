@@ -68,6 +68,12 @@ final class LastTests: XCTestCase {
         )
     }
 
+    func testLastReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.last() })
+    }
+
     func testLastLifecycle() throws {
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,
@@ -194,6 +200,12 @@ final class LastTests: XCTestCase {
             expectedResult: .normalCompletion(0),
             { $0.last(where: { _ in true }) }
         )
+    }
+
+    func testLastWhereReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.last(where: shouldNotBeCalled()) })
     }
 
     func testLastWhereLifecycle() throws {
@@ -344,6 +356,12 @@ final class LastTests: XCTestCase {
             expectedResult: .failure(TestingError.oops),
             { $0.tryLast(where: { _ in throw TestingError.oops }) }
         )
+    }
+
+    func testTryLastWhereReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.tryLast(where: shouldNotBeCalled()) })
     }
 
     func testTryLastWhereLifecycle() throws {

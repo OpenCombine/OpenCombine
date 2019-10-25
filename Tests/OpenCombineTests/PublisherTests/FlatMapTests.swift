@@ -581,4 +581,12 @@ final class FlatMapTests: XCTestCase {
         XCTAssertEqual(receiveOrder, [sentSubscriptionDownstream,
                                       sentDemandRequestUpstream])
     }
+
+    func testFlatMapeReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(
+            value: 0,
+            shouldCrash: false,
+            { $0.flatMap { _ in Just(0) } }
+        )
+    }
 }

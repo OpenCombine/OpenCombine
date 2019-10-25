@@ -48,6 +48,12 @@ final class CollectTests: XCTestCase {
                                           { $0.collect() })
     }
 
+    func testCollectReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.collect() })
+    }
+
     func testCollectLifecycle() throws {
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,

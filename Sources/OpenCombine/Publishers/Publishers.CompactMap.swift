@@ -148,7 +148,13 @@ private class _CompactMap<Upstream: Publisher, Downstream: Subscriber>
     }
 
     func receive(_ input: Input) -> Subscribers.Demand {
-        guard let transform = _transform else { return .none }
+        guard let transform = _transform else {
+            return .none
+        }
+
+        if upstreamSubscription == nil {
+            fatalError("Received value before subscription")
+        }
 
         switch transform(input) {
         case .success(let output?):

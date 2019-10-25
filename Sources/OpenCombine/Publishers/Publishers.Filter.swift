@@ -170,6 +170,11 @@ private class _Filter<Upstream: Publisher, Downstream: Subscriber>
 
     func receive(_ input: Input) -> Subscribers.Demand {
         guard let isIncluded = _isIncluded else { return .none }
+
+        if upstreamSubscription == nil {
+            fatalError("Received input before subscription")
+        }
+
         switch isIncluded(input) {
         case .success(let isIncluded):
             return isIncluded ? downstream.receive(input) : .max(1)

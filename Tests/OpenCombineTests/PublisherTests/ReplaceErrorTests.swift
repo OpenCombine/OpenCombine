@@ -196,4 +196,10 @@ final class ReplaceErrorTests: XCTestCase {
                                                  .completion(.finished),
                                                  .value(-1)])
     }
+
+    func testReplaceErrorReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.replaceError(with: 1) })
+    }
 }

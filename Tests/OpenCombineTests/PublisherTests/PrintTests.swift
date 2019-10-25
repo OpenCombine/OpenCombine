@@ -115,6 +115,12 @@ final class PrintTests: XCTestCase {
                            { $0.print(to: HistoryStream()) })
     }
 
+    func testPrintReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.print() })
+    }
+
     func testPrintLifecycle() throws {
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,

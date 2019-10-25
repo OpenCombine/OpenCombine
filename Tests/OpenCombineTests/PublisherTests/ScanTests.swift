@@ -57,7 +57,7 @@ final class ScanTests: XCTestCase {
         let tracking = TrackingSubscriber(receiveSubscription: { $0.request(.unlimited) })
         let publisher = CustomPublisher(subscription: CustomSubscription())
 
-        publisher.scan(666, { $0 + $1 * 2 }).subscribe(tracking)
+        publisher.scan(666, shouldNotBeCalled()).subscribe(tracking)
         publisher.send(completion: .failure(expectedError))
         publisher.send(completion: .failure(expectedError))
 
@@ -97,7 +97,7 @@ final class ScanTests: XCTestCase {
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
                                         initialDemand: .max(3),
                                         receiveValueDemand: .none,
-                                        createSut: { $0.scan(0) { $0 + $1 * 2 } })
+                                        createSut: { $0.scan(0, shouldNotBeCalled()) })
         helper.publisher.send(completion: .finished)
 
         XCTAssertEqual(helper.subscription.history, [.requested(.max(3))])
@@ -153,6 +153,12 @@ final class ScanTests: XCTestCase {
                            ),
                            playgroundDescription: "Scan",
                            { $0.scan(0, +) })
+    }
+
+    func testScanReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.scan(0, +) })
     }
 
     func testScanLifecycle() throws {
@@ -305,19 +311,15 @@ final class ScanTests: XCTestCase {
                            { $0.tryScan(0, +) })
     }
 
+    func testTryScanReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.tryScan(0, +) })
+    }
+
     func testTryScanLifecycle() throws {
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,
                           { $0.tryScan(0, +) })
-    }
-}
-
-private func shouldNotBeCalled<Accumulator, Value>(
-    file: StaticString = #file,
-    line: UInt = #line
-) -> (Accumulator, Value) -> Accumulator {
-    return { accumulator, _ in
-        XCTFail("should not be called", file: file, line: line)
-        return accumulator
     }
 }

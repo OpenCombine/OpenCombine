@@ -87,6 +87,12 @@ final class ReplaceNilTests: XCTestCase {
                                             .completion(.finished)])
     }
 
+    func testReplaceNilReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.replaceNil(with: 1) })
+    }
+
     func testReplaceNilReflection() throws {
         try testReflection(parentInput: Int?.self,
                            parentFailure: Never.self,

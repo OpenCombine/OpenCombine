@@ -313,11 +313,23 @@ final class CompactMapTests: XCTestCase {
                                               .cancelled])
     }
 
+    func testCompactMapReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: true,
+                                           { $0.compactMap(shouldNotBeCalled()) })
+    }
+
     func testCompactMapLifecycle() throws {
         try testLifecycle(sendValue: "31",
                           cancellingSubscriptionReleasesSubscriber: false) {
             $0.compactMap(Int.init)
         }
+    }
+
+    func testTryCompactMapReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: true,
+                                           { $0.tryCompactMap(shouldNotBeCalled()) })
     }
 
     func testTryCompactMapLifecycle() throws {

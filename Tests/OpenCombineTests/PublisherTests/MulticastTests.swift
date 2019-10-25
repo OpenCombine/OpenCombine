@@ -308,6 +308,12 @@ final class MulticastTests: XCTestCase {
         XCTAssertEqual(counter, 1, "The createSubject closure should be called once")
     }
 
+    func testMulticastReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.multicast(PassthroughSubject.init) })
+    }
+
     func testReflection() throws {
         try MulticastTests.testGenericMulticastReflection {
             $0.multicast(PassthroughSubject.init)

@@ -151,11 +151,6 @@ extension Publishers.DropWhile {
             let dropping = self.dropping
             lock.unlock()
 
-            // NOTE: until the predicate returns false, we will ask the upstream publisher
-            // for elements one by one.
-            //
-            // As soon as the predicate returns false, we switch to the mode where
-            // we just forward all the requests from the downstream to the upstream.
             if dropping {
                 if shouldDrop(input) {
                     return .max(1)
@@ -271,11 +266,6 @@ extension Publishers.TryDropWhile {
             let dropping = self.dropping
             lock.unlock()
 
-            // NOTE: until the predicate returns false, we will ask the upstream publisher
-            // for elements one by one.
-            //
-            // As soon as the predicate returns false, we switch to the mode where
-            // we just forward all the requests from the downstream to the upstream.
             if dropping {
                 do {
                     if try shouldDrop(input) {

@@ -48,6 +48,12 @@ final class CountTests: XCTestCase {
                                           { $0.count() })
     }
 
+    func testCountReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.count() })
+    }
+
     func testCountLifecycle() throws {
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,

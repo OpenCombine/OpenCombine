@@ -91,7 +91,7 @@ final class EncodeTests: XCTestCase {
     }
 
     func testEncodeReceiveSubscriptionTwice() throws {
-        try EncodeTests.testReceiveSubscriptionTwice { $0.encode(encoder: encoder) }
+        try testReceiveSubscriptionTwice { $0.encode(encoder: encoder) }
     }
 
     func testEncodeCancelsSubscriptionThenReleasesIt() throws {
@@ -111,8 +111,14 @@ final class EncodeTests: XCTestCase {
     func testEncodeCancellingSubscriptionPreventsDeliveringToDownstream() throws {
         try EncodeTests.testCancellingSubscriptionPreventsDeliveringToDownstream(
             expectedSubscription: "Encode",
-            { $0.encode(encoder: TestEncoder()) }
+            { $0.encode(encoder: encoder) }
         )
+    }
+
+    func testEncodeReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.encode(encoder: encoder) })
     }
 
     func testEncodeLifecycle() throws {
@@ -178,7 +184,7 @@ final class EncodeTests: XCTestCase {
     }
 
     func testDecodeReceiveSubscriptionTwice() throws {
-        try EncodeTests.testReceiveSubscriptionTwice {
+        try testReceiveSubscriptionTwice {
             $0.decode(type: [String : String].self, decoder: decoder)
         }
     }
@@ -204,6 +210,14 @@ final class EncodeTests: XCTestCase {
         try EncodeTests.testCancellingSubscriptionPreventsDeliveringToDownstream(
             expectedSubscription: "Decode",
             { $0.decode(type: [String : String].self, decoder: decoder) }
+        )
+    }
+
+    func testDecodeReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(
+            value: 0,
+            shouldCrash: false,
+            { $0.decode(type: String.self, decoder: decoder) }
         )
     }
 

@@ -121,6 +121,24 @@ final class ComparisonTests: XCTestCase {
                                                      { $0.min(by: shouldNotBeCalled()) })
     }
 
+    func testComparisonReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.min() })
+
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.max() })
+
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.min(by: shouldNotBeCalled()) })
+
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.max(by: shouldNotBeCalled()) })
+    }
+
     func testComparisonLifecycle() throws {
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,
@@ -229,6 +247,16 @@ final class ComparisonTests: XCTestCase {
             expectedResult: .normalCompletion(0),
             { $0.tryMin(by: shouldNotBeCalled()) }
         )
+    }
+
+    func testTryComparisonReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.tryMin(by: shouldNotBeCalled()) })
+
+        testReceiveValueBeforeSubscription(value: 0,
+                                           shouldCrash: false,
+                                           { $0.tryMax(by: shouldNotBeCalled()) })
     }
 
     func testTryComparisonLifecycle() throws {
@@ -354,14 +382,5 @@ final class ComparisonTests: XCTestCase {
         if countComparatorCalls {
             XCTAssertEqual(comparisonHistory.count, 6)
         }
-    }
-}
-
-private func shouldNotBeCalled(
-    file: StaticString = #file, line: UInt = #line
-) -> (Int, Int) -> Bool {
-    return { _, _ in
-        XCTFail("Should not be called", file: file, line: line)
-        return true
     }
 }
