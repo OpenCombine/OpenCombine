@@ -16,13 +16,13 @@ Pod::Spec.new do |spec|
 
   spec.swift_version = '5.0'
 
-  spec.osx.deployment_target     = '10.10'
-  spec.ios.deployment_target     = '12.0'
+  spec.osx.deployment_target     = '10.9'
+  spec.ios.deployment_target     = '8.0'
 
   spec.source_files = "Sources/**/*.swift"
   spec.test_spec do |test_spec|
-    test_spec.osx.deployment_target  = '10.10'
-    test_spec.ios.deployment_target  = '12.0'
+    test_spec.osx.deployment_target  = '10.9'
+    test_spec.ios.deployment_target  = '8.0'
 
     test_spec.source_files = "Tests/**/*.swift"
   end
