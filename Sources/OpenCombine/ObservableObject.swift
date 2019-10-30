@@ -26,15 +26,14 @@ newer version yet.
 """)
 #endif
 
-import COpenCombineHelpers
-
+#if swift(>=5.1)
 private protocol _ObservableObjectProperty {
     var objectWillChange: ObservableObjectPublisher? { get set }
 }
 
 extension _ObservableObjectProperty {
 
-    fileprivate static func setPublisher(
+    fileprivate static func installPublisher(
         _ publisher: ObservableObjectPublisher,
         on publishedStorage: UnsafeMutableRawPointer
     ) {
@@ -59,6 +58,7 @@ extension _ObservableObjectProperty {
 }
 
 extension Published: _ObservableObjectProperty {}
+#endif
 
 /// A type of object with a publisher that emits before the object has changed.
 ///
@@ -95,80 +95,71 @@ public protocol ObservableObject: AnyObject {
     var objectWillChange: ObjectWillChangePublisher { get }
 }
 
+#if swift(>=5.1)
 private struct EnumeratorContext {
     var installedPublisher: ObservableObjectPublisher?
     let observableObjectInstance: UnsafeMutableRawPointer
 }
+#endif
 
 extension ObservableObject where ObjectWillChangePublisher == ObservableObjectPublisher {
 
+#if swift(>=5.1)
     /// A publisher that emits before the object has changed.
     public var objectWillChange: ObservableObjectPublisher {
 
-        var context = EnumeratorContext(
-            installedPublisher: nil,
-            observableObjectInstance: Unmanaged.passUnretained(self).toOpaque()
-        )
+        var installedPublisher: ObservableObjectPublisher?
 
-        let enumerator: OpenCombineFieldEnumerator =
-            { enumeratorContext, fieldName, fieldOffset, fieldTypeMetadataPtr in
+        enumerateFields(ofType: Self.self) { fieldName, fieldOffset, fieldType in
+            let storage = Unmanaged
+                .passRetained(self)
+                .toOpaque()
+                .advanced(by: fieldOffset)
 
-                let _fieldType = unsafeBitCast(fieldTypeMetadataPtr, to: Any.Type.self)
-
-                print(String(cString: fieldName))
-
-                let context = enumeratorContext
-                    .unsafelyUnwrapped
-                    .assumingMemoryBound(to: EnumeratorContext.self)
-
-                let storage = context
-                    .pointee
-                    .observableObjectInstance
-                    .advanced(by: fieldOffset)
-
-                guard let fieldType = _fieldType as? _ObservableObjectProperty.Type else {
-                    // Visit other fields until we meet a @Published field
-                    return true
-                }
-
-                // Now we know that the field is @Published.
-
-                if let alreadyInstalledPublisher = fieldType.getPublisher(from: storage) {
-
-                    context.pointee.installedPublisher = alreadyInstalledPublisher
-
-                    // Don't visit other fields, as all @Published fields
-                    // already have a publisher installed.
-                    return false
-                }
-
-                // Okay, this field doesn't have a publisher installed.
-                // This means that other fields don't have it either
-                // (because we install it only once and fields can't be added at runtime).
-
-                var lazilyCreatedPublisher: ObjectWillChangePublisher {
-                    if let publisher = context.pointee.installedPublisher {
-                        return publisher
-                    }
-                    let publisher = ObservableObjectPublisher()
-                    context.pointee.installedPublisher = publisher
-                    return publisher
-                }
-
-                fieldType.setPublisher(lazilyCreatedPublisher, on: storage)
-
-                // Continue visiting other fields.
+            guard let fieldType = fieldType as? _ObservableObjectProperty.Type else {
+                // Visit other fields until we meet a @Published field
                 return true
             }
 
-        enumerateClassFields(
-            typeMetadata: unsafeBitCast(Self.self, to: UnsafeRawPointer.self),
-            enumeratorContext: &context,
-            enumerator: enumerator
-        )
+            // Now we know that the field is @Published.
 
-        return context.installedPublisher ?? ObservableObjectPublisher()
+            if let alreadyInstalledPublisher = fieldType.getPublisher(from: storage) {
+                installedPublisher = alreadyInstalledPublisher
+                // Don't visit other fields, as all @Published fields
+                // already have a publisher installed.
+                return false
+            }
+
+            // Okay, this field doesn't have a publisher installed.
+            // This means that other fields don't have it either
+            // (because we install it only once and fields can't be added at runtime).
+
+            var lazilyCreatedPublisher: ObjectWillChangePublisher {
+                if let publisher = installedPublisher {
+                    return publisher
+                }
+                let publisher = ObservableObjectPublisher()
+                installedPublisher = publisher
+                return publisher
+            }
+
+            fieldType.installPublisher(lazilyCreatedPublisher, on: storage)
+
+            // Continue visiting other fields.
+            return true
+        }
+
+        return installedPublisher ?? ObservableObjectPublisher()
     }
+#else
+    @available(*, unavailable, message: """
+               The default implementation of the objectWillChange property is available \
+               since Swift 5.1.
+               """)
+    public var objectWillChange: ObservableObjectPublisher {
+        fatalError()
+    }
+#endif
 }
 
 /// The default publisher of an `ObservableObject`.

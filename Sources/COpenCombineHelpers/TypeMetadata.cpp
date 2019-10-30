@@ -133,26 +133,35 @@ int32_t opencombine::swift::getResilientImmediateMembersOffset(
     return bounds.immediateMembersOffset / sizeof(void*);
 }
 
-OpenCombineBool
-opencombine_enumerate_class_fields(const void* type_metadata,
-                                   void* enumerator_context,
-                                   OpenCombineFieldEnumerator enumerator) {
+bool opencombine_enumerate_class_fields(const void* opaqueMetadataPtr,
+                                        void* enumeratorContext,
+                                        OpenCombineFieldEnumerator enumerator) {
 
-    unsigned arg1 = 0;
+    using namespace reflection;
 
-    // The first word of any class instance is a pointer to the class's metadata record.
-    const Metadata* metadata_record = static_cast<const Metadata*>(type_metadata);
+    const Metadata* metadata = static_cast<const Metadata*>(opaqueMetadataPtr);
 
-    if (metadata_record->isClassObject()) {
-        const ClassMetadata* c = static_cast<const ClassMetadata*>(metadata_record);
-        const ClassDescriptor* description = c->getDescription();
+    if (metadata->isClassObject()) {
+        auto anyClassMetadata = static_cast<const AnyClassMetadata*>(metadata);
+        if (!anyClassMetadata->isTypeMetadata()) {
+            return true;
+        }
+        auto classMetadata = static_cast<const ClassMetadata*>(anyClassMetadata);
+        
+        if (auto superclassMetadata = classMetadata->getSuperclass()) {
+            if (!opencombine_enumerate_class_fields(superclassMetadata,
+                                                    enumeratorContext,
+                                                    enumerator)) {
+                return true;
+            }
+        }
 
-        const uintptr_t* fieldOffsets = c->getFieldOffsets();
+        const ClassDescriptor* description = classMetadata->getDescription();
+        const uintptr_t* fieldOffsets = classMetadata->getFieldOffsets();
+        const FieldDescriptor& fieldDescriptor = *description->getFields();
 
-        auto& fieldDescriptor = *description->getFields();
-
-        for (auto& fieldRecord : fieldDescriptor) {
-            if (!enumerator(enumerator_context,
+        for (const FieldRecord& fieldRecord : fieldDescriptor) {
+            if (!enumerator(enumeratorContext,
                             fieldRecord.getFieldName().data(),
                             *fieldOffsets++,
                             fieldRecord.getTypeMetadata(description))) {
