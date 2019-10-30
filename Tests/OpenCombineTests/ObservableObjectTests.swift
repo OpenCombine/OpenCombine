@@ -26,8 +26,17 @@ private typealias Published = OpenCombine.Published
 
 #endif
 
+#if swift(>=5.1)
+
 @available(macOS 10.15, iOS 13.0, *)
 final class ObservableObjectTests: XCTestCase {
+
+    var disposeBag = [AnyCancellable]()
+
+    override func tearDown() {
+        disposeBag = []
+        super.tearDown()
+    }
 
     func testNoFields() {
         let observableObject = NoFields()
@@ -69,8 +78,7 @@ final class ObservableObjectTests: XCTestCase {
 
         var counter = 0
 
-        let cancellable = observableObject.objectWillChange.sink { counter += 1 }
-        defer { cancellable.cancel() }
+        observableObject.objectWillChange.sink { counter += 1 }.store(in: &disposeBag)
 
         XCTAssertEqual(observableObject.publishedValue0, 0)
         XCTAssertEqual(observableObject.simpleValue, "what")
@@ -200,3 +208,4 @@ private final class GenericClass<Value1, Value2>: ObservableObject {
         self.value2 = value2
     }
 }
+#endif // swift(>=5.1)

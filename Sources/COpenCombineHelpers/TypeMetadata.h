@@ -184,14 +184,14 @@ struct AnyClassMetadata : HeapMetadata {
     /// Is this object a valid swift type metadata?  That is, can it be
     /// safely downcast to ClassMetadata?
     bool isTypeMetadata() const {
-//      return (Data & SWIFT_CLASS_IS_SWIFT_MASK);
-        // FIXME
-        return true;
+        return data & 2ULL;
     }
     /// A different perspective on the same bit
     bool isPureObjC() const {
       return !isTypeMetadata();
     }
+
+    const ClassMetadata* getSuperclass() const { return superclass; }
 private:
     // Note that ObjC classes does not have a metadata header.
 
@@ -290,6 +290,7 @@ struct ClassMetadata : AnyClassMetadata {
 
     /// Get a pointer to the field offset vector, if present, or null.
     const uintptr_t* getFieldOffsets() const {
+        assert(isTypeMetadata());
         auto offset = getFieldOffsetVectorOffset(getDescription());
         if (offset == 0) {
             return nullptr;
@@ -629,6 +630,8 @@ struct TypeContextDescriptor : ContextDescriptor {
     const reflection::FieldDescriptor* getFields() const {
         return fields.get();
     }
+
+    const char* getName() const { return name.get(); }
 private:
     /// The name of the type.
     RelativeDirectPointer<const char, /*nullable*/ false> name;

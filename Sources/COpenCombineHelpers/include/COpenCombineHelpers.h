@@ -10,6 +10,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 #if __has_attribute(swift_name)
 # define OPENCOMBINE_SWIFT_NAME(_name) __attribute__((swift_name(#_name)))
@@ -71,20 +72,14 @@ void opencombine_unfair_recursive_lock_dealloc(OpenCombineUnfairRecursiveLock lo
 
 #pragma mark - Type metadata
 
-#ifdef __cplusplus
-typedef bool OpenCombineBool;
-#else
-typedef _Bool OpenCombineBool;
-#endif
-
-typedef OpenCombineBool(*_Nonnull OpenCombineFieldEnumerator)(
+typedef bool(*_Nonnull OpenCombineFieldEnumerator)(
     void* _Nullable enumeratorContext,
     const char* _Nonnull fieldName,
     size_t fieldOffset,
     const void* _Nonnull fieldTypeMetadataPtr
 );
 
-OpenCombineBool
+bool
 opencombine_enumerate_class_fields(
     const void* _Nonnull type_metadata,
     void* _Nullable enumerator_context,
