@@ -25,13 +25,7 @@ final class DispatchQueueSchedulerTests: XCTestCase {
         let time2 = Scheduler.SchedulerTimeType(.init(uptimeNanoseconds: 10431))
 
         XCTAssertEqual(time1.distance(to: time2), .nanoseconds(431))
-
-        // A bug in Combine (FB7127210), caused by overflow on subtraction.
-        // It should not crash. When they fix it, this test will fail and we'll know
-        // that we need to update our implementation.
-        assertCrashes {
-            _ = time2.distance(to: time1)
-        }
+        XCTAssertEqual(time2.distance(to: time1), .nanoseconds(-431))
     }
 
     func testSchedulerTimeTypeAdvanced() {
@@ -58,10 +52,7 @@ final class DispatchQueueSchedulerTests: XCTestCase {
         XCTAssertEqual(time1, time2)
         XCTAssertEqual(time2, time1)
         XCTAssertNotEqual(time1, time3)
-
-        assertCrashes {
-            XCTAssertNotEqual(time3, time1)
-        }
+        XCTAssertNotEqual(time3, time1)
     }
 
     func testSchedulerTimeTypeHashable() {
@@ -148,18 +139,12 @@ final class DispatchQueueSchedulerTests: XCTestCase {
 
         XCTAssertEqual((Stride.nanoseconds(0) * .nanoseconds(61346)).magnitude, 0)
         XCTAssertEqual((Stride.nanoseconds(61346) * .nanoseconds(0)).magnitude, 0)
-        XCTAssertEqual((Stride.nanoseconds(18) * .nanoseconds(1)).magnitude,
-                       18000000000)
-        XCTAssertEqual((Stride.nanoseconds(18) * .microseconds(1)).magnitude,
-                       18000000000000)
-        XCTAssertEqual((Stride.nanoseconds(1) * .nanoseconds(18)).magnitude,
-                       18000000000)
-        XCTAssertEqual((Stride.microseconds(1) * .nanoseconds(18)).magnitude,
-                       18000000000000)
-        XCTAssertEqual((Stride.nanoseconds(15) * .nanoseconds(2)).magnitude,
-                       30000000000)
-        XCTAssertEqual((Stride.microseconds(-3) * .nanoseconds(10)).magnitude,
-                       -30000000000000)
+        XCTAssertEqual((Stride.nanoseconds(18) * .nanoseconds(1)).magnitude, 18)
+        XCTAssertEqual((Stride.nanoseconds(18) * .microseconds(1)).magnitude, 18000)
+        XCTAssertEqual((Stride.nanoseconds(1) * .nanoseconds(18)).magnitude, 18)
+        XCTAssertEqual((Stride.microseconds(1) * .nanoseconds(18)).magnitude, 18000)
+        XCTAssertEqual((Stride.nanoseconds(15) * .nanoseconds(2)).magnitude, 30)
+        XCTAssertEqual((Stride.microseconds(-3) * .nanoseconds(10)).magnitude, -30000)
 
         do {
             var stride = Stride.nanoseconds(0)
@@ -176,143 +161,131 @@ final class DispatchQueueSchedulerTests: XCTestCase {
         do {
             var stride = Stride.nanoseconds(18)
             stride *= .nanoseconds(1)
-            XCTAssertEqual(stride.magnitude, 18000000000)
+            XCTAssertEqual(stride.magnitude, 18)
         }
 
         do {
             var stride = Stride.nanoseconds(18)
             stride *= .microseconds(1)
-            XCTAssertEqual(stride.magnitude, 18000000000000)
+            XCTAssertEqual(stride.magnitude, 18000)
         }
 
         do {
             var stride = Stride.nanoseconds(1)
             stride *= .nanoseconds(18)
-            XCTAssertEqual(stride.magnitude, 18000000000)
+            XCTAssertEqual(stride.magnitude, 18)
         }
 
         do {
             var stride = Stride.microseconds(1)
             stride *= .nanoseconds(18)
-            XCTAssertEqual(stride.magnitude, 18000000000000)
+            XCTAssertEqual(stride.magnitude, 18000)
         }
 
         do {
             var stride = Stride.nanoseconds(15)
             stride *= .nanoseconds(2)
-            XCTAssertEqual(stride.magnitude, 30000000000)
+            XCTAssertEqual(stride.magnitude, 30)
         }
 
         do {
             var stride = Stride.microseconds(-3)
             stride *= .nanoseconds(10)
-            XCTAssertEqual(stride.magnitude, -30000000000000)
+            XCTAssertEqual(stride.magnitude, -30000)
         }
     }
 
     func testStrideAddition() {
         typealias Stride = Scheduler.SchedulerTimeType.Stride
 
-        XCTAssertEqual((Stride.nanoseconds(0) + .microseconds(2)).magnitude,
-                       2000000000000)
-        XCTAssertEqual((Stride.nanoseconds(2) + .microseconds(0)).magnitude,
-                       2000000000)
-        XCTAssertEqual((Stride.nanoseconds(7) + .nanoseconds(12)).magnitude,
-                       19000000000)
-        XCTAssertEqual((Stride.nanoseconds(12) + .nanoseconds(7)).magnitude,
-                       19000000000)
-        XCTAssertEqual((Stride.nanoseconds(7) + .nanoseconds(-12)).magnitude,
-                       -5000000000)
-        XCTAssertEqual((Stride.nanoseconds(-12) + .nanoseconds(7)).magnitude,
-                       -5000000000)
+        XCTAssertEqual((Stride.nanoseconds(0) + .microseconds(2)).magnitude, 2000)
+        XCTAssertEqual((Stride.nanoseconds(2) + .microseconds(0)).magnitude, 2)
+        XCTAssertEqual((Stride.nanoseconds(7) + .nanoseconds(12)).magnitude, 19)
+        XCTAssertEqual((Stride.nanoseconds(12) + .nanoseconds(7)).magnitude, 19)
+        XCTAssertEqual((Stride.nanoseconds(7) + .nanoseconds(-12)).magnitude, -5)
+        XCTAssertEqual((Stride.nanoseconds(-12) + .nanoseconds(7)).magnitude, -5)
 
         do {
             var stride = Stride.nanoseconds(0)
             stride += .microseconds(2)
-            XCTAssertEqual(stride.magnitude, 2000000000000)
+            XCTAssertEqual(stride.magnitude, 2000)
         }
 
         do {
             var stride = Stride.nanoseconds(2)
             stride += .microseconds(0)
-            XCTAssertEqual(stride.magnitude, 2000000000)
+            XCTAssertEqual(stride.magnitude, 2)
         }
 
         do {
             var stride = Stride.nanoseconds(7)
             stride += .nanoseconds(12)
-            XCTAssertEqual(stride.magnitude, 19000000000)
+            XCTAssertEqual(stride.magnitude, 19)
         }
 
         do {
             var stride = Stride.nanoseconds(12)
             stride += .nanoseconds(7)
-            XCTAssertEqual(stride.magnitude, 19000000000)
+            XCTAssertEqual(stride.magnitude, 19)
         }
 
         do {
             var stride = Stride.nanoseconds(7)
             stride += .nanoseconds(-12)
-            XCTAssertEqual(stride.magnitude, -5000000000)
+            XCTAssertEqual(stride.magnitude, -5)
         }
 
         do {
             var stride = Stride.nanoseconds(-12)
             stride += .nanoseconds(7)
-            XCTAssertEqual(stride.magnitude, -5000000000)
+            XCTAssertEqual(stride.magnitude, -5)
         }
     }
 
     func testStrideSubtraction() {
         typealias Stride = Scheduler.SchedulerTimeType.Stride
 
-        XCTAssertEqual((Stride.nanoseconds(0) - .microseconds(2)).magnitude,
-                       -2000000000000)
-        XCTAssertEqual((Stride.nanoseconds(2) - .microseconds(0)).magnitude,
-                       2000000000)
-        XCTAssertEqual((Stride.nanoseconds(7) - .nanoseconds(12)).magnitude,
-                       -5000000000)
-        XCTAssertEqual((Stride.nanoseconds(12) - .nanoseconds(7)).magnitude,
-                       5000000000)
-        XCTAssertEqual((Stride.nanoseconds(7) - .nanoseconds(-12)).magnitude,
-                       19000000000)
-        XCTAssertEqual((Stride.nanoseconds(-12) - .nanoseconds(7)).magnitude,
-                       -19000000000)
+        XCTAssertEqual((Stride.nanoseconds(0) - .microseconds(2)).magnitude, -2000)
+        XCTAssertEqual((Stride.nanoseconds(2) - .microseconds(0)).magnitude, 2)
+        XCTAssertEqual((Stride.nanoseconds(7) - .nanoseconds(12)).magnitude, -5)
+        XCTAssertEqual((Stride.nanoseconds(12) - .nanoseconds(7)).magnitude, 5)
+        XCTAssertEqual((Stride.nanoseconds(7) - .nanoseconds(-12)).magnitude, 19)
+        XCTAssertEqual((Stride.nanoseconds(-12) - .nanoseconds(7)).magnitude, -19)
 
         do {
             var stride = Stride.nanoseconds(0)
             stride -= .microseconds(2)
-            XCTAssertEqual(stride.magnitude, -2000000000000)
+            XCTAssertEqual(stride.magnitude, -2000)
         }
 
         do {
             var stride = Stride.nanoseconds(2)
             stride -= .microseconds(0)
-            XCTAssertEqual(stride.magnitude, 2000000000)
+            XCTAssertEqual(stride.magnitude, 2)
         }
 
         do {
             var stride = Stride.nanoseconds(7)
             stride -= .nanoseconds(12)
-            XCTAssertEqual(stride.magnitude, -5000000000)
+            XCTAssertEqual(stride.magnitude, -5)
         }
 
         do {
             var stride = Stride.nanoseconds(12)
             stride -= .nanoseconds(7)
-            XCTAssertEqual(stride.magnitude, 5000000000)
+            XCTAssertEqual(stride.magnitude, 5)
         }
 
         do {
             var stride = Stride.nanoseconds(7)
             stride -= .nanoseconds(-12)
-            XCTAssertEqual(stride.magnitude, 19000000000)
+            XCTAssertEqual(stride.magnitude, 19)
         }
 
         do {
             var stride = Stride.nanoseconds(-12)
             stride -= .nanoseconds(7)
-            XCTAssertEqual(stride.magnitude, -19000000000)
+            XCTAssertEqual(stride.magnitude, -19)
         }
     }
 

@@ -51,7 +51,7 @@ extension DispatchQueue {
             /// - Returns: The time interval between this time and the provided time.
             public func distance(to other: SchedulerTimeType) -> Stride {
                 return .nanoseconds(
-                    Int(other.dispatchTime.rawValue - dispatchTime.rawValue)
+                    dispatchTime.rawValue.distance(to: other.dispatchTime.rawValue)
                 )
             }
 
@@ -163,35 +163,28 @@ extension DispatchQueue {
                 }
 
                 public static func * (lhs: Stride, rhs: Stride) -> Stride {
-                    // A bug in Combine, should be nanoseconds (FB7189676)
-                    return .seconds(lhs.magnitude * rhs.magnitude)
+                    return Stride(magnitude: lhs.magnitude * rhs.magnitude)
                 }
 
                 public static func + (lhs: Stride, rhs: Stride) -> Stride {
-                    // A bug in Combine, should be nanoseconds (FB7189676)
-                    return .seconds(lhs.magnitude + rhs.magnitude)
+                    return Stride(magnitude: lhs.magnitude + rhs.magnitude)
                 }
 
                 public static func - (lhs: Stride, rhs: Stride) -> Stride {
-                    // A bug in Combine, should be nanoseconds (FB7189676)
-                    return .seconds(lhs.magnitude - rhs.magnitude)
+                    return Stride(magnitude: lhs.magnitude - rhs.magnitude)
                 }
 
-                // swiftlint:disable shorthand_operator
-
                 public static func -= (lhs: inout Stride, rhs: Stride) {
-                    lhs = lhs - rhs
+                    lhs.magnitude -= rhs.magnitude
                 }
 
                 public static func *= (lhs: inout Stride, rhs: Stride) {
-                    lhs = lhs * rhs
+                    lhs.magnitude *= rhs.magnitude
                 }
 
                 public static func += (lhs: inout Stride, rhs: Stride) {
-                    lhs = lhs + rhs
+                    lhs.magnitude += rhs.magnitude
                 }
-
-                // swiftlint:enable shorthand_operator
 
                 public static func seconds(_ value: Double) -> Stride {
                     return Stride(magnitude: Int(value * 1_000_000_000))
