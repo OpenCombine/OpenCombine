@@ -103,7 +103,7 @@ extension ObservableObject where ObjectWillChangePublisher == ObservableObjectPu
 
         var installedPublisher: ObservableObjectPublisher?
 
-        enumerateFields(ofType: Self.self) { fieldName, fieldOffset, fieldType in
+        enumerateFields(ofType: Self.self) { _, fieldOffset, fieldType in
             let storage = Unmanaged
                 .passRetained(self)
                 .toOpaque()
@@ -145,6 +145,7 @@ extension ObservableObject where ObjectWillChangePublisher == ObservableObjectPu
         return installedPublisher ?? ObservableObjectPublisher()
     }
 #else
+    // swiftlint:disable let_var_whitespace
     @available(*, unavailable, message: """
                The default implementation of the objectWillChange property is available \
                since Swift 5.1.
@@ -152,6 +153,7 @@ extension ObservableObject where ObjectWillChangePublisher == ObservableObjectPu
     public var objectWillChange: ObservableObjectPublisher {
         fatalError()
     }
+    // swiftlint:enable let_var_whitespace
 #endif
 }
 

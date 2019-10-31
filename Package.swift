@@ -17,5 +17,5 @@ let package = Package(
                                    "OpenCombineDispatch"],
                     swiftSettings: [.unsafeFlags(["-enable-testing"])])
     ],
-    cxxLanguageStandard: .cxx1z
+    cxxLanguageStandard: .cxx14
 )

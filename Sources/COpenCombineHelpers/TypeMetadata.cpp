@@ -14,9 +14,10 @@
 extern "C" Class swift_getInitializedObjCClass(Class c);
 #endif
 
+using namespace opencombine;
 using namespace opencombine::swift;
 
-std::string_view opencombine::swift::makeSymbolicMangledNameStringRef(const char* base) {
+string_view opencombine::swift::makeSymbolicMangledNameStringRef(const char* base) {
     if (!base)
         return {};
 

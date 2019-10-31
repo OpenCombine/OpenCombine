@@ -12,7 +12,7 @@
 #include "span.h"
 
 #include <cstdint>
-#include <string_view>
+#include "string_view.h"
 
 namespace opencombine {
 namespace swift {
@@ -29,7 +29,7 @@ swift_getTypeByMangledNameInContext(const char* typeNameStart,
                                     const ContextDescriptor* context,
                                     void const* const* genericArgs);
 
-std::string_view makeSymbolicMangledNameStringRef(const char* base);
+string_view makeSymbolicMangledNameStringRef(const char* base);
 
 namespace reflection {
 
@@ -95,16 +95,16 @@ struct FieldRecord {
         return !mangledTypeName.isNull();
     }
 
-    std::string_view getMangledTypeName() const {
+    string_view getMangledTypeName() const {
         return makeSymbolicMangledNameStringRef(mangledTypeName.get());
     }
 
-    std::string_view getFieldName() const {
+    string_view getFieldName() const {
         return fieldName.get();
     }
 
     const Metadata* getTypeMetadata(const ContextDescriptor* context) const {
-        std::string_view mangledTypeName = getMangledTypeName();
+        string_view mangledTypeName = getMangledTypeName();
 
         // FIXME: the last argument shouldn't be nullptr
         return swift_getTypeByMangledNameInContext(mangledTypeName.data(),
@@ -203,7 +203,7 @@ public:
         return !mangledTypeName.isNull();
     }
 
-    std::string_view getMangledTypeName() const {
+    string_view getMangledTypeName() const {
         return makeSymbolicMangledNameStringRef(mangledTypeName.get());
     }
 
@@ -211,7 +211,7 @@ public:
         return !superclass.isNull();
     }
 
-    std::string_view getSuperclass() const {
+    string_view getSuperclass() const {
         return makeSymbolicMangledNameStringRef(superclass.get());
     }
 private:

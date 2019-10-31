@@ -14,7 +14,8 @@
 
 namespace opencombine {
 
-// FIXME: Remove this when std::span is available (requires switching to C++20)
+// This is a very simplified implementation of std::span from C++20.
+// Not all compilers support it yet.
 template <typename T>
 class span {
 public:
