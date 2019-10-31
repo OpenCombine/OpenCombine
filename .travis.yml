@@ -1,5 +1,9 @@
 language: generic
 
+branches:
+  only:
+    - master
+
 addons:
   homebrew:
     taps:
@@ -27,22 +31,24 @@ matrix:
       os: osx
       osx_image: xcode10.2
       env: SWIFT_VERSION="5.0" CODE_COVERAGE="YES" OPENCOMBINE_TEST="YES"
-    - name: "iOS 13.1 | Swift 5.1.1 | Compatibility Tests"
+    - name: "iOS 13.2 | Swift 5.1.1 | Compatibility Tests"
       os: osx
-      osx_image: xcode11.1
+      osx_image: xcode11.2
       env: SWIFT_VERSION="5.1.1" OPENCOMBINE_COMPATIBILITY_TEST="YES"
     - name: "macOS 10.14 | Swift 5.0 | Code Quality"
       os: osx
       osx_image: xcode10.2
       env: SWIFT_VERSION="5.0" RUN_DANGER="YES" SWIFT_LINT="YES"
-
+  # Travis doesn't always have the most up-to-date version of Xcode,
+  # so the compatibility suite can fail even if it passes with the latest Xcode.
+  allow_failures:
+    - name: "iOS 13.2 | Swift 5.1.1 | Compatibility Tests"
+      os: osx
+      osx_image: xcode11.2
+      env: SWIFT_VERSION="5.1.1" OPENCOMBINE_COMPATIBILITY_TEST="YES"
 before_cache:
   - brew cleanup
 
-before_install:
-  - if [[ $TRAVIS_OS_NAME == "linux" ]]; then
-      cat /proc/cpuinfo;
-    fi
 install:
   - if [[ $TRAVIS_OS_NAME == "linux" ]]; then
       eval "$(curl -sL https://swiftenv.fuller.li/install.sh)";
@@ -74,7 +80,7 @@ script:
     fi
   - if [[ $OPENCOMBINE_COMPATIBILITY_TEST == "YES" ]]; then
       make generate-compatibility-xcodeproj;
-      set -o pipefail && xcodebuild -scheme OpenCombine-Package -sdk iphonesimulator13.1 -destination "platform=iOS Simulator,name=iPhone 11,OS=13.1" build test | xcpretty;
+      set -o pipefail && xcodebuild -scheme OpenCombine-Package -sdk iphonesimulator13.2 -destination "platform=iOS Simulator,name=iPhone 11,OS=13.2" build test | xcpretty;
     fi
   - if [[ $SWIFT_LINT == "YES" ]]; then
       swiftlint lint --strict --reporter "emoji";
