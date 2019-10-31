@@ -74,7 +74,7 @@ final class ObservableObjectTests: XCTestCase {
     }
 
     func testDerivedClassWithPublishedField() {
-        let observableObject = ObservedDerived()
+        let observableObject = ObservedDerivedWithObservedBase()
 
         var counter = 0
 
@@ -143,15 +143,66 @@ final class ObservableObjectTests: XCTestCase {
                   """)
     }
 
+    func testResilientClassRetroactiveConformance() {
+        let observableObject = JSONEncoder()
+        let publisher1 = observableObject.objectWillChange
+        let publisher2 = observableObject.objectWillChange
+        XCTAssert(publisher1 !== publisher2,
+                  """
+                  For instances of resilient classes objectWillChange property should \
+                  return a new instance every time
+                  """)
+    }
+
     func testGenericClass() {
         let observableObject = GenericClass(123, true)
 
-        _ = observableObject // TODO
+        var counter = 0
+
+        // FIXME: This test crashes
+//        observableObject.objectWillChange.sink { counter += 1 }.store(in: &disposeBag)
+        XCTAssertEqual(counter, 0)
+        XCTAssertEqual(observableObject.value1, 123)
+        XCTAssertEqual(observableObject.value2, true)
+
+        observableObject.value1 += 1
+
+        XCTAssertEqual(counter, 1)
+        XCTAssertEqual(observableObject.value1, 124)
+
+        observableObject.value2.toggle()
+
+        XCTAssertEqual(counter, 2)
+        XCTAssertEqual(observableObject.value2, false)
     }
 
-    func testExploration() {
-        let observed = Observed()
-        _ = observed.objectWillChange
+    func testObservableDerivedWithNonObservableBase() {
+        let observableObject = ObservedDerivedWithNonObservedBase()
+        var counter = 0
+        observableObject.objectWillChange.sink { counter += 1 }.store(in: &disposeBag)
+
+        XCTAssertEqual(counter, 0)
+        XCTAssertEqual(observableObject.nonObservedBaseValue0, 10)
+        XCTAssertEqual(observableObject.nonObservedBaseValue1, .pi)
+        XCTAssertEqual(observableObject.observedDerivedValue2,
+                       "Asuka is obviously the best girl.")
+        XCTAssertEqual(observableObject.observedDerivedValue3, 255)
+
+        observableObject.nonObservedBaseValue0 -= 1
+        XCTAssertEqual(counter, 1)
+        XCTAssertEqual(observableObject.nonObservedBaseValue0, 9)
+
+        observableObject.nonObservedBaseValue1 *= 2
+        XCTAssertEqual(counter, 2)
+        XCTAssertEqual(observableObject.nonObservedBaseValue1, 2 * .pi)
+
+        observableObject.observedDerivedValue2 = "Nevermind."
+        XCTAssertEqual(counter, 3)
+        XCTAssertEqual(observableObject.observedDerivedValue2, "Nevermind.")
+
+        observableObject.observedDerivedValue3 &+= 1
+        XCTAssertEqual(counter, 4)
+        XCTAssertEqual(observableObject.observedDerivedValue3, 0)
     }
 }
 
@@ -170,7 +221,7 @@ private final class PublishedFieldIsConstant: ObservableObject {
 }
 
 @available(macOS 10.15, iOS 13.0, *)
-private class Observed: ObservableObject {
+private class ObservedBase: ObservableObject {
     @Published var publishedValue0 = 0
     var publishedValue1 = Published(initialValue: "Hello!")
     let publishedValue2 = Published(initialValue: 42)
@@ -178,7 +229,7 @@ private class Observed: ObservableObject {
 }
 
 @available(macOS 10.15, iOS 13.0, *)
-private final class ObservedDerived: Observed {
+private final class ObservedDerivedWithObservedBase: ObservedBase {
     @Published var subclassPublished0 = 0
     @Published var subclassPublished1 = 1
     @Published var subclassPublished2 = 2
@@ -199,6 +250,9 @@ private final class ResilientClassSubclass: JSONDecoder, ObservableObject {
 }
 
 @available(macOS 10.15, iOS 13.0, *)
+extension JSONEncoder: ObservableObject {}
+
+@available(macOS 10.15, iOS 13.0, *)
 private final class GenericClass<Value1, Value2>: ObservableObject {
     @Published var value1: Value1
     @Published var value2: Value2
@@ -208,4 +262,17 @@ private final class GenericClass<Value1, Value2>: ObservableObject {
         self.value2 = value2
     }
 }
+
+@available(macOS 10.15, iOS 13.0, *)
+private class NonObservedBase {
+    @Published var nonObservedBaseValue0 = 10
+    @Published var nonObservedBaseValue1 = Double.pi
+}
+
+@available(macOS 10.15, iOS 13.0, *)
+private class ObservedDerivedWithNonObservedBase: NonObservedBase, ObservableObject {
+    @Published var observedDerivedValue2 = "Asuka is obviously the best girl."
+    @Published var observedDerivedValue3: UInt8 = 255
+}
+
 #endif // swift(>=5.1)
