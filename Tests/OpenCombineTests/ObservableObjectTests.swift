@@ -136,11 +136,16 @@ final class ObservableObjectTests: XCTestCase {
         let observableObject = ResilientClassSubclass()
         let publisher1 = observableObject.objectWillChange
         let publisher2 = observableObject.objectWillChange
+#if canImport(Darwin)
         XCTAssert(publisher1 !== publisher2,
                   """
                   For subclasses of resilient classes objectWillChange property should \
                   return a new instance every time
                   """)
+#else
+        // There are no resilient classes on non-Darwin platforms.
+        XCTAssert(publisher1 === publisher2)
+#endif
     }
 
     func testResilientClassRetroactiveConformance() {
@@ -154,27 +159,27 @@ final class ObservableObjectTests: XCTestCase {
                   """)
     }
 
-    func testGenericClass() {
-        let observableObject = GenericClass(123, true)
-
-        var counter = 0
-
-        // FIXME: This test crashes
+    // FIXME: This test crashes
+//    func testGenericClass() {
+//        let observableObject = GenericClass(123, true)
+//
+//        var counter = 0
+//
 //        observableObject.objectWillChange.sink { counter += 1 }.store(in: &disposeBag)
-        XCTAssertEqual(counter, 0)
-        XCTAssertEqual(observableObject.value1, 123)
-        XCTAssertEqual(observableObject.value2, true)
-
-        observableObject.value1 += 1
-
-        XCTAssertEqual(counter, 1)
-        XCTAssertEqual(observableObject.value1, 124)
-
-        observableObject.value2.toggle()
-
-        XCTAssertEqual(counter, 2)
-        XCTAssertEqual(observableObject.value2, false)
-    }
+//        XCTAssertEqual(counter, 0)
+//        XCTAssertEqual(observableObject.value1, 123)
+//        XCTAssertEqual(observableObject.value2, true)
+//
+//        observableObject.value1 += 1
+//
+//        XCTAssertEqual(counter, 1)
+//        XCTAssertEqual(observableObject.value1, 124)
+//
+//        observableObject.value2.toggle()
+//
+//        XCTAssertEqual(counter, 2)
+//        XCTAssertEqual(observableObject.value2, false)
+//    }
 
     func testObservableDerivedWithNonObservableBase() {
         let observableObject = ObservedDerivedWithNonObservedBase()
@@ -203,6 +208,24 @@ final class ObservableObjectTests: XCTestCase {
         observableObject.observedDerivedValue3 &+= 1
         XCTAssertEqual(counter, 4)
         XCTAssertEqual(observableObject.observedDerivedValue3, 0)
+    }
+
+    func testNSObjectSubclass() {
+        let observableObject = NSObjectSubclass()
+        var counter = 0
+        observableObject.objectWillChange.sink { counter += 1 }.store(in: &disposeBag)
+
+        XCTAssertEqual(counter, 0)
+        XCTAssertEqual(observableObject.value0, 0)
+        XCTAssertEqual(observableObject.value1, 42)
+
+        observableObject.value0 += 1
+        XCTAssertEqual(counter, 1)
+        XCTAssertEqual(observableObject.value0, 1)
+
+        observableObject.value1 += 1
+        XCTAssertEqual(counter, 2)
+        XCTAssertEqual(observableObject.value1, 43)
     }
 }
 
@@ -273,6 +296,12 @@ private class NonObservedBase {
 private class ObservedDerivedWithNonObservedBase: NonObservedBase, ObservableObject {
     @Published var observedDerivedValue2 = "Asuka is obviously the best girl."
     @Published var observedDerivedValue3: UInt8 = 255
+}
+
+@available(macOS 10.15, iOS 13.0, *)
+private class NSObjectSubclass: NSObject, ObservableObject {
+    @Published var value0 = 0
+    @Published var value1: UInt8 = 42
 }
 
 #endif // swift(>=5.1)

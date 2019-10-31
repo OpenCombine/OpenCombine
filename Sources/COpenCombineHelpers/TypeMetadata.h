@@ -109,16 +109,14 @@ struct Metadata {
     /// Get the metadata kind.
     MetadataKind getKind() const {
         return kindOrISA > LastEnumeratedMetadataKind
-        ? MetadataKind::Class
-        : MetadataKind(kindOrISA);
+            ? MetadataKind::Class
+            : MetadataKind(kindOrISA);
     }
 
     /// Is this a class object--the metadata record for a Swift class (which also
     /// serves as the class object), or the class object for an ObjC class (which
     /// is not metadata)?
-    bool isClassObject() const {
-        return getKind() == MetadataKind::Class;
-    }
+    bool isClassObject() const { return getKind() == MetadataKind::Class; }
 private:
     /// The kind. Only valid for non-class metadata; getKind() must be used to get
     /// the kind value.
