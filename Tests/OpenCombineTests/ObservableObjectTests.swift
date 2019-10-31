@@ -5,6 +5,8 @@
 //  Created by Sergej Jaskiewicz on 26.10.2019.
 //
 
+#if swift(>=5.1)
+
 import XCTest
 
 #if OPENCOMBINE_COMPATIBILITY_TEST
@@ -25,8 +27,6 @@ private typealias ObservableObject = OpenCombine.ObservableObject
 private typealias Published = OpenCombine.Published
 
 #endif
-
-#if swift(>=5.1)
 
 @available(macOS 10.15, iOS 13.0, *)
 final class ObservableObjectTests: XCTestCase {

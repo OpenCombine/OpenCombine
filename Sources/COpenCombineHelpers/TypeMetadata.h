@@ -12,18 +12,7 @@
 #ifndef OPENCOMBINE_TYPE_METADATA_H
 #define OPENCOMBINE_TYPE_METADATA_H
 
-#define OPENCOMBINE_NO_CONSTRUCTORS(type_name)                                           \
-    type_name(const type_name&) = delete;                                                \
-    type_name& operator=(const type_name&) = delete;                                     \
-    type_name(type_name&&) = delete;                                                     \
-    type_name& operator=(type_name&&) = delete;
-
-#if __has_attribute(swiftcall)
-# define OPENCOMBINE_SWIFT_CALLING_CONVENTION __attribute__((swiftcall))
-#else
-# define OPENCOMBINE_SWIFT_CALLING_CONVENTION
-#endif
-
+#include "RuntimeConfig.h"
 #include "FieldDescriptor.h"
 #include "RelativePointer.h"
 #include "FlagSet.h"
@@ -184,7 +173,7 @@ struct AnyClassMetadata : HeapMetadata {
     /// Is this object a valid swift type metadata?  That is, can it be
     /// safely downcast to ClassMetadata?
     bool isTypeMetadata() const {
-        return data & 2ULL;
+        return data & OPENCOMBINE_SWIFT_CLASS_IS_SWIFT_MASK;
     }
     /// A different perspective on the same bit
     bool isPureObjC() const {
