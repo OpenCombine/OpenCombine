@@ -95,13 +95,6 @@ public protocol ObservableObject: AnyObject {
     var objectWillChange: ObjectWillChangePublisher { get }
 }
 
-#if swift(>=5.1)
-private struct EnumeratorContext {
-    var installedPublisher: ObservableObjectPublisher?
-    let observableObjectInstance: UnsafeMutableRawPointer
-}
-#endif
-
 extension ObservableObject where ObjectWillChangePublisher == ObservableObjectPublisher {
 
 #if swift(>=5.1)

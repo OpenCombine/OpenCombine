@@ -152,11 +152,16 @@ bool opencombine_enumerate_class_fields(const void* opaqueMetadataPtr,
             if (!opencombine_enumerate_class_fields(superclassMetadata,
                                                     enumeratorContext,
                                                     enumerator)) {
-                return true;
+                return false;
             }
         }
 
         const ClassDescriptor* description = classMetadata->getDescription();
+
+        if (description->hasResilientSuperclass()) {
+            return false;
+        }
+
         const uintptr_t* fieldOffsets = classMetadata->getFieldOffsets();
         const FieldDescriptor& fieldDescriptor = *description->getFields();
 

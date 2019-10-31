@@ -92,4 +92,11 @@ public struct Published<Value> {
         // TODO: Benchmark and explore a possibility to use _modify
     }
 }
+#else
+
+@available(*, unavailable, message: """
+           The Published property wrapper is available since Swift 5.1
+           """)
+public typealias Published = Never
+
 #endif // swift(>=5.1)
