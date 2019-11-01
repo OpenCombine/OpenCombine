@@ -82,6 +82,11 @@ script:
   - if [[ $RUN_DANGER == "YES" ]]; then
       danger-swift ci;
     fi
+  - if [[ $POD_LINT == "YES" ]]; then
+    gem install cocoapods --pre;
+    pod repo update --silent;
+    pod lib lint --allow-warnings --verbose;
+  fi
 after_success:
   - if [[ $CODE_COVERAGE == "YES" ]]; then
       make generate-xcodeproj;
