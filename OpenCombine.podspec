@@ -11,7 +11,7 @@ Pod::Spec.new do |spec|
 
   spec.license      = "MIT"
 
-  spec.author       = "Apple"
+  spec.authors = { "Sergej Jaskiewicz" => "jaskiewiczs@icloud.com" }
   spec.source       = { :git => "https://github.com/broadwaylamb/OpenCombine", :tag => "#{spec.version}" }
 
   spec.swift_version = '5.0'
