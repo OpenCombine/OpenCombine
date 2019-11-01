@@ -9,7 +9,7 @@ Pod::Spec.new do |spec|
 
   spec.homepage     = "https://github.com/broadwaylamb/OpenCombine/"
 
-  spec.license      = "Apache 2.0"
+  spec.license      = "MIT"
 
   spec.author       = "Apple"
   spec.source       = { :git => "https://github.com/broadwaylamb/OpenCombine", :tag => "#{spec.version}" }
