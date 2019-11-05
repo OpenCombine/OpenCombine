@@ -27,7 +27,7 @@ const Metadata *
 swift_getTypeByMangledNameInContext(const char* typeNameStart,
                                     size_t typeNameLength,
                                     const ContextDescriptor* context,
-                                    void const* const* genericArgs);
+                                    Metadata* const* genericArgs);
 
 string_view makeSymbolicMangledNameStringRef(const char* base);
 
@@ -103,15 +103,7 @@ struct FieldRecord {
         return fieldName.get();
     }
 
-    const Metadata* getTypeMetadata(const ContextDescriptor* context) const {
-        string_view mangledTypeName = getMangledTypeName();
-
-        // FIXME: the last argument shouldn't be nullptr
-        return swift_getTypeByMangledNameInContext(mangledTypeName.data(),
-                                                   mangledTypeName.size(),
-                                                   context,
-                                                   nullptr);
-    }
+    const Metadata* getTypeMetadata(const Metadata* fieldOwner) const;
 
     bool isIndirectCase() const {
         return flags.isIndirectCase();

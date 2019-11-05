@@ -17,6 +17,102 @@ extern "C" Class swift_getInitializedObjCClass(Class c);
 using namespace opencombine;
 using namespace opencombine::swift;
 
+const TypeContextDescriptor* Metadata::getTypeContextDescriptor() const {
+    switch (getKind()) {
+        case MetadataKind::Class: {
+            const auto cls = static_cast<const ClassMetadata*>(this);
+            if (!cls->isTypeMetadata()) {
+                return nullptr;
+            }
+            if (cls->isArtificialSubclass()) {
+                return nullptr;
+            }
+            return cls->getDescription();
+        }
+        case MetadataKind::Struct:
+        case MetadataKind::Enum:
+        case MetadataKind::Optional:
+            // FIXME: Uncomment these
+//            return static_cast<const ValueMetadata*>(this)->description;
+        case MetadataKind::ForeignClass:
+//            return static_cast<const ForeignClassMetadata*>(this)->description;
+        default:
+            return nullptr;
+    }
+}
+
+Metadata* const * Metadata::getGenericArgs() const {
+    auto description = getTypeContextDescriptor();
+    if (!description) {
+        return nullptr;
+    }
+
+    auto generics = description->getGenericContext();
+    if (!generics) {
+        return nullptr;
+    }
+
+    auto asWords = reinterpret_cast<Metadata * const *>(this);
+    return asWords + description->getGenericArgumentOffset();
+}
+
+int32_t TypeContextDescriptor::getGenericArgumentOffset() const {
+    switch (getKind()) {
+    case ContextDescriptorKind::Class:
+        return static_cast<const ClassDescriptor*>(this)->getGenericArgumentOffset();
+    case ContextDescriptorKind::Enum:
+        // FIXME: Uncomment these
+//        return static_cast<const EnumDescriptor*>(this)->getGenericArgumentOffset();
+    case ContextDescriptorKind::Struct:
+//        return static_cast<const StructDescriptor*>(this)->getGenericArgumentOffset();
+    default:
+        assert(!"Not a type context descriptor.");
+        abort();
+    }
+}
+
+const GenericContext* ContextDescriptor::getGenericContext() const {
+    if (!isGeneric()) {
+        return nullptr;
+    }
+
+    switch (getKind()) {
+    case ContextDescriptorKind::Module:
+        // Never generic.
+        return nullptr;
+    case ContextDescriptorKind::Extension:
+        // FIXME: Uncomment the correct return statements
+        return nullptr;
+//        return static_cast<const ExtensionContextDescriptor*>(this)->getGenericContext();
+    case ContextDescriptorKind::Anonymous:
+        return nullptr;
+//        return static_cast<const AnonymousContextDescriptor*>(this)->getGenericContext();
+    case ContextDescriptorKind::Class:
+        return static_cast<const ClassDescriptor*>(this)->getGenericContext();
+    case ContextDescriptorKind::Enum:
+        return nullptr;
+//        return static_cast<const EnumDescriptor*>(this)->getGenericContext();
+    case ContextDescriptorKind::Struct:
+        return nullptr;
+//        return static_cast<const StructDescriptor*>(this)->getGenericContext();
+    case ContextDescriptorKind::OpaqueType:
+        return nullptr;
+//        return static_cast<const OpaqueTypeDescriptor*>(this)->getGenericContext();
+    default:
+        // We don't know about this kind of descriptor.
+        return nullptr;
+    }
+}
+
+const Metadata*
+reflection::FieldRecord::getTypeMetadata(const Metadata* fieldOwner) const {
+    string_view mangledTypeName = getMangledTypeName();
+    return swift_getTypeByMangledNameInContext(mangledTypeName.data(),
+                                               mangledTypeName.size(),
+                                               fieldOwner->getTypeContextDescriptor(),
+                                               fieldOwner->getGenericArgs());
+}
+
 string_view opencombine::swift::makeSymbolicMangledNameStringRef(const char* base) {
     if (!base)
         return {};
@@ -170,7 +266,7 @@ bool opencombine_enumerate_class_fields(const void* opaqueMetadataPtr,
             if (!enumerator(enumeratorContext,
                             fieldRecord.getFieldName().data(),
                             *fieldOffsets++,
-                            fieldRecord.getTypeMetadata(description))) {
+                            fieldRecord.getTypeMetadata(classMetadata))) {
                 return true;
             }
         }

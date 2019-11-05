@@ -117,6 +117,13 @@ struct Metadata {
     /// serves as the class object), or the class object for an ObjC class (which
     /// is not metadata)?
     bool isClassObject() const { return getKind() == MetadataKind::Class; }
+
+    /// Get the nominal type descriptor if this metadata describes a nominal type,
+    /// or return null if it does not.
+    const TypeContextDescriptor* getTypeContextDescriptor() const;
+
+    /// Retrieve the generic arguments of this type, if it has any.
+    Metadata* const * getGenericArgs() const;
 private:
     /// The kind. Only valid for non-class metadata; getKind() must be used to get
     /// the kind value.
@@ -272,7 +279,15 @@ struct ClassMetadata : AnyClassMetadata {
     OPENCOMBINE_NO_CONSTRUCTORS(ClassMetadata)
 
     const ClassDescriptor* getDescription() const {
+        assert(isTypeMetadata());
         return description;
+    }
+
+    /// Is this class an artificial subclass, such as one dynamically
+    /// created for various dynamic purposes like KVO?
+    bool isArtificialSubclass() const {
+      assert(isTypeMetadata());
+      return description == nullptr;
     }
 
     /// Get a pointer to the field offset vector, if present, or null.
@@ -601,8 +616,19 @@ public:
 
 // MARK: - Context descriptor classes
 
+struct GenericContext;
+
 struct ContextDescriptor {
     OPENCOMBINE_NO_CONSTRUCTORS(ContextDescriptor)
+
+    /// Get the generic context information for this context, or null if the
+    /// context is not generic.
+    const GenericContext *getGenericContext() const;
+
+    bool isGeneric() const { return flags.isGeneric(); }
+    bool isUnique() const { return flags.isUnique(); }
+
+    ContextDescriptorKind getKind() const { return flags.getKind(); }
 protected:
     /// Flags describing the context, including its kind and format version.
     ContextDescriptorFlags flags;
@@ -619,6 +645,10 @@ struct TypeContextDescriptor : ContextDescriptor {
     }
 
     const char* getName() const { return name.get(); }
+
+    /// Return the offset of the start of generic arguments in the nominal
+    /// type's metadata. The returned value is measured in sizeof(StoredPointer).
+    int32_t getGenericArgumentOffset() const;
 private:
     /// The name of the type.
     RelativeDirectPointer<const char, /*nullable*/ false> name;
@@ -758,7 +788,7 @@ struct ClassDescriptor final : TypeContextDescriptor {
     const RelativeDirectPointer<const void, /*nullable*/true>&
     getResilientSuperclass() const {
       assert(hasResilientSuperclass());
-        // TODO
+        // FIXME: Uncomment this!!!!!!!!!!!!!!!!
 //      return this->template getTrailingObjects<ResilientSuperclass>()->superclass;
     }
 

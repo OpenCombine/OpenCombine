@@ -99,6 +99,7 @@ extension ObservableObject where ObjectWillChangePublisher == ObservableObjectPu
 
 #if swift(>=5.1)
     /// A publisher that emits before the object has changed.
+    @available(swift 5.1)
     public var objectWillChange: ObservableObjectPublisher {
 
         var installedPublisher: ObservableObjectPublisher?

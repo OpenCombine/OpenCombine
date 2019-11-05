@@ -160,26 +160,48 @@ final class ObservableObjectTests: XCTestCase {
     }
 
     // FIXME: This test crashes
-//    func testGenericClass() {
-//        let observableObject = GenericClass(123, true)
-//
-//        var counter = 0
-//
-//        observableObject.objectWillChange.sink { counter += 1 }.store(in: &disposeBag)
-//        XCTAssertEqual(counter, 0)
-//        XCTAssertEqual(observableObject.value1, 123)
-//        XCTAssertEqual(observableObject.value2, true)
-//
-//        observableObject.value1 += 1
-//
-//        XCTAssertEqual(counter, 1)
-//        XCTAssertEqual(observableObject.value1, 124)
-//
-//        observableObject.value2.toggle()
-//
-//        XCTAssertEqual(counter, 2)
-//        XCTAssertEqual(observableObject.value2, false)
-//    }
+    func testGenericClass() {
+        let observableObject = GenericClass(123, true)
+
+        var counter = 0
+
+        observableObject.objectWillChange.sink { counter += 1 }.store(in: &disposeBag)
+        XCTAssertEqual(counter, 0)
+        XCTAssertEqual(observableObject.value1, 123)
+        XCTAssertEqual(observableObject.value2, true)
+
+        observableObject.value1 += 1
+
+        XCTAssertEqual(counter, 1)
+        XCTAssertEqual(observableObject.value1, 124)
+
+        observableObject.value2.toggle()
+
+        XCTAssertEqual(counter, 2)
+        XCTAssertEqual(observableObject.value2, false)
+    }
+
+    // FIXME: This test crashes
+    func testGenericSubclassOfResilientClass() {
+        let observableObject = ResilientClassGenericSubclass(123, true)
+
+        var counter = 0
+
+        observableObject.objectWillChange.sink { counter += 1 }.store(in: &disposeBag)
+        XCTAssertEqual(counter, 0)
+        XCTAssertEqual(observableObject.value1, 123)
+        XCTAssertEqual(observableObject.value2, true)
+
+        observableObject.value1 += 1
+
+        XCTAssertEqual(counter, 1)
+        XCTAssertEqual(observableObject.value1, 124)
+
+        observableObject.value2.toggle()
+
+        XCTAssertEqual(counter, 2)
+        XCTAssertEqual(observableObject.value2, false)
+    }
 
     func testObservableDerivedWithNonObservableBase() {
         let observableObject = ObservedDerivedWithNonObservedBase()
@@ -302,6 +324,20 @@ private class ObservedDerivedWithNonObservedBase: NonObservedBase, ObservableObj
 private class NSObjectSubclass: NSObject, ObservableObject {
     @Published var value0 = 0
     @Published var value1: UInt8 = 42
+}
+
+@available(macOS 10.15, iOS 13.0, *)
+private final class ResilientClassGenericSubclass<Value1, Value2>
+    : JSONDecoder,
+      ObservableObject
+{
+    @Published var value1: Value1
+    @Published var value2: Value2
+
+    init(_ value1: Value1, _ value2: Value2) {
+        self.value1 = value1
+        self.value2 = value2
+    }
 }
 
 #endif // swift(>=5.1)
