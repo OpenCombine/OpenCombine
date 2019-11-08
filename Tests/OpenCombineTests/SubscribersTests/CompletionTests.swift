@@ -20,41 +20,31 @@ final class CompletionTests: XCTestCase {
 
     private typealias Sut = Subscribers.Completion<TestingError>
 
-    let encoder: JSONEncoder = {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = .sortedKeys
-        return encoder
-    }()
-
+    let encoder = TrackingEncoder()
     let decoder = JSONDecoder()
 
-    func testEncodingDecoding() throws {
+    func testDecodingFinised() throws {
         let successJSON = #"{"success":true}"#
-        let failureJSON = #"{"error":{"description":"oops"},"success":false}"#
         let illFormedSuccessJSON = #"{"error":{"description":"oops"},"success":true}"#
-        let illFormedFailureJSON = #"{"success":false}"#
-
-        XCTAssertEqual(try String(decoding: encoder.encode(Sut.finished),
-                                  as: UTF8.self),
-                       successJSON)
-
-        XCTAssertEqual(try String(decoding: encoder.encode(Sut.failure(.oops)),
-                                  as: UTF8.self),
-                       failureJSON)
 
         XCTAssertEqual(try decoder.decode(Sut.self, from: Data(successJSON.utf8)),
                        .finished)
 
-        XCTAssertEqual(try decoder.decode(Sut.self, from: Data(failureJSON.utf8)),
-                       .failure(.oops))
-
         XCTAssertEqual(try decoder.decode(Sut.self,
                                           from: Data(illFormedSuccessJSON.utf8)),
                        .finished)
+    }
 
-        XCTAssertThrowsError(try decoder.decode(Sut.self,
-                                                from: Data(illFormedFailureJSON.utf8)))
-        { error in
+    func testDecodingFailure() {
+        let failureJSON = #"{"error":{"description":"oops"},"success":false}"#
+        let illFormedFailureJSON = #"{"success":false}"#
+
+        XCTAssertEqual(try decoder.decode(Sut.self, from: Data(failureJSON.utf8)),
+                       .failure(.oops))
+
+        XCTAssertThrowsError(
+            try decoder.decode(Sut.self, from: Data(illFormedFailureJSON.utf8))
+        ) { error in
             switch error {
             case DecodingError.keyNotFound:
                 break
@@ -62,5 +52,21 @@ final class CompletionTests: XCTestCase {
                 XCTFail("DecodingError.keyNotFound error expected")
             }
         }
+    }
+
+    func testEncodingFinished() throws {
+        try Sut.finished.encode(to: encoder)
+        XCTAssertEqual(encoder.history, [.containerKeyedBy,
+                                         .keyedContainerEncodeBool(true, "success")])
+    }
+
+    func testEncodingFailure() throws {
+        try Sut.failure(.oops).encode(to: encoder)
+        XCTAssertEqual(encoder.history,
+                       [.containerKeyedBy,
+                        .keyedContainerEncodeBool(false, "success"),
+                        .keyedContainerEncodeEncodable("error"),
+                        .containerKeyedBy,
+                        .keyedContainerEncodeString("oops", "description")])
     }
 }

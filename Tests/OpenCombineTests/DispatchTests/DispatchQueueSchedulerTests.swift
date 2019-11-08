@@ -86,14 +86,14 @@ final class DispatchQueueSchedulerTests: XCTestCase {
     func testStrideToDispatchTimeInterval() {
         typealias Stride = Scheduler.SchedulerTimeType.Stride
 
-        switch (Stride.seconds(12).timeInterval,
-                Stride.milliseconds(34).timeInterval,
-                Stride.microseconds(56).timeInterval,
-                Stride.nanoseconds(78).timeInterval) {
-        case (.nanoseconds(12000000000),
-              .nanoseconds(34000000),
-              .nanoseconds(56000),
-              .nanoseconds(78)):
+        switch (Stride.seconds(2).timeInterval,
+                Stride.milliseconds(2).timeInterval,
+                Stride.microseconds(2).timeInterval,
+                Stride.nanoseconds(2).timeInterval) {
+        case (.nanoseconds(2_000_000_000),
+              .nanoseconds(2_000_000),
+              .nanoseconds(2_000),
+              .nanoseconds(2)):
             break // pass
         case let intervals:
             XCTFail("Unexpected DispatchTimeInterval: \(intervals)")
@@ -103,24 +103,24 @@ final class DispatchQueueSchedulerTests: XCTestCase {
     func testStrideFromDispatchTimeInterval() {
         typealias Stride = Scheduler.SchedulerTimeType.Stride
 
-        XCTAssertEqual(Stride(.seconds(12)).magnitude, 12000000000)
-        XCTAssertEqual(Stride(.milliseconds(34)).magnitude, 34000000)
-        XCTAssertEqual(Stride(.microseconds(56)).magnitude, 56000)
-        XCTAssertEqual(Stride(.nanoseconds(78)).magnitude, 78)
+        XCTAssertEqual(Stride(.seconds(2)).magnitude, 2_000_000_000)
+        XCTAssertEqual(Stride(.milliseconds(2)).magnitude, 2_000_000)
+        XCTAssertEqual(Stride(.microseconds(2)).magnitude, 2_000)
+        XCTAssertEqual(Stride(.nanoseconds(2)).magnitude, 2)
         XCTAssertEqual(Stride(.never).magnitude, .max)
     }
 
     func testStrideFromNumericValue() {
         typealias Stride = Scheduler.SchedulerTimeType.Stride
 
-        XCTAssertEqual(Stride.seconds(12.756).magnitude, 12756000000)
-        XCTAssertEqual(Stride.seconds(34).magnitude, 34000000000)
-        XCTAssertEqual(Stride.milliseconds(56).magnitude, 56000000)
-        XCTAssertEqual(Stride.microseconds(78).magnitude, 78000)
-        XCTAssertEqual(Stride.nanoseconds(90).magnitude, 90)
+        XCTAssertEqual(Stride.seconds(1.2).magnitude, 1_200_000_000)
+        XCTAssertEqual(Stride.seconds(2).magnitude, 2_000_000_000)
+        XCTAssertEqual(Stride.milliseconds(2).magnitude, 2_000_000)
+        XCTAssertEqual(Stride.microseconds(2).magnitude, 2_000)
+        XCTAssertEqual(Stride.nanoseconds(2).magnitude, 2)
 
-        XCTAssertEqual((12.756 as Stride).magnitude, 12756000000)
-        XCTAssertEqual((34 as Stride).magnitude, 34000000000)
+        XCTAssertEqual((1.2 as Stride).magnitude, 1_200_000_000)
+        XCTAssertEqual((2 as Stride).magnitude, 2_000_000_000)
 
         XCTAssertNil(Stride(exactly: UInt64.max))
         XCTAssertEqual(Stride(exactly: 871 as UInt64)?.magnitude, 871)
@@ -131,7 +131,7 @@ final class DispatchQueueSchedulerTests: XCTestCase {
 
         XCTAssertLessThan(Stride.nanoseconds(1), .nanoseconds(2))
         XCTAssertGreaterThan(Stride.nanoseconds(-2), .microseconds(-10))
-        XCTAssertLessThan(Stride.milliseconds(29), .seconds(29))
+        XCTAssertLessThan(Stride.milliseconds(2), .seconds(2))
     }
 
     func testStrideMultiplication() {
