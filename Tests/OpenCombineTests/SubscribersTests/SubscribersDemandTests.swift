@@ -96,7 +96,6 @@ final class SubscribersDemandTests: XCTestCase {
     }
 
     func testComparison() {
-        // swiftlint:disable no_space_in_method_call
         XCTAssertFalse(Subscribers.Demand.unlimited <  .unlimited)
         XCTAssertFalse(Subscribers.Demand.unlimited >  .unlimited)
         XCTAssertFalse(Subscribers.Demand.unlimited != .unlimited)
@@ -186,7 +185,6 @@ final class SubscribersDemandTests: XCTestCase {
         XCTAssertTrue (100 == Subscribers.Demand.max(100))
         XCTAssertTrue (100 <= Subscribers.Demand.max(100))
         XCTAssertTrue (100 >= Subscribers.Demand.max(100))
-        // swiftlint:enable no_space_in_method_call
     }
 
     func testMax() {
