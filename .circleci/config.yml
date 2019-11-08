@@ -1,0 +1,235 @@
+version: 2
+jobs:
+  "Execute tests on macOS 10.15.0 (Xcode 11.2.0, Swift 5.1.2)":
+    macos:
+      xcode: "11.2.0"
+    environment:
+      SWIFT_VERSION: "5.1.2"
+    steps:
+      - checkout
+      - run:
+          name: Building and running tests in debug mode with coverage
+          command: |
+            make test-debug \
+              SWIFT_TEST_FLAGS="--enable-code-coverage --build-path .build-test-debug"
+            xcrun llvm-cov show \
+              -instr-profile=.build-test-debug/debug/codecov/default.profdata \
+              .build-test-debug/debug/OpenCombinePackageTests.xctest/Contents/MacOS/OpenCombinePackageTests \
+              > coverage.txt
+      - run:
+          name: Building and running tests in debug mode with TSan
+          command: |
+            make test-debug-sanitize-thread \
+              SWIFT_TEST_FLAGS="--build-path .build-test-debug-sanitize-thread"
+      - run:
+          name: Building and running tests in release mode
+          command: |
+            make test-release \
+              SWIFT_TEST_FLAGS="--build-path .build-test-release"
+      - run:
+          name: Generating Xcode project
+          command: make generate-xcodeproj
+      - run:
+          name: Building for testing on macOS 10.15.0 with xcodebuild
+          command: |
+            set -o pipefail \
+              && xcodebuild build-for-testing \
+                   -scheme OpenCombine-Package \
+                   -sdk macosx10.15 \
+                   -derivedDataPath DerivedData \
+              | xcpretty
+      - run:
+          name: Testing on macOS 10.15.0 with xcodebuild
+          command: |
+            set -o pipefail \
+              && xcodebuild test-without-building \
+                   -scheme OpenCombine-Package \
+                   -sdk macosx10.15 \
+                   -derivedDataPath DerivedData \
+              | xcpretty --report junit -o build/reports/results.xml
+      - store_test_results:
+          path: build/reports
+      - run:
+          name: Uploading code coverage
+          command: |
+            bash <(curl -s https://codecov.io/bash) -D DerivedData
+
+  "Execute compatibility tests on iOS 13.2 (Xcode 11.2.0, Swift 5.1.2)":
+    macos:
+      xcode: "11.2.0"
+    environment:
+      SWIFT_VERSION: "5.1.2"
+    steps:
+      - checkout
+      - run:
+          name: Generating Xcode project
+          command: make generate-compatibility-xcodeproj
+      - run:
+          name: Building for testing on iOS 13.2 with xcodebuild
+          command: |
+            set -o pipefail \
+              && xcodebuild build-for-testing \
+                   -scheme OpenCombine-Package \
+                   -destination "platform=iOS Simulator,name=iPhone 11,OS=13.2" \
+                   -derivedDataPath DerivedData \
+              | xcpretty
+      - run:
+          name: Testing against Combine on iOS 13.2 with xcodebuild
+          command: |
+            set -o pipefail \
+              && xcodebuild test-without-building \
+                   -scheme OpenCombine-Package \
+                   -destination "platform=iOS Simulator,name=iPhone 11,OS=13.2" \
+                   -derivedDataPath DerivedData \
+              | xcpretty --report junit -o build/reports/results.xml
+      - store_test_results:
+          path: build/reports
+
+  "Execute tests on iOS 9.3 (Xcode 10.2.1, Swift 5.0.1)":
+    macos:
+      xcode: "10.2.1"
+    environment:
+      BUNDLE_PATH: .bundle # path to install gems and use for caching
+      SWIFT_VERSION: "5.0.1"
+    steps:
+      - checkout
+      - run:
+          name: Installing gem dependencies
+          command: bundle install && bundle clean
+      - restore_cache:
+           keys:
+             - v1-simulator-cache-{{ arch }}
+      - run:
+          # CircleCI doesn't have an iOS 9 simulator, so we need to install it manually.
+          name: Installing iOS 9 simulator
+          command: |
+            bundle exec xcversion simulators --install="iOS 9.3"
+            bundle exec xcversion simulators
+            xcrun simctl list
+      - save_cache:
+           key: v1-simulator-cache-{{ arch }}
+           paths:
+             - ~/Library/Caches/XcodeInstall
+      - run:
+          name: Generating Xcode project
+          command: |
+            make generate-xcodeproj
+            xcodebuild -scheme OpenCombine-Package -showdestinations
+      - run:
+           name: Building for testing on iOS 9.3 with xcodebuild
+           command: |
+             set -o pipefail \
+               && xcodebuild build-for-testing \
+                    -scheme OpenCombine-Package \
+                    -destination "platform=iOS Simulator,name=iPhone 4s,OS=9.3" \
+                    -derivedDataPath DerivedData \
+               | xcpretty
+      - run:
+          name: Testing on iOS 9.3 with xcodebuild
+          command: |
+            set -o pipefail \
+              && xcodebuild test-without-building \
+                   -scheme OpenCombine-Package \
+                   -destination "platform=iOS Simulator,name=iPhone 4s,OS=9.3" \
+                   -derivedDataPath DerivedData \
+              | xcpretty --report junit -o build/reports/results.xml
+      - store_test_results:
+          path: build/reports
+      - run:
+          name: Uploading code coverage
+          command: |
+            bash <(curl -s https://codecov.io/bash) -D DerivedData
+
+  "Execute tests on Ubuntu 18.04 (Swift 5.1.1)":
+    docker:
+      - image: swift:5.1.1-bionic
+    environment:
+      SWIFT_VERSION: "5.1.1"
+    steps:
+      - checkout
+      - run:
+          name: Installing dependencies
+          command: |
+            apt update
+            apt upgrade
+            apt install curl
+      - run:
+          name: Building and running tests in debug mode with coverage
+          command: | # We need to run the test command twice because of https://bugs.swift.org/browse/SR-10783
+            make test-debug \
+              SWIFT_TEST_FLAGS="--enable-test-discovery \
+                                --enable-index-store \
+                                --enable-code-coverage \
+                                --build-path .build-test-debug" \
+              > /dev/null 2>&1 \
+              || true
+            make test-debug \
+              SWIFT_TEST_FLAGS="--enable-test-discovery \
+                                --enable-index-store \
+                                --enable-code-coverage \
+                                --build-path .build-test-debug"
+            llvm-cov show \
+              -instr-profile=.build-test-debug/debug/codecov/default.profdata \
+              .build-test-debug/debug/OpenCombinePackageTests.xctest \
+              > coverage.txt
+      - run:
+          name: Building and running tests in debug mode with TSan
+          command: | # We need to run the test command twice because of https://bugs.swift.org/browse/SR-10783
+            make test-debug-sanitize-thread \
+              SWIFT_TEST_FLAGS="--enable-test-discovery \
+                                --enable-index-store \
+                                --build-path .build-test-debug-sanitize-thread" \
+              > /dev/null 2>&1 \
+              || true
+            make test-debug-sanitize-thread \
+              SWIFT_TEST_FLAGS="--enable-test-discovery \
+                                --enable-index-store \
+                                --build-path .build-test-debug-sanitize-thread" \
+      - run:
+          name: Building and running tests in release mode
+          command: |
+            make test-release \
+              SWIFT_TEST_FLAGS="--enable-test-discovery \
+                                --enable-index-store \
+                                --build-path .build-test-release"
+      - run:
+          name: Uploading code coverage
+          command: |
+            bash <(curl -s https://codecov.io/bash)
+
+  "Run SwiftLint and Danger":
+    macos:
+      xcode: "11.2.0"
+    environment:
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+    steps:
+      - checkout
+      - run:
+          name: Install SwiftLint
+          command: |
+            brew install swiftlint
+      - run:
+          name: Install danger-swift
+          command: |
+            brew install danger/tap/danger-swift
+      - run:
+          name: Run danger-swift
+          command: danger-swift ci
+
+workflows:
+  version: 2
+  "OpenCombine: execute tests on macOS":
+    jobs:
+      - "Execute tests on macOS 10.15.0 (Xcode 11.2.0, Swift 5.1.2)"
+  "OpenCombine: execute compatibility tests":
+    jobs:
+      - "Execute compatibility tests on iOS 13.2 (Xcode 11.2.0, Swift 5.1.2)"
+  "OpenCombine: execute tests on iOS":
+    jobs:
+      - "Execute tests on iOS 9.3 (Xcode 10.2.1, Swift 5.0.1)"
+  "OpenCombine: execute tests on Linux":
+    jobs:
+      - "Execute tests on Ubuntu 18.04 (Swift 5.1.1)"
+  "OpenCombine: run SwiftLint and Danger":
+    jobs:
+      - "Run SwiftLint and Danger"
