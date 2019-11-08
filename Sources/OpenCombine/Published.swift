@@ -14,7 +14,8 @@
 /// of the property first.
 /// Note that the `@Published` property is class-constrained.
 /// Use it with properties of classes, not with non-class types like structures.
-@propertyWrapper public struct Published<Value> {
+@propertyWrapper
+public struct Published<Value> {
 
     /// Initialize the storage of the Published
     /// property as well as the corresponding `Publisher`.

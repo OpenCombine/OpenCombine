@@ -16,6 +16,8 @@ disabled_rules:
   - identifier_name
   - nesting
   - notification_center_detachment
+  - no_fallthrough_only
+  - no_space_in_method_call
   - redundant_string_enum_value
   - todo
   - trailing_comma
@@ -59,7 +61,6 @@ opt_in_rules:
   - unneeded_parentheses_in_closure_argument
   - untyped_error_in_catch
   - unused_import
-  - unused_private_declaration
   - vertical_parameter_alignment_on_call
   - vertical_whitespace_closing_braces
   - yoda_condition
