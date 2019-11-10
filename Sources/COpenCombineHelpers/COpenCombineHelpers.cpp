@@ -21,7 +21,7 @@
 
 namespace {
 
-static std::atomic<uint64_t> next_combine_identifier;
+std::atomic<uint64_t> next_combine_identifier;
 
 class PlatformIndependentMutex {
 public:
