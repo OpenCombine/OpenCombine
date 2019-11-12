@@ -107,7 +107,7 @@ extension Publishers.Sequence {
 
                     // Combine calls next() while the lock is held.
                     // It is possible to engineer a custom Sequence that would cause
-                    // a dedlock here, but it would be something insane.
+                    // a deadlock here, but it would be something insane.
                     let next = iterator.next()
                     recursion = true
                     lock.unlock()

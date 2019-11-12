@@ -238,62 +238,77 @@ private struct TrackingUnkeyedEncoder: UnkeyedEncodingContainer {
 
     mutating func encode(_ value: Bool) throws {
         encoder.history.append(.unkeyedContainerEncodeBool(value))
+        encoder._unkeyedContainerCount += 1
     }
 
     mutating func encode(_ value: String) throws {
         encoder.history.append(.unkeyedContainerEncodeString(value))
+        encoder._unkeyedContainerCount += 1
     }
 
     mutating func encode(_ value: Double) throws {
         encoder.history.append(.unkeyedContainerEncodeDouble(value))
+        encoder._unkeyedContainerCount += 1
     }
 
     mutating func encode(_ value: Float) throws {
         encoder.history.append(.unkeyedContainerEncodeFloat(value))
+        encoder._unkeyedContainerCount += 1
     }
 
     mutating func encode(_ value: Int) throws {
         encoder.history.append(.unkeyedContainerEncodeInt(value))
+        encoder._unkeyedContainerCount += 1
     }
 
     mutating func encode(_ value: Int8) throws {
         encoder.history.append(.unkeyedContainerEncodeInt8(value))
+        encoder._unkeyedContainerCount += 1
     }
 
     mutating func encode(_ value: Int16) throws {
         encoder.history.append(.unkeyedContainerEncodeInt16(value))
+        encoder._unkeyedContainerCount += 1
     }
 
     mutating func encode(_ value: Int32) throws {
         encoder.history.append(.unkeyedContainerEncodeInt32(value))
+        encoder._unkeyedContainerCount += 1
     }
 
     mutating func encode(_ value: Int64) throws {
         encoder.history.append(.unkeyedContainerEncodeInt64(value))
+        encoder._unkeyedContainerCount += 1
     }
 
     mutating func encode(_ value: UInt) throws {
         encoder.history.append(.unkeyedContainerEncodeUInt(value))
+        encoder._unkeyedContainerCount += 1
     }
 
     mutating func encode(_ value: UInt8) throws {
         encoder.history.append(.unkeyedContainerEncodeUInt8(value))
+        encoder._unkeyedContainerCount += 1
     }
 
     mutating func encode(_ value: UInt16) throws {
         encoder.history.append(.unkeyedContainerEncodeUInt16(value))
+        encoder._unkeyedContainerCount += 1
     }
 
     mutating func encode(_ value: UInt32) throws {
         encoder.history.append(.unkeyedContainerEncodeUInt32(value))
+        encoder._unkeyedContainerCount += 1
     }
 
     mutating func encode(_ value: UInt64) throws {
         encoder.history.append(.unkeyedContainerEncodeUInt64(value))
+        encoder._unkeyedContainerCount += 1
     }
 
     mutating func encode<Value: Encodable>(_ value: Value) throws {
         encoder.history.append(.unkeyedContainerEncodeEncodable)
+        encoder._unkeyedContainerCount += 1
         try value.encode(to: encoder)
     }
 
