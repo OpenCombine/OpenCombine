@@ -80,18 +80,24 @@ final class AssignTests: XCTestCase {
         assign.receive(subscription: subscription3)
         XCTAssertEqual(subscription3.history, [.cancelled])
         XCTAssertTrue(subscription3.cancelled)
+
+        subscription1.cancelled = false
+        assign.cancel()
+        XCTAssertFalse(subscription1.cancelled)
     }
 
     func testReceiveValue() {
         let object = TestObject()
         let assign = Sut(object: object, keyPath: \.value)
-        let publisher = PassthroughSubject<Int, Never>()
+
+        let subscription = CustomSubscription()
+        let publisher = CustomPublisherBase<Int, Never>(subscription: subscription)
 
         XCTAssertEqual(assign.receive(12), .none)
         XCTAssertEqual(object.value, 0)
 
         publisher.subscribe(assign)
-        publisher.send(42)
+        XCTAssertEqual(publisher.send(42), .none)
         XCTAssertEqual(object.value, 42)
 
         publisher.send(completion: .finished)
@@ -101,8 +107,12 @@ final class AssignTests: XCTestCase {
         XCTAssertEqual(object.value, 42)
 
         publisher.subscribe(assign)
-        publisher.send(1000000)
+        XCTAssertEqual(publisher.send(1000000), .none)
         XCTAssertEqual(object.value, 42)
+
+        XCTAssertEqual(subscription.history, [.requested(.unlimited),
+                                              .cancelled,
+                                              .cancelled])
     }
 
     func testPublisherOperator() {
