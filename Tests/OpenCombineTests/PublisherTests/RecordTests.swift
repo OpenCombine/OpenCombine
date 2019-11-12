@@ -31,6 +31,16 @@ final class RecordTests: XCTestCase {
         publisher.subscribe(subscriber)
         XCTAssertEqual(subscriber.history, [.subscription("Empty"),
                                             .completion(.finished)])
+
+        var recording = publisher.recording
+        recording.receive(0) // should not crash
+        recording.receive(completion: .failure(.oops)) // should not crash
+
+        XCTAssertEqual(publisher.recording.output, [])
+        XCTAssertEqual(publisher.recording.completion, .finished)
+
+        XCTAssertEqual(recording.output, [0])
+        XCTAssertEqual(recording.completion, .failure(.oops))
     }
 
     func testEmptyRecordFinished() {
