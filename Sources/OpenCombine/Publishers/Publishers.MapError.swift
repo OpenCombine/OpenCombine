@@ -53,7 +53,7 @@ extension Publisher {
     /// - Returns: A publisher that replaces any upstream failure with a
     /// new error produced by the `transform` closure.
     public func mapError<NewFailure: Error>(
-        _ transform: @escaping (Self.Failure) -> NewFailure
+        _ transform: @escaping (Failure) -> NewFailure
     ) -> Publishers.MapError<Self, NewFailure>
     {
         return Publishers.MapError(upstream: self, transform)
