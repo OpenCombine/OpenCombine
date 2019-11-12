@@ -27,6 +27,7 @@ enum ExpectedMirrorChildValue: Equatable, ExpressibleByStringLiteral {
     }
 }
 
+@discardableResult
 func expectedChildren(_ expectedChildren: (String?, ExpectedMirrorChildValue)...,
                       file: StaticString = #file,
                       line: UInt = #line) -> (Mirror) -> Bool {
