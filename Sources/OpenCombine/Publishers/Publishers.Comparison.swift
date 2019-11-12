@@ -94,7 +94,7 @@ extension Publisher {
     /// - Returns: A publisher that publishes the maximum value received from the upstream
     /// publisher, after the upstream publisher finishes.
     public func tryMax(
-        by areInIncreasingOrder:  @escaping (Self.Output, Self.Output) throws -> Bool
+        by areInIncreasingOrder:  @escaping (Output, Output) throws -> Bool
     ) -> Publishers.TryComparison<Self> {
         return .init(upstream: self, areInIncreasingOrder: areInIncreasingOrder)
     }

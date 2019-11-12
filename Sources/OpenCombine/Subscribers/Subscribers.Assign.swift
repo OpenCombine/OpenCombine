@@ -77,7 +77,7 @@ extension Subscribers {
     }
 }
 
-extension Publisher where Self.Failure == Never {
+extension Publisher where Failure == Never {
 
     /// Assigns each element from a Publisher to a property on an object.
     ///

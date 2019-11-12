@@ -32,7 +32,7 @@ extension Publisher {
     /// - Returns: A publisher that uses the provided closure to map elements from
     ///   the upstream publisher to new elements that it then publishes.
     public func tryMap<Result>(
-        _ transform: @escaping (Self.Output) throws -> Result
+        _ transform: @escaping (Output) throws -> Result
     ) -> Publishers.TryMap<Self, Result> {
         return Publishers.TryMap(upstream: self, transform: transform)
     }
