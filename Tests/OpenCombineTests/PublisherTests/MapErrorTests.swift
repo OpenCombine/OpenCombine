@@ -190,8 +190,17 @@ final class MapErrorTests: XCTestCase {
 
     func testMapErrorReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
+                                           expected: .history([.value(0)],
+                                                              demand: .max(42)),
                                            { $0.mapError(unreachable) })
+    }
+
+    func testMapErrorReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([.completion(.finished)]),
+            { $0.mapError(unreachable) }
+        )
     }
 
     func testMapErrorLifecycle() throws {

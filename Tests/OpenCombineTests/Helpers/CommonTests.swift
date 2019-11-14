@@ -15,22 +15,125 @@ import OpenCombine
 
 @available(macOS 10.15, iOS 13.0, *)
 extension XCTest {
+
+    enum ValueBeforeSubscriptionBehavior<Value, Failure: Error> {
+        case crash
+        case history([TrackingSubscriberBase<Value, Failure>.Event],
+                     demand: Subscribers.Demand,
+                     comparator: (Value, Value) -> Bool)
+    }
+
     func testReceiveValueBeforeSubscription<Value, Operator: Publisher>(
+        file: StaticString = #file,
+        line: UInt = #line,
         value: Value,
+        expected: ValueBeforeSubscriptionBehavior<Operator.Output, Operator.Failure>,
+        _ makeOperator: (CustomConnectablePublisherBase<Value, Never>) -> Operator
+    ) {
+        let publisher = CustomConnectablePublisherBase<Value, Never>(subscription: nil)
+        let operatorPublisher = makeOperator(publisher)
+        let tracking = TrackingSubscriberBase<Operator.Output, Operator.Failure>(
+            receiveValue: { _ in .max(42) }
+        )
+        operatorPublisher.subscribe(tracking)
+        switch expected {
+        case .crash:
+            assertCrashes {
+                _ = publisher.send(value)
+            }
+        case let .history(history, demand, comparator):
+            XCTAssertEqual(publisher.send(value), demand, file: file, line: line)
+            tracking.assertHistoryEqual(history,
+                                        valueComparator: comparator,
+                                        file: file,
+                                        line: line)
+        }
+    }
+
+    enum CompletionBeforeSubscriptionBehavior<Value, Failure: Error> {
+        case crash
+        case history([TrackingSubscriberBase<Value, Failure>.Event],
+                     comparator: (Value, Value) -> Bool)
+    }
+
+    func testReceiveCompletionBeforeSubscription<Value, Operator: Publisher>(
+        file: StaticString = #file,
+        line: UInt = #line,
+        inputType: Value.Type,
+        expected: CompletionBeforeSubscriptionBehavior<Operator.Output, Operator.Failure>,
+        _ makeOperator: (CustomConnectablePublisherBase<Value, Never>) -> Operator
+    ) {
+
+        let publisher = CustomConnectablePublisherBase<Value, Never>(subscription: nil)
+        let operatorPublisher = makeOperator(publisher)
+        let tracking = TrackingSubscriberBase<Operator.Output, Operator.Failure>()
+        operatorPublisher.subscribe(tracking)
+
+        switch expected {
+        case .crash:
+            assertCrashes {
+                publisher.send(completion: .finished)
+            }
+        case let .history(history, comparator: comparator):
+            publisher.send(completion: .finished)
+            tracking.assertHistoryEqual(history,
+                                        valueComparator: comparator,
+                                        file: file,
+                                        line: line)
+        }
+    }
+
+    func testRequestBeforeSubscription<Value, Operator: Publisher>(
+        file: StaticString = #file,
+        line: UInt = #line,
+        inputType: Value.Type,
         shouldCrash: Bool,
         _ makeOperator: (CustomConnectablePublisherBase<Value, Never>) -> Operator
     ) {
 
         let publisher = CustomConnectablePublisherBase<Value, Never>(subscription: nil)
-        let drop = makeOperator(publisher)
+        let operatorPublisher = makeOperator(publisher)
         let tracking = TrackingSubscriberBase<Operator.Output, Operator.Failure>()
-        drop.subscribe(tracking)
+        operatorPublisher.subscribe(tracking)
+
+        guard let subscription = publisher.erasedSubscriber as? Subscription else {
+            XCTFail("The subscriber must also be a subscription", file: file, line: line)
+            return
+        }
+
         if shouldCrash {
             assertCrashes {
-                XCTAssertEqual(publisher.send(value), .none)
+                subscription.request(.max(1))
             }
         } else {
-            XCTAssertEqual(publisher.send(value), .none)
+            subscription.request(.max(1))
+        }
+    }
+
+    func testCancelBeforeSubscription<Value, Operator: Publisher>(
+        file: StaticString = #file,
+        line: UInt = #line,
+        inputType: Value.Type,
+        shouldCrash: Bool,
+        _ makeOperator: (CustomConnectablePublisherBase<Value, Never>) -> Operator
+    ) {
+
+        let publisher = CustomConnectablePublisherBase<Value, Never>(subscription: nil)
+        let operatorPublisher = makeOperator(publisher)
+        let tracking = TrackingSubscriberBase<Operator.Output, Operator.Failure>()
+        operatorPublisher.subscribe(tracking)
+
+        guard let subscription = publisher.erasedSubscriber as? Subscription else {
+            XCTFail("The subscriber must also be a subscription", file: file, line: line)
+            return
+        }
+
+        if shouldCrash {
+            assertCrashes {
+                subscription.cancel()
+            }
+        } else {
+            subscription.cancel()
         }
     }
 
@@ -68,6 +171,25 @@ extension XCTest {
             .receive(subscription: thirdSubscription)
 
         XCTAssertEqual(thirdSubscription.history, [.cancelled])
+    }
+}
+
+@available(macOS 10.15, iOS 13.0, *)
+extension XCTestCase.ValueBeforeSubscriptionBehavior where Value: Equatable {
+    static func history(
+        _ history: [TrackingSubscriberBase<Value, Failure>.Event],
+        demand: Subscribers.Demand
+    ) -> XCTestCase.ValueBeforeSubscriptionBehavior<Value, Failure> {
+        return .history(history, demand: demand, comparator: ==)
+    }
+}
+
+@available(macOS 10.15, iOS 13.0, *)
+extension XCTestCase.CompletionBeforeSubscriptionBehavior where Value: Equatable {
+    static func history(
+        _ history: [TrackingSubscriberBase<Value, Failure>.Event]
+    ) -> XCTestCase.CompletionBeforeSubscriptionBehavior<Value, Failure> {
+        return .history(history, comparator: ==)
     }
 }
 

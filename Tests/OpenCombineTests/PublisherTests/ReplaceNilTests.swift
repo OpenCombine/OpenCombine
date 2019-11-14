@@ -89,8 +89,17 @@ final class ReplaceNilTests: XCTestCase {
 
     func testReplaceNilReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
+                                           expected: .history([.value(0)],
+                                                              demand: .max(42)),
                                            { $0.replaceNil(with: 1) })
+    }
+
+    func testReplaceNilCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int?.self,
+            expected: .history([.completion(.finished)]),
+            { $0.replaceNil(with: 1) }
+        )
     }
 
     func testReplaceNilReflection() throws {

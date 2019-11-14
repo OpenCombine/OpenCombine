@@ -34,7 +34,7 @@ import OpenCombine
 typealias CustomPublisher = CustomPublisherBase<Int, TestingError>
 
 @available(macOS 10.15, iOS 13.0, *)
-class CustomPublisherBase<Output: Equatable, Failure: Error>: Publisher {
+class CustomPublisherBase<Output, Failure: Error>: Publisher {
 
     private(set) var subscriber: AnySubscriber<Output, Failure>?
     private(set) var erasedSubscriber: Any?
@@ -61,7 +61,7 @@ class CustomPublisherBase<Output: Equatable, Failure: Error>: Publisher {
     }
 
     func send(completion: Subscribers.Completion<Failure>) {
-        subscriber!.receive(completion: completion)
+        subscriber?.receive(completion: completion)
     }
 }
 

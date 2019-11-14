@@ -17,7 +17,7 @@ import OpenCombine
 /// testing an operator.  It is initialized with a publisher type and creates a
 /// `CustomSubscription`, `CustomPublisherBase` and `TrackingSubscriberBase`.
 @available(macOS 10.15, iOS 13.0, *)
-class OperatorTestHelper<SourceValue: Equatable,
+class OperatorTestHelper<SourceValue,
                          SourceError: Error,
                          SourcePublisher,
                          Sut: Publisher>

@@ -198,8 +198,30 @@ final class ReplaceErrorTests: XCTestCase {
     }
 
     func testReplaceErrorReceiveValueBeforeSubscription() {
-        testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
-                                           { $0.replaceError(with: 1) })
+        testReceiveValueBeforeSubscription(
+            value: 0,
+            expected: .history([.subscription("ReplaceError")], demand: .none),
+            { $0.replaceError(with: 1) }
+        )
+    }
+
+    func testReplaceErrorCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([.subscription("ReplaceError"), .completion(.finished)]),
+            { $0.replaceError(with: 1) }
+        )
+    }
+
+    func testReplaceErrorRequestBeforeSubscription() {
+        testRequestBeforeSubscription(inputType: Int.self,
+                                      shouldCrash: false,
+                                      { $0.replaceError(with: 0) })
+    }
+
+    func testReplaceErrorCancelBeforeSubscription() {
+        testCancelBeforeSubscription(inputType: Int.self,
+                                     shouldCrash: false,
+                                     { $0.replaceError(with: 0) })
     }
 }

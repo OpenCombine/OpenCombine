@@ -72,8 +72,28 @@ final class ContainsTests: XCTestCase {
 
     func testContainsReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
+                                           expected: .history([], demand: .none),
                                            { $0.contains(0) })
+    }
+
+    func testContainsReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([]),
+            { $0.contains(0) }
+        )
+    }
+
+    func testContainsRequestBeforeSubscription() {
+        testRequestBeforeSubscription(inputType: Int.self,
+                                      shouldCrash: false,
+                                      { $0.contains(0) })
+    }
+
+    func testContainsCancelBeforeSubscription() {
+        testCancelBeforeSubscription(inputType: Int.self,
+                                     shouldCrash: false,
+                                     { $0.contains(0) })
     }
 
     func testContainsLifecycle() throws {
@@ -159,8 +179,28 @@ final class ContainsTests: XCTestCase {
 
     func testContainsWhereReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
+                                           expected: .history([], demand: .none),
                                            { $0.contains(where: shouldNotBeCalled()) })
+    }
+
+    func testContainsWhereReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([]),
+            { $0.contains(where: shouldNotBeCalled()) }
+        )
+    }
+
+    func testContainsWhereRequestBeforeSubscription() {
+        testRequestBeforeSubscription(inputType: Int.self,
+                                      shouldCrash: false,
+                                      { $0.contains(where: shouldNotBeCalled()) })
+    }
+
+    func testContainsWhereCancelBeforeSubscription() {
+        testCancelBeforeSubscription(inputType: Int.self,
+                                     shouldCrash: false,
+                                     { $0.contains(where: shouldNotBeCalled()) })
     }
 
     func testContainsWhereLifecycle() throws {
@@ -265,8 +305,28 @@ final class ContainsTests: XCTestCase {
 
     func testTryContainsWhereReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
+                                           expected: .history([], demand: .none),
                                            { $0.tryContains(where: shouldNotBeCalled()) })
+    }
+
+    func testTryContainsWhereReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([]),
+            { $0.tryContains(where: shouldNotBeCalled()) }
+        )
+    }
+
+    func testTryContainsWhereRequestBeforeSubscription() {
+        testRequestBeforeSubscription(inputType: Int.self,
+                                      shouldCrash: false,
+                                      { $0.tryContains(where: shouldNotBeCalled()) })
+    }
+
+    func testTryContainsWhereCancelBeforeSubscription() {
+        testCancelBeforeSubscription(inputType: Int.self,
+                                     shouldCrash: false,
+                                     { $0.tryContains(where: shouldNotBeCalled()) })
     }
 
     func testTryContainsWhereLifecycle() throws {
