@@ -117,8 +117,29 @@ final class PrintTests: XCTestCase {
 
     func testPrintReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
+                                           expected: .history([.value(0)],
+                                                              demand: .max(42)),
                                            { $0.print() })
+    }
+
+    func testPrintReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([.completion(.finished)]),
+            { $0.print() }
+        )
+    }
+
+    func testPrintRequestBeforeSubscription() {
+        testRequestBeforeSubscription(inputType: Int.self,
+                                      shouldCrash: false,
+                                      { $0.print() })
+    }
+
+    func testPrintCancelBeforeSubscription() {
+        testCancelBeforeSubscription(inputType: Int.self,
+                                     shouldCrash: false,
+                                     { $0.print() })
     }
 
     func testPrintLifecycle() throws {

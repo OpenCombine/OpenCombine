@@ -582,10 +582,18 @@ final class FlatMapTests: XCTestCase {
                                       sentDemandRequestUpstream])
     }
 
-    func testFlatMapeReceiveValueBeforeSubscription() {
+    func testFlatMapReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(
             value: 0,
-            shouldCrash: false,
+            expected: .history([.subscription("FlatMap")], demand: .none),
+            { $0.flatMap { _ in Just(0) } }
+        )
+    }
+
+    func testFlatMapReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([.subscription("FlatMap"), .completion(.finished)]),
             { $0.flatMap { _ in Just(0) } }
         )
     }

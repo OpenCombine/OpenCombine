@@ -50,8 +50,28 @@ final class CollectTests: XCTestCase {
 
     func testCollectReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
+                                           expected: .history([], demand: .none),
                                            { $0.collect() })
+    }
+
+    func testCollectReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([]),
+            { $0.collect() }
+        )
+    }
+
+    func testCollectRequestBeforeSubscription() {
+        testRequestBeforeSubscription(inputType: Int.self,
+                                      shouldCrash: false,
+                                      { $0.collect() })
+    }
+
+    func testCollectCancelBeforeSubscription() {
+        testCancelBeforeSubscription(inputType: Int.self,
+                                     shouldCrash: false,
+                                     { $0.collect() })
     }
 
     func testCollectLifecycle() throws {

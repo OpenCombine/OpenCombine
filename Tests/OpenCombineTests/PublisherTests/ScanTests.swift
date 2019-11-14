@@ -157,8 +157,17 @@ final class ScanTests: XCTestCase {
 
     func testScanReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
+                                           expected: .history([.value(0)],
+                                                              demand: .max(42)),
                                            { $0.scan(0, +) })
+    }
+
+    func testScanCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([.completion(.finished)]),
+            { $0.scan(0, shouldNotBeCalled()) }
+        )
     }
 
     func testScanLifecycle() throws {
@@ -313,8 +322,29 @@ final class ScanTests: XCTestCase {
 
     func testTryScanReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
+                                           expected: .history([.value(0)],
+                                                              demand: .max(42)),
                                            { $0.tryScan(0, +) })
+    }
+
+    func testTryScanRequestBeforeSubscription() {
+        testRequestBeforeSubscription(inputType: Int.self,
+                                      shouldCrash: false,
+                                      { $0.tryScan(0, shouldNotBeCalled()) })
+    }
+
+    func testTryScanCancelBeforeSubscription() {
+        testCancelBeforeSubscription(inputType: Int.self,
+                                     shouldCrash: false,
+                                     { $0.tryScan(0, shouldNotBeCalled()) })
+    }
+
+    func testTryScanCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([]),
+            { $0.tryScan(0, shouldNotBeCalled()) }
+        )
     }
 
     func testTryScanLifecycle() throws {

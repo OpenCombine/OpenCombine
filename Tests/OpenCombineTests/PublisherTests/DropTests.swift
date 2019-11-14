@@ -139,10 +139,33 @@ final class DropTests: XCTestCase {
                                                .cancelled])
     }
 
-    func testCountReceiveValueBeforeSubscription() {
-        testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
-                                           { $0.dropFirst(1) })
+    func testDropReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(
+            value: 0,
+            expected: .history([.subscription("Drop"), .value(0)],
+                               demand: .max(42)),
+            { $0.dropFirst(0) }
+        )
+    }
+
+    func testDropReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([.subscription("Drop"), .completion(.finished)]),
+            { $0.dropFirst(0) }
+        )
+    }
+
+    func testDropRequestBeforeSubscription() {
+        testRequestBeforeSubscription(inputType: Int.self,
+                                      shouldCrash: false,
+                                      { $0.dropFirst(0) })
+    }
+
+    func testDropCancelBeforeSubscription() {
+        testCancelBeforeSubscription(inputType: Int.self,
+                                     shouldCrash: false,
+                                     { $0.dropFirst(0) })
     }
 
     func testCancelAlreadyCancelled() throws {

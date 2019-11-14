@@ -51,8 +51,28 @@ final class ReduceTests: XCTestCase {
 
     func testReduceReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
+                                           expected: .history([], demand: .none),
                                            { $0.reduce(0, shouldNotBeCalled()) })
+    }
+
+    func testReduceReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([]),
+            { $0.reduce(0, shouldNotBeCalled()) }
+        )
+    }
+
+    func testReduceRequestBeforeSubscription() {
+        testRequestBeforeSubscription(inputType: Int.self,
+                                      shouldCrash: false,
+                                      { $0.reduce(0, shouldNotBeCalled()) })
+    }
+
+    func testReduceCancelBeforeSubscription() {
+        testCancelBeforeSubscription(inputType: Int.self,
+                                     shouldCrash: false,
+                                     { $0.reduce(0, shouldNotBeCalled()) })
     }
 
     func testReduceLifecycle() throws {
@@ -125,8 +145,28 @@ final class ReduceTests: XCTestCase {
 
     func testTryReduceReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
+                                           expected: .history([], demand: .none),
                                            { $0.tryReduce(0, shouldNotBeCalled()) })
+    }
+
+    func testTryReduceReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([]),
+            { $0.tryReduce(0, shouldNotBeCalled()) }
+        )
+    }
+
+    func testTryReduceRequestBeforeSubscription() {
+        testRequestBeforeSubscription(inputType: Int.self,
+                                      shouldCrash: false,
+                                      { $0.tryReduce(0, shouldNotBeCalled()) })
+    }
+
+    func testTryReduceCancelBeforeSubscription() {
+        testCancelBeforeSubscription(inputType: Int.self,
+                                     shouldCrash: false,
+                                     { $0.tryReduce(0, shouldNotBeCalled()) })
     }
 
     func testTryReduceLifecycle() throws {

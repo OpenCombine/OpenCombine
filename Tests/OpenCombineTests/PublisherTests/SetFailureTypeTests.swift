@@ -161,8 +161,17 @@ final class SetFailureTypeTests: XCTestCase {
 
     func testSetFailureTypeReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
+                                           expected: .history([.value(0)],
+                                                              demand: .max(42)),
                                            { $0.setFailureType(to: Error.self) })
+    }
+
+    func testSetFailureTypeCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([.completion(.finished)]),
+            { $0.setFailureType(to: Error.self) }
+        )
     }
 
     func testSetFailureTypeReflection() throws {

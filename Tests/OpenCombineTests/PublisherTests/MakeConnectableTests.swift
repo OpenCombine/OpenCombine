@@ -44,8 +44,18 @@ final class MakeConnectableTests: XCTestCase {
     }
 
     func testMakeConnectableReceiveValueBeforeSubscription() {
-        testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
-                                           { $0.makeConnectable() })
+        testReceiveValueBeforeSubscription(
+            value: 0,
+            expected: .history([.subscription("Multicast")], demand: .none),
+            { $0.makeConnectable() }
+        )
+    }
+
+    func testMakeConnectableReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([.subscription("Multicast")]),
+            { $0.makeConnectable() }
+        )
     }
 }

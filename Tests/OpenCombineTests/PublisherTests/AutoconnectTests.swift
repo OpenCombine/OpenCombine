@@ -121,8 +121,17 @@ final class AutoconnectTests: XCTestCase {
 
     func testAutoconnectReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
+                                           expected: .history([.value(0)],
+                                                              demand: .max(42)),
                                            { $0.autoconnect() })
+    }
+
+    func testAutoconnectReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([.completion(.finished)]),
+            { $0.autoconnect() }
+        )
     }
 
     func testAutoconnectReflection() throws {

@@ -186,6 +186,26 @@ final class OutputTests: XCTestCase {
                                           .completion(.finished)])
     }
 
+    func testOutputReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([]),
+            { $0.output(in: ..<10) }
+        )
+    }
+
+    func testOutputRequestBeforeSubscription() {
+        testRequestBeforeSubscription(inputType: Int.self,
+                                      shouldCrash: false,
+                                      { $0.output(in: 0 ..< 3) })
+    }
+
+    func testOutputCancelBeforeSubscription() {
+        testCancelBeforeSubscription(inputType: Int.self,
+                                     shouldCrash: false,
+                                     { $0.output(in: 0 ..< 3) })
+    }
+
     func testCancelAlreadyCancelled() throws {
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
                                         initialDemand: .unlimited,

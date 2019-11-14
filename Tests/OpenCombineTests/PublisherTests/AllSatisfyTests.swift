@@ -77,8 +77,28 @@ final class AllSatisfyTests: XCTestCase {
 
     func testAllSatisfyReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
+                                           expected: .history([], demand: .none),
                                            { $0.allSatisfy(shouldNotBeCalled()) })
+    }
+
+    func testAllSatisfyReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([]),
+            { $0.allSatisfy(shouldNotBeCalled()) }
+        )
+    }
+
+    func testAllSatisfyRequestBeforeSubscription() {
+        testRequestBeforeSubscription(inputType: Int.self,
+                                      shouldCrash: false,
+                                      { $0.allSatisfy(shouldNotBeCalled()) })
+    }
+
+    func testAllSatisfyCancelBeforeSubscription() {
+        testCancelBeforeSubscription(inputType: Int.self,
+                                     shouldCrash: false,
+                                     { $0.allSatisfy(shouldNotBeCalled()) })
     }
 
     func testAllSatisfyLifecycle() throws {
@@ -177,8 +197,28 @@ final class AllSatisfyTests: XCTestCase {
 
     func testTryAllSatisfyReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
+                                           expected: .history([], demand: .none),
                                            { $0.tryAllSatisfy(shouldNotBeCalled()) })
+    }
+
+    func testTryAllSatisfyReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([]),
+            { $0.tryAllSatisfy(shouldNotBeCalled()) }
+        )
+    }
+
+    func testTryAllSatisfyRequestBeforeSubscription() {
+        testRequestBeforeSubscription(inputType: Int.self,
+                                      shouldCrash: false,
+                                      { $0.tryAllSatisfy(shouldNotBeCalled()) })
+    }
+
+    func testTryAllSatisfyCancelBeforeSubscription() {
+        testCancelBeforeSubscription(inputType: Int.self,
+                                     shouldCrash: false,
+                                     { $0.tryAllSatisfy(shouldNotBeCalled()) })
     }
 
     func testTryAllSatisfyLifecycle() throws {

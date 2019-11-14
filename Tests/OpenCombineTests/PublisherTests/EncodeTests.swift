@@ -117,8 +117,29 @@ final class EncodeTests: XCTestCase {
 
     func testEncodeReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
+                                           expected: .history([.value(1)],
+                                                              demand: .max(42)),
                                            { $0.encode(encoder: encoder) })
+    }
+
+    func testEncodeReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([.completion(.finished)]),
+            { $0.encode(encoder: encoder) }
+        )
+    }
+
+    func testEncodeRequestBeforeSubscription() {
+        testRequestBeforeSubscription(inputType: Int.self,
+                                      shouldCrash: false,
+                                      { $0.encode(encoder: encoder) })
+    }
+
+    func testEncodeCancelBeforeSubscription() {
+        testCancelBeforeSubscription(inputType: Int.self,
+                                     shouldCrash: false,
+                                     { $0.encode(encoder: encoder) })
     }
 
     func testEncodeLifecycle() throws {
@@ -216,9 +237,29 @@ final class EncodeTests: XCTestCase {
     func testDecodeReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(
             value: 0,
-            shouldCrash: false,
+            expected: .history([.completion(.failure(TestDecoder.error))], demand: .none),
             { $0.decode(type: String.self, decoder: decoder) }
         )
+    }
+
+    func testDecodeReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([.completion(.finished)]),
+            { $0.decode(type: String.self, decoder: decoder) }
+        )
+    }
+
+    func testDecodeRequestBeforeSubscription() {
+        testRequestBeforeSubscription(inputType: Int.self,
+                                      shouldCrash: false,
+                                      { $0.decode(type: String.self, decoder: decoder) })
+    }
+
+    func testDecodeCancelBeforeSubscription() {
+        testCancelBeforeSubscription(inputType: Int.self,
+                                     shouldCrash: false,
+                                     { $0.decode(type: String.self, decoder: decoder) })
     }
 
     func testDecodeLifecycle() throws {

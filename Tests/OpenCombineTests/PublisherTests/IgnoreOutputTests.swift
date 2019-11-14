@@ -172,8 +172,28 @@ final class IgnoreOutputTests: XCTestCase {
 
     func testIgnoreOutputReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
+                                           expected: .history([], demand: .none),
                                            { $0.ignoreOutput() })
+    }
+
+    func testIgnoreOutputReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([]),
+            { $0.ignoreOutput() }
+        )
+    }
+
+    func testIgnoreOutputRequestBeforeSubscription() {
+        testRequestBeforeSubscription(inputType: Int.self,
+                                      shouldCrash: false,
+                                      { $0.ignoreOutput() })
+    }
+
+    func testIgnoreOutputCancelBeforeSubscription() {
+        testCancelBeforeSubscription(inputType: Int.self,
+                                     shouldCrash: false,
+                                     { $0.ignoreOutput() })
     }
 
     func testIgnoreOutputLifecycle() throws {

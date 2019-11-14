@@ -98,8 +98,28 @@ final class FirstTests: XCTestCase {
 
     func testFirstReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
+                                           expected: .history([], demand: .none),
                                            { $0.first() })
+    }
+
+    func testFirstReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([]),
+            { $0.first() }
+        )
+    }
+
+    func testFirstRequestBeforeSubscription() {
+        testRequestBeforeSubscription(inputType: Int.self,
+                                      shouldCrash: false,
+                                      { $0.first() })
+    }
+
+    func testFirstCancelBeforeSubscription() {
+        testCancelBeforeSubscription(inputType: Int.self,
+                                     shouldCrash: false,
+                                     { $0.first() })
     }
 
     func testFirstLifecycle() throws {
@@ -231,8 +251,28 @@ final class FirstTests: XCTestCase {
 
     func testFirstWhereReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
+                                           expected: .history([], demand: .none),
                                            { $0.first(where: shouldNotBeCalled()) })
+    }
+
+    func testFirstWhereReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([]),
+            { $0.first(where: shouldNotBeCalled()) }
+        )
+    }
+
+    func testFirstWhereRequestBeforeSubscription() {
+        testRequestBeforeSubscription(inputType: Int.self,
+                                      shouldCrash: false,
+                                      { $0.first(where: shouldNotBeCalled()) })
+    }
+
+    func testFirstWhereCancelBeforeSubscription() {
+        testCancelBeforeSubscription(inputType: Int.self,
+                                     shouldCrash: false,
+                                     { $0.first(where: shouldNotBeCalled()) })
     }
 
     func testFirstWhereLifecycle() throws {
@@ -379,8 +419,28 @@ final class FirstTests: XCTestCase {
 
     func testTryFirstWhereReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
+                                           expected: .history([], demand: .none),
                                            { $0.tryFirst(where: shouldNotBeCalled()) })
+    }
+
+    func testTryFirstWhereReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([]),
+            { $0.tryFirst(where: shouldNotBeCalled()) }
+        )
+    }
+
+    func testTryFirstWhereRequestBeforeSubscription() {
+        testRequestBeforeSubscription(inputType: Int.self,
+                                      shouldCrash: false,
+                                      { $0.tryFirst(where: shouldNotBeCalled()) })
+    }
+
+    func testTryFirstWhereCancelBeforeSubscription() {
+        testCancelBeforeSubscription(inputType: Int.self,
+                                     shouldCrash: false,
+                                     { $0.tryFirst(where: shouldNotBeCalled()) })
     }
 
     func testTryFirstWhereLifecycle() throws {

@@ -152,16 +152,41 @@ final class MapKeyPathTests: XCTestCase {
 
     func testMapKeyPathReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
+                                           expected: .history([.value(0)],
+                                                              demand: .max(42)),
                                            { $0.map(\.doubled) })
 
         testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
+                                           expected: .history([.value((0, 0))],
+                                                              demand: .max(42),
+                                                              comparator: ==),
                                            { $0.map(\.doubled, \.tripled) })
 
         testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
+                                           expected: .history([.value((0, 0, 0))],
+                                                              demand: .max(42),
+                                                              comparator: ==),
                                            { $0.map(\.doubled, \.tripled, \.quadripled) })
+    }
+
+    func testMapKeyPathReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([.completion(.finished)]),
+            { $0.map(\.doubled) }
+        )
+
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([.completion(.finished)], comparator: ==),
+            { $0.map(\.doubled, \.tripled) }
+        )
+
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([.completion(.finished)], comparator: ==),
+            { $0.map(\.doubled, \.tripled, \.quadripled) }
+        )
     }
 
     func testMapKeyPathLifecycle() throws {

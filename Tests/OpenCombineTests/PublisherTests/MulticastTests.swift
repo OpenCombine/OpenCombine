@@ -309,9 +309,19 @@ final class MulticastTests: XCTestCase {
     }
 
     func testMulticastReceiveValueBeforeSubscription() {
-        testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
-                                           { $0.multicast(PassthroughSubject.init) })
+        testReceiveValueBeforeSubscription(
+            value: 0,
+            expected: .history([.subscription("Multicast")], demand: .none),
+            { $0.multicast(PassthroughSubject.init) }
+        )
+    }
+
+    func testMulticastReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([.subscription("Multicast")]),
+            { $0.multicast(PassthroughSubject.init) }
+        )
     }
 
     func testReflection() throws {

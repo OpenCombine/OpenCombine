@@ -42,8 +42,28 @@ final class DropWhileTests: XCTestCase {
 
     func testDropWhileReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
+                                           expected: .history([], demand: .none),
                                            { $0.drop(while: shouldNotBeCalled()) })
+    }
+
+    func testDropWhileReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([]),
+            { $0.drop(while: shouldNotBeCalled()) }
+        )
+    }
+
+    func testDropWhileRequestBeforeSubscription() {
+        testRequestBeforeSubscription(inputType: Int.self,
+                                      shouldCrash: false,
+                                      { $0.drop(while: shouldNotBeCalled()) })
+    }
+
+    func testDropWhileCancelBeforeSubscription() {
+        testCancelBeforeSubscription(inputType: Int.self,
+                                     shouldCrash: false,
+                                     { $0.drop(while: shouldNotBeCalled()) })
     }
 
     func testDropWhileReceiveSubscriptionTwice() throws {
@@ -98,8 +118,28 @@ final class DropWhileTests: XCTestCase {
 
     func testTryDropWhileReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 0,
-                                           shouldCrash: false,
+                                           expected: .history([], demand: .none),
                                            { $0.tryDrop(while: shouldNotBeCalled()) })
+    }
+
+    func testTryDropWhileReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([]),
+            { $0.tryDrop(while: shouldNotBeCalled()) }
+        )
+    }
+
+    func testTryDropWhileRequestBeforeSubscription() {
+        testRequestBeforeSubscription(inputType: Int.self,
+                                      shouldCrash: false,
+                                      { $0.tryDrop(while: shouldNotBeCalled()) })
+    }
+
+    func testTryDropWhileCancelBeforeSubscription() {
+        testCancelBeforeSubscription(inputType: Int.self,
+                                     shouldCrash: false,
+                                     { $0.tryDrop(while: shouldNotBeCalled()) })
     }
 
     func testTryDropWhileReceiveSubscriptionTwice() throws {

@@ -132,4 +132,18 @@ final class ShareTests: XCTestCase {
         XCTAssertNotEqual(share1, share2)
         XCTAssertNotEqual(share2, share1)
     }
+
+    func testShareReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 0,
+                                           expected: .crash,
+                                           { $0.share() })
+    }
+
+    func testShareCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .crash,
+            { $0.share() }
+        )
+    }
 }
