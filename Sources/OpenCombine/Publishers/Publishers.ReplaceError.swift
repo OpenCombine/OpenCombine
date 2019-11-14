@@ -54,7 +54,9 @@ extension Publishers {
         public func receive<Downstream: Subscriber>(subscriber: Downstream)
             where Upstream.Output == Downstream.Input, Downstream.Failure == Failure
         {
-            upstream.subscribe(Inner(downstream: subscriber, output: output))
+            let inner = Inner(downstream: subscriber, output: output)
+            upstream.subscribe(inner)
+            subscriber.receive(subscription: inner)
         }
     }
 }
@@ -102,8 +104,11 @@ extension Publishers.ReplaceError {
                 return
             }
             status = .subscribed(subscription)
+            let pendingDemand = self.pendingDemand
             lock.unlock()
-            downstream.receive(subscription: self)
+            if pendingDemand > 0 {
+                subscription.request(pendingDemand)
+            }
         }
 
         func receive(_ input: Upstream.Output) -> Subscribers.Demand {
