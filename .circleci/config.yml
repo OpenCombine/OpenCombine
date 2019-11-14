@@ -150,9 +150,9 @@ jobs:
       - run:
           name: Installing dependencies
           command: |
-            apt update
-            apt upgrade
-            apt install curl
+            apt update -y
+            apt upgrade -y
+            apt install -y curl
       - run:
           name: Building and running tests in debug mode with coverage
           command: | # We need to run the test command twice because of https://bugs.swift.org/browse/SR-10783
