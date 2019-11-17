@@ -27,6 +27,7 @@ class PlatformIndependentMutex {
 public:
     virtual void lock() = 0;
     virtual void unlock() = 0;
+    virtual void assertOwner() {}
 
     virtual ~PlatformIndependentMutex() {}
 };
@@ -64,6 +65,10 @@ public:
 
     void unlock() override {
         os_unfair_lock_unlock(&mutex_);
+    }
+
+    void assertOwner() override {
+        os_unfair_lock_assert_owner(&mutex_);
     }
 };
 #endif // __APPLE__
@@ -108,6 +113,12 @@ void opencombine_unfair_lock_lock(OpenCombineUnfairLock lock) {
 void opencombine_unfair_lock_unlock(OpenCombineUnfairLock mutex) {
     OPENCOMBINE_HANDLE_EXCEPTION_BEGIN
     static_cast<PlatformIndependentMutex*>(mutex.opaque)->unlock();
+    OPENCOMBINE_HANDLE_EXCEPTION_END
+}
+
+void opencombine_unfair_lock_assert_owner(OpenCombineUnfairLock mutex) {
+    OPENCOMBINE_HANDLE_EXCEPTION_BEGIN
+    static_cast<PlatformIndependentMutex*>(mutex.opaque)->assertOwner();
     OPENCOMBINE_HANDLE_EXCEPTION_END
 }
 

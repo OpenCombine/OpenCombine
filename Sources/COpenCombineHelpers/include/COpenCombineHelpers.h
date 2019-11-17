@@ -43,6 +43,9 @@ void opencombine_unfair_lock_lock(OpenCombineUnfairLock)
 void opencombine_unfair_lock_unlock(OpenCombineUnfairLock)
     OPENCOMBINE_SWIFT_NAME(UnfairLock.unlock(self:));
 
+void opencombine_unfair_lock_assert_owner(OpenCombineUnfairLock mutex)
+    OPENCOMBINE_SWIFT_NAME(UnfairLock.assertOwner(self:));
+
 void opencombine_unfair_lock_dealloc(OpenCombineUnfairLock lock)
     OPENCOMBINE_SWIFT_NAME(UnfairLock.deallocate(self:));
 
