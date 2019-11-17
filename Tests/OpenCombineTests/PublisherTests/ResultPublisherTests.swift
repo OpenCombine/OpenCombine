@@ -16,32 +16,7 @@ import OpenCombine
 @available(macOS 10.15, iOS 13.0, *)
 final class ResultPublisherTests: XCTestCase {
 
-#if OPENCOMBINE_COMPATIBILITY_TEST || !canImport(Combine)
-    private typealias ResultPublisher<Output, Failure: Error> =
-        Result<Output, Failure>.Publisher
-
-    private func makePublisher<Output, Failure: Error>(
-        _ result: Result<Output, Failure>
-    ) -> ResultPublisher<Output, Failure> {
-        return result.publisher
-    }
-#else
-    private typealias ResultPublisher<Output, Failure: Error> =
-        Result<Output, Failure>.OCombine.Publisher
-
-    private func makePublisher<Output, Failure: Error>(
-        _ result: Result<Output, Failure>
-    ) -> ResultPublisher<Output, Failure> {
-        return result.ocombine.publisher
-    }
-#endif
     private typealias Sut<Output> = ResultPublisher<Output, TestingError>
-
-    private func makePublisher<Output>(
-        _ output: Output
-    ) -> ResultPublisher<Output, TestingError> {
-        return makePublisher(.success(output))
-    }
 
     func testOnceSuccessNoInitialDemand() {
         let success = makePublisher(42)
@@ -448,4 +423,33 @@ final class ResultPublisherTests: XCTestCase {
             73
         )
     }
+}
+
+#if OPENCOMBINE_COMPATIBILITY_TEST || !canImport(Combine)
+@available(macOS 10.15, iOS 13.0, *)
+typealias ResultPublisher<Output, Failure: Error> =
+    Result<Output, Failure>.Publisher
+
+@available(macOS 10.15, iOS 13.0, *)
+func makePublisher<Output, Failure: Error>(
+    _ result: Result<Output, Failure>
+) -> ResultPublisher<Output, Failure> {
+    return result.publisher
+}
+#else
+typealias ResultPublisher<Output, Failure: Error> =
+    Result<Output, Failure>.OCombine.Publisher
+
+func makePublisher<Output, Failure: Error>(
+    _ result: Result<Output, Failure>
+) -> ResultPublisher<Output, Failure> {
+    return result.ocombine.publisher
+}
+#endif
+
+@available(macOS 10.15, iOS 13.0, *)
+private func makePublisher<Output>(
+    _ output: Output
+) -> ResultPublisher<Output, TestingError> {
+    return makePublisher(.success(output))
 }
