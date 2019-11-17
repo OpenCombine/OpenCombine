@@ -40,6 +40,8 @@ class CustomPublisherBase<Output, Failure: Error>: Publisher {
     private(set) var erasedSubscriber: Any?
     private let subscription: Subscription?
 
+    var onSubscribe: ((AnySubscriber<Output, Failure>) -> Void)?
+
     required init(subscription: Subscription?) {
         self.subscription = subscription
     }
@@ -47,7 +49,9 @@ class CustomPublisherBase<Output, Failure: Error>: Publisher {
     func receive<Downstream: Subscriber>(subscriber: Downstream)
         where Failure == Downstream.Failure, Output == Downstream.Input
     {
-        self.subscriber = AnySubscriber(subscriber)
+        let anySubscriber = AnySubscriber(subscriber)
+        self.subscriber = anySubscriber
+        onSubscribe?(anySubscriber)
         erasedSubscriber = subscriber
         subscription.map(subscriber.receive(subscription:))
     }

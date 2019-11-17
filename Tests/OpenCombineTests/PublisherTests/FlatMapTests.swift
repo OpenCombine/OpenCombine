@@ -12,39 +12,78 @@ import Combine
 import OpenCombine
 #endif
 
-/// Helper function for predictably testing concurrency/race scenarios.
-/// - Parameter block: block to execute concurrently
-///
-/// Apple, surprisingly, calls out to subscribers with a lock held. This will absolutely
-/// block children who send values concurrently until the current downstream value
-/// delivery has been completed.
-///
-/// This means that, without a timeout, the code below is guaranteed to deadlock. Because
-/// of this we need to choose a timeout that is low enough to not materially slow down the
-/// tests, but long enough to ensure that we are effectively testing the desired race
-/// conditions. It needs to be a long enough timeout to allow the caller's block to begin
-/// executing.
-///
-/// I understand that timeouts like this are a smell. I'd be happy to entertain other ways
-/// to deterministically test concurrency/race conditions.
-
-private func performConcurrentBlock(_ block: @escaping () -> Void) {
-    let sem = DispatchSemaphore(value: 0)
-    DispatchQueue.global(qos: .background).async {
-        block()
-        sem.signal()
-    }
-    #if OPENCOMBINE_COMPATIBILITY_TEST
-    // If running in compatibility mode, assert that we got a timeout. If not, Apple
-    // changed their implementation to not call out with a lock held.
-    XCTAssertEqual(sem.wait(timeout: DispatchTime.now() + 0.01), .timedOut)
-    #else
-    sem.wait()
-    #endif
-}
-
 @available(macOS 10.15, iOS 13.0, *)
 final class FlatMapTests: XCTestCase {
+
+    func testFlatMapSequencesWithSink() {
+        var history = [Int]()
+        let cancellable = Publishers.Sequence<Range<Int>, Never>(sequence: 1 ..< 5)
+            .flatMap { i in
+                Publishers.Sequence(sequence: i ..< i + 4)
+            }.sink {
+                history.append($0)
+            }
+
+        XCTAssertEqual(history, [1, 2, 3, 4, 2, 3, 4, 5, 3, 4, 5, 6, 4, 5, 6, 7])
+
+        cancellable.cancel()
+    }
+
+    func testFlatMapOneByOne() {
+        let sequence = Publishers.Sequence<Range<Int>, Never>(sequence: 1 ..< 5)
+            .flatMap(maxPublishers: .max(2)) { i in
+                Publishers.Sequence(sequence: i ..< i + 4)
+            }
+
+        let tracking = TrackingSubscriberBase<Int, Never>(
+            receiveSubscription: { $0.request(.max(1)) },
+            receiveValue: { _ in .max(1) }
+        )
+        sequence.subscribe(tracking)
+
+        XCTAssertEqual(tracking.history, [.subscription("FlatMap"),
+                                          .value(1),
+                                          .value(2),
+                                          .value(3),
+                                          .value(4),
+                                          .value(2),
+                                          .value(3),
+                                          .value(4),
+                                          .value(5),
+                                          .value(3),
+                                          .value(4),
+                                          .value(5),
+                                          .value(6),
+                                          .value(4),
+                                          .value(5),
+                                          .value(6),
+                                          .value(7),
+                                          .completion(.finished)])
+    }
+
+    func testSendsSubscriptionDownstreamBeforeSubscribingToUpstream() {
+        let subscription = CustomSubscription()
+        let upstream = CustomPublisher(subscription: subscription)
+        let flatMap = upstream.flatMap(maxPublishers: .none) { _ in
+            CustomPublisher(subscription: nil)
+        }
+        var downstreamReceivedSubscription = false
+        var upstreamReceivedSubscriber = false
+        let tracking = TrackingSubscriber(
+            receiveSubscription: { _ in
+                downstreamReceivedSubscription = true
+                XCTAssertNil(upstream.erasedSubscriber)
+            }
+        )
+        upstream.onSubscribe = { _ in
+            upstreamReceivedSubscriber = true
+            XCTAssertEqual(tracking.history, [.subscription("FlatMap")])
+        }
+        flatMap.subscribe(tracking)
+        XCTAssert(downstreamReceivedSubscription)
+        XCTAssert(upstreamReceivedSubscriber)
+        XCTAssertEqual(subscription.history, [.requested(.none)])
+    }
 
     func testSendsChildValues() {
         let upstreamPublisher = PassthroughSubject<
@@ -131,6 +170,58 @@ final class FlatMapTests: XCTestCase {
         XCTAssertEqual(childSubscription.history.last, .cancelled)
     }
 
+    func testCancelTwice() throws {
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisherBase<CustomPublisher, TestingError>.self,
+            initialDemand: .max(10),
+            receiveValueDemand: .max(3),
+            createSut: { $0.flatMap { $0 } })
+
+        let childSubscription = CustomSubscription()
+        XCTAssertEqual(
+            helper.publisher.send(CustomPublisher(subscription: childSubscription)),
+            .none
+        )
+        XCTAssertEqual(
+            helper.publisher.send(CustomPublisher(subscription: childSubscription)),
+            .none
+        )
+        XCTAssertEqual(
+            helper.publisher.send(CustomPublisher(subscription: childSubscription)),
+            .none
+        )
+
+        XCTAssertEqual(childSubscription.history, [.requested(.max(1)),
+                                                   .requested(.max(1)),
+                                                   .requested(.max(1))])
+
+        try XCTUnwrap(helper.downstreamSubscription).cancel()
+        try XCTUnwrap(helper.downstreamSubscription).request(.unlimited)
+        try XCTUnwrap(helper.downstreamSubscription).cancel()
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
+                                                     .cancelled])
+
+        XCTAssertEqual(childSubscription.history, [.requested(.max(1)),
+                                                   .requested(.max(1)),
+                                                   .requested(.max(1)),
+                                                   .cancelled,
+                                                   .cancelled,
+                                                   .cancelled])
+    }
+
+    func testCrashesWhenRequestedZeroDemand() {
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisher.self,
+            initialDemand: nil,
+            receiveValueDemand: .none,
+            createSut: { $0.flatMap { _ in CustomPublisher(subscription: nil) } }
+        )
+
+        assertCrashes {
+            helper.downstreamSubscription?.request(.none)
+        }
+    }
+
     func testUpstreamDemandWithMaxPublishers() {
         var upstreamDemand = Subscribers.Demand.none
         let upstreamSubscription = CustomSubscription(onRequest: { upstreamDemand += $0 })
@@ -191,7 +282,9 @@ final class FlatMapTests: XCTestCase {
         let upstreamPublisher = PassthroughSubject<AnyPublisher<Int, Never>, Never>()
 
         var child1Demand = Subscribers.Demand.none
-        let child1Subscription = CustomSubscription(onRequest: { child1Demand += $0 })
+        let child1Subscription = CustomSubscription(onRequest: {
+            child1Demand += $0
+        })
         let child1Publisher = CustomPublisherBase<Int, Never>(
             subscription: child1Subscription)
 
@@ -305,18 +398,10 @@ final class FlatMapTests: XCTestCase {
 
         let flatMap = upstreamPublisher.flatMap { $0 }
 
-        let received777Sem = DispatchSemaphore(value: 0)
-
         let downstreamSubscriber = TrackingSubscriber(
             receiveSubscription: { $0.request(.max(2)) },
-            receiveValue: {
-                if $0 == 666 {
-                    performConcurrentBlock {
-                        XCTAssertEqual(child2Publisher.send(777), .max(1))
-                    }
-                } else if $0 == 777 {
-                    received777Sem.signal()
-                }
+            receiveValue: { _ in
+                _ = child2Publisher.send(777)
                 return .none
             }
         )
@@ -326,11 +411,73 @@ final class FlatMapTests: XCTestCase {
         upstreamPublisher.send(AnyPublisher(child1Publisher))
         upstreamPublisher.send(AnyPublisher(child2Publisher))
 
-        XCTAssertEqual(child1Publisher.send(666), .max(1))
-        received777Sem.wait()
-        XCTAssertEqual(downstreamSubscriber.history, [.subscription("FlatMap"),
-                                                      .value(666),
-                                                      .value(777)])
+        assertCrashes {
+            XCTAssertEqual(child1Publisher.send(666), .max(1))
+        }
+    }
+
+    func testOuterLockReentrance() {
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisherBase<CustomPublisher, TestingError>.self,
+            initialDemand: nil,
+            receiveValueDemand: .none,
+            createSut: { $0.flatMap(maxPublishers: .max(1)) { $0 } }
+        )
+
+        let childSubscription = CustomSubscription()
+        let child = CustomPublisher(subscription: childSubscription)
+
+        // If Apple changes the implementation to use recursive lock,
+        // we must make sure no stack overflow occurs here,
+        // which will also be detected as a crash, which is not what we want.
+        var recursionDepth = 10
+        helper.subscription.onRequest = { _ in
+            if recursionDepth <= 0 {
+                return
+            }
+            recursionDepth -= 1
+            child.send(completion: .finished)
+        }
+
+        XCTAssertEqual(helper.publisher.send(child), .none)
+
+        assertCrashes {
+            child.send(completion: .finished)
+        }
+    }
+
+    func testDownstreamLockReentrance() throws {
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisherBase<CustomPublisher, TestingError>.self,
+            initialDemand: nil,
+            receiveValueDemand: .none,
+            createSut: { $0.flatMap(maxPublishers: .max(1)) { $0 } }
+        )
+
+        let childSubscription = CustomSubscription()
+        let child = CustomPublisher(subscription: childSubscription)
+
+        XCTAssertEqual(helper.publisher.send(child), .none)
+
+        // Create some downstream demand
+        try XCTUnwrap(helper.downstreamSubscription).request(.max(5))
+
+        // If Apple changes the implementation to use recursive lock,
+        // we must make sure no stack overflow occurs here,
+        // which will also be detected as a crash, which is not what we want.
+        var recursionDepth = 10
+        helper.tracking.onFailure = { _ in
+            if recursionDepth <= 0 {
+                return
+            }
+            recursionDepth -= 1
+            _ = child.send(1)
+        }
+
+        // Expected deadlock
+        assertCrashes {
+            child.send(completion: .failure(.oops))
+        }
     }
 
     func testCompletesProperlyWhenUpstreamOutlivesChildren() {
@@ -372,41 +519,103 @@ final class FlatMapTests: XCTestCase {
                                           .completion(.finished)])
     }
 
+    func testDownstreamFinishesWhenUpstreamAndChildFinishes() {
+        let childSubscription = CustomSubscription()
+        let child = CustomPublisher(subscription: childSubscription)
+
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisherBase<CustomPublisher, TestingError>.self,
+            initialDemand: nil,
+            receiveValueDemand: .none,
+            createSut: { $0.flatMap(maxPublishers: .max(1)) { $0 } }
+        )
+
+        XCTAssertEqual(helper.publisher.send(child), .none)
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(1))])
+        XCTAssertEqual(childSubscription.history, [.requested(.max(1))])
+
+        helper.publisher.send(completion: .finished)
+
+        XCTAssertEqual(helper.tracking.history, [.subscription("FlatMap")])
+
+        child.send(completion: .finished)
+
+        XCTAssertEqual(helper.tracking.history, [.subscription("FlatMap"),
+                                                 .completion(.finished)])
+
+        child.send(completion: .finished)
+
+        XCTAssertEqual(helper.tracking.history, [.subscription("FlatMap"),
+                                                 .completion(.finished)])
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(1))])
+        XCTAssertEqual(childSubscription.history, [.requested(.max(1))])
+    }
+
+    func testUpstreamFinishesWhenThereArePendingChildSubscriptions() {
+        let childSubscription = CustomSubscription()
+        let child = CustomPublisher(subscription: childSubscription)
+
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisherBase<CustomPublisher, TestingError>.self,
+            initialDemand: nil,
+            receiveValueDemand: .none,
+            createSut: { $0.flatMap(maxPublishers: .max(1)) { $0 } }
+        )
+
+        child.onSubscribe = { subscriber in
+            helper.publisher.send(completion: .finished)
+        }
+
+        XCTAssertEqual(helper.publisher.send(child), .none)
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(1))])
+        XCTAssertEqual(childSubscription.history, [.requested(.max(1))])
+        XCTAssertEqual(helper.tracking.history, [.subscription("FlatMap")])
+    }
+
     func testCompletesProperlyWhenChildrenOutliveUpstream() {
-        let upstreamPublisher = PassthroughSubject<AnyPublisher<Int, Never>, Never>()
-        let child1 = PassthroughSubject<Int, Never>()
-        let child2 = PassthroughSubject<Int, Never>()
-        let flatMap = upstreamPublisher.flatMap { $0 }
-        let downstreamSubscriber = TrackingSubscriberBase<Int, Never>(
-            receiveSubscription: { $0.request(.unlimited) })
+        let childSubscription1 = CustomSubscription()
+        let child1 = CustomPublisher(subscription: childSubscription1)
+        let childSubscription2 = CustomSubscription()
+        let child2 = CustomPublisher(subscription: childSubscription2)
 
-        flatMap.subscribe(downstreamSubscriber)
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisherBase<CustomPublisher, TestingError>.self,
+            initialDemand: .unlimited,
+            receiveValueDemand: .none,
+            createSut: { $0.flatMap { $0 } }
+        )
 
-        upstreamPublisher.send(AnyPublisher(child1))
-        upstreamPublisher.send(AnyPublisher(child2))
+        XCTAssertEqual(helper.publisher.send(child1), .none)
+        XCTAssertEqual(helper.publisher.send(child2), .none)
 
-        XCTAssertEqual(downstreamSubscriber.history, [.subscription("FlatMap")])
+        XCTAssertEqual(helper.tracking.history, [.subscription("FlatMap")])
 
-        upstreamPublisher.send(completion: .finished)
+        helper.publisher.send(completion: .finished)
 
         // Better stay alive even after upstream finished
-        XCTAssertEqual(downstreamSubscriber.history, [.subscription("FlatMap")])
+        XCTAssertEqual(helper.tracking.history, [.subscription("FlatMap")])
 
-        child1.send(666)
+        XCTAssertEqual(child1.send(666), .none)
         child1.send(completion: .finished)
 
         // Better stay alive even after upstream and one child finished
-        XCTAssertEqual(downstreamSubscriber.history, [.subscription("FlatMap"),
-                                          .value(666)])
+        XCTAssertEqual(helper.tracking.history, [.subscription("FlatMap"),
+                                                 .value(666)])
 
-        child2.send(777)
+        XCTAssertEqual(child1.send(777), .none)
         child2.send(completion: .finished)
 
         // Better complete when upstream and all children finished
-        XCTAssertEqual(downstreamSubscriber.history, [.subscription("FlatMap"),
-                                          .value(666),
-                                          .value(777),
-                                          .completion(.finished)])
+        XCTAssertEqual(helper.tracking.history, [.subscription("FlatMap"),
+                                                 .value(666),
+                                                 .value(777),
+                                                 .completion(.finished)])
+
+        XCTAssertEqual(childSubscription1.history, [.requested(.unlimited)])
+        XCTAssertEqual(childSubscription2.history, [.requested(.unlimited)])
     }
 
     func testDoesNotCompleteWithBufferedValues() {
@@ -448,35 +657,79 @@ final class FlatMapTests: XCTestCase {
     }
 
     func testFailsIfUpstreamFails() {
-        let upstreamPublisher = PassthroughSubject<
-            AnyPublisher<Int, TestingError>,
-            TestingError>()
-        let flatMap = upstreamPublisher.flatMap { $0 }
-        let downstreamSubscriber = TrackingSubscriberBase<Int, TestingError>(
-            receiveSubscription: { $0.request(.unlimited) })
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisherBase<CustomPublisher, TestingError>.self,
+            initialDemand: .max(4),
+            receiveValueDemand: .max(2),
+            createSut: { $0.flatMap(maxPublishers: .max(3)) { $0 } }
+        )
 
-        flatMap.subscribe(downstreamSubscriber)
+        let childSubscription = CustomSubscription()
+        let child1 = CustomPublisher(subscription: childSubscription)
 
-        upstreamPublisher.send(completion: .failure(TestingError.oops))
+        helper.tracking.onFailure = { _ in
+            XCTAssertEqual(
+                childSubscription.history,
+                [.requested(.max(1)), .cancelled],
+                """
+                Failure should be sent downstream after the child subscriptions were \
+                cancelled
+                """)
+        }
 
-        XCTAssertEqual(downstreamSubscriber.history, [.subscription("FlatMap"),
-                                          .completion(.failure(TestingError.oops))])
+        XCTAssertEqual(helper.publisher.send(child1), .none)
+
+        XCTAssertEqual(childSubscription.history, [.requested(.max(1))])
+
+        helper.publisher.send(completion: .failure(TestingError.oops))
+        helper.publisher.send(completion: .failure(TestingError.oops))
+
+        let child2 = CustomPublisher(subscription: nil)
+        XCTAssertEqual(helper.publisher.send(child2), .none)
+
+        XCTAssertEqual(childSubscription.history, [.requested(.max(1)), .cancelled])
+        XCTAssertEqual(helper.tracking.history, [.subscription("FlatMap"),
+                                                 .completion(.failure(.oops))])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(3))])
+        XCTAssertNil(child2.erasedSubscriber)
     }
 
     func testFailsIfChildFails() {
-        let upstream = PassthroughSubject<AnyPublisher<Int, TestingError>, TestingError>()
-        let child = PassthroughSubject<Int, TestingError>()
-        let flatMap = upstream.flatMap { $0 }
-        let tracking = TrackingSubscriberBase<Int, TestingError>(
-            receiveSubscription: { $0.request(.unlimited) })
+        let childSubscription1 = CustomSubscription()
+        let child1 = CustomPublisher(subscription: childSubscription1)
+        let childSubscription2 = CustomSubscription()
+        let child2 = CustomPublisher(subscription: childSubscription2)
+        let childSubscription3 = CustomSubscription()
+        let child3 = CustomPublisher(subscription: childSubscription3)
 
-        flatMap.subscribe(tracking)
-        upstream.send(AnyPublisher(child))
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisherBase<CustomPublisher, TestingError>.self,
+            initialDemand: .unlimited,
+            receiveValueDemand: .none,
+            createSut: { $0.flatMap { $0 } }
+        )
+        XCTAssertEqual(helper.publisher.send(child1), .none)
+        XCTAssertEqual(helper.publisher.send(child2), .none)
+        XCTAssertEqual(helper.publisher.send(child3), .none)
 
-        child.send(completion: .failure(TestingError.oops))
+        child2.send(completion: .failure(TestingError.oops))
 
-        XCTAssertEqual(tracking.history, [.subscription("FlatMap"),
-                                          .completion(.failure(TestingError.oops))])
+        XCTAssertEqual(childSubscription1.history, [.requested(.unlimited), .cancelled])
+        XCTAssertEqual(childSubscription2.history, [.requested(.unlimited)])
+        XCTAssertEqual(childSubscription3.history, [.requested(.unlimited), .cancelled])
+
+        XCTAssertEqual(helper.tracking.history, [.subscription("FlatMap"),
+                                                 .completion(.failure(.oops))])
+
+        child3.send(completion: .failure(TestingError.oops))
+
+        XCTAssertEqual(childSubscription1.history, [.requested(.unlimited), .cancelled])
+        XCTAssertEqual(childSubscription2.history, [.requested(.unlimited)])
+        XCTAssertEqual(childSubscription3.history, [.requested(.unlimited), .cancelled])
+
+        XCTAssertEqual(helper.tracking.history,
+                       [.subscription("FlatMap"),
+                        .completion(.failure(TestingError.oops))])
     }
 
     func testFailsWithoutSendingBufferedValues() {
@@ -563,6 +816,130 @@ final class FlatMapTests: XCTestCase {
         XCTAssertEqual(upstreamSubscription.history, [.requested(.unlimited)])
     }
 
+    func testRecursiveRequest() throws {
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisherBase<CustomPublisher, TestingError>.self,
+            initialDemand: nil,
+            receiveValueDemand: .none,
+            createSut: { $0.flatMap(maxPublishers: .max(1)) { $0 } }
+        )
+
+        helper.tracking.onValue = { value in
+            // This shouldn't recurse
+            if value == 0 {
+                helper.downstreamSubscription?.request(.max(3))
+            }
+        }
+
+        let childSubscription = CustomSubscription()
+        let child = CustomPublisher(subscription: childSubscription)
+        try XCTUnwrap(helper.downstreamSubscription).request(.max(1))
+        XCTAssertEqual(helper.publisher.send(child), .none)
+
+        XCTAssertEqual(childSubscription.history, [.requested(.max(1))])
+
+        XCTAssertEqual(child.send(0), .max(1))
+        XCTAssertEqual(child.send(1), .max(1))
+        XCTAssertEqual(child.send(2), .max(1))
+        XCTAssertEqual(child.send(3), .max(1))
+        XCTAssertEqual(child.send(4), .none)
+        XCTAssertEqual(child.send(5), .none)
+        XCTAssertEqual(child.send(6), .none)
+
+        XCTAssertEqual(childSubscription.history, [.requested(.max(1))])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(1))])
+        XCTAssertEqual(helper.tracking.history, [.subscription("FlatMap"),
+                                                 .value(0),
+                                                 .value(1),
+                                                 .value(2),
+                                                 .value(3)])
+
+        try XCTUnwrap(helper.downstreamSubscription).request(.max(10))
+
+        XCTAssertEqual(childSubscription.history, [.requested(.max(1)),
+                                                   .requested(.max(1)),
+                                                   .requested(.max(1)),
+                                                   .requested(.max(1))])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(1))])
+        XCTAssertEqual(helper.tracking.history, [.subscription("FlatMap"),
+                                                 .value(0),
+                                                 .value(1),
+                                                 .value(2),
+                                                 .value(3),
+                                                 .value(4),
+                                                 .value(5),
+                                                 .value(6)])
+    }
+
+    func testSendsValuesUntilBufferIsEmpty() throws {
+        let upstreamSubscription = CustomSubscription()
+        let upstreamPublisher = CustomPublisherBase<CustomPublisher, TestingError>(
+            subscription: upstreamSubscription
+        )
+        var downstreamSubscription: Subscription?
+        let flatMap = upstreamPublisher.flatMap { $0 }
+        let tracking = TrackingSubscriber(
+            receiveSubscription: {
+                downstreamSubscription = $0
+            },
+            receiveValue: {
+                if $0 > 0 {
+                    return .max($0)
+                }
+                return .none
+            }
+        )
+        flatMap.subscribe(tracking)
+        XCTAssertEqual(upstreamSubscription.history, [.requested(.unlimited)])
+        let childSubscription = CustomSubscription()
+        let childPublisher = CustomPublisher(subscription: childSubscription)
+        XCTAssertEqual(upstreamPublisher.send(childPublisher), .none)
+        XCTAssertEqual(childSubscription.history, [.requested(.max(1))])
+
+        XCTAssertEqual(childPublisher.send(2), .none)
+        XCTAssertEqual(tracking.history, [.subscription("FlatMap")])
+        try XCTUnwrap(downstreamSubscription).request(.max(1))
+        XCTAssertEqual(tracking.history, [.subscription("FlatMap"), .value(2)])
+        XCTAssertEqual(childPublisher.send(1), .max(1))
+        XCTAssertEqual(childPublisher.send(-1), .max(1))
+        XCTAssertEqual(childPublisher.send(-2), .max(1))
+        XCTAssertEqual(childPublisher.send(-3), .none)
+        XCTAssertEqual(childPublisher.send(-4), .none)
+        XCTAssertEqual(childPublisher.send(2), .none)
+        XCTAssertEqual(childPublisher.send(-5), .none)
+        XCTAssertEqual(childPublisher.send(-6), .none)
+        XCTAssertEqual(childPublisher.send(-7), .none)
+
+        XCTAssertEqual(tracking.history, [.subscription("FlatMap"),
+                                          .value(2),
+                                          .value(1),
+                                          .value(-1),
+                                          .value(-2)])
+
+        childSubscription.onRequest = { _ in
+            XCTAssertEqual(childPublisher.send(-42), .none)
+        }
+
+        try XCTUnwrap(downstreamSubscription).request(.max(3))
+        XCTAssertEqual(tracking.history, [.subscription("FlatMap"),
+                                          .value(2),
+                                          .value(1),
+                                          .value(-1),
+                                          .value(-2),
+                                          .value(-3),
+                                          .value(-4),
+                                          .value(2),
+                                          .value(-5),
+                                          .value(-6)])
+        XCTAssertEqual(childSubscription.history, [.requested(.max(1)),
+                                                   .requested(.max(1)),
+                                                   .requested(.max(1)),
+                                                   .requested(.max(1)),
+                                                   .requested(.max(1)),
+                                                   .requested(.max(1)),
+                                                   .requested(.max(1))])
+    }
+
     func testSendsSubcriptionDownstreamBeforeDemandUpstream() {
         let sentDemandRequestUpstream = "Sent demand request upstream"
         let sentSubscriptionDownstream = "Sent subcription downstream"
@@ -582,6 +959,49 @@ final class FlatMapTests: XCTestCase {
                                       sentDemandRequestUpstream])
     }
 
+    func testFlatMapReceiveSubscriptionTwice() throws {
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisher.self,
+            initialDemand: nil,
+            receiveValueDemand: .none,
+            createSut: { $0.flatMap(ResultPublisher.init) }
+        )
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+
+        let secondSubscription = CustomSubscription()
+
+        try XCTUnwrap(helper.publisher.subscriber)
+            .receive(subscription: secondSubscription)
+
+        XCTAssertEqual(secondSubscription.history, [.cancelled])
+
+        try XCTUnwrap(helper.publisher.subscriber)
+            .receive(subscription: helper.subscription)
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited), .cancelled])
+
+        try XCTUnwrap(helper.downstreamSubscription).cancel()
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
+                                                     .cancelled,
+                                                     .cancelled])
+
+        let thirdSubscription = CustomSubscription()
+
+        try XCTUnwrap(helper.publisher.subscriber)
+            .receive(subscription: thirdSubscription)
+
+        XCTAssertEqual(thirdSubscription.history, [.cancelled])
+
+        helper.publisher.send(completion: .finished)
+
+        try XCTUnwrap(helper.publisher.subscriber)
+            .receive(subscription: thirdSubscription)
+
+        XCTAssertEqual(thirdSubscription.history, [.cancelled, .cancelled])
+    }
+
     func testFlatMapReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(
             value: 0,
@@ -595,6 +1015,48 @@ final class FlatMapTests: XCTestCase {
             inputType: Int.self,
             expected: .history([.subscription("FlatMap"), .completion(.finished)]),
             { $0.flatMap { _ in Just(0) } }
+        )
+    }
+
+    func testFlatMapReflection() throws {
+        try testReflection(parentInput: String.self,
+                           parentFailure: Never.self,
+                           description: "FlatMap",
+                           customMirror: childrenIsEmpty,
+                           playgroundDescription: "FlatMap",
+                           { $0.flatMap { Just($0) } })
+
+        let innerPublisher = CustomPublisher(subscription: CustomSubscription())
+        let outerPublisher = CustomPublisher(subscription: CustomSubscription())
+        let flatMap = outerPublisher.flatMap { _ in innerPublisher }
+        let tracking = TrackingSubscriber()
+        flatMap.subscribe(tracking)
+        XCTAssertEqual(outerPublisher.send(0), .none)
+
+        let innerSubscriber = try XCTUnwrap(innerPublisher.erasedSubscriber)
+
+        XCTAssertEqual((innerSubscriber as? CustomStringConvertible)?.description,
+                       "FlatMap")
+
+        let customMirror =
+            try XCTUnwrap((innerSubscriber as? CustomReflectable)?.customMirror)
+
+        let outerSubscriberCombineIdentifier = try XCTUnwrap(
+            (outerPublisher.erasedSubscriber as? CustomCombineIdentifierConvertible)?
+                .combineIdentifier
+        )
+        expectedChildren(
+            ("parentSubscription",
+             .matches("\(outerSubscriberCombineIdentifier)"))
+        )(customMirror)
+
+        XCTAssertFalse(innerSubscriber is CustomDebugStringConvertible,
+                       "subscriber shouldn't conform to CustomDebugStringConvertible")
+
+        XCTAssertEqual(
+            ((innerSubscriber as? CustomPlaygroundDisplayConvertible)?
+                .playgroundDescription as? String),
+            "FlatMap"
         )
     }
 }
