@@ -41,4 +41,10 @@ final class CombineIdentifierTests: XCTestCase {
         XCTAssertEqual(id1.description,
                        "0x\(String(UInt(bitPattern: ObjectIdentifier(c1)), radix: 16))")
     }
+
+    func testUsesUInt64UnderTheHood() {
+        let mirror = Mirror(reflecting: CombineIdentifier())
+        XCTAssertEqual(mirror.children.count, 1)
+        XCTAssertNotNil(mirror.descendant("value") as? UInt64)
+    }
 }

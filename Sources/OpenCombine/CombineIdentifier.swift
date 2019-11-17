@@ -9,17 +9,17 @@ import func COpenCombineHelpers.nextCombineIdentifier
 
 public struct CombineIdentifier: Hashable, CustomStringConvertible {
 
-    private let id: UInt64
+    private let value: UInt64
 
     public init() {
-        self.id = nextCombineIdentifier()
+        value = nextCombineIdentifier()
     }
 
     public init(_ obj: AnyObject) {
-        id = UInt64(UInt(bitPattern: ObjectIdentifier(obj)))
+        value = UInt64(UInt(bitPattern: ObjectIdentifier(obj)))
     }
 
     public var description: String {
-        return "0x\(String(id, radix: 16))"
+        return "0x\(String(value, radix: 16))"
     }
 }
