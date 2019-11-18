@@ -5,8 +5,6 @@
 //  Created by Sergej Jaskiewicz on 10.06.2019.
 //
 
-// swiftlint:disable identical_operands
-
 import XCTest
 
 #if OPENCOMBINE_COMPATIBILITY_TEST
