@@ -7,16 +7,6 @@
 
 import COpenCombineHelpers
 
-extension UnfairLock {
-
-    @inlinable
-    internal func `do`<Result>(_ body: () throws -> Result) rethrows -> Result {
-        lock()
-        defer { unlock() }
-        return try body()
-    }
-}
-
 extension UnfairRecursiveLock {
 
     @inlinable
