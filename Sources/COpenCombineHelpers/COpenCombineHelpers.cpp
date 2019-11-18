@@ -8,16 +8,33 @@
 #include "COpenCombineHelpers.h"
 
 #include <atomic>
-#include <mutex>
 #include <cstdlib>
+#include <system_error>
+#include <pthread.h>
 
 #ifdef __APPLE__
 #include <os/lock.h>
 #endif // __APPLE__
 
+// Throwing exceptions through language boundaries is undefined behavior,
+// so we must catch all of them in our extern "C" functions.
 #define OPENCOMBINE_HANDLE_EXCEPTION_BEGIN try {
 
-#define OPENCOMBINE_HANDLE_EXCEPTION_END } catch (...) { abort(); }
+// std::terminate will print the type and the error message of the in-flight exception.
+#define OPENCOMBINE_HANDLE_EXCEPTION_END } catch (...) { std::terminate(); }
+
+// See 'double expansion trick'
+#define OPENCOMBINE_STRINGIFY(value) #value
+#define OPENCOMBINE_STRINGIFY_(value) OPENCOMBINE_STRINGIFY(value)
+#define OPENCOMBINE_STRING_LINE_NUMBER OPENCOMBINE_STRINGIFY_(__LINE__)
+
+// Throw an exception if the argument is non-zero with filename and line where the error
+// occured.
+#define OPENCOMBINE_HANDLE_PTHREAD_CALL(errc) \
+    if ((errc) != 0) { \
+        const char* what = __FILE__ ":" OPENCOMBINE_STRING_LINE_NUMBER ": " #errc; \
+        throw std::system_error((errc), std::system_category(), what); \
+    }
 
 namespace {
 
@@ -29,35 +46,115 @@ public:
     virtual void unlock() = 0;
     virtual void assertOwner() {}
 
-    virtual ~PlatformIndependentMutex() {}
+    virtual ~PlatformIndependentMutex() noexcept(false) {}
 };
 
-template <typename Mutex>
-class GenericMutex final : PlatformIndependentMutex {
-    Mutex mutex_;
+class PThreadMutex : PlatformIndependentMutex {
+private:
+    pthread_mutex_t mutex_;
 public:
-    void lock() override {
-        mutex_.lock();
+    PThreadMutex() {
+        Attributes attrs;
+        attrs.setErrorCheck();
+        initialize(attrs);
     }
 
-    void unlock() override {
-        mutex_.unlock();
+    PThreadMutex(const PThreadMutex&) = delete;
+    PThreadMutex& operator=(const PThreadMutex&) = delete;
+
+    PThreadMutex(PThreadMutex&&) = delete;
+    PThreadMutex& operator=(PThreadMutex&&) = delete;
+
+    void lock() override final {
+        OPENCOMBINE_HANDLE_PTHREAD_CALL(pthread_mutex_lock(&mutex_));
     }
+
+    void unlock() override final {
+        OPENCOMBINE_HANDLE_PTHREAD_CALL(pthread_mutex_unlock(&mutex_));
+    }
+
+    ~PThreadMutex() {
+        // Yep, this destructor may throw. This is deliberate, since pthread_mutex_destroy
+        // may fail.
+        //
+        // The altrenative is to just silently ignore the error, which is even worse.
+        OPENCOMBINE_HANDLE_PTHREAD_CALL(pthread_mutex_destroy(&mutex_));
+    }
+protected:
+    class Attributes {
+        pthread_mutexattr_t attrs_;
+    public:
+        Attributes() {
+            OPENCOMBINE_HANDLE_PTHREAD_CALL(pthread_mutexattr_init(&attrs_));
+        }
+
+        Attributes(const Attributes&) = delete;
+        Attributes& operator=(const Attributes&) = delete;
+
+        Attributes(Attributes&&) = delete;
+        Attributes& operator=(Attributes&&) = delete;
+
+        const pthread_mutexattr_t* raw() const noexcept {
+            return &attrs_;
+        }
+
+        void setRecursive() {
+            setType(PTHREAD_MUTEX_RECURSIVE);
+        }
+
+        void setErrorCheck() {
+            setType(PTHREAD_MUTEX_ERRORCHECK);
+        }
+
+        ~Attributes() noexcept(false) {
+            // Yep, this destructor may throw. This is deliberate,
+            // since pthread_mutexattr_destroy may fail.
+            //
+            // The altrenative is to just silently ignore the error, which is even worse.
+            OPENCOMBINE_HANDLE_PTHREAD_CALL(pthread_mutexattr_destroy(&attrs_));
+        }
+    private:
+        void setType(int type) {
+            OPENCOMBINE_HANDLE_PTHREAD_CALL(pthread_mutexattr_settype(&attrs_, type));
+        }
+    };
+
+    void initialize(const Attributes& attributes) {
+        OPENCOMBINE_HANDLE_PTHREAD_CALL(pthread_mutex_init(&mutex_, attributes.raw()));
+    }
+};
+
+class PThreadRecursiveMutex final : PThreadMutex {
+public:
+    PThreadRecursiveMutex() {
+        Attributes attrs;
+        attrs.setRecursive();
+        initialize(attrs);
+    }
+
+    PThreadRecursiveMutex(const PThreadRecursiveMutex&) = delete;
+    PThreadRecursiveMutex& operator=(const PThreadRecursiveMutex&) = delete;
+
+    PThreadRecursiveMutex(PThreadRecursiveMutex&&) = delete;
+    PThreadRecursiveMutex& operator=(PThreadRecursiveMutex&&) = delete;
 };
 
 #ifdef __APPLE__
-bool isOSUnfairLockAvailable() {
-    // We're linking weakly, so if we're back-deploying, this will be null.
-    return os_unfair_lock_lock != nullptr;
-}
-
-template <>
-class GenericMutex<os_unfair_lock> final : PlatformIndependentMutex {
+class OSUnfairLock final : PlatformIndependentMutex {
     os_unfair_lock mutex_ = OS_UNFAIR_LOCK_INIT;
 public:
-    GenericMutex() = default;
-    GenericMutex(const GenericMutex&) = delete;
-    GenericMutex& operator=(const GenericMutex&) = delete;
+    static bool available() {
+        // We're linking weakly, so if we're back-deploying, this will be null.
+        return os_unfair_lock_lock != nullptr;
+    }
+
+    OSUnfairLock() = default;
+
+    OSUnfairLock(const OSUnfairLock&) = delete;
+    OSUnfairLock& operator=(const OSUnfairLock&) = delete;
+
+    OSUnfairLock(OSUnfairLock&&) = delete;
+    OSUnfairLock& operator=(OSUnfairLock&&) = delete;
 
     void lock() override {
         os_unfair_lock_lock(&mutex_);
@@ -85,13 +182,13 @@ OpenCombineUnfairLock opencombine_unfair_lock_alloc(void) {
     OPENCOMBINE_HANDLE_EXCEPTION_BEGIN
 
 #ifdef __APPLE__
-    if (isOSUnfairLockAvailable()) {
-        return {new GenericMutex<os_unfair_lock>};
+    if (OSUnfairLock::available()) {
+        return {new OSUnfairLock};
     } else {
-        return {new GenericMutex<std::mutex>};
+        return {new PThreadMutex};
     }
 #else
-    return {new GenericMutex<std::mutex>};
+    return {new PThreadMutex};
 #endif
 
     OPENCOMBINE_HANDLE_EXCEPTION_END
@@ -100,7 +197,7 @@ OpenCombineUnfairLock opencombine_unfair_lock_alloc(void) {
 OpenCombineUnfairRecursiveLock opencombine_unfair_recursive_lock_alloc(void) {
     OPENCOMBINE_HANDLE_EXCEPTION_BEGIN
     // TODO: Use os_unfair_recursive_lock on Darwin as soon as it becomes public API.
-    return {new GenericMutex<std::recursive_mutex>};
+    return {new PThreadRecursiveMutex};
     OPENCOMBINE_HANDLE_EXCEPTION_END
 }
 
