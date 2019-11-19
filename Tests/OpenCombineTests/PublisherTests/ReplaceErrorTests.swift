@@ -141,6 +141,25 @@ final class ReplaceErrorTests: XCTestCase {
         }
     }
 
+    func testLateSubscription() throws {
+        // This publisher doesn't send a subscription when it receives a subscriber
+        let publisher = CustomPublisher(subscription: nil)
+        let replaceError = publisher.replaceError(with: 1)
+        let tracking = TrackingSubscriberBase<Int, Never>(
+            receiveSubscription: { $0.request(.max(10)) }
+        )
+
+        replaceError.subscribe(tracking)
+
+        XCTAssertEqual(tracking.history, [.subscription("ReplaceError")])
+
+        let subscription = CustomSubscription()
+        try XCTUnwrap(publisher.subscriber).receive(subscription: subscription)
+
+        XCTAssertEqual(subscription.history, [.requested(.max(10))])
+        XCTAssertEqual(tracking.history, [.subscription("ReplaceError")])
+    }
+
     func testReplaceErrorReflection() throws {
         try testReflection(parentInput: Int.self,
                            parentFailure: Error.self,
