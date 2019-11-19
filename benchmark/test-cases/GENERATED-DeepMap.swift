@@ -51,14 +51,23 @@ public func run_DeepMap_OpenCombine(N: Int) {
     var counter = 0
     let cancellable = subject
         .map { $0 }
+        .eraseToAnyPublisher()
         .map { $0 }
+        .eraseToAnyPublisher()
         .map { $0 }
+        .eraseToAnyPublisher()
         .map { $0 }
+        .eraseToAnyPublisher()
         .map { $0 }
+        .eraseToAnyPublisher()
         .map { $0 }
+        .eraseToAnyPublisher()
         .map { $0 }
+        .eraseToAnyPublisher()
         .map { $0 }
+        .eraseToAnyPublisher()
         .map { $0 }
+        .eraseToAnyPublisher()
         .map { $0 }
         .sink { value in
             counter += value
@@ -81,14 +90,23 @@ public func run_DeepMap_CombineX(N: Int) {
     var counter = 0
     let cancellable = subject
         .map { $0 }
+        .eraseToAnyPublisher()
         .map { $0 }
+        .eraseToAnyPublisher()
         .map { $0 }
+        .eraseToAnyPublisher()
         .map { $0 }
+        .eraseToAnyPublisher()
         .map { $0 }
+        .eraseToAnyPublisher()
         .map { $0 }
+        .eraseToAnyPublisher()
         .map { $0 }
+        .eraseToAnyPublisher()
         .map { $0 }
+        .eraseToAnyPublisher()
         .map { $0 }
+        .eraseToAnyPublisher()
         .map { $0 }
         .sink { value in
             counter += value
@@ -111,14 +129,23 @@ public func run_DeepMap_Combine(N: Int) {
     var counter = 0
     let cancellable = subject
         .map { $0 }
+        .eraseToAnyPublisher()
         .map { $0 }
+        .eraseToAnyPublisher()
         .map { $0 }
+        .eraseToAnyPublisher()
         .map { $0 }
+        .eraseToAnyPublisher()
         .map { $0 }
+        .eraseToAnyPublisher()
         .map { $0 }
+        .eraseToAnyPublisher()
         .map { $0 }
+        .eraseToAnyPublisher()
         .map { $0 }
+        .eraseToAnyPublisher()
         .map { $0 }
+        .eraseToAnyPublisher()
         .map { $0 }
         .sink { value in
             counter += value
