@@ -92,6 +92,35 @@ final class SinkTests: XCTestCase {
         XCTAssertEqual(value, 100)
     }
 
+    func testReceiveValueWithoutSubscription() {
+        var valueCounter = 0
+        var completionCounter = 0
+        let sink = Subscribers.Sink<Void, TestingError>(
+            receiveCompletion: { _ in completionCounter += 1 },
+            receiveValue: { valueCounter += 1 }
+        )
+
+        XCTAssertEqual(sink.receive(), .none)
+        XCTAssertEqual(valueCounter, 1)
+        XCTAssertEqual(completionCounter, 0)
+
+        sink.receive(completion: .finished)
+
+        XCTAssertEqual(valueCounter, 1)
+        XCTAssertEqual(completionCounter, 1)
+
+        XCTAssertEqual(sink.receive(), .none)
+        sink.receive(completion: .finished)
+        sink.receive(completion: .failure(.oops))
+
+        XCTAssertEqual(valueCounter, 2)
+        XCTAssertEqual(completionCounter, 3)
+
+        sink.cancel()
+
+        XCTAssertEqual(completionCounter, 3)
+    }
+
     func testPublisherOperator() {
         var value = 0
         let publisher = PassthroughSubject<Int, Never>()
