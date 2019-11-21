@@ -11,6 +11,29 @@ The main goal of this project is to provide a compatible, reliable and efficient
 
 The project is in early development.
 
+### Installation
+`OpenCombine` contains of two targets: `OpenCombine` and `OpenCombineDispatch`.
+
+##### Swift Package Manager
+To add `OpenCombine` to your [SPM](https://swift.org/package-manager/) package, add the `OpenCombine` package to the list of package and target dependencies in your `Package.swift` file.
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/broadwaylamb/OpenCombine.git", from: "0.5.0")
+],
+targets: [
+    .target(name: "Package", dependencies: ["OpenCombine", "OpenCombineDispatch"])
+]
+```
+
+##### CocoaPods
+To add `OpenCombine` to a project using [CocoaPods](https://cocoapods.org/), add `OpenCombine` and `OpenCombineDispatch` to the list of target dependencies in your `Podfile` file. 
+
+```ruby
+pod 'OpenCombine', '~> 0.5.0'
+pod 'OpenCombineDispatch', '~> 0.5.0'
+```
+
 ### Contributing
 
 In order to work on this project you will need Xcode 10.2 and Swift 5.0 or later.
