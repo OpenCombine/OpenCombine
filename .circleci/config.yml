@@ -216,6 +216,22 @@ jobs:
           name: Run danger-swift
           command: danger-swift ci
 
+  "Run Pod spec lint":
+    macos:
+      xcode: "11.2.0"
+    environment:
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+    steps:
+      - checkout
+      - run: 
+          name: Install Cocoapods
+          command: |
+            brew install cocoapods
+      - run:
+          name: Pod lib lint
+          command: |
+            pod lib lint --allow-warnings
+
 workflows:
   version: 2
   "OpenCombine: execute tests on macOS":
@@ -233,3 +249,6 @@ workflows:
   "OpenCombine: run SwiftLint and Danger":
     jobs:
       - "Run SwiftLint and Danger"
+  "OpenCombine: validate podspec files":
+    jobs:
+      - "Run Pod spec lint"
