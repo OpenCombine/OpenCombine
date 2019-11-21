@@ -223,10 +223,6 @@ jobs:
       HOMEBREW_NO_AUTO_UPDATE: "1"
     steps:
       - checkout
-      - run: 
-          name: Install Cocoapods
-          command: |
-            brew install cocoapods
       - run:
           name: Update Pod repo
           command: |
