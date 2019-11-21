@@ -1,32 +1,34 @@
+SWIFT_EXE=swift
 SWIFT_TEST_FLAGS=
+SWIFT_BUILD_FLAGS=-Xcc -Wunguarded-availability
 
 debug:
-	swift build -c debug
+	$(SWIFT_EXE) build -c debug $(SWIFT_BUILD_FLAGS)
 
 release:
-	swift build -c release
+	$(SWIFT_EXE) build -c release $(SWIFT_BUILD_FLAGS)
 
 test-debug:
-	swift test -c debug $(SWIFT_TEST_FLAGS)
+	$(SWIFT_EXE) test -c debug $(SWIFT_BUILD_FLAGS) $(SWIFT_TEST_FLAGS)
 
 test-debug-sanitize-thread:
-	swift test -c debug --sanitize thread $(SWIFT_TEST_FLAGS)
+	$(SWIFT_EXE) test -c debug --sanitize thread $(SWIFT_BUILD_FLAGS) $(SWIFT_TEST_FLAGS)
 
 test-release:
-	swift test -c release $(SWIFT_TEST_FLAGS)
+	$(SWIFT_EXE) test -c release $(SWIFT_BUILD_FLAGS) $(SWIFT_TEST_FLAGS)
 
 swift-version:
-	swift -version
+	$(SWIFT_EXE) -version
 
 test-compatibility:
-	swift test -Xswiftc -DOPENCOMBINE_COMPATIBILITY_TEST
+	$(SWIFT_EXE) test -Xswiftc -DOPENCOMBINE_COMPATIBILITY_TEST
 
 generate-compatibility-xcodeproj:
-	swift package generate-xcodeproj --xcconfig-overrides Combine-Compatibility.xcconfig; \
+	$(SWIFT_EXE) package generate-xcodeproj --xcconfig-overrides Combine-Compatibility.xcconfig; \
 	open OpenCombine.xcodeproj
 
 generate-xcodeproj:
-	swift package generate-xcodeproj --enable-code-coverage
+	$(SWIFT_EXE) package $(SWIFT_BUILD_FLAGS) generate-xcodeproj --enable-code-coverage
 
 gyb:
 	$(shell ./utils/recursively_gyb.sh)

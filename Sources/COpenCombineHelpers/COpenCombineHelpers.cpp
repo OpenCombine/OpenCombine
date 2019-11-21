@@ -140,14 +140,10 @@ public:
 };
 
 #ifdef __APPLE__
-class OSUnfairLock final : PlatformIndependentMutex {
+
+class OS_UNFAIR_LOCK_AVAILABILITY OSUnfairLock final : PlatformIndependentMutex {
     os_unfair_lock mutex_ = OS_UNFAIR_LOCK_INIT;
 public:
-    static bool available() {
-        // We're linking weakly, so if we're back-deploying, this will be null.
-        return os_unfair_lock_lock != nullptr;
-    }
-
     OSUnfairLock() = default;
 
     OSUnfairLock(const OSUnfairLock&) = delete;
@@ -182,7 +178,7 @@ OpenCombineUnfairLock opencombine_unfair_lock_alloc(void) {
     OPENCOMBINE_HANDLE_EXCEPTION_BEGIN
 
 #ifdef __APPLE__
-    if (OSUnfairLock::available()) {
+    if (__builtin_available(macOS 10.12, iOS 10.0, tvOS 10.0, watchOS 3.0, *)) {
         return {new OSUnfairLock};
     } else {
         return {new PThreadMutex};
