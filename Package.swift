@@ -9,7 +9,7 @@ let package = Package(
         .library(name: "OpenCombineDispatch", targets: ["OpenCombineDispatch"]),
     ],
     targets: [
-        .target(name: "COpenCombineHelpers"),
+        .target(name: "COpenCombineHelpers", cxxSettings: [.headerSearchPath(".")]),
         .target(name: "OpenCombine", dependencies: ["COpenCombineHelpers"]),
         .target(name: "OpenCombineDispatch", dependencies: ["OpenCombine"]),
         .testTarget(name: "OpenCombineTests",

@@ -249,6 +249,17 @@ final class ObservableObjectTests: XCTestCase {
         XCTAssertEqual(counter, 2)
         XCTAssertEqual(observableObject.value1, 43)
     }
+
+    func testClassWithResilientField() {
+        let observableObject = ClassWithResilientField()
+        var counter = 0
+        observableObject.objectWillChange.sink { counter += 1 }.store(in: &disposeBag)
+
+        XCTAssertEqual(counter, 0)
+
+        observableObject.note2 = Notification(name: .init("note 2 modified"))
+        XCTAssertEqual(counter, 1)
+    }
 }
 
 @available(macOS 10.15, iOS 13.0, *)
@@ -339,5 +350,17 @@ private final class ResilientClassGenericSubclass<Value1, Value2>
         self.value2 = value2
     }
 }
+
+@available(macOS 10.15, iOS 13.0, *)
+private final class ClassWithResilientField: ObservableObject {
+    // Foundation.Notification is resilient struct
+    private var note1 = Notification(name: .init("note 1"))
+    @Published var note2 = Notification(name: .init("note 2"))
+
+    init() {
+        print("sizeof Calendar =", MemoryLayout.size(ofValue: note1))
+    }
+}
+
 
 #endif // swift(>=5.1)

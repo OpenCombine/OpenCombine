@@ -16,6 +16,7 @@
 #include "FieldDescriptor.h"
 #include "RelativePointer.h"
 #include "FlagSet.h"
+#include "TrailingObjects.h"
 
 #include <atomic>
 #include <cstdint>
