@@ -224,10 +224,6 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Update Pod repo
-          command: |
-            pod repo update --silent
-      - run:
           name: Pod lib lint
           command: |
             pod lib lint --allow-warnings --verbose
