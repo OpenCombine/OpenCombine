@@ -228,9 +228,13 @@ jobs:
           command: |
             brew install cocoapods
       - run:
+          name: Update Pod repo
+          command: |
+            pod repo update --silent
+      - run:
           name: Pod lib lint
           command: |
-            pod lib lint --allow-warnings
+            pod lib lint --allow-warnings --verbose
 
 workflows:
   version: 2
