@@ -60,7 +60,7 @@ final class FutureTests: XCTestCase {
     func testFutureWithinFlatMap() {
         var isCompleted = false
         let simplePublisher = PassthroughSubject<String, Never>()
-        var promise: (() -> ())?
+        var promise: (() -> Void)?
         var outputValue: String?
 
         let cancellable = simplePublisher
