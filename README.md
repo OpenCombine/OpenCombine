@@ -11,6 +11,42 @@ The main goal of this project is to provide a compatible, reliable and efficient
 
 The project is in early development.
 
+### Installation
+`OpenCombine` contains two public targets: `OpenCombine` and `OpenCombineDispatch` (the third one, `COpenCombineHelpers`, is considered private. Don't import it in your projects).
+
+OpenCombine itself does not have any dependencies. Not even Foundation or Dispatch. If you want to use OpenCombine with Dispatch (for example for using `DispatchQueue` as `Scheduler` for operators like `debounce`, `receive(on:)` etc.), you will need to import both `OpenCombine` and `OpenCombineDispatch`.
+
+##### Swift Package Manager
+###### Swift Package
+To add `OpenCombine` to your [SPM](https://swift.org/package-manager/) package, add the `OpenCombine` package to the list of package and target dependencies in your `Package.swift` file.
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/broadwaylamb/OpenCombine.git", from: "0.5.0")
+],
+targets: [
+    .target(name: "MyAwesomePackage", dependencies: ["OpenCombine", "OpenCombineDispatch"])
+]
+```
+
+###### Xcode
+`OpenCombine` can also be added as a SPM dependency directly in your Xcode project *(requires Xcode 11 upwards)*.
+
+To do so, open Xcode, use **File** → **Swift Packages** → **Add Package Dependency…**, enter the [repository URL](https://github.com/broadwaylamb/OpenCombine.git), choose the latest available version, and activate the checkboxes:
+
+<p align="center">
+<img alt="Select the OpenCombine and OpenCombineDispatch targets" 
+	src="https://user-images.githubusercontent.com/16309982/67618468-bd379f80-f7f8-11e9-917f-e76e878a1aee.png" width="70%">
+</p>
+
+##### CocoaPods
+To add `OpenCombine` to a project using [CocoaPods](https://cocoapods.org/), add `OpenCombine` and `OpenCombineDispatch` to the list of target dependencies in your `Podfile`. 
+
+```ruby
+pod 'OpenCombine', '~> 0.5.0'
+pod 'OpenCombineDispatch', '~> 0.5.0'
+```
+
 ### Contributing
 
 In order to work on this project you will need Xcode 10.2 and Swift 5.0 or later.
