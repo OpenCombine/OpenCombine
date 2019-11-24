@@ -19,8 +19,12 @@ final class FutureTests: XCTestCase {
         case anErrorExample
     }
 
-    // example of a asynchronous function to be called from within a Future and its completion closure
-    func asyncAPICall(sabotage: Bool, completion completionBlock: @escaping ((Bool, Error?) -> Void)) {
+    /// example of an asynchronous function to be called from within a Future and its
+    /// completion closure
+    func asyncAPICall(
+        sabotage: Bool,
+        completion completionBlock: @escaping ((Bool, Error?) -> Void)
+    ) {
         DispatchQueue.global(qos: .background).async {
             let delay = Int.random(in: 1...3)
             print(" * making async call (delay of \(delay) seconds)")
@@ -39,7 +43,7 @@ final class FutureTests: XCTestCase {
 
         // the creating the future publisher
         let sut = Future<Bool, Error> { promise in
-            self.asyncAPICall(sabotage: false) { (grantedAccess, err) in
+            self.asyncAPICall(sabotage: false) { grantedAccess, err in
                 if let err = err {
                     promise(.failure(err))
                 }
@@ -67,9 +71,10 @@ final class FutureTests: XCTestCase {
 
         // the creating the future publisher
         let sut = Future<Bool, Error> { promise in
-            self.asyncAPICall(sabotage: true) { (grantedAccess, err) in
+            self.asyncAPICall(sabotage: true) { grantedAccess, err in
                 if let err = err {
                     promise(.failure(err))
+                    return
                 }
                 promise(.success(grantedAccess))
             }
@@ -79,7 +84,7 @@ final class FutureTests: XCTestCase {
         let cancellable = sut.sink(receiveCompletion: { err in
             XCTAssertNotNil(err)
             expectation.fulfill()
-        }, receiveValue: { value in
+        }, receiveValue: { _ in
             XCTFail("no value should be returned")
         })
 
@@ -89,15 +94,13 @@ final class FutureTests: XCTestCase {
 
     func testFutureWithinAFlatMap() {
         let simplePublisher = PassthroughSubject<String, Never>()
-        var outputValue: String? = nil
+        var outputValue: String?
 
         let cancellable = simplePublisher
             .flatMap { name in
-                return Future<String, Never> { promise in
+                Future<String, Never> { promise in
                     promise(.success(name))
-                }.map { result in
-                    return "\(result) foo"
-                }
+                }.map { "\($0) foo" }
             }
             .sink(receiveCompletion: { err in
                 print(".sink() received the completion", String(describing: err))
