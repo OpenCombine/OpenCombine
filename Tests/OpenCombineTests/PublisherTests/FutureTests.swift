@@ -69,7 +69,7 @@ final class FutureTests: XCTestCase {
                     promise = { fulfill(.success(name)) }
                 }.map { "\($0) foo" }
             }
-            .sink(receiveCompletion: { err in
+            .sink(receiveCompletion: { _ in
                 isCompleted = true
             }, receiveValue: { value in
                 outputValue = value
@@ -155,5 +155,24 @@ final class FutureTests: XCTestCase {
 
         XCTAssertFalse(isCompleted)
         XCTAssertFalse(outputValue)
+    }
+
+    func testSinkAfterResolution() {
+        var isCompleted = false
+        var outputValue = false
+        var promise: Future<Bool, Never>.Promise?
+
+        let future = Future<Bool, Never> { promise = $0 }
+        promise?(.success(true))
+
+        let cancellable: AnyCancellable? = future.sink(receiveCompletion: { _ in
+            isCompleted = true
+        }, receiveValue: { value in
+            outputValue = value
+        })
+
+        XCTAssertTrue(isCompleted)
+        XCTAssertTrue(outputValue)
+        XCTAssertNotNil(cancellable)
     }
 }
