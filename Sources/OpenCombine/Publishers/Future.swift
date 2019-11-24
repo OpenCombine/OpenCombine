@@ -18,8 +18,8 @@ public final class Future<Output, Failure>: Publisher where Failure: Error {
     private var result: Result<Output, Failure>?
 
     public init(
-        _ attemptToFulfill: @escaping (@escaping Future<Output, Failure>.Promise
-    ) -> Void) {
+        _ attemptToFulfill: @escaping (@escaping Promise) -> Void
+    ) {
         attemptToFulfill { result in
             self._lock.do {
                 self.result = result
