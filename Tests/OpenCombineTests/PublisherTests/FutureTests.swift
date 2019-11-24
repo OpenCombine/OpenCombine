@@ -35,7 +35,7 @@ final class FutureTests: XCTestCase {
     func testFuturePublisher() {
         // setup
         var outputValue: Bool = false
-        let expectation = XCTestExpectation(description: self.debugDescription)
+        let expectation = XCTestExpectation(description: "\(#function)")
 
         // the creating the future publisher
         let sut = Future<Bool, Error> { promise in
@@ -63,7 +63,7 @@ final class FutureTests: XCTestCase {
 
     func testFuturePublisherShowingFailure() {
         // setup
-        let expectation = XCTestExpectation(description: self.debugDescription)
+        let expectation = XCTestExpectation(description: "\(#function)")
 
         // the creating the future publisher
         let sut = Future<Bool, Error> { promise in
@@ -77,11 +77,9 @@ final class FutureTests: XCTestCase {
 
         // driving it by attaching it to .sink
         let cancellable = sut.sink(receiveCompletion: { err in
-            print(".sink() received the completion: ", String(describing: err))
             XCTAssertNotNil(err)
             expectation.fulfill()
         }, receiveValue: { value in
-            print(".sink() received value: ", value)
             XCTFail("no value should be returned")
         })
 
@@ -94,7 +92,6 @@ final class FutureTests: XCTestCase {
         var outputValue: String? = nil
 
         let cancellable = simplePublisher
-            .print(self.debugDescription)
             .flatMap { name in
                 return Future<String, Never> { promise in
                     promise(.success(name))
