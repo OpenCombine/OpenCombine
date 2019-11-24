@@ -96,7 +96,7 @@ extension PassthroughSubject {
 
     fileprivate final class Conduit: Subscription {
 
-        fileprivate weak var _parent: PassthroughSubject?
+        fileprivate var _parent: PassthroughSubject?
 
         fileprivate var _downstream: AnySubscriber<Output, Failure>?
 
