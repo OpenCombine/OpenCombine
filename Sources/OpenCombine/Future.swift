@@ -28,6 +28,10 @@ public final class Future<Output, Failure>: Publisher where Failure: Error {
         }
     }
 
+    deinit {
+        _lock.deallocate()
+    }
+
     /// This function is called to attach the specified `Subscriber` to this
     /// `Publisher` by `subscribe(_:)`
     ///

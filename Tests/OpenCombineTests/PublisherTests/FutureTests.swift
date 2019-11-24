@@ -15,103 +15,145 @@ import OpenCombine
 
 @available(macOS 10.15, iOS 13.0, *)
 final class FutureTests: XCTestCase {
-    enum TestFailureCondition: Error {
-        case anErrorExample
-    }
+    struct TestError: Error {}
 
-    /// example of an asynchronous function to be called from within a Future and its
-    /// completion closure
-    func asyncAPICall(
-        sabotage: Bool,
-        completion completionBlock: @escaping ((Bool, Error?) -> Void)
-    ) {
-        DispatchQueue.global(qos: .background).async {
-            let delay = Int.random(in: 1...3)
-            print(" * making async call (delay of \(delay) seconds)")
-            sleep(UInt32(delay))
-            if sabotage {
-                completionBlock(false, TestFailureCondition.anErrorExample)
-            }
-            completionBlock(true, nil)
-        }
-    }
+    func testFutureSuccess() {
+        var isCompleted = false
+        var outputValue = false
+        var promise: Future<Bool, Never>.Promise?
 
-    func testFuturePublisher() {
-        // setup
-        var outputValue: Bool = false
-        let expectation = XCTestExpectation(description: "\(#function)")
+        let future = Future<Bool, Never> { promise = $0 }
 
-        // the creating the future publisher
-        let sut = Future<Bool, Error> { promise in
-            self.asyncAPICall(sabotage: false) { grantedAccess, err in
-                if let err = err {
-                    promise(.failure(err))
-                }
-                promise(.success(grantedAccess))
-            }
-        }
-
-        // driving it by attaching it to .sink
-        let cancellable = sut.sink(receiveCompletion: { err in
-            print(".sink() received the completion: ", String(describing: err))
-            expectation.fulfill()
+        let cancellable = future.sink(receiveCompletion: { _ in
+            isCompleted = true
         }, receiveValue: { value in
-            print(".sink() received value: ", value)
             outputValue = value
         })
 
-        wait(for: [expectation], timeout: 5.0)
+        promise?(.success(true))
+
+        XCTAssertTrue(isCompleted)
         XCTAssertTrue(outputValue)
         XCTAssertNotNil(cancellable)
     }
 
-    func testFuturePublisherShowingFailure() {
-        // setup
-        let expectation = XCTestExpectation(description: "\(#function)")
+    func testFutureFailure() {
+        var error: TestError?
+        var promise: Future<Bool, TestError>.Promise?
 
-        // the creating the future publisher
-        let sut = Future<Bool, Error> { promise in
-            self.asyncAPICall(sabotage: true) { grantedAccess, err in
-                if let err = err {
-                    promise(.failure(err))
-                    return
-                }
-                promise(.success(grantedAccess))
-            }
-        }
+        let future = Future<Bool, TestError> { promise = $0 }
 
-        // driving it by attaching it to .sink
-        let cancellable = sut.sink(receiveCompletion: { err in
-            XCTAssertNotNil(err)
-            expectation.fulfill()
+        let cancellable = future.sink(receiveCompletion: {
+            guard case let .failure(e) = $0 else { return }
+
+            error = e
         }, receiveValue: { _ in
             XCTFail("no value should be returned")
         })
 
-        wait(for: [expectation], timeout: 5.0)
+        promise?(.failure(TestError()))
+
+        XCTAssertNotNil(error)
         XCTAssertNotNil(cancellable)
     }
 
-    func testFutureWithinAFlatMap() {
+    func testFutureWithinFlatMap() {
+        var isCompleted = false
         let simplePublisher = PassthroughSubject<String, Never>()
+        var promise: (() -> ())?
         var outputValue: String?
 
         let cancellable = simplePublisher
             .flatMap { name in
-                Future<String, Never> { promise in
-                    promise(.success(name))
+                Future<String, Never> { fulfill in
+                    promise = { fulfill(.success(name)) }
                 }.map { "\($0) foo" }
             }
             .sink(receiveCompletion: { err in
-                print(".sink() received the completion", String(describing: err))
+                isCompleted = true
             }, receiveValue: { value in
-                print(".sink() received \(String(describing: value))")
                 outputValue = value
             })
 
         XCTAssertNil(outputValue)
         simplePublisher.send("one")
+        promise?()
+
         XCTAssertEqual(outputValue, "one foo")
+
+        simplePublisher.send(completion: .finished)
+        XCTAssertTrue(isCompleted)
         XCTAssertNotNil(cancellable)
+    }
+
+    func testResolvingMultipleTimes() {
+        var isCompleted = false
+        var outputValue = false
+        var promise: Future<Bool, Never>.Promise?
+
+        let future = Future<Bool, Never> { promise = $0 }
+
+        let cancellable = future.sink(receiveCompletion: { _ in
+            isCompleted = true
+        }, receiveValue: { value in
+            outputValue = value
+        })
+
+        promise?(.success(true))
+
+        XCTAssertTrue(isCompleted)
+        XCTAssertTrue(outputValue)
+        XCTAssertNotNil(cancellable)
+
+        promise?(.success(false))
+
+        XCTAssertTrue(isCompleted)
+        XCTAssertTrue(outputValue)
+        XCTAssertNotNil(cancellable)
+    }
+
+    func testCancellation() {
+        var isCompleted = false
+        var outputValue = false
+        var promise: Future<Bool, Never>.Promise?
+
+        let future = Future<Bool, Never> { promise = $0 }
+
+        let cancellable = future.sink(receiveCompletion: { _ in
+            isCompleted = true
+        }, receiveValue: { value in
+            outputValue = value
+        })
+
+        cancellable.cancel()
+
+        promise?(.success(true))
+
+        XCTAssertFalse(isCompleted)
+        XCTAssertFalse(outputValue)
+        XCTAssertNotNil(cancellable)
+    }
+
+    func testCancellationViaDeinit() {
+        var isCompleted = false
+        var outputValue = false
+        var promise: Future<Bool, Never>.Promise?
+
+        let future = Future<Bool, Never> { promise = $0 }
+
+        var cancellable: AnyCancellable? = future.sink(receiveCompletion: { _ in
+            isCompleted = true
+        }, receiveValue: { value in
+            outputValue = value
+        })
+
+        XCTAssertNotNil(cancellable)
+
+        cancellable = nil
+
+        promise?(.success(true))
+
+        XCTAssertFalse(isCompleted)
+        XCTAssertFalse(outputValue)
     }
 }
