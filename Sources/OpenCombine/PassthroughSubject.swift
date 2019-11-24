@@ -96,7 +96,7 @@ extension PassthroughSubject {
 
     fileprivate final class Conduit: Subscription {
 
-        fileprivate var _parent: PassthroughSubject?
+        fileprivate weak var _parent: PassthroughSubject?
 
         fileprivate var _downstream: AnySubscriber<Output, Failure>?
 
@@ -120,7 +120,7 @@ extension PassthroughSubject {
         }
 
         fileprivate func request(_ demand: Subscribers.Demand) {
-            precondition(demand > 0, "demand must not be zero")
+            demand.assertNonZero()
             _parent?._lock.do {
                 _demand += demand
             }
