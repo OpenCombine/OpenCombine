@@ -25,8 +25,8 @@ final class FutureTests: XCTestCase {
         let subscriber = TrackingSubscriber(receiveSubscription: { subscription in
             subscription.request(.unlimited)
         })
-
         future.subscribe(subscriber)
+
         promise?(.success(42))
 
         XCTAssertEqual(subscriber.history, [
@@ -49,7 +49,6 @@ final class FutureTests: XCTestCase {
                 return .none
             }
         )
-
         future.subscribe(subscriber)
 
         let error = TestingError(description: "\(#function)")
@@ -69,7 +68,6 @@ final class FutureTests: XCTestCase {
         let subscriber = TrackingSubscriber(receiveSubscription: { subscription in
             subscription.request(.unlimited)
         })
-
         future.subscribe(subscriber)
 
         promise?(.success(42))
@@ -117,7 +115,6 @@ final class FutureTests: XCTestCase {
         let subscriber = TrackingSubscriber(receiveSubscription: { subscription in
             subscription.request(.unlimited)
         })
-
         future.subscribe(subscriber)
 
         XCTAssertEqual(subscriber.history, [
@@ -136,5 +133,26 @@ final class FutureTests: XCTestCase {
             }
         })
         future.subscribe(subscriber)
+    }
+
+    func testRecursion() {
+        var promise: Sut.Promise?
+        let future = Sut { promise = $0 }
+
+        let subscriber = TrackingSubscriber(receiveSubscription: { subscription in
+            subscription.request(.unlimited)
+        }, receiveValue: {
+            promise?(.success($0 + 1))
+            return .none
+        }, receiveCompletion: {
+            guard case .finished = $0 else {
+                XCTFail()
+                return
+            }
+            promise?(.success(42))
+        })
+        future.subscribe(subscriber)
+
+        promise?(.success(0))
     }
 }

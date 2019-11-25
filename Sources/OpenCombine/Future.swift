@@ -22,6 +22,7 @@ public final class Future<Output, Failure>: Publisher where Failure: Error {
     ) {
         attemptToFulfill { result in
             self._lock.do {
+                guard self.result == nil else { return }
                 self.result = result
                 self._publish(result)
             }
