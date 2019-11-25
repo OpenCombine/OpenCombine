@@ -135,7 +135,7 @@ final class FutureTests: XCTestCase {
         future.subscribe(subscriber)
     }
 
-    func testRecursion() {
+    func testValueRecursion() {
         var promise: Sut.Promise?
         let future = Sut { promise = $0 }
 
@@ -144,9 +144,27 @@ final class FutureTests: XCTestCase {
         }, receiveValue: {
             promise?(.success($0 + 1))
             return .none
+        })
+        future.subscribe(subscriber)
+
+        promise?(.success(0))
+
+        XCTAssertEqual(subscriber.history, [
+            .subscription("Future"),
+            .value(0),
+            .completion(.finished)
+        ])
+    }
+
+    func testFinishedRecursion() {
+        var promise: Sut.Promise?
+        let future = Sut { promise = $0 }
+
+        let subscriber = TrackingSubscriber(receiveSubscription: { subscription in
+            subscription.request(.unlimited)
         }, receiveCompletion: {
             guard case .finished = $0 else {
-                XCTFail()
+                XCTFail("future in \(#function) is not expected to fail")
                 return
             }
             promise?(.success(42))
@@ -154,5 +172,36 @@ final class FutureTests: XCTestCase {
         future.subscribe(subscriber)
 
         promise?(.success(0))
+
+        XCTAssertEqual(subscriber.history, [
+            .subscription("Future"),
+            .value(0),
+            .completion(.finished)
+        ])
+    }
+
+    func testFailureRecursion() {
+        var promise: Sut.Promise?
+        let future = Sut { promise = $0 }
+
+        let subscriber = TrackingSubscriber(receiveSubscription: { subscription in
+            subscription.request(.unlimited)
+        }, receiveCompletion: {
+            guard case .failure = $0 else {
+                XCTFail("future in \(#function) is expected to fail")
+                return
+            }
+            promise?(.success(42))
+        })
+        future.subscribe(subscriber)
+
+        let error = TestingError(description: "\(#function)")
+
+        promise?(.failure(error))
+
+        XCTAssertEqual(subscriber.history, [
+            .subscription("Future"),
+            .completion(.failure(error))
+        ])
     }
 }
