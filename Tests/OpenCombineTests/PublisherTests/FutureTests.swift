@@ -107,4 +107,23 @@ final class FutureTests: XCTestCase {
             .subscription("Future")
         ])
     }
+
+    func testSubscribeAfterResolution() {
+        var promise: SUT.Promise?
+
+        let future = SUT { promise = $0 }
+        promise?(.success(42))
+
+        let subscriber = TrackingSubscriber(receiveSubscription: { subscription in
+            subscription.request(.unlimited)
+        })
+
+        future.subscribe(subscriber)
+
+        XCTAssertEqual(subscriber.history, [
+            .subscription("Future"),
+            .value(42),
+            .completion(.finished)
+        ])
+    }
 }
