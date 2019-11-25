@@ -126,7 +126,7 @@ final class FutureTests: XCTestCase {
             .completion(.finished)
         ])
     }
-    
+
     func testCrashesOnZeroDemand() {
         let future = Sut { _ in }
 
