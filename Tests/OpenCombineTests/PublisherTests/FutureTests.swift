@@ -46,7 +46,7 @@ final class FutureTests: XCTestCase {
                 subscription.request(.unlimited)
             }, receiveValue: { _ in
                 XCTFail("no value should be returned")
-                return .unlimited
+                return .none
             }
         )
 
