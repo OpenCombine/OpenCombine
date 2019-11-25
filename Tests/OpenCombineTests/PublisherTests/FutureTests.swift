@@ -15,131 +15,105 @@ import OpenCombine
 
 @available(macOS 10.15, iOS 13.0, *)
 final class FutureTests: XCTestCase {
-    struct TestError: Error {}
+    private typealias SUT = Future<Int, TestingError>
 
     func testFutureSuccess() {
-        var isCompleted = false
-        var outputValue = false
-        var promise: Future<Bool, Never>.Promise?
+        var promise: SUT.Promise?
 
-        let future = Future<Bool, Never> { promise = $0 }
+        let future = SUT { promise = $0 }
 
-        let cancellable = future.sink(receiveCompletion: { _ in
-            isCompleted = true
-        }, receiveValue: { value in
-            outputValue = value
+        let subscriber = TrackingSubscriber(receiveSubscription: { subscription in
+            subscription.request(.unlimited)
         })
 
-        promise?(.success(true))
+        future.subscribe(subscriber)
+        promise?(.success(42))
 
-        XCTAssertTrue(isCompleted)
-        XCTAssertTrue(outputValue)
-        XCTAssertNotNil(cancellable)
+        XCTAssertEqual(subscriber.history, [
+            .subscription("Future"),
+            .value(42),
+            .completion(.finished)
+        ])
     }
 
     func testFutureFailure() {
-        var error: TestError?
-        var promise: Future<Bool, TestError>.Promise?
+        var promise: SUT.Promise?
 
-        let future = Future<Bool, TestError> { promise = $0 }
+        let future = SUT { promise = $0 }
 
-        let cancellable = future.sink(receiveCompletion: {
-            guard case let .failure(e) = $0 else { return }
-
-            error = e
-        }, receiveValue: { _ in
-            XCTFail("no value should be returned")
-        })
-
-        promise?(.failure(TestError()))
-
-        XCTAssertNotNil(error)
-        XCTAssertNotNil(cancellable)
-    }
-
-    func testFutureWithinFlatMap() {
-        var isCompleted = false
-        let simplePublisher = PassthroughSubject<String, Never>()
-        var promise: (() -> Void)?
-        var outputValue: String?
-
-        let cancellable = simplePublisher
-            .flatMap { name in
-                Future<String, Never> { fulfill in
-                    promise = { fulfill(.success(name)) }
-                }.map { "\($0) foo" }
+        let subscriber = TrackingSubscriber(
+            receiveSubscription: { subscription in
+                subscription.request(.unlimited)
+            }, receiveValue: { _ in
+                XCTFail("no value should be returned")
+                return .unlimited
             }
-            .sink(receiveCompletion: { _ in
-                isCompleted = true
-            }, receiveValue: { value in
-                outputValue = value
-            })
+        )
 
-        XCTAssertNil(outputValue)
-        simplePublisher.send("one")
-        promise?()
+        future.subscribe(subscriber)
 
-        XCTAssertEqual(outputValue, "one foo")
+        let error = TestingError(description: "\(#function)")
+        promise?(.failure(error))
 
-        simplePublisher.send(completion: .finished)
-        XCTAssertTrue(isCompleted)
-        XCTAssertNotNil(cancellable)
+        XCTAssertEqual(subscriber.history, [
+            .subscription("Future"),
+            .completion(.failure(error))
+        ])
     }
 
     func testResolvingMultipleTimes() {
-        var isCompleted = false
-        var outputValue = false
-        var promise: Future<Bool, Never>.Promise?
+        var promise: SUT.Promise?
 
-        let future = Future<Bool, Never> { promise = $0 }
+        let future = SUT { promise = $0 }
 
-        let cancellable = future.sink(receiveCompletion: { _ in
-            isCompleted = true
-        }, receiveValue: { value in
-            outputValue = value
+        let subscriber = TrackingSubscriber(receiveSubscription: { subscription in
+            subscription.request(.unlimited)
         })
 
-        promise?(.success(true))
+        future.subscribe(subscriber)
 
-        XCTAssertTrue(isCompleted)
-        XCTAssertTrue(outputValue)
-        XCTAssertNotNil(cancellable)
+        promise?(.success(42))
 
-        promise?(.success(false))
+        XCTAssertEqual(subscriber.history, [
+            .subscription("Future"),
+            .value(42),
+            .completion(.finished)
+        ])
 
-        XCTAssertTrue(isCompleted)
-        XCTAssertTrue(outputValue)
-        XCTAssertNotNil(cancellable)
+        promise?(.success(41))
+
+        XCTAssertEqual(subscriber.history, [
+            .subscription("Future"),
+            .value(42),
+            .completion(.finished)
+        ])
     }
 
     func testCancellation() {
-        var isCompleted = false
-        var outputValue = false
-        var promise: Future<Bool, Never>.Promise?
+        var promise: SUT.Promise?
 
-        let future = Future<Bool, Never> { promise = $0 }
+        let future = SUT { promise = $0 }
 
-        let cancellable = future.sink(receiveCompletion: { _ in
-            isCompleted = true
-        }, receiveValue: { value in
-            outputValue = value
+        let subscriber = TrackingSubscriber(receiveSubscription: { subscription in
+            subscription.request(.unlimited)
         })
+        future.subscribe(subscriber)
 
-        cancellable.cancel()
+        subscriber.subscriptions.forEach { $0.cancel() }
 
-        promise?(.success(true))
+        promise?(.success(42))
 
-        XCTAssertFalse(isCompleted)
-        XCTAssertFalse(outputValue)
-        XCTAssertNotNil(cancellable)
+        XCTAssertEqual(subscriber.history, [
+            .subscription("Future")
+        ])
     }
 
     func testCancellationViaDeinit() {
         var isCompleted = false
-        var outputValue = false
-        var promise: Future<Bool, Never>.Promise?
+        var outputValue: Int?
+        var promise: SUT.Promise?
 
-        let future = Future<Bool, Never> { promise = $0 }
+        let future = SUT { promise = $0 }
 
         var cancellable: AnyCancellable? = future.sink(receiveCompletion: { _ in
             isCompleted = true
@@ -151,28 +125,9 @@ final class FutureTests: XCTestCase {
 
         cancellable = nil
 
-        promise?(.success(true))
+        promise?(.success(42))
 
         XCTAssertFalse(isCompleted)
-        XCTAssertFalse(outputValue)
-    }
-
-    func testSinkAfterResolution() {
-        var isCompleted = false
-        var outputValue = false
-        var promise: Future<Bool, Never>.Promise?
-
-        let future = Future<Bool, Never> { promise = $0 }
-        promise?(.success(true))
-
-        let cancellable: AnyCancellable? = future.sink(receiveCompletion: { _ in
-            isCompleted = true
-        }, receiveValue: { value in
-            outputValue = value
-        })
-
-        XCTAssertTrue(isCompleted)
-        XCTAssertTrue(outputValue)
-        XCTAssertNotNil(cancellable)
+        XCTAssertNil(outputValue)
     }
 }
