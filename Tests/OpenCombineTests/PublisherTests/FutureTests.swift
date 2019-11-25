@@ -15,12 +15,12 @@ import OpenCombine
 
 @available(macOS 10.15, iOS 13.0, *)
 final class FutureTests: XCTestCase {
-    private typealias SUT = Future<Int, TestingError>
+    private typealias Sut = Future<Int, TestingError>
 
     func testFutureSuccess() {
-        var promise: SUT.Promise?
+        var promise: Sut.Promise?
 
-        let future = SUT { promise = $0 }
+        let future = Sut { promise = $0 }
 
         let subscriber = TrackingSubscriber(receiveSubscription: { subscription in
             subscription.request(.unlimited)
@@ -37,9 +37,9 @@ final class FutureTests: XCTestCase {
     }
 
     func testFutureFailure() {
-        var promise: SUT.Promise?
+        var promise: Sut.Promise?
 
-        let future = SUT { promise = $0 }
+        let future = Sut { promise = $0 }
 
         let subscriber = TrackingSubscriber(
             receiveSubscription: { subscription in
@@ -62,9 +62,9 @@ final class FutureTests: XCTestCase {
     }
 
     func testResolvingMultipleTimes() {
-        var promise: SUT.Promise?
+        var promise: Sut.Promise?
 
-        let future = SUT { promise = $0 }
+        let future = Sut { promise = $0 }
 
         let subscriber = TrackingSubscriber(receiveSubscription: { subscription in
             subscription.request(.unlimited)
@@ -90,9 +90,9 @@ final class FutureTests: XCTestCase {
     }
 
     func testCancellation() {
-        var promise: SUT.Promise?
+        var promise: Sut.Promise?
 
-        let future = SUT { promise = $0 }
+        let future = Sut { promise = $0 }
 
         let subscriber = TrackingSubscriber(receiveSubscription: { subscription in
             subscription.request(.unlimited)
@@ -109,9 +109,9 @@ final class FutureTests: XCTestCase {
     }
 
     func testSubscribeAfterResolution() {
-        var promise: SUT.Promise?
+        var promise: Sut.Promise?
 
-        let future = SUT { promise = $0 }
+        let future = Sut { promise = $0 }
         promise?(.success(42))
 
         let subscriber = TrackingSubscriber(receiveSubscription: { subscription in
