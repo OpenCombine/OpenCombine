@@ -159,6 +159,7 @@ extension Publishers.Multicast {
             lock.lock()
             guard case let .ready(upstream, downstream) = state else {
                 lock.unlock()
+                subscription.cancel()
                 return
             }
             state = .subscribed(upstream: upstream,

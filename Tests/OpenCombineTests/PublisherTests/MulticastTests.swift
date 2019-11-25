@@ -308,6 +308,19 @@ final class MulticastTests: XCTestCase {
         XCTAssertEqual(counter, 1, "The createSubject closure should be called once")
     }
 
+    func testMulticastReceiveSubscriptionTwice() {
+        let publisher = CustomPublisher(subscription: CustomSubscription())
+        var inner: AnySubscriber<Int, TestingError>?
+        let trackingSubject = TrackingSubject<Int>(receiveSubscriber: { inner = $0 })
+        let multicast = publisher.multicast(subject: trackingSubject)
+        let tracking = TrackingSubscriber()
+        multicast.subscribe(tracking)
+        XCTAssertNotNil(inner)
+        let extraSubscription = CustomSubscription()
+        inner?.receive(subscription: extraSubscription)
+        XCTAssertEqual(extraSubscription.history, [.cancelled])
+    }
+
     func testMulticastReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(
             value: 0,
