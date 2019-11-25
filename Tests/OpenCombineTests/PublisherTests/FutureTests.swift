@@ -107,27 +107,4 @@ final class FutureTests: XCTestCase {
             .subscription("Future")
         ])
     }
-
-    func testCancellationViaDeinit() {
-        var isCompleted = false
-        var outputValue: Int?
-        var promise: SUT.Promise?
-
-        let future = SUT { promise = $0 }
-
-        var cancellable: AnyCancellable? = future.sink(receiveCompletion: { _ in
-            isCompleted = true
-        }, receiveValue: { value in
-            outputValue = value
-        })
-
-        XCTAssertNotNil(cancellable)
-
-        cancellable = nil
-
-        promise?(.success(42))
-
-        XCTAssertFalse(isCompleted)
-        XCTAssertNil(outputValue)
-    }
 }
