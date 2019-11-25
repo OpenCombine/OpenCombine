@@ -282,10 +282,10 @@ final class TrackingSubjectBase<Output: Equatable, Failure: Error>
 
     private let _passthrough = PassthroughSubject<Output, Failure>()
     private(set) var history: [Event] = []
-    private let _receiveSubscriber: ((CustomCombineIdentifierConvertible) -> Void)?
+    private let _receiveSubscriber: ((AnySubscriber<Output, Failure>) -> Void)?
     private let _onDeinit: (() -> Void)?
 
-    init(receiveSubscriber: ((CustomCombineIdentifierConvertible) -> Void)? = nil,
+    init(receiveSubscriber: ((AnySubscriber<Output, Failure>) -> Void)? = nil,
          onDeinit: (() -> Void)? = nil) {
         _receiveSubscriber = receiveSubscriber
         _onDeinit = onDeinit
@@ -313,7 +313,7 @@ final class TrackingSubjectBase<Output: Equatable, Failure: Error>
     func receive<Downstream: Subscriber>(subscriber: Downstream)
         where Failure == Downstream.Failure, Output == Downstream.Input
     {
-        _receiveSubscriber?(subscriber)
+        _receiveSubscriber?(AnySubscriber(subscriber))
         history.append(.subscriber)
         _passthrough.subscribe(subscriber)
     }
