@@ -60,8 +60,8 @@ public final class Future<Output, Failure>: Publisher where Failure: Error {
         for subscription in self._subscriptions where !subscription._isCompleted {
             switch result {
             case let .success(output) where subscription._demand > 0:
-                subscription._demand += subscription._downstream?.receive(output) ?? .none
                 subscription._demand -= 1
+                subscription._demand += subscription._downstream?.receive(output) ?? .none
                 subscription._receive(completion: .finished)
             case let .failure(error):
                 subscription._receive(completion: .failure(error))

@@ -126,4 +126,15 @@ final class FutureTests: XCTestCase {
             .completion(.finished)
         ])
     }
+    
+    func testNoDemand() {
+        let future = Sut { _ in }
+
+        let subscriber = TrackingSubscriber(receiveSubscription: { subscription in
+            self.assertCrashes {
+                subscription.request(.none)
+            }
+        })
+        future.subscribe(subscriber)
+    }
 }
