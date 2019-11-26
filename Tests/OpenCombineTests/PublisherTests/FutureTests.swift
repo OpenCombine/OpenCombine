@@ -216,13 +216,24 @@ final class FutureTests: XCTestCase {
 
         let future = Sut { promise = $0 }
 
-        let subscriber = TrackingSubscriber()
+        var downstreamSubscription: Subscription?
+        let subscriber = TrackingSubscriber(
+            receiveSubscription: { downstreamSubscription = $0 }
+        )
         future.subscribe(subscriber)
 
         promise?(.success(42))
 
         XCTAssertEqual(subscriber.history, [
             .subscription("Future")
+        ])
+
+        downstreamSubscription?.request(.max(1))
+
+        XCTAssertEqual(subscriber.history, [
+            .subscription("Future"),
+            .value(42),
+            .completion(.finished)
         ])
     }
 }
