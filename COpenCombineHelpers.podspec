@@ -1,6 +1,6 @@
 Pod::Spec.new do |spec|
   spec.name          = "COpenCombineHelpers"
-  spec.version       = "0.5.0"
+  spec.version       = "0.6.0"
   spec.summary       = "C++ Helpers for OpenCombine"
 
   spec.description   = <<-DESC
