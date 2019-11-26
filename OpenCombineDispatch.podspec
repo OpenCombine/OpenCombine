@@ -1,7 +1,7 @@
 Pod::Spec.new do |spec|
   spec.name          = "OpenCombineDispatch"
-  spec.version       = "0.5.0"
-  spec.summary       = "OpenCombine Dispatching"
+  spec.version       = "0.6.0"
+  spec.summary       = "OpenCombine + Dispatch interoperability"
 
   spec.description   = <<-DESC
   Extends `DispatchQueue` with new methods and nested types.

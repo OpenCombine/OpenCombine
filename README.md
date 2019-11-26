@@ -3,6 +3,7 @@
 [![codecov](https://codecov.io/gh/broadwaylamb/OpenCombine/branch/master/graph/badge.svg)](https://codecov.io/gh/broadwaylamb/OpenCombine)
 ![Language](https://img.shields.io/badge/Swift-5.0-orange.svg)
 ![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20iOS%20%7C%20watchOS%20%7C%20tvOS-lightgrey.svg)
+![Cocoapods](https://img.shields.io/cocoapods/v/OpenCombine?color=blue)
 [<img src="https://img.shields.io/badge/slack-OpenCombine-yellow.svg?logo=slack">](https://join.slack.com/t/opencombine/shared_invite/enQtNzE2MjE5NzkxODI0LTYxMjkzNDUxZWViZWI1Njc2YjBhODgxNjRjOTdkZTcxOGU2ZjJjZjYxMGI3NWZkN2RkNGFmZTUzNmU3MGE2ZWM)
 
 Open-source implementation of Apple's [Combine](https://developer.apple.com/documentation/combine) framework for processing values over time.
@@ -22,7 +23,7 @@ To add `OpenCombine` to your [SPM](https://swift.org/package-manager/) package, 
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/broadwaylamb/OpenCombine.git", from: "0.5.0")
+    .package(url: "https://github.com/broadwaylamb/OpenCombine.git", from: "0.6.0")
 ],
 targets: [
     .target(name: "MyAwesomePackage", dependencies: ["OpenCombine", "OpenCombineDispatch"])
@@ -43,8 +44,8 @@ To do so, open Xcode, use **File** → **Swift Packages** → **Add Package Depe
 To add `OpenCombine` to a project using [CocoaPods](https://cocoapods.org/), add `OpenCombine` and `OpenCombineDispatch` to the list of target dependencies in your `Podfile`. 
 
 ```ruby
-pod 'OpenCombine', '~> 0.5.0'
-pod 'OpenCombineDispatch', '~> 0.5.0'
+pod 'OpenCombine', '~> 0.6.0'
+pod 'OpenCombineDispatch', '~> 0.6.0'
 ```
 
 ### Contributing
