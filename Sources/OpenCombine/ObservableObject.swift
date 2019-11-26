@@ -97,11 +97,9 @@ public protocol ObservableObject: AnyObject {
 
 extension ObservableObject where ObjectWillChangePublisher == ObservableObjectPublisher {
 
-#if swift(>=5.1)
     /// A publisher that emits before the object has changed.
-    @available(swift 5.1)
     public var objectWillChange: ObservableObjectPublisher {
-
+#if swift(>=5.1)
         var installedPublisher: ObservableObjectPublisher?
 
         enumerateFields(ofType: Self.self) { _, fieldOffset, fieldType in
@@ -144,18 +142,10 @@ extension ObservableObject where ObjectWillChangePublisher == ObservableObjectPu
         }
 
         return installedPublisher ?? ObservableObjectPublisher()
-    }
 #else
-    // swiftlint:disable let_var_whitespace
-    @available(*, unavailable, message: """
-               The default implementation of the objectWillChange property is available \
-               since Swift 5.1.
-               """)
-    public var objectWillChange: ObservableObjectPublisher {
-        fatalError()
+        return ObservableObjectPublisher()
+#endif // swift(>=5.1)
     }
-    // swiftlint:enable let_var_whitespace
-#endif
 }
 
 /// The default publisher of an `ObservableObject`.
