@@ -37,7 +37,10 @@ jobs:
                    -scheme OpenCombine-Package \
                    -sdk macosx10.15 \
                    -derivedDataPath DerivedData \
+              | tee xcodebuild_build-for-testing.log \
               | xcpretty
+      - store_artifacts:
+          path: xcodebuild_build-for-testing.log
       - run:
           name: Testing on macOS 10.15.0 with xcodebuild
           command: |
@@ -46,7 +49,10 @@ jobs:
                    -scheme OpenCombine-Package \
                    -sdk macosx10.15 \
                    -derivedDataPath DerivedData \
+              | tee xcodebuild_test-without-building.log \
               | xcpretty --report junit -o build/reports/results.xml
+      - store_artifacts:
+          path: xcodebuild_test-without-building.log
       - store_test_results:
           path: build/reports
       - run:
@@ -72,7 +78,10 @@ jobs:
                    -scheme OpenCombine-Package \
                    -destination "platform=iOS Simulator,name=iPhone 11,OS=13.2.2" \
                    -derivedDataPath DerivedData \
+              | tee xcodebuild_build-for-testing.log \
               | xcpretty
+      - store_artifacts:
+          path: xcodebuild_build-for-testing.log
       - run:
           name: Testing against Combine on iOS 13.2.2 with xcodebuild
           command: |
@@ -81,7 +90,10 @@ jobs:
                    -scheme OpenCombine-Package \
                    -destination "platform=iOS Simulator,name=iPhone 11,OS=13.2.2" \
                    -derivedDataPath DerivedData \
+              | tee xcodebuild_test-without-building.log \
               | xcpretty --report junit -o build/reports/results.xml
+      - store_artifacts:
+          path: xcodebuild_test-without-building.log
       - store_test_results:
           path: build/reports
 
@@ -123,7 +135,10 @@ jobs:
                     -scheme OpenCombine-Package \
                     -destination "platform=iOS Simulator,name=iPhone 4s,OS=9.3" \
                     -derivedDataPath DerivedData \
+               | tee xcodebuild_build-for-testing.log \
                | xcpretty
+      - store_artifacts:
+          path: xcodebuild_build-for-testing.log
       - run:
           name: Testing on iOS 9.3 with xcodebuild
           command: |
@@ -132,7 +147,10 @@ jobs:
                    -scheme OpenCombine-Package \
                    -destination "platform=iOS Simulator,name=iPhone 4s,OS=9.3" \
                    -derivedDataPath DerivedData \
+              | tee xcodebuild_test-without-building.log \
               | xcpretty --report junit -o build/reports/results.xml
+      - store_artifacts:
+          path: xcodebuild_test-without-building.log
       - store_test_results:
           path: build/reports
       - run:

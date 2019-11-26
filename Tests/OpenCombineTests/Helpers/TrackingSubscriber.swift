@@ -196,6 +196,18 @@ extension TrackingSubscriberBase where Value: Equatable {
 }
 
 @available(macOS 10.15, iOS 13.0, *)
+extension TrackingSubscriberBase where Value == Void {
+    func assertHistoryEqual(_ expected: [Event],
+                            file: StaticString = #file,
+                            line: UInt = #line) {
+        assertHistoryEqual(expected,
+                           valueComparator: { _, _ in true },
+                           file: file,
+                           line: line)
+    }
+}
+
+@available(macOS 10.15, iOS 13.0, *)
 extension TrackingSubscriberBase.Event {
     func isEqual(to other: TrackingSubscriberBase<Value, Failure>.Event,
                  valueComparator: (Value, Value) -> Bool) -> Bool {
@@ -222,9 +234,20 @@ extension TrackingSubscriberBase.Event {
 @available(macOS 10.15, iOS 13.0, *)
 extension TrackingSubscriberBase.Event: Equatable where Value: Equatable {
 
-    static func == (lhs: TrackingSubscriberBase<Value, Failure>.Event,
-                    rhs: TrackingSubscriberBase<Value, Failure>.Event) -> Bool {
+    static func == (lhs: TrackingSubscriberBase.Event,
+                    rhs: TrackingSubscriberBase.Event) -> Bool {
         return lhs.isEqual(to: rhs, valueComparator: ==)
+    }
+}
+
+@available(macOS 10.15, iOS 13.0, *)
+extension TrackingSubscriberBase.Event where Value == Void {
+
+    static var signal: TrackingSubscriberBase.Event { return .value(()) }
+
+    static func == (lhs: TrackingSubscriberBase.Event,
+                    rhs: TrackingSubscriberBase.Event) -> Bool {
+        return lhs.isEqual(to: rhs, valueComparator: { _, _ in true })
     }
 }
 

@@ -14,16 +14,18 @@
 /// of the property first.
 /// Note that the `@Published` property is class-constrained.
 /// Use it with properties of classes, not with non-class types like structures.
+@available(swift, introduced: 5.1)
 @propertyWrapper
 public struct Published<Value> {
 
-    /// Initialize the storage of the Published
-    /// property as well as the corresponding `Publisher`.
+    /// Initialize the storage of the `Published` property as well as the corresponding
+    /// `Publisher`.
     public init(initialValue: Value) {
-        value = initialValue
+        self.init(wrappedValue: initialValue)
     }
 
-    @available(*, unavailable)
+    /// Initialize the storage of the `Published` property as well as the corresponding
+    /// `Publisher`.
     public init(wrappedValue: Value) {
         value = wrappedValue
     }
@@ -31,21 +33,10 @@ public struct Published<Value> {
     /// A publisher for properties marked with the `@Published` attribute.
     public struct Publisher: OpenCombine.Publisher {
 
-        /// The kind of values published by this publisher.
         public typealias Output = Value
 
-        /// The kind of errors this publisher might publish.
-        ///
-        /// Use `Never` if this `Publisher` does not publish errors.
         public typealias Failure = Never
 
-        /// This function is called to attach the specified
-        /// `Subscriber` to this `Publisher` by `subscribe(_:)`
-        ///
-        /// - SeeAlso: `subscribe(_:)`
-        /// - Parameters:
-        ///     - subscriber: The subscriber to attach to this `Publisher`.
-        ///                   once attached it can begin to receive values.
         public func receive<Downstream: Subscriber>(subscriber: Downstream)
             where Downstream.Input == Value, Downstream.Failure == Never
         {
@@ -61,8 +52,12 @@ public struct Published<Value> {
 
     private var value: Value
 
-    /// The property that can be accessed with the
-    /// `$` syntax and allows access to the `Publisher`
+    private var publisher: Publisher?
+
+    internal var objectWillChange: ObservableObjectPublisher?
+
+    /// The property that can be accessed with the `$` syntax and allows access to
+    /// the `Publisher`
     public var projectedValue: Publisher {
         mutating get {
             if let publisher = publisher {
@@ -74,28 +69,35 @@ public struct Published<Value> {
         }
     }
 
-    @available(*, unavailable, message:
-        "@Published is only available on properties of classes")
-
+    // swiftlint:disable let_var_whitespace
+    @available(*, unavailable, message: """
+               @Published is only available on properties of classes
+               """)
     public var wrappedValue: Value {
-        get { value }
-        set {
-            value = newValue
-            publisher?.subject.value = newValue
-        }
+        get { fatalError() }
+        set { fatalError() } // swiftlint:disable:this unused_setter_value
     }
+    // swiftlint:enable let_var_whitespace
 
-    private var publisher: Publisher?
-
-    @available(*, unavailable, message:
-        "This subscript is unavailable in OpenCombine yet")
     public static subscript<EnclosingSelf: AnyObject>(
         _enclosingInstance object: EnclosingSelf,
         wrapped wrappedKeyPath: ReferenceWritableKeyPath<EnclosingSelf, Value>,
         storage storageKeyPath: ReferenceWritableKeyPath<EnclosingSelf, Published<Value>>
     ) -> Value {
-        get { fatalError() }
-        set { fatalError() }
+        get {
+            return object[keyPath: storageKeyPath].value
+        }
+        set {
+            object[keyPath: storageKeyPath].objectWillChange?.send()
+            object[keyPath: storageKeyPath].publisher?.subject.send(newValue)
+            object[keyPath: storageKeyPath].value = newValue
+        }
+        // TODO: Benchmark and explore a possibility to use _modify
     }
 }
-#endif
+#else
+
+@available(swift, introduced: 5.1)
+public typealias Published = Never
+
+#endif // swift(>=5.1)
