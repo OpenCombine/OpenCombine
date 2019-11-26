@@ -204,4 +204,36 @@ final class FutureTests: XCTestCase {
             .completion(.failure(error))
         ])
     }
+
+    func testStartsImmediately() {
+        var hasStarted = false
+        _ = Sut { _ in hasStarted = true }
+        XCTAssertTrue(hasStarted)
+    }
+
+    func testWaitsForRequest() {
+        var promise: Sut.Promise?
+
+        let future = Sut { promise = $0 }
+
+        var downstreamSubscription: Subscription?
+        let subscriber = TrackingSubscriber(
+            receiveSubscription: { downstreamSubscription = $0 }
+        )
+        future.subscribe(subscriber)
+
+        promise?(.success(42))
+
+        XCTAssertEqual(subscriber.history, [
+            .subscription("Future")
+        ])
+
+        downstreamSubscription?.request(.max(1))
+
+        XCTAssertEqual(subscriber.history, [
+            .subscription("Future"),
+            .value(42),
+            .completion(.finished)
+        ])
+    }
 }
