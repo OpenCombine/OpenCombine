@@ -177,7 +177,7 @@ protected:
 
     if (requiresRealignment())
       return reinterpret_cast<const NextTy *>(
-          llvm::alignAddr(Ptr, alignof(NextTy)));
+          llvm::alignAddr(Ptr, llvm::Align(alignof(NextTy))));
     else
       return reinterpret_cast<const NextTy *>(Ptr);
   }

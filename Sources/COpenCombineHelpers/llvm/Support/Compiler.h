@@ -12,6 +12,11 @@
 //
 //===----------------------------------------------------------------------===//
 
+// MODIFICATION NOTE:
+// This file has been modified for the OpenCombine open source project.
+// - The llvm namespace is wrapped in the opencombine namespace.
+// - Some macros have been removed.
+
 #ifndef OPENCOMBINE_LLVM_SUPPORT_COMPILER_H
 #define OPENCOMBINE_LLVM_SUPPORT_COMPILER_H
 

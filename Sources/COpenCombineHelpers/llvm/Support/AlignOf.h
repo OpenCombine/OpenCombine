@@ -10,6 +10,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// MODIFICATION NOTE:
+// This file has been modified for the OpenCombine open source project.
+// - The llvm namespace is wrapped in the opencombine namespace.
+
 #ifndef OPENCOMBINE_LLVM_SUPPORT_ALIGNOF_H
 #define OPENCOMBINE_LLVM_SUPPORT_ALIGNOF_H
 

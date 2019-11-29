@@ -176,26 +176,26 @@ final class ObservableObjectTests: XCTestCase {
     }
 
     // FIXME: This test crashes
-//    func testGenericClass() {
-//        let observableObject = GenericClass(123, true)
-//
-//        var counter = 0
-//
-//        observableObject.objectWillChange.sink { counter += 1 }.store(in: &disposeBag)
-//        XCTAssertEqual(counter, 0)
-//        XCTAssertEqual(observableObject.value1, 123)
-//        XCTAssertEqual(observableObject.value2, true)
-//
-//        observableObject.value1 += 1
-//
-//        XCTAssertEqual(counter, 1)
-//        XCTAssertEqual(observableObject.value1, 124)
-//
-//        observableObject.value2.toggle()
-//
-//        XCTAssertEqual(counter, 2)
-//        XCTAssertEqual(observableObject.value2, false)
-//    }
+    func testGenericClass() {
+        let observableObject = GenericClass(123, true)
+
+        var counter = 0
+
+        observableObject.objectWillChange.sink { counter += 1 }.store(in: &disposeBag)
+        XCTAssertEqual(counter, 0)
+        XCTAssertEqual(observableObject.value1, 123)
+        XCTAssertEqual(observableObject.value2, true)
+
+        observableObject.value1 += 1
+
+        XCTAssertEqual(counter, 1)
+        XCTAssertEqual(observableObject.value1, 124)
+
+        observableObject.value2.toggle()
+
+        XCTAssertEqual(counter, 2)
+        XCTAssertEqual(observableObject.value2, false)
+    }
 
     func testGenericSubclassOfResilientClass() {
         let observableObject = ResilientClassGenericSubclass("hello", true)

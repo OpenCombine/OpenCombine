@@ -15,6 +15,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// MODIFICATION NOTE:
+// This file has been modified for the OpenCombine open source project.
+// - The swift namespace is wrapped in the opencombine namespace.
+
 #ifndef OPENCOMBINE_SWIFT_BASIC_FLAGSET_H
 #define OPENCOMBINE_SWIFT_BASIC_FLAGSET_H
 

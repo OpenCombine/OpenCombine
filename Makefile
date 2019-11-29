@@ -3,7 +3,7 @@ SWIFT_TEST_FLAGS=
 SWIFT_BUILD_FLAGS=-Xcc -Wunguarded-availability
 
 debug:
-	$(SWIFT_EXE) build -c debug $(SWIFT_BUILD_FLAGS)
+	$(SWIFT_EXE) build -c debug --sanitize address,undefined $(SWIFT_BUILD_FLAGS)
 
 release:
 	$(SWIFT_EXE) build -c release $(SWIFT_BUILD_FLAGS)

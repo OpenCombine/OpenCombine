@@ -1,5 +1,5 @@
 //
-//  RuntimeConfig.cpp
+//  BackDeployment.cpp
 //  
 //
 //  Created by Sergej Jaskiewicz on 31.10.2019.
@@ -10,7 +10,7 @@
 // and must be updated accordingly.
 
 #if defined(__APPLE__) && defined(__MACH__)
-#include "RuntimeConfig.h"
+#include "swift/Runtime/Config.h"
 
 /// Returns true if the current OS version, at runtime, is a back-deployment
 /// version.

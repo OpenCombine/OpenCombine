@@ -12,6 +12,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// MODIFICATION NOTE:
+// This file has been modified for the OpenCombine open source project.
+// - The llvm namespace is wrapped in the opencombine namespace.
+
 #ifndef OPENCOMBINE_LLVM_ADT_OPTIONAL_H
 #define OPENCOMBINE_LLVM_ADT_OPTIONAL_H
 

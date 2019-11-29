@@ -32,13 +32,42 @@ public:
     using reverse_iterator = std::reverse_iterator<iterator>;
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
-    constexpr span() noexcept: span(nullptr, 0) {}
+    constexpr span() noexcept: data_(nullptr), size_(0) {}
     constexpr span(pointer ptr, index_type count): data_(ptr), size_(count) {}
     constexpr span(pointer first, pointer last): span(first, last - first) {}
     constexpr span(const span& other) noexcept = default;
 
     constexpr span& operator=(const span& other) noexcept = default;
 
+    constexpr const_reference operator[](index_type index) const noexcept {
+        assert(index < size_);
+        return data_[index];
+    }
+
+    constexpr reference operator[](index_type index) noexcept {
+        assert(index < size_);
+        return data_[index];
+    }
+
+    const_pointer data() const noexcept { return data_; }
+
+    pointer data() noexcept { return data_; }
+
+    index_type size() const noexcept { return size_; }
+
+    const_iterator begin() const noexcept { return data_; }
+    iterator begin() noexcept { return data_; }
+
+    const_iterator end() const noexcept { return data_ + size_; }
+    iterator end() noexcept { return data_ + size_; }
+
+    bool operator==(const span& other) const {
+        return size_ == other.size_ && std::equal(begin(), end(), other.begin());
+    }
+
+    bool operator!=(const span& other) const {
+        return !operator==(other);
+    }
 private:
     pointer data_;
     index_type size_;

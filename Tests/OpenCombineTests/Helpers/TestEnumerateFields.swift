@@ -1,5 +1,5 @@
 //
-//  TypeMetadata.swift
+//  TestEnumerateFields.swift
 //  
 //
 //  Created by Sergej Jaskiewicz on 31.10.2019.

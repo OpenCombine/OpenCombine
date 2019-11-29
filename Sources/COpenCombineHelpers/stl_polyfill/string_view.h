@@ -40,6 +40,12 @@ struct string_view {
     const_pointer data() const noexcept { return data_; }
 
     constexpr size_type size() const noexcept { return size_; }
+
+    const_iterator begin() const noexcept { return data_; }
+    iterator begin() noexcept { return data_; }
+
+    const_iterator end() const noexcept { return data_ + size_; }
+    iterator end() noexcept { return data_ + size_; }
 private:
     const_pointer data_;
     size_type size_;
