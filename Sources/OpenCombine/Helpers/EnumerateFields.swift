@@ -17,7 +17,7 @@ internal func enumerateFields(ofType type: Any.Type,
     // (Unlike closures, function pointers cannot capture context)
     withoutActuallyEscaping(enumerator) { enumerator in
         var context = enumerator
-        enumerateClassFields(
+        enumerateFields(
             typeMetadata: unsafeBitCast(type, to: UnsafeRawPointer.self),
             allowResilientSuperclasses: allowResilientSuperclasses,
             enumeratorContext: &context,

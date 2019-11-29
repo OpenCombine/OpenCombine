@@ -36,7 +36,7 @@ internal func enumerateFields(ofType type: Any.Type,
                               enumerator: FieldEnumerator) {
     withoutActuallyEscaping(enumerator) { enumerator in
         var context = enumerator
-        enumerateClassFields(
+        enumerateFields(
             typeMetadata: unsafeBitCast(type, to: UnsafeRawPointer.self),
             allowResilientSuperclasses: allowResilientSuperclasses,
             enumeratorContext: &context,

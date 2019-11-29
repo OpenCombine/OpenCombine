@@ -417,5 +417,4 @@ private final class ClassWithResilientField: ObservableObject {
     @Published var note2 = Notification(name: .init("note 2"))
 }
 
-
 #endif // swift(>=5.1)

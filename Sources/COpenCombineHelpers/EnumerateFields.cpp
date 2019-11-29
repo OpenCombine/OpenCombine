@@ -33,12 +33,41 @@ const Metadata* getTypeMetadata(const FieldRecord& record,
                                                fieldOwner->getTypeContextDescriptor(),
                                                fieldOwner->getGenericArgs());
 }
+
+string_view nextTupleLabel(const char*& labels) {
+    const char* start = labels;
+    while (true) {
+        char current = *labels++;
+        if (current == ' ' || current == '\0') {
+            break;
+        }
+    }
+    return { start, size_t(labels - start - 1) };
+}
+
 } // end anonymous namespace
 
-bool opencombine_enumerate_class_fields(const void* opaqueMetadataPtr,
+bool opencombine_enumerate_fields(const void* opaqueMetadataPtr,
                                         bool allowResilientSuperclasses,
                                         void* enumeratorContext,
                                         OpenCombineFieldEnumerator enumerator) {
+
+    auto enumerateFields = [&](const auto* metadata,
+                               const TypeContextDescriptor* description) -> bool {
+        const auto* fieldOffsets = metadata->getFieldOffsets();
+        const FieldDescriptor& fieldDescriptor = *description->Fields;
+
+        for (const FieldRecord& fieldRecord : fieldDescriptor) {
+            if (!enumerator(enumeratorContext,
+                            fieldRecord.getFieldName(0).data(),
+                            *fieldOffsets++,
+                            getTypeMetadata(fieldRecord, metadata))) {
+                return false;
+            }
+        }
+
+        return true;
+    };
 
     const Metadata* metadata = static_cast<const Metadata*>(opaqueMetadataPtr);
 
@@ -56,28 +85,34 @@ bool opencombine_enumerate_class_fields(const void* opaqueMetadataPtr,
         }
 
         if (auto superclassMetadata = classMetadata->Superclass) {
-            if (!opencombine_enumerate_class_fields(superclassMetadata,
-                                                    allowResilientSuperclasses,
-                                                    enumeratorContext,
-                                                    enumerator)) {
+            if (!opencombine_enumerate_fields(superclassMetadata,
+                                              allowResilientSuperclasses,
+                                              enumeratorContext,
+                                              enumerator)) {
                 return false;
             }
         }
 
-        const ClassMetadata::StoredPointer* fieldOffsets =
-            classMetadata->getFieldOffsets();
-        const FieldDescriptor& fieldDescriptor = *description->Fields;
+        return enumerateFields(classMetadata, description);
+    }
 
-        for (const FieldRecord& fieldRecord : fieldDescriptor) {
+    if (const auto* structMetadata = llvm::dyn_cast<StructMetadata>(metadata)) {
+        return enumerateFields(structMetadata, structMetadata->getDescription());
+    }
+
+    if (const auto* tupleMetadata = llvm::dyn_cast<TupleTypeMetadata>(metadata)) {
+        const char* labels = tupleMetadata->Labels;
+        for (TupleTypeMetadata::StoredSize i = 0; i < tupleMetadata->NumElements; ++i) {
+            const TupleTypeMetadata::Element& element = tupleMetadata->getElement(i);
+            string_view nextLabel = nextTupleLabel(labels);
+            std::string label(nextLabel.data(), nextLabel.size());
             if (!enumerator(enumeratorContext,
-                            fieldRecord.getFieldName(0).data(),
-                            *fieldOffsets++,
-                            getTypeMetadata(fieldRecord, classMetadata))) {
+                            label.c_str(),
+                            element.Offset,
+                            element.Type)) {
                 return false;
             }
         }
-
-        return true;
     }
 
     return false;

@@ -80,12 +80,12 @@ typedef bool(*_Nonnull OpenCombineFieldEnumerator)(
 );
 
 bool
-opencombine_enumerate_class_fields(
+opencombine_enumerate_fields(
     const void* _Nonnull type_metadata,
     bool allowResilientSuperclasses,
     void* _Nullable enumerator_context,
     OpenCombineFieldEnumerator enumerator
-) OPENCOMBINE_SWIFT_NAME(enumerateClassFields(typeMetadata:allowResilientSuperclasses:enumeratorContext:enumerator:));
+) OPENCOMBINE_SWIFT_NAME(enumerateFields(typeMetadata:allowResilientSuperclasses:enumeratorContext:enumerator:));
 
 #ifdef __cplusplus
 } // extern "C"

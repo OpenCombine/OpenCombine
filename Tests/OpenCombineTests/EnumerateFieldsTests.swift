@@ -1,25 +1,25 @@
 //
-//  EnumerateClassFieldsTests.swift
+//  EnumerateFieldsTests.swift
 //  
 //
 //  Created by Sergej Jaskiewicz on 29.11.2019.
 //
 
-import XCTest
 import Foundation
+import XCTest
 
 #if !OPENCOMBINE_COMPATIBILITY_TEST
 
-final class EnumerateClassFieldsTests: TestCase {
+final class EnumerateFieldsTests: TestCase {
 
-    func testNoFields() {
+    func testClassNoFields() {
         enumerateFields(ofType: NoFields.self, allowResilientSuperclasses: true) { _ in
             XCTFail("should not be called")
             return false
         }
     }
 
-    func testVarsAndLets() {
+    func testClassVarsAndLets() {
         var fields = [FieldInfo]()
         enumerateFields(ofType: VarsAndLets.self,
                         allowResilientSuperclasses: true) { field in
@@ -41,7 +41,6 @@ final class EnumerateClassFieldsTests: TestCase {
         XCTAssertEqual(loadField(fields[2], from: instance, as: String.self), "hello")
         XCTAssertEqual(loadField(fields[3], from: instance, as: Double.self), 12.3)
         XCTAssertEqual(loadField(fields[4], from: instance, as: Int.self), -1)
-
     }
 
     func testRegularDerivedClass() {
@@ -184,7 +183,7 @@ final class EnumerateClassFieldsTests: TestCase {
 
     func testGenericSubclassOfNonGenericResilientClass() {
         enumerateFields(ofType: GenericDerivedFromResilientBase<Int, Int>.self,
-                        allowResilientSuperclasses: false) { field in
+                        allowResilientSuperclasses: false) { _ in
             XCTFail("should not be called")
             return true
         }
@@ -234,6 +233,101 @@ final class EnumerateClassFieldsTests: TestCase {
                        Measurement<UnitSpeed>(value: 12, unit: .metersPerSecond))
         XCTAssertEqual(loadField(fields[2], from: instance, as: Bool.self), true)
     }
+
+    func testStructLetsAndVars() {
+        var fields = [FieldInfo]()
+        enumerateFields(ofType: CommonValue.self,
+                        allowResilientSuperclasses: false) { field in
+            fields.append(field)
+            return true
+        }
+
+        XCTAssertEqual(fields, [.init("field1", 0, Int.self),
+                                .init("field2", 8, Bool.self),
+                                .init("field3", 9, Bool.self),
+                                .init("field4", 16, [String].self),
+                                .init("field5", 0, Void.self)])
+        if hasFailed { return }
+        let value = CommonValue(field1: 42,
+                                field2: true,
+                                field3: false,
+                                field4: ["it", "works"],
+                                field5: ())
+        XCTAssertEqual(loadField(fields[0], from: value, as: Int.self), 42)
+        XCTAssertEqual(loadField(fields[1], from: value, as: Bool.self), true)
+        XCTAssertEqual(loadField(fields[2], from: value, as: Bool.self), false)
+        XCTAssertEqual(loadField(fields[3], from: value, as: [String].self),
+                       ["it", "works"])
+        loadField(fields[4], from: value, as: Void.self)
+    }
+
+    func testGenericStruct() {
+        var fields = [FieldInfo]()
+        enumerateFields(ofType: GenericValue<Int, String>.self,
+                        allowResilientSuperclasses: false) { field in
+            fields.append(field)
+            return true
+        }
+        XCTAssertEqual(fields, [.init("field1", 0, Int.self),
+                                .init("field2", 8, String.self),
+                                .init("field3", 24, Bool.self)])
+        if hasFailed { return }
+        let value = GenericValue(field1: 12345678, field2: "🦊", field3: true)
+        XCTAssertEqual(loadField(fields[0], from: value, as: Int.self), 12345678)
+        XCTAssertEqual(loadField(fields[1], from: value, as: String.self), "🦊")
+        XCTAssertEqual(loadField(fields[2], from: value, as: Bool.self), true)
+    }
+
+    func testResilientStruct() {
+        var fields = [FieldInfo]()
+        enumerateFields(ofType: Notification.self,
+                        allowResilientSuperclasses: false) { field in
+            fields.append(field)
+            return true
+        }
+        XCTAssertEqual(fields, [.init("name", 0, Notification.Name.self),
+                                .init("object", 8, Any?.self),
+                                .init("userInfo", 40, [AnyHashable : Any]?.self)])
+        if hasFailed { return }
+        let value = Notification(name: .init("some note"),
+                                 object: ["a", "b"] as Set<String>,
+                                 userInfo: ["a" : 1, "b": 2])
+        XCTAssertEqual(loadField(fields[0], from: value, as: Notification.Name.self),
+                       .init("some note"))
+
+        XCTAssertEqual(loadField(fields[1], from: value, as: Any?.self) as? Set<String>,
+                       ["a", "b"])
+    }
+
+    func testTuple() {
+        enumerateFields(ofType: Void.self, allowResilientSuperclasses: false) { _ in
+            XCTFail("should not be called")
+            return true
+        }
+
+        typealias Tuple =
+            (Int, String, label1: Double, Bool, s̈pin̈al_tap̈: IndexPath, label3: Float)
+        var fields = [FieldInfo]()
+        enumerateFields(ofType: Tuple.self,
+                        allowResilientSuperclasses: true) { field in
+            fields.append(field)
+            return true
+        }
+        XCTAssertEqual(fields, [.init("", 0, Int.self),
+                                .init("", 8, String.self),
+                                .init("label1", 24, Double.self),
+                                .init("", 32, Bool.self),
+                                .init("s̈pin̈al_tap̈", 40, IndexPath.self),
+                                .init("label3", 60, Float.self)])
+        if hasFailed { return }
+        let value: Tuple = (1234, "🌚", 59.1, false, [9, 3, 1], 10.1)
+        XCTAssertEqual(loadField(fields[0], from: value, as: Int.self), 1234)
+        XCTAssertEqual(loadField(fields[1], from: value, as: String.self), "🌚")
+        XCTAssertEqual(loadField(fields[2], from: value, as: Double.self), 59.1)
+        XCTAssertEqual(loadField(fields[3], from: value, as: Bool.self), false)
+        XCTAssertEqual(loadField(fields[4], from: value, as: IndexPath.self), [9, 3, 1])
+        XCTAssertEqual(loadField(fields[5], from: value, as: Float.self), 10.1)
+    }
 }
 
 private func loadField<FieldType>(_ field: FieldInfo,
@@ -250,6 +344,22 @@ private func loadField<FieldType>(_ field: FieldInfo,
         .toOpaque()
         .load(fromByteOffset: field.offset, as: type)
 }
+
+private func loadField<Value, FieldType>(_ field: FieldInfo,
+                                         from value: Value,
+                                         as type: FieldType.Type,
+                                         file: StaticString = #file,
+                                         line: UInt = #line) -> FieldType? {
+    if field.type != type {
+        XCTFail("Type mismatch", file: file, line: line)
+        return nil
+    }
+    return withUnsafePointer(to: value) {
+        UnsafeRawPointer($0).load(fromByteOffset: field.offset, as: type)
+    }
+}
+
+// swiftlint:disable generic_type_name
 
 private final class NoFields {}
 
@@ -330,6 +440,20 @@ private final class HasResilientFields {
     let field2 = Measurement<UnitSpeed>(value: 12, unit: .metersPerSecond)
 
     var field3 = true
+}
+
+private struct CommonValue {
+    var field1: Int
+    let field2: Bool
+    let field3: Bool
+    var field4: [String]
+    let field5: ()
+}
+
+private struct GenericValue<A, B> {
+    let field1: A
+    let field2: B
+    let field3: Bool
 }
 
 #endif
