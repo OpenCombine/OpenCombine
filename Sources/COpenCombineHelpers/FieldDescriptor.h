@@ -8,7 +8,7 @@
 #ifndef OPENCOMBINE_FIELD_DESCRIPTOR_H
 #define OPENCOMBINE_FIELD_DESCRIPTOR_H
 
-#include "RelativePointer.h"
+#include "swift/Basic/RelativePointer.h"
 #include "span.h"
 
 #include <cstdint>

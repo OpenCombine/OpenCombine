@@ -14,9 +14,9 @@
 
 #include "RuntimeConfig.h"
 #include "FieldDescriptor.h"
-#include "RelativePointer.h"
-#include "FlagSet.h"
-#include "TrailingObjects.h"
+#include "swift/Basic/RelativePointer.h"
+#include "swift/Basic/FlagSet.h"
+#include "swift/ABI/TrailingObjects.h"
 
 #include <atomic>
 #include <cstdint>
@@ -60,7 +60,7 @@ enum class MetadataKind : uint32_t {
 #define METADATAKIND(name, value) name = value,
 #define ABSTRACTMETADATAKIND(name, start, end)                                           \
 name##_Start = start, name##_End = end,
-#include "MetadataKind.def"
+#include "swift/ABI/MetadataKind.def"
 
     /// The largest possible non-isa-pointer metadata kind value.
     ///

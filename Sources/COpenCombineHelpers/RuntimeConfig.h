@@ -27,7 +27,7 @@
 
 #else // defined(__APPLE__)
 
-// Apple platforms with Swift in OS (a.k.a. post-ABI-stability) use 2.
+// Apple platforms with Swift in the OS (a.k.a. post-ABI-stability) use 2.
 namespace opencombine {
 extern unsigned long long classIsSwiftMask;
 }
