@@ -148,6 +148,22 @@ final class ObservableObjectTests: XCTestCase {
 #endif
     }
 
+    func testResilientClassSubclass2() {
+        let observableObject = ResilientClassSubclass2()
+        let publisher1 = observableObject.objectWillChange
+        let publisher2 = observableObject.objectWillChange
+#if canImport(Darwin)
+        XCTAssert(publisher1 !== publisher2,
+                  """
+                  For subclasses of resilient classes objectWillChange property should \
+                  return a new instance every time
+                  """)
+#else
+        // There are no resilient classes on non-Darwin platforms.
+        XCTAssert(publisher1 === publisher2)
+#endif
+        }
+
     func testResilientClassRetroactiveConformance() {
         let observableObject = JSONEncoder()
         let publisher1 = observableObject.objectWillChange
@@ -160,47 +176,78 @@ final class ObservableObjectTests: XCTestCase {
     }
 
     // FIXME: This test crashes
-    func testGenericClass() {
-        let observableObject = GenericClass(123, true)
+//    func testGenericClass() {
+//        let observableObject = GenericClass(123, true)
+//
+//        var counter = 0
+//
+//        observableObject.objectWillChange.sink { counter += 1 }.store(in: &disposeBag)
+//        XCTAssertEqual(counter, 0)
+//        XCTAssertEqual(observableObject.value1, 123)
+//        XCTAssertEqual(observableObject.value2, true)
+//
+//        observableObject.value1 += 1
+//
+//        XCTAssertEqual(counter, 1)
+//        XCTAssertEqual(observableObject.value1, 124)
+//
+//        observableObject.value2.toggle()
+//
+//        XCTAssertEqual(counter, 2)
+//        XCTAssertEqual(observableObject.value2, false)
+//    }
+
+    func testGenericSubclassOfResilientClass() {
+        let observableObject = ResilientClassGenericSubclass("hello", true)
 
         var counter = 0
 
-        observableObject.objectWillChange.sink { counter += 1 }.store(in: &disposeBag)
-        XCTAssertEqual(counter, 0)
-        XCTAssertEqual(observableObject.value1, 123)
-        XCTAssertEqual(observableObject.value2, true)
+        // A bug in Combine (FB7471594). It should not crash. Why would it crash?
+        assertCrashes {
+            observableObject.objectWillChange.sink { counter += 1 }.store(in: &disposeBag)
+            XCTAssertEqual(counter, 0)
+            XCTAssertEqual(observableObject.value1, "hello")
+            XCTAssertEqual(observableObject.value2, true)
 
-        observableObject.value1 += 1
+            observableObject.value1 += "!"
 
-        XCTAssertEqual(counter, 1)
-        XCTAssertEqual(observableObject.value1, 124)
+            XCTAssertEqual(counter, 1)
+            XCTAssertEqual(observableObject.value1, "hello!")
 
-        observableObject.value2.toggle()
+            observableObject.value2.toggle()
 
-        XCTAssertEqual(counter, 2)
-        XCTAssertEqual(observableObject.value2, false)
+            XCTAssertEqual(counter, 2)
+            XCTAssertEqual(observableObject.value2, false)
+        }
     }
 
-    // FIXME: This test crashes
-    func testGenericSubclassOfResilientClass() {
-        let observableObject = ResilientClassGenericSubclass(123, true)
+    func testGenericSubclassOfResilientClass2() {
+        let observableObject = ResilientClassGenericSubclass2("hello", true)
 
         var counter = 0
 
-        observableObject.objectWillChange.sink { counter += 1 }.store(in: &disposeBag)
-        XCTAssertEqual(counter, 0)
-        XCTAssertEqual(observableObject.value1, 123)
-        XCTAssertEqual(observableObject.value2, true)
+        // A bug in Combine (FB7471594). It should not crash. Why would it crash?
+        assertCrashes {
+            observableObject.objectWillChange.sink { counter += 1 }.store(in: &disposeBag)
+            XCTAssertEqual(counter, 0)
+            XCTAssertEqual(observableObject.value1, "hello")
+            XCTAssertEqual(observableObject.value2, true)
 
-        observableObject.value1 += 1
+            observableObject.value1 += "!"
 
-        XCTAssertEqual(counter, 1)
-        XCTAssertEqual(observableObject.value1, 124)
+            XCTAssertEqual(counter, 1)
+            XCTAssertEqual(observableObject.value1, "hello!")
 
-        observableObject.value2.toggle()
+            observableObject.value2.toggle()
 
-        XCTAssertEqual(counter, 2)
-        XCTAssertEqual(observableObject.value2, false)
+            XCTAssertEqual(counter, 2)
+            XCTAssertEqual(observableObject.value2, false)
+
+            observableObject.value3.toggle()
+
+            XCTAssertEqual(counter, 3)
+            XCTAssertEqual(observableObject.value3, true)
+        }
     }
 
     func testObservableDerivedWithNonObservableBase() {
@@ -300,9 +347,14 @@ private final class ObjCClassSubclass: NSOrderedSet, ObservableObject {
 }
 
 @available(macOS 10.15, iOS 13.0, *)
-private final class ResilientClassSubclass: JSONDecoder, ObservableObject {
+private class ResilientClassSubclass: JSONDecoder, ObservableObject {
     @Published var published0 = 10
     @Published var published1 = "hello!"
+}
+
+@available(macOS 10.15, iOS 13.0, *)
+private final class ResilientClassSubclass2: ResilientClassSubclass {
+    @Published var published3 = true
 }
 
 @available(macOS 10.15, iOS 13.0, *)
@@ -338,7 +390,7 @@ private class NSObjectSubclass: NSObject, ObservableObject {
 }
 
 @available(macOS 10.15, iOS 13.0, *)
-private final class ResilientClassGenericSubclass<Value1, Value2>
+private class ResilientClassGenericSubclass<Value1, Value2>
     : JSONDecoder,
       ObservableObject
 {
@@ -352,14 +404,17 @@ private final class ResilientClassGenericSubclass<Value1, Value2>
 }
 
 @available(macOS 10.15, iOS 13.0, *)
+private final class ResilientClassGenericSubclass2<Value1, Value2>
+    : ResilientClassGenericSubclass<Value1, Value2>
+{
+    @Published var value3 = false
+}
+
+@available(macOS 10.15, iOS 13.0, *)
 private final class ClassWithResilientField: ObservableObject {
     // Foundation.Notification is resilient struct
     private var note1 = Notification(name: .init("note 1"))
     @Published var note2 = Notification(name: .init("note 2"))
-
-    init() {
-        print("sizeof Calendar =", MemoryLayout.size(ofValue: note1))
-    }
 }
 
 

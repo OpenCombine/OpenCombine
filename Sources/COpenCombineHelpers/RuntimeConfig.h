@@ -20,16 +20,18 @@
 # define OPENCOMBINE_SWIFT_CALLING_CONVENTION
 #endif
 
-// Non-Apple platforms always use 1.
 #if !defined(__APPLE__)
-#define OPENCOMBINE_SWIFT_CLASS_IS_SWIFT_MASK 1ULL
 
-// Other builds (such as local builds on developers' computers)
-// dynamically choose the bit at runtime based on the current OS
-// version.
+// Non-Apple platforms always use 1.
+# define OPENCOMBINE_SWIFT_CLASS_IS_SWIFT_MASK 1ULL
+
 #else // defined(__APPLE__)
-extern unsigned long long _opencombine_swift_classIsSwiftMask;
-#define OPENCOMBINE_SWIFT_CLASS_IS_SWIFT_MASK _opencombine_swift_classIsSwiftMask
+
+// Apple platforms with Swift in OS (a.k.a. post-ABI-stability) use 2.
+namespace opencombine {
+extern unsigned long long classIsSwiftMask;
+}
+# define OPENCOMBINE_SWIFT_CLASS_IS_SWIFT_MASK classIsSwiftMask
 
 #endif // !defined(__APPLE__)
 

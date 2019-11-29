@@ -102,9 +102,10 @@ extension ObservableObject where ObjectWillChangePublisher == ObservableObjectPu
 #if swift(>=5.1)
         var installedPublisher: ObservableObjectPublisher?
 
-        enumerateFields(ofType: Self.self) { _, fieldOffset, fieldType in
+        enumerateFields(ofType: Self.self,
+                        allowResilientSuperclasses: false) { _, fieldOffset, fieldType in
             let storage = Unmanaged
-                .passRetained(self)
+                .passUnretained(self)
                 .toOpaque()
                 .advanced(by: fieldOffset)
 
@@ -143,6 +144,9 @@ extension ObservableObject where ObjectWillChangePublisher == ObservableObjectPu
 
         return installedPublisher ?? ObservableObjectPublisher()
 #else
+        // There are no @Published in Swift 5.0, so we act the same as in Swift 5.1
+        // with classes without @Published properties.
+        // We create a new instance every time.
         return ObservableObjectPublisher()
 #endif // swift(>=5.1)
     }

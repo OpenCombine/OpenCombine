@@ -231,6 +231,7 @@ int32_t opencombine::swift::getResilientImmediateMembersOffset(
 }
 
 bool opencombine_enumerate_class_fields(const void* opaqueMetadataPtr,
+                                        bool allowResilientSuperclasses,
                                         void* enumeratorContext,
                                         OpenCombineFieldEnumerator enumerator) {
 
@@ -244,19 +245,20 @@ bool opencombine_enumerate_class_fields(const void* opaqueMetadataPtr,
             return true;
         }
         auto classMetadata = static_cast<const ClassMetadata*>(anyClassMetadata);
-        
+
+        const ClassDescriptor* description = classMetadata->getDescription();
+
+        if (!allowResilientSuperclasses && description->hasResilientSuperclass()) {
+            return false;
+        }
+
         if (auto superclassMetadata = classMetadata->getSuperclass()) {
             if (!opencombine_enumerate_class_fields(superclassMetadata,
+                                                    allowResilientSuperclasses,
                                                     enumeratorContext,
                                                     enumerator)) {
                 return false;
             }
-        }
-
-        const ClassDescriptor* description = classMetadata->getDescription();
-
-        if (description->hasResilientSuperclass()) {
-            return false;
         }
 
         const uintptr_t* fieldOffsets = classMetadata->getFieldOffsets();
@@ -267,7 +269,7 @@ bool opencombine_enumerate_class_fields(const void* opaqueMetadataPtr,
                             fieldRecord.getFieldName().data(),
                             *fieldOffsets++,
                             fieldRecord.getTypeMetadata(classMetadata))) {
-                return true;
+                return false;
             }
         }
 

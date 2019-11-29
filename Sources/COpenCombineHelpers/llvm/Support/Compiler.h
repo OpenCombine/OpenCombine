@@ -15,8 +15,6 @@
 #ifndef OPENCOMBINE_LLVM_SUPPORT_COMPILER_H
 #define OPENCOMBINE_LLVM_SUPPORT_COMPILER_H
 
-//#include "llvm/Config/llvm-config.h"
-
 #ifdef __cplusplus
 #include <new>
 #endif

@@ -1,3 +1,4 @@
 OTHER_SWIFT_FLAGS = $(inherited) -DOPENCOMBINE_COMPATIBILITY_TEST
 SWIFT_VERSION = 5.0
 OTHER_LDFLAGS = $(inherited) -L"$(TOOLCHAIN_DIR)/usr/lib/swift-$(SWIFT_VERSION)/$(PLATFORM_NAME)" -lobjc -lswiftCore
+HEADER_SEARCH_PATHS = $(SRCROOT)/Sources/COpenCombineHelpers
