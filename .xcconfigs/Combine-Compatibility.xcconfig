@@ -1,0 +1,2 @@
+OTHER_SWIFT_FLAGS = $(inherited) -DOPENCOMBINE_COMPATIBILITY_TEST
+#include "OpenCombineSPM.xcconfig"

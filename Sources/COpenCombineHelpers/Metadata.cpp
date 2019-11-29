@@ -24,7 +24,7 @@
 using namespace opencombine;
 using namespace swift;
 
-#if SWIFT_OBJC_INTEROP
+#if OPENCOMBINE_SWIFT_OBJC_INTEROP
 static ClassMetadataBounds computeMetadataBoundsForObjCClass(Class cls) {
   cls = swift_getInitializedObjCClass(cls);
   auto metadata = reinterpret_cast<const ClassMetadata *>(cls);
@@ -52,7 +52,7 @@ computeMetadataBoundsForSuperclass(const void *ref,
   }
 
   case TypeReferenceKind::DirectObjCClassName: {
-#if SWIFT_OBJC_INTEROP
+#if OPENCOMBINE_SWIFT_OBJC_INTEROP
     auto cls = objc_lookUpClass(reinterpret_cast<const char *>(ref));
     return computeMetadataBoundsForObjCClass(cls);
 #else
@@ -61,7 +61,7 @@ computeMetadataBoundsForSuperclass(const void *ref,
   }
 
   case TypeReferenceKind::IndirectObjCClass: {
-#if SWIFT_OBJC_INTEROP
+#if OPENCOMBINE_SWIFT_OBJC_INTEROP
     auto cls = *reinterpret_cast<const Class *>(ref);
     return computeMetadataBoundsForObjCClass(cls);
 #else

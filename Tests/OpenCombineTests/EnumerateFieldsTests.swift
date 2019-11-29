@@ -5,8 +5,11 @@
 //  Created by Sergej Jaskiewicz on 29.11.2019.
 //
 
+import CoreFoundation
 import Foundation
 import XCTest
+
+// This file contains tests for internal OpenCombine APIs.
 
 #if !OPENCOMBINE_COMPATIBILITY_TEST
 
@@ -79,14 +82,19 @@ final class EnumerateFieldsTests: TestCase {
     }
 
     func testObjCClass() {
+        // All Foundation classes are native Swift classes on non-Darwin platforms
+#if canImport(Darwin)
         enumerateFields(ofType: NSNumber.self,
                         allowResilientSuperclasses: true) { _ in
             XCTFail("should not be called")
             return false
         }
+#endif
     }
 
     func testSwiftSubclassOfObjCClass() {
+        // All Foundation classes are native Swift classes on non-Darwin platforms
+#if canImport(Darwin)
         var fields = [FieldInfo]()
         enumerateFields(ofType: ObjCDerived.self,
                         allowResilientSuperclasses: true) { field in
@@ -102,6 +110,7 @@ final class EnumerateFieldsTests: TestCase {
         let instance = ObjCDerived()
         XCTAssertEqual(loadField(fields[0], from: instance, as: Int.self), 1)
         XCTAssertEqual(loadField(fields[1], from: instance, as: Bool.self), true)
+#endif
     }
 
     func testNSObjectSubclass() {
@@ -111,9 +120,15 @@ final class EnumerateFieldsTests: TestCase {
             fields.append(field)
             return true
         }
+#if canImport(Darwin)
         XCTAssertEqual(fields, [.init("field1", 8, Int.self),
                                 .init("field2", 16, Bool.self),
                                 .init("field3", 17, Bool.self)])
+#else
+        XCTAssertEqual(fields, [.init("field1", 16, Int.self),
+                                .init("field2", 24, Bool.self),
+                                .init("field3", 25, Bool.self)])
+#endif
         if hasFailed { return }
         let instance = DerivedFromNSObject()
         XCTAssertEqual(loadField(fields[0], from: instance, as: Int.self), 1)
@@ -132,6 +147,7 @@ final class EnumerateFieldsTests: TestCase {
     }
 
     func testSubclassOfResilientClass() {
+#if canImport(Darwin) // There are no resilient classes on non-Darwin platforms
         enumerateFields(ofType: DerivedFromResilientClass.self,
                         allowResilientSuperclasses: false) { _ in
             XCTFail("should not be called")
@@ -145,6 +161,7 @@ final class EnumerateFieldsTests: TestCase {
             return true
         }
         XCTAssertFalse(fields.isEmpty)
+#endif
     }
 
     func testGenericClass() {
@@ -182,6 +199,7 @@ final class EnumerateFieldsTests: TestCase {
     }
 
     func testGenericSubclassOfNonGenericResilientClass() {
+#if canImport(Darwin) // There are no resilient classes on non-Darwin platforms
         enumerateFields(ofType: GenericDerivedFromResilientBase<Int, Int>.self,
                         allowResilientSuperclasses: false) { _ in
             XCTFail("should not be called")
@@ -203,6 +221,7 @@ final class EnumerateFieldsTests: TestCase {
         }
         XCTAssertEqual(fields, superclassFields + [.init("field1", 128, Int.self),
                                                    .init("field2", 136, Int.self)])
+#endif
     }
 
     func testForeignClass() {
@@ -214,7 +233,9 @@ final class EnumerateFieldsTests: TestCase {
     }
 
     func testClassWithFieldsOfResilientTypes() {
+#if canImport(Darwin)
         guard #available(macOS 10.12, iOS 10.0, *) else { return }
+#endif
         var fields = [FieldInfo]()
         enumerateFields(ofType: HasResilientFields.self,
                         allowResilientSuperclasses: true) { field in
@@ -279,6 +300,7 @@ final class EnumerateFieldsTests: TestCase {
     }
 
     func testResilientStruct() {
+#if canImport(Darwin) // There are no resilient classes on non-Darwin platforms
         var fields = [FieldInfo]()
         enumerateFields(ofType: Notification.self,
                         allowResilientSuperclasses: false) { field in
@@ -297,6 +319,7 @@ final class EnumerateFieldsTests: TestCase {
 
         XCTAssertEqual(loadField(fields[1], from: value, as: Any?.self) as? Set<String>,
                        ["a", "b"])
+#endif
     }
 
     func testTuple() {

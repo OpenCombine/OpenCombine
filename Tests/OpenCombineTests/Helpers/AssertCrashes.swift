@@ -84,4 +84,13 @@ extension XCTest {
         }
 #endif
     }
+
+    @available(macOS 10.13, iOS 8.0, *)
+    func assertCrashesOnDarwin(within body: () -> Void) {
+#if canImport(Darwin)
+        assertCrashes(within: body)
+#else
+        body()
+#endif
+    }
 }

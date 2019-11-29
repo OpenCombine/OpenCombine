@@ -27,7 +27,7 @@
 
 #include "swift/Runtime/Config.h"
 
-SWIFT_RUNTIME_ATTRIBUTE_NORETURN
+OPENCOMBINE_SWIFT_RUNTIME_ATTRIBUTE_NORETURN
 inline static void opencombine_swift_runtime_unreachable(const char *msg) {
   assert(false && msg);
   (void)msg;

@@ -42,7 +42,7 @@
 #include "swift/Demangling/Demangle.h"
 #include "swift/Runtime/Unreachable.h"
 //#include "../../../stdlib/public/SwiftShims/HeapObject.h"
-#if SWIFT_OBJC_INTEROP
+#if OPENCOMBINE_SWIFT_OBJC_INTEROP
 #include <objc/runtime.h>
 #endif
 //#include "llvm/ADT/STLExtras.h"
@@ -511,7 +511,7 @@ struct TargetMetadata {
   constexpr TargetMetadata(MetadataKind Kind)
     : Kind(static_cast<StoredPointer>(Kind)) {}
 
-#if SWIFT_OBJC_INTEROP
+#if OPENCOMBINE_SWIFT_OBJC_INTEROP
 protected:
   constexpr TargetMetadata(TargetAnyClassMetadata<Runtime> *isa)
     : Kind(reinterpret_cast<StoredPointer>(isa)) {}
@@ -532,7 +532,7 @@ public:
     Kind = static_cast<StoredPointer>(kind);
   }
 
-#if SWIFT_OBJC_INTEROP
+#if OPENCOMBINE_SWIFT_OBJC_INTEROP
 protected:
   const TargetAnyClassMetadata<Runtime> *getClassISA() const {
     return reinterpret_cast<const TargetAnyClassMetadata<Runtime> *>(Kind);
@@ -696,7 +696,7 @@ public:
 
   bool satisfiesClassConstraint() const;
 
-#if SWIFT_OBJC_INTEROP
+#if OPENCOMBINE_SWIFT_OBJC_INTEROP
   /// Get the ObjC class object for this type if it has one, or return null if
   /// the type is not a class (or not a class with a class object).
   /// This is allowed for InProcess values only.
@@ -773,7 +773,7 @@ struct TargetHeapMetadata : TargetMetadata<Runtime> {
   TargetHeapMetadata() = default;
   constexpr TargetHeapMetadata(MetadataKind kind)
     : TargetMetadata<Runtime>(kind) {}
-#if SWIFT_OBJC_INTEROP
+#if OPENCOMBINE_SWIFT_OBJC_INTEROP
   constexpr TargetHeapMetadata(TargetAnyClassMetadata<Runtime> *isa)
     : TargetMetadata<Runtime>(isa) {}
 #endif
@@ -931,7 +931,7 @@ struct TargetAnyClassMetadata : public TargetHeapMetadata<Runtime> {
   using StoredPointer = typename Runtime::StoredPointer;
   using StoredSize = typename Runtime::StoredSize;
 
-#if SWIFT_OBJC_INTEROP
+#if OPENCOMBINE_SWIFT_OBJC_INTEROP
   constexpr TargetAnyClassMetadata(TargetAnyClassMetadata<Runtime> *isa,
                                    TargetClassMetadata<Runtime> *superclass)
     : TargetHeapMetadata<Runtime>(isa),
@@ -946,7 +946,7 @@ struct TargetAnyClassMetadata : public TargetHeapMetadata<Runtime> {
       CacheData{nullptr, nullptr},
       Data(OPENCOMBINE_SWIFT_CLASS_IS_SWIFT_MASK) {}
 
-#if SWIFT_OBJC_INTEROP
+#if OPENCOMBINE_SWIFT_OBJC_INTEROP
   // Allow setting the metadata kind to a class ISA on class metadata.
   using TargetMetadata<Runtime>::getClassISA;
   using TargetMetadata<Runtime>::setClassISA;
@@ -1545,7 +1545,7 @@ TargetTupleTypeMetadata<Runtime>::getOffsetToNumElements() -> StoredSize {
 
 template <typename Runtime> struct TargetProtocolDescriptor;
 
-#if SWIFT_OBJC_INTEROP
+#if OPENCOMBINE_SWIFT_OBJC_INTEROP
 /// Layout of a small prefix of an Objective-C protocol, used only to
 /// directly extract the name of the protocol.
 template <typename Runtime>
@@ -1590,7 +1590,7 @@ public:
   TargetProtocolDescriptorRef(
                         ProtocolDescriptorPointer protocol,
                         ProtocolDispatchStrategy dispatchStrategy) {
-#if SWIFT_OBJC_INTEROP
+#if OPENCOMBINE_SWIFT_OBJC_INTEROP
     storage = reinterpret_cast<StoredPointer>(protocol)
       | (dispatchStrategy == ProtocolDispatchStrategy::ObjC ? IsObjCBit : 0);
 #else
@@ -1605,7 +1605,7 @@ public:
         reinterpret_cast<StoredPointer>(protocol)};
   }
 
-#if SWIFT_OBJC_INTEROP
+#if OPENCOMBINE_SWIFT_OBJC_INTEROP
   constexpr static TargetProtocolDescriptorRef forObjC(Protocol *objcProtocol) {
     return TargetProtocolDescriptorRef{
         reinterpret_cast<StoredPointer>(objcProtocol) | IsObjCBit};
@@ -1618,7 +1618,7 @@ public:
 
   /// The name of the protocol.
   TargetPointer<Runtime, const char> getName() const {
-#if SWIFT_OBJC_INTEROP
+#if OPENCOMBINE_SWIFT_OBJC_INTEROP
     if (isObjC()) {
       return reinterpret_cast<TargetObjCProtocolPrefix<Runtime> *>(
           getObjCProtocol())->Name;
@@ -1630,7 +1630,7 @@ public:
 
   /// Determine what kind of protocol this is, Swift or Objective-C.
   ProtocolDispatchStrategy getDispatchStrategy() const {
-#if SWIFT_OBJC_INTEROP
+#if OPENCOMBINE_SWIFT_OBJC_INTEROP
     if (isObjC()) {
       return ProtocolDispatchStrategy::ObjC;
     }
@@ -1641,7 +1641,7 @@ public:
 
   /// Determine whether this protocol has a 'class' constraint.
   ProtocolClassConstraint getClassConstraint() const {
-#if SWIFT_OBJC_INTEROP
+#if OPENCOMBINE_SWIFT_OBJC_INTEROP
     if (isObjC()) {
       return ProtocolClassConstraint::Class;
     }
@@ -1653,7 +1653,7 @@ public:
 
   /// Determine whether this protocol needs a witness table.
   bool needsWitnessTable() const {
-#if SWIFT_OBJC_INTEROP
+#if OPENCOMBINE_SWIFT_OBJC_INTEROP
     if (isObjC()) {
       return false;
     }
@@ -1663,7 +1663,7 @@ public:
   }
 
   SpecialProtocol getSpecialProtocol() const {
-#if SWIFT_OBJC_INTEROP
+#if OPENCOMBINE_SWIFT_OBJC_INTEROP
     if (isObjC()) {
       return SpecialProtocol::None;
     }
@@ -1675,7 +1675,7 @@ public:
 
   /// Retrieve the Swift protocol descriptor.
   ProtocolDescriptorPointer getSwiftProtocol() const {
-#if SWIFT_OBJC_INTEROP
+#if OPENCOMBINE_SWIFT_OBJC_INTEROP
     assert(!isObjC());
 #endif
 
@@ -1691,7 +1691,7 @@ public:
     return storage;
   }
 
-#if SWIFT_OBJC_INTEROP
+#if OPENCOMBINE_SWIFT_OBJC_INTEROP
   /// Whether this references an Objective-C protocol.
   bool isObjC() const {
     return (storage & IsObjCBit) != 0;
@@ -2168,7 +2168,7 @@ class RelativeTargetProtocolDescriptorPointer {
   /// an Objective-C protocol.
   RelativeIndirectablePointerIntPair<AnyProtocol, bool> pointer;
 
-#if SWIFT_OBJC_INTEROP
+#if OPENCOMBINE_SWIFT_OBJC_INTEROP
   bool isObjC() const {
     return pointer.getInt();
   }
@@ -2177,7 +2177,7 @@ class RelativeTargetProtocolDescriptorPointer {
 public:
   /// Retrieve a reference to the protocol.
   TargetProtocolDescriptorRef<Runtime> getProtocol() const {
-#if SWIFT_OBJC_INTEROP
+#if OPENCOMBINE_SWIFT_OBJC_INTEROP
     if (isObjC()) {
       return TargetProtocolDescriptorRef<Runtime>::forObjC(
           protocol_const_cast(pointer.getPointer()));
@@ -2234,7 +2234,7 @@ struct TargetTypeReference {
     return nullptr;
   }
 
-#if SWIFT_OBJC_INTEROP
+#if OPENCOMBINE_SWIFT_OBJC_INTEROP
   /// If this type reference is one of the kinds that supports ObjC
   /// references,
   const TargetClassMetadata<Runtime> *
@@ -2391,10 +2391,6 @@ public:
 
     return this->template getTrailingObjects<GenericWitnessTable>();
   }
-
-#if !defined(NDEBUG) && SWIFT_OBJC_INTEROP
-  void dump() const;
-#endif
 
 #ifndef NDEBUG
   /// Verify that the protocol descriptor obeys all invariants.

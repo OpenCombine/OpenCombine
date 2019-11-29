@@ -3,13 +3,15 @@ SWIFT_TEST_FLAGS=
 SWIFT_BUILD_FLAGS=-Xcc -Wunguarded-availability
 
 debug:
-	$(SWIFT_EXE) build -c debug --sanitize address,undefined $(SWIFT_BUILD_FLAGS)
+	$(SWIFT_EXE) build -c debug $(SWIFT_BUILD_FLAGS)
 
 release:
 	$(SWIFT_EXE) build -c release $(SWIFT_BUILD_FLAGS)
 
+test-debug: export ASAN_OPTIONS=detect_leaks=0
+
 test-debug:
-	$(SWIFT_EXE) test -c debug $(SWIFT_BUILD_FLAGS) $(SWIFT_TEST_FLAGS)
+	$(SWIFT_EXE) test -c debug --sanitize address $(SWIFT_BUILD_FLAGS) $(SWIFT_TEST_FLAGS)
 
 test-debug-sanitize-thread:
 	$(SWIFT_EXE) test -c debug --sanitize thread $(SWIFT_BUILD_FLAGS) $(SWIFT_TEST_FLAGS)
@@ -24,11 +26,14 @@ test-compatibility:
 	$(SWIFT_EXE) test -Xswiftc -DOPENCOMBINE_COMPATIBILITY_TEST
 
 generate-compatibility-xcodeproj:
-	$(SWIFT_EXE) package generate-xcodeproj --xcconfig-overrides Combine-Compatibility.xcconfig; \
+	$(SWIFT_EXE) package generate-xcodeproj \
+		--xcconfig-overrides .xcconfigs/Combine-Compatibility.xcconfig; \
 	open OpenCombine.xcodeproj
 
 generate-xcodeproj:
-	$(SWIFT_EXE) package $(SWIFT_BUILD_FLAGS) generate-xcodeproj --enable-code-coverage
+	$(SWIFT_EXE) package $(SWIFT_BUILD_FLAGS) generate-xcodeproj \
+		--enable-code-coverage  \
+		--xcconfig-overrides .xcconfigs/OpenCombineSPM.xcconfig
 
 gyb:
 	$(shell ./utils/recursively_gyb.sh)

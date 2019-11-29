@@ -34,7 +34,7 @@ ClassMetadataBounds getResilientMetadataBounds(
                                            const ClassDescriptor *descriptor);
 int32_t getResilientImmediateMembersOffset(const ClassDescriptor *descriptor);
 
-#if SWIFT_OBJC_INTEROP
+#if OPENCOMBINE_SWIFT_OBJC_INTEROP
 
 extern "C" Class swift_getInitializedObjCClass(Class c);
 

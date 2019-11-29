@@ -175,7 +175,6 @@ final class ObservableObjectTests: XCTestCase {
                   """)
     }
 
-    // FIXME: This test crashes
     func testGenericClass() {
         let observableObject = GenericClass(123, true)
 
@@ -203,7 +202,7 @@ final class ObservableObjectTests: XCTestCase {
         var counter = 0
 
         // A bug in Combine (FB7471594). It should not crash. Why would it crash?
-        assertCrashes {
+        assertCrashesOnDarwin {
             observableObject.objectWillChange.sink { counter += 1 }.store(in: &disposeBag)
             XCTAssertEqual(counter, 0)
             XCTAssertEqual(observableObject.value1, "hello")
@@ -227,7 +226,7 @@ final class ObservableObjectTests: XCTestCase {
         var counter = 0
 
         // A bug in Combine (FB7471594). It should not crash. Why would it crash?
-        assertCrashes {
+        assertCrashesOnDarwin {
             observableObject.objectWillChange.sink { counter += 1 }.store(in: &disposeBag)
             XCTAssertEqual(counter, 0)
             XCTAssertEqual(observableObject.value1, "hello")
