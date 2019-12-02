@@ -1,8 +1,8 @@
 //
-//  DelayTests.swift
-//  OpenCombineTests
+//  ReceiveOnTests.swift
+//  
 //
-//  Created by Евгений Богомолов on 08/09/2019.
+//  Created by Sergej Jaskiewicz on 02.12.2019.
 //
 
 import XCTest
@@ -14,30 +14,14 @@ import OpenCombine
 #endif
 
 @available(macOS 10.15, iOS 13.0, *)
-final class DelayTests: XCTestCase {
-
-    // Delay's Inner doesn't conform to CustomStringConvertible, so we can't compare
-    // subscriptions using their descriptions
-    let delaySubscription: StringSubscription = {
-        let tracking = TrackingSubscriber()
-        let scheduler = VirtualTimeScheduler()
-        CustomPublisher(subscription: CustomSubscription())
-            .delay(for: 0, scheduler: scheduler)
-            .subscribe(tracking)
-        scheduler.executeScheduledActions()
-        return tracking.subscriptions.first.map(StringSubscription.subscription)
-            ?? "Delay"
-    }()
+final class ReceiveOnTests: XCTestCase {
 
     func testBasicBehavior() {
         let scheduler = VirtualTimeScheduler()
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
                                         initialDemand: .max(100),
                                         receiveValueDemand: .max(12)) {
-            $0.delay(for: .nanoseconds(200),
-                     tolerance: .nanoseconds(5),
-                     scheduler: scheduler,
-                     options: .init(481516))
+            $0.receive(on: scheduler, options: .init(481516))
         }
         XCTAssertNotNil(helper.publisher.subscriber)
 
@@ -47,7 +31,7 @@ final class DelayTests: XCTestCase {
 
         scheduler.executeScheduledActions()
 
-        XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription)])
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReceiveOn")])
         XCTAssertEqual(helper.subscription.history, [.requested(.max(100))])
         XCTAssertEqual(scheduler.history, [.schedule(options: .init(481516))])
 
@@ -55,30 +39,20 @@ final class DelayTests: XCTestCase {
         XCTAssertEqual(helper.publisher.send(2), .none)
         XCTAssertEqual(helper.publisher.send(3), .none)
 
-        XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription)])
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReceiveOn")])
         XCTAssertEqual(helper.subscription.history, [.requested(.max(100))])
-        XCTAssertEqual(scheduler.scheduledDates, [.init(nanoseconds: 200),
-                                                  .init(nanoseconds: 200),
-                                                  .init(nanoseconds: 200)])
+        XCTAssertEqual(scheduler.scheduledDates, [.init(nanoseconds: 0),
+                                                  .init(nanoseconds: 0),
+                                                  .init(nanoseconds: 0)])
 
-        XCTAssertEqual(scheduler.history,
-                       [.schedule(options: .init(481516)),
-                        .now,
-                        .scheduleAfterDate(.init(nanoseconds: 200),
-                                           tolerance: .nanoseconds(5),
-                                           options: .init(481516)),
-                        .now,
-                        .scheduleAfterDate(.init(nanoseconds: 200),
-                                           tolerance: .nanoseconds(5),
-                                           options: .init(481516)),
-                        .now,
-                        .scheduleAfterDate(.init(nanoseconds: 200),
-                                           tolerance: .nanoseconds(5),
-                                           options: .init(481516))])
+        XCTAssertEqual(scheduler.history, [.schedule(options: .init(481516)),
+                                           .schedule(options: .init(481516)),
+                                           .schedule(options: .init(481516)),
+                                           .schedule(options: .init(481516))])
 
         scheduler.executeScheduledActions()
 
-        XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription),
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReceiveOn"),
                                                  .value(1),
                                                  .value(3),
                                                  .value(2)])
@@ -88,26 +62,16 @@ final class DelayTests: XCTestCase {
                                                      .requested(.max(12)),
                                                      .requested(.max(12))])
 
-        XCTAssertEqual(scheduler.history,
-                       [.schedule(options: .init(481516)),
-                        .now,
-                        .scheduleAfterDate(.init(nanoseconds: 200),
-                                           tolerance: .nanoseconds(5),
-                                           options: .init(481516)),
-                        .now,
-                        .scheduleAfterDate(.init(nanoseconds: 200),
-                                           tolerance: .nanoseconds(5),
-                                           options: .init(481516)),
-                        .now,
-                        .scheduleAfterDate(.init(nanoseconds: 200),
-                                           tolerance: .nanoseconds(5),
-                                           options: .init(481516))])
+        XCTAssertEqual(scheduler.history, [.schedule(options: .init(481516)),
+                                           .schedule(options: .init(481516)),
+                                           .schedule(options: .init(481516)),
+                                           .schedule(options: .init(481516))])
 
         helper.publisher.send(completion: .failure(.oops))
         helper.publisher.send(completion: .finished)
         XCTAssertEqual(helper.publisher.send(4), .none)
 
-        XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription),
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReceiveOn"),
                                                  .value(1),
                                                  .value(3),
                                                  .value(2)])
@@ -115,28 +79,14 @@ final class DelayTests: XCTestCase {
                                                      .requested(.max(12)),
                                                      .requested(.max(12)),
                                                      .requested(.max(12))])
-        XCTAssertEqual(scheduler.scheduledDates, [.init(nanoseconds: 400)])
-        XCTAssertEqual(scheduler.history,
-                       [.schedule(options: .init(481516)),
-                        .now,
-                        .scheduleAfterDate(.init(nanoseconds: 200),
-                                           tolerance: .nanoseconds(5),
-                                           options: .init(481516)),
-                        .now,
-                        .scheduleAfterDate(.init(nanoseconds: 200),
-                                           tolerance: .nanoseconds(5),
-                                           options: .init(481516)),
-                        .now,
-                        .scheduleAfterDate(.init(nanoseconds: 200),
-                                           tolerance: .nanoseconds(5),
-                                           options: .init(481516)),
-                        .now,
-                        .scheduleAfterDate(.init(nanoseconds: 400),
-                                           tolerance: .nanoseconds(5),
-                                           options: .init(481516))])
-
+        XCTAssertEqual(scheduler.scheduledDates, [.init(nanoseconds: 0)])
+        XCTAssertEqual(scheduler.history, [.schedule(options: .init(481516)),
+                                           .schedule(options: .init(481516)),
+                                           .schedule(options: .init(481516)),
+                                           .schedule(options: .init(481516)),
+                                           .schedule(options: .init(481516))])
         scheduler.executeScheduledActions()
-        XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription),
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReceiveOn"),
                                                  .value(1),
                                                  .value(3),
                                                  .value(2),
@@ -145,25 +95,12 @@ final class DelayTests: XCTestCase {
                                                      .requested(.max(12)),
                                                      .requested(.max(12)),
                                                      .requested(.max(12))])
-        XCTAssertEqual(scheduler.history,
-                       [.schedule(options: .init(481516)),
-                        .now,
-                        .scheduleAfterDate(.init(nanoseconds: 200),
-                                           tolerance: .nanoseconds(5),
-                                           options: .init(481516)),
-                        .now,
-                        .scheduleAfterDate(.init(nanoseconds: 200),
-                                           tolerance: .nanoseconds(5),
-                                           options: .init(481516)),
-                        .now,
-                        .scheduleAfterDate(.init(nanoseconds: 200),
-                                           tolerance: .nanoseconds(5),
-                                           options: .init(481516)),
-                        .now,
-                        .scheduleAfterDate(.init(nanoseconds: 400),
-                                           tolerance: .nanoseconds(5),
-                                           options: .init(481516))])
-        XCTAssertEqual(scheduler.now, .init(nanoseconds: 400))
+        XCTAssertEqual(scheduler.history, [.schedule(options: .init(481516)),
+                                           .schedule(options: .init(481516)),
+                                           .schedule(options: .init(481516)),
+                                           .schedule(options: .init(481516)),
+                                           .schedule(options: .init(481516))])
+        XCTAssertEqual(scheduler.now, .init(nanoseconds: 0))
     }
 
     func testRequest() throws {
@@ -171,15 +108,12 @@ final class DelayTests: XCTestCase {
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
                                         initialDemand: nil,
                                         receiveValueDemand: .none) {
-            $0.delay(for: .nanoseconds(200),
-                     tolerance: .nanoseconds(5),
-                     scheduler: scheduler,
-                     options: .init(481516))
+            $0.receive(on: scheduler)
         }
         scheduler.executeScheduledActions()
 
         XCTAssertEqual(helper.subscription.history, [])
-        XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription)])
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReceiveOn")])
 
         try XCTUnwrap(helper.downstreamSubscription).request(.max(10))
         try XCTUnwrap(helper.downstreamSubscription).request(.max(4))
@@ -187,14 +121,14 @@ final class DelayTests: XCTestCase {
         try XCTUnwrap(helper.downstreamSubscription).request(.none)
         XCTAssertEqual(helper.publisher.send(2000), .none)
 
-        XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription)])
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReceiveOn")])
         XCTAssertEqual(helper.subscription.history, [.requested(.max(10)),
                                                      .requested(.max(4)),
                                                      .requested(.max(5)),
                                                      .requested(.none)])
 
         scheduler.executeScheduledActions()
-        XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription),
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReceiveOn"),
                                                  .value(2000)])
         XCTAssertEqual(helper.subscription.history, [.requested(.max(10)),
                                                      .requested(.max(4)),
@@ -207,30 +141,27 @@ final class DelayTests: XCTestCase {
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
                                         initialDemand: .unlimited,
                                         receiveValueDemand: .none) {
-            $0.delay(for: .nanoseconds(200),
-                     tolerance: .nanoseconds(5),
-                     scheduler: scheduler,
-                     options: .init(481516))
+            $0.receive(on: scheduler)
         }
 
         scheduler.executeScheduledActions()
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
-        XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription)])
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReceiveOn")])
 
         try XCTUnwrap(helper.downstreamSubscription).cancel()
         try XCTUnwrap(helper.downstreamSubscription).request(.max(42))
         try XCTUnwrap(helper.downstreamSubscription).cancel()
 
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited), .cancelled])
-        XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription)])
-        XCTAssertEqual(scheduler.history, [.schedule(options: .init(481516))])
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReceiveOn")])
+        XCTAssertEqual(scheduler.history, [.schedule(options: nil)])
 
         XCTAssertEqual(helper.publisher.send(0), .none)
         helper.publisher.send(completion: .finished)
 
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited), .cancelled])
-        XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription)])
-        XCTAssertEqual(scheduler.history, [.schedule(options: .init(481516))])
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReceiveOn")])
+        XCTAssertEqual(scheduler.history, [.schedule(options: nil)])
     }
 
     func testReceiveCompletionImmediatelyAfterSubscription() {
@@ -238,22 +169,15 @@ final class DelayTests: XCTestCase {
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
                                         initialDemand: .unlimited,
                                         receiveValueDemand: .none) {
-            $0.delay(for: .nanoseconds(123),
-                     tolerance: .nanoseconds(5),
-                     scheduler: scheduler,
-                     options: .init(481516))
+            $0.receive(on: scheduler)
         }
 
         helper.publisher.send(completion: .failure(.oops))
 
         XCTAssertEqual(helper.tracking.history, [])
         XCTAssertEqual(helper.subscription.history, [])
-        XCTAssertEqual(scheduler.history,
-                       [.schedule(options: .init(481516)),
-                        .now,
-                        .scheduleAfterDate(.init(nanoseconds: 123),
-                                           tolerance: .nanoseconds(5),
-                                           options: .init(481516))])
+        XCTAssertEqual(scheduler.history, [.schedule(options: nil),
+                                           .schedule(options: nil)])
 
         scheduler.executeScheduledActions()
 
@@ -266,10 +190,7 @@ final class DelayTests: XCTestCase {
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
                                         initialDemand: .unlimited,
                                         receiveValueDemand: .max(418)) {
-            $0.delay(for: .nanoseconds(123),
-                     tolerance: .nanoseconds(5),
-                     scheduler: scheduler,
-                     options: .init(481516))
+            $0.receive(on: scheduler)
         }
         XCTAssertEqual(helper.publisher.send(-1), .none)
         scheduler.executeScheduledActions()
@@ -277,28 +198,18 @@ final class DelayTests: XCTestCase {
         XCTAssertEqual(helper.publisher.send(1000), .none)
         helper.publisher.send(completion: .finished)
 
-        XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription),
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReceiveOn"),
                                                  .value(-1)])
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
                                                      .requested(.max(418))])
-        XCTAssertEqual(scheduler.history,
-                       [.schedule(options: .init(481516)),
-                        .now,
-                        .scheduleAfterDate(.init(nanoseconds: 123),
-                                           tolerance: .nanoseconds(5),
-                                           options: .init(481516)),
-                        .now,
-                        .scheduleAfterDate(.init(nanoseconds: 246),
-                                           tolerance: .nanoseconds(5),
-                                           options: .init(481516)),
-                        .now,
-                        .scheduleAfterDate(.init(nanoseconds: 246),
-                                           tolerance: .nanoseconds(5),
-                                           options: .init(481516))])
+        XCTAssertEqual(scheduler.history, [.schedule(options: nil),
+                                           .schedule(options: nil),
+                                           .schedule(options: nil),
+                                           .schedule(options: nil)])
 
         scheduler.executeScheduledActions()
 
-        XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription),
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReceiveOn"),
                                                  .value(-1),
                                                  .value(1000),
                                                  .completion(.finished)])
@@ -310,7 +221,7 @@ final class DelayTests: XCTestCase {
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
                                         initialDemand: .unlimited,
                                         receiveValueDemand: .max(418)) {
-            $0.delay(for: .nanoseconds(123), scheduler: ImmediateScheduler.shared)
+            $0.receive(on: ImmediateScheduler.shared)
         }
 
         helper.tracking.onValue = { _ in
@@ -326,7 +237,7 @@ final class DelayTests: XCTestCase {
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
                                         initialDemand: .unlimited,
                                         receiveValueDemand: .max(418)) {
-            $0.delay(for: .nanoseconds(123), scheduler: ImmediateScheduler.shared)
+            $0.receive(on: ImmediateScheduler.shared)
         }
         helper.tracking.onFinish = {
             helper.publisher.send(completion: .finished)
@@ -340,13 +251,12 @@ final class DelayTests: XCTestCase {
         var subscriberReleased = false
         do {
             let publisher = CustomPublisher(subscription: CustomSubscription())
-            let delay = publisher.delay(for: 0.35, scheduler: scheduler)
+            let delay = publisher.receive(on: scheduler)
             let tracking = TrackingSubscriber(receiveSubscription: { subscription = $0 },
                                               onDeinit: { subscriberReleased = true })
             delay.subscribe(tracking)
             XCTAssertEqual(tracking.history, [])
-            XCTAssertEqual(scheduler.history, [.minimumTolerance,
-                                               .schedule(options: nil)])
+            XCTAssertEqual(scheduler.history, [.schedule(options: nil)])
             publisher.cancel()
         }
         scheduler.executeScheduledActions()
@@ -360,21 +270,16 @@ final class DelayTests: XCTestCase {
         var subscriberReleased = false
         do {
             let publisher = CustomPublisher(subscription: CustomSubscription())
-            let delay = publisher.delay(for: 0.35, scheduler: scheduler)
+            let delay = publisher.receive(on: scheduler)
             let tracking = TrackingSubscriber(receiveValue: { value = $0; return .none },
                                               onDeinit: { subscriberReleased = true })
             delay.subscribe(tracking)
             scheduler.executeScheduledActions()
-            XCTAssertEqual(tracking.history, [.subscription(delaySubscription)])
+            XCTAssertEqual(tracking.history, [.subscription("ReceiveOn")])
             XCTAssertEqual(publisher.send(42), .none)
-            XCTAssertEqual(tracking.history, [.subscription(delaySubscription)])
-            XCTAssertEqual(scheduler.history,
-                           [.minimumTolerance,
-                            .schedule(options: nil),
-                            .now,
-                            .scheduleAfterDate(.init(nanoseconds: 350000000),
-                                               tolerance: 0,
-                                               options: nil)])
+            XCTAssertEqual(tracking.history, [.subscription("ReceiveOn")])
+            XCTAssertEqual(scheduler.history, [.schedule(options: nil),
+                                               .schedule(options: nil)])
             tracking.cancel()
             publisher.cancel()
         }
@@ -389,21 +294,16 @@ final class DelayTests: XCTestCase {
         var subscriberReleased = false
         do {
             let publisher = CustomPublisher(subscription: CustomSubscription())
-            let delay = publisher.delay(for: 0.35, scheduler: scheduler)
+            let delay = publisher.receive(on: scheduler)
             let tracking = TrackingSubscriber(receiveCompletion: { completion = $0 },
                                               onDeinit: { subscriberReleased = true })
             delay.subscribe(tracking)
             scheduler.executeScheduledActions()
-            XCTAssertEqual(tracking.history, [.subscription(delaySubscription)])
+            XCTAssertEqual(tracking.history, [.subscription("ReceiveOn")])
             publisher.send(completion: .finished)
-            XCTAssertEqual(tracking.history, [.subscription(delaySubscription)])
-            XCTAssertEqual(scheduler.history,
-                           [.minimumTolerance,
-                            .schedule(options: nil),
-                            .now,
-                            .scheduleAfterDate(.init(nanoseconds: 350000000),
-                                               tolerance: 0,
-                                               options: nil)])
+            XCTAssertEqual(tracking.history, [.subscription("ReceiveOn")])
+            XCTAssertEqual(scheduler.history, [.schedule(options: nil),
+                                               .schedule(options: nil)])
             tracking.cancel()
             publisher.cancel()
         }
@@ -412,53 +312,50 @@ final class DelayTests: XCTestCase {
         XCTAssertTrue(subscriberReleased)
     }
 
-    func testDelayReceiveSubscriptionTwice() throws {
+    func testReceiveOnReceiveSubscriptionTwice() throws {
         try testReceiveSubscriptionTwice {
-            $0.delay(for: 0.35, scheduler: ImmediateScheduler.shared)
+            $0.receive(on: ImmediateScheduler.shared)
         }
     }
 
-    func testDelayReceiveValueBeforeSubscription() {
+    func testReceiveOnReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 213,
                                            expected: .history([], demand: .none)) {
-            $0.delay(for: 0.35, scheduler: ImmediateScheduler.shared)
+            $0.receive(on: ImmediateScheduler.shared)
         }
     }
 
-    func testDelayReceiveCompletionBeforeSubscription()  {
+    func testReceiveOnReceiveCompletionBeforeSubscription()  {
         testReceiveCompletionBeforeSubscription(inputType: Int.self,
                                                 expected: .history([])) {
-            $0.delay(for: 0.35, scheduler: ImmediateScheduler.shared)
+            $0.receive(on: ImmediateScheduler.shared)
         }
     }
 
-    func testDelayRequestBeforeSubscription() {
+    func testReceiveOnRequestBeforeSubscription() {
         testRequestBeforeSubscription(inputType: Int.self, shouldCrash: false) {
-            $0.delay(for: 0.35, scheduler: ImmediateScheduler.shared)
+            $0.receive(on: ImmediateScheduler.shared)
         }
     }
 
-    func testDelayCancelBeforeSubscription() {
+    func testReceiveOnCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self, shouldCrash: false) {
-            $0.delay(for: 0.35, scheduler: ImmediateScheduler.shared)
+            $0.receive(on: ImmediateScheduler.shared)
         }
     }
 
-    func testDelayReflection() throws {
-        /// Delay's Inner doesn't customize its reflection
-        try testReflection(parentInput: Int.self,
+    func testReceiveOnReflection() throws {
+        try testReflection(parentInput: String.self,
                            parentFailure: Error.self,
-                           description: nil,
-                           customMirror: nil,
-                           playgroundDescription: nil) {
-            $0.delay(for: 42, scheduler: ImmediateScheduler.shared)
-        }
+                           description: "ReceiveOn",
+                           customMirror: childrenIsEmpty,
+                           playgroundDescription: "ReceiveOn",
+                           { $0.receive(on: ImmediateScheduler.shared) })
     }
 
-    func testDelayLifecycle() throws {
-        try testLifecycle(sendValue: 31,
-                          cancellingSubscriptionReleasesSubscriber: true) {
-            $0.delay(for: 42, scheduler: ImmediateScheduler.shared)
+    func testReceiveOnLifecycle() throws {
+        try testLifecycle(sendValue: 31, cancellingSubscriptionReleasesSubscriber: true) {
+            $0.receive(on: ImmediateScheduler.shared)
         }
     }
 }
