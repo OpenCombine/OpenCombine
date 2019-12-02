@@ -7,7 +7,6 @@
 
 import XCTest
 
-//import Combine
 #if OPENCOMBINE_COMPATIBILITY_TEST
 import Combine
 #else

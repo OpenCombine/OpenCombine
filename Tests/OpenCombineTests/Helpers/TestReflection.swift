@@ -79,9 +79,9 @@ internal func testReflection<Output, Failure: Error, Operator: Publisher>(
     line: UInt = #line,
     parentInput: Output.Type,
     parentFailure: Failure.Type,
-    description expectedDescription: String,
+    description expectedDescription: String?,
     customMirror customMirrorPredicate: ((Mirror) -> Bool)?,
-    playgroundDescription: String,
+    playgroundDescription: String?,
     _ makeOperator: (CustomConnectablePublisherBase<Output, Failure>) -> Operator
 ) throws {
     let publisher = CustomConnectablePublisherBase<Output, Failure>(subscription: nil)
@@ -97,16 +97,18 @@ internal func testReflection<Output, Failure: Error, Operator: Publisher>(
                    file: file,
                    line: line)
 
-    let customMirror =
-        try XCTUnwrap((erasedSubscriber as? CustomReflectable)?.customMirror,
-                      file: file,
-                      line: line)
-
     if let customMirrorPredicate = customMirrorPredicate {
+        let customMirror =
+            try XCTUnwrap((erasedSubscriber as? CustomReflectable)?.customMirror,
+                          file: file,
+                          line: line)
         XCTAssert(customMirrorPredicate(customMirror),
                   "customMirror doesn't satisfy the predicate",
                   file: file,
                   line: line)
+    } else {
+        XCTAssertFalse(erasedSubscriber is CustomReflectable,
+                       "subscriber shouldn't conform to CustomReflectable")
     }
 
     XCTAssertFalse(erasedSubscriber is CustomDebugStringConvertible,
