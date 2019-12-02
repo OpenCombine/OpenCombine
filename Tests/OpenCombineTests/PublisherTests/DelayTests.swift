@@ -7,143 +7,437 @@
 
 import XCTest
 
+#if OPENCOMBINE_COMPATIBILITY_TEST
+import Combine
+#else
 import OpenCombine
+#endif
 
-@available(iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, *)
 final class DelayTests: XCTestCase {
 
-    func testDelayNotFireWhenPublisherChangesValueOnSubscribe() {
-        let passthrow: PassthroughSubject<Int, Never> = PassthroughSubject()
+    // Delay's Inner doesn't conform to CustomStringConvertible, so we can't compare
+    // subscriptions using their descriptions
+    let delaySubscription: StringSubscription = {
+        let tracking = TrackingSubscriber()
         let scheduler = VirtualTimeScheduler()
-        let interval: VirtualTimeScheduler.SchedulerTimeType.Stride = 1.0
-        let tolerance = scheduler.minimumTolerance
+        CustomPublisher(subscription: CustomSubscription())
+            .delay(for: 0, scheduler: scheduler)
+            .subscribe(tracking)
+        scheduler.executeScheduledActions()
+        return tracking.subscriptions.first.map(StringSubscription.subscription)
+            ?? "Delay"
+    }()
 
-        let delay = Publishers.Delay(upstream: passthrow,
-                                     interval: interval,
-                                     tolerance: tolerance,
-                                     scheduler: scheduler)
-        var expectation = false
-
-        let cancel = delay.sink { _ in
-            expectation = true
+    func testBasicBehavior() {
+        let scheduler = VirtualTimeScheduler()
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        initialDemand: .max(100),
+                                        receiveValueDemand: .max(12)) {
+            $0.delay(for: .nanoseconds(200),
+                     tolerance: .nanoseconds(5),
+                     scheduler: scheduler,
+                     options: VirtualTimeScheduler.SchedulerOptions())
         }
-        passthrow.send(0)
-        scheduler.flush()
-        XCTAssertFalse(expectation)
-        cancel.cancel()
+        XCTAssertNotNil(helper.publisher.subscriber)
+
+        XCTAssertEqual(helper.tracking.history, [])
+        XCTAssertEqual(helper.subscription.history, [])
+        XCTAssertEqual(scheduler.history, [.schedule])
+
+        scheduler.executeScheduledActions()
+
+        XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription)])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(100))])
+        XCTAssertEqual(scheduler.history, [.schedule])
+
+        XCTAssertEqual(helper.publisher.send(1), .none)
+        XCTAssertEqual(helper.publisher.send(2), .none)
+        XCTAssertEqual(helper.publisher.send(3), .none)
+
+        XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription)])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(100))])
+        XCTAssertEqual(scheduler.scheduledDates, [.init(nanoseconds: 200),
+                                                  .init(nanoseconds: 200),
+                                                  .init(nanoseconds: 200)])
+
+        XCTAssertEqual(scheduler.history,
+                       [.schedule,
+                        .now,
+                        .scheduleAfterDate(.init(nanoseconds: 200),
+                                           tolerance: .nanoseconds(5)),
+                        .now,
+                        .scheduleAfterDate(.init(nanoseconds: 200),
+                                           tolerance: .nanoseconds(5)),
+                        .now,
+                        .scheduleAfterDate(.init(nanoseconds: 200),
+                                           tolerance: .nanoseconds(5))])
+
+        scheduler.executeScheduledActions()
+
+        XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription),
+                                                 .value(1),
+                                                 .value(3),
+                                                 .value(2)])
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(100)),
+                                                     .requested(.max(12)),
+                                                     .requested(.max(12)),
+                                                     .requested(.max(12))])
+
+        XCTAssertEqual(scheduler.history,
+                       [.schedule,
+                        .now,
+                        .scheduleAfterDate(.init(nanoseconds: 200),
+                                           tolerance: .nanoseconds(5)),
+                        .now,
+                        .scheduleAfterDate(.init(nanoseconds: 200),
+                                           tolerance: .nanoseconds(5)),
+                        .now,
+                        .scheduleAfterDate(.init(nanoseconds: 200),
+                                           tolerance: .nanoseconds(5))])
+
+        helper.publisher.send(completion: .failure(.oops))
+        helper.publisher.send(completion: .finished)
+        XCTAssertEqual(helper.publisher.send(4), .none)
+
+        XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription),
+                                                 .value(1),
+                                                 .value(3),
+                                                 .value(2)])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(100)),
+                                                     .requested(.max(12)),
+                                                     .requested(.max(12)),
+                                                     .requested(.max(12))])
+        XCTAssertEqual(scheduler.scheduledDates, [.init(nanoseconds: 400)])
+        XCTAssertEqual(scheduler.history,
+                       [.schedule,
+                        .now,
+                        .scheduleAfterDate(.init(nanoseconds: 200),
+                                           tolerance: .nanoseconds(5)),
+                        .now,
+                        .scheduleAfterDate(.init(nanoseconds: 200),
+                                           tolerance: .nanoseconds(5)),
+                        .now,
+                        .scheduleAfterDate(.init(nanoseconds: 200),
+                                           tolerance: .nanoseconds(5)),
+                        .now,
+                        .scheduleAfterDate(.init(nanoseconds: 400),
+                                           tolerance: .nanoseconds(5))])
+
+        scheduler.executeScheduledActions()
+        XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription),
+                                                 .value(1),
+                                                 .value(3),
+                                                 .value(2),
+                                                 .completion(.failure(.oops))])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(100)),
+                                                     .requested(.max(12)),
+                                                     .requested(.max(12)),
+                                                     .requested(.max(12))])
+        XCTAssertEqual(scheduler.history,
+                       [.schedule,
+                        .now,
+                        .scheduleAfterDate(.init(nanoseconds: 200),
+                                           tolerance: .nanoseconds(5)),
+                        .now,
+                        .scheduleAfterDate(.init(nanoseconds: 200),
+                                           tolerance: .nanoseconds(5)),
+                        .now,
+                        .scheduleAfterDate(.init(nanoseconds: 200),
+                                           tolerance: .nanoseconds(5)),
+                        .now,
+                        .scheduleAfterDate(.init(nanoseconds: 400),
+                                           tolerance: .nanoseconds(5))])
+        XCTAssertEqual(scheduler.now, .init(nanoseconds: 400))
     }
 
-    func testDelayFireOnPublisherChangeValue() {
-        let passthrow: PassthroughSubject<Int, Never> = PassthroughSubject()
+    func testRequest() throws {
         let scheduler = VirtualTimeScheduler()
-        let tolerance = scheduler.minimumTolerance
-
-        let delay = Publishers.Delay(upstream: passthrow,
-                                     interval: 1.0,
-                                     tolerance: tolerance,
-                                     scheduler: scheduler)
-        var expectation = false
-
-        let cancel = delay.sink { _ in
-            expectation = true
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        initialDemand: nil,
+                                        receiveValueDemand: .none) {
+            $0.delay(for: .nanoseconds(200),
+                     tolerance: .nanoseconds(5),
+                     scheduler: scheduler,
+                     options: VirtualTimeScheduler.SchedulerOptions())
         }
-        scheduler.schedule {
-            passthrow.send(0)
-        }
-        scheduler.flush()
-        XCTAssertTrue(expectation)
-        cancel.cancel()
+        scheduler.executeScheduledActions()
+
+        XCTAssertEqual(helper.subscription.history, [])
+        XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription)])
+
+        try XCTUnwrap(helper.downstreamSubscription).request(.max(10))
+        try XCTUnwrap(helper.downstreamSubscription).request(.max(4))
+        try XCTUnwrap(helper.downstreamSubscription).request(.max(5))
+        try XCTUnwrap(helper.downstreamSubscription).request(.none)
+        XCTAssertEqual(helper.publisher.send(2000), .none)
+
+        XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription)])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(10)),
+                                                     .requested(.max(4)),
+                                                     .requested(.max(5)),
+                                                     .requested(.none)])
+
+        scheduler.executeScheduledActions()
+        XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription),
+                                                 .value(2000)])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(10)),
+                                                     .requested(.max(4)),
+                                                     .requested(.max(5)),
+                                                     .requested(.none)])
     }
 
-    func testDelayNotFireAfterCancel() {
-        let passthrow: PassthroughSubject<Int, Never> = PassthroughSubject()
+    func testCancelAlreadyCancelled() throws {
         let scheduler = VirtualTimeScheduler()
-        let tolerance = scheduler.minimumTolerance
-
-        let delay = Publishers.Delay(upstream: passthrow,
-                                     interval: 1.0,
-                                     tolerance: tolerance,
-                                     scheduler: scheduler)
-        var expectation = false
-
-        let cancel = delay.sink { _ in
-            expectation = true
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        initialDemand: .unlimited,
+                                        receiveValueDemand: .none) {
+            $0.delay(for: .nanoseconds(200),
+                     tolerance: .nanoseconds(5),
+                     scheduler: scheduler,
+                     options: VirtualTimeScheduler.SchedulerOptions())
         }
-        scheduler.schedule {
-             cancel.cancel()
-             passthrow.send(0)
-        }
-        scheduler.flush()
-        XCTAssertFalse(expectation)
+
+        scheduler.executeScheduledActions()
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+        XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription)])
+
+        try XCTUnwrap(helper.downstreamSubscription).cancel()
+        try XCTUnwrap(helper.downstreamSubscription).request(.max(42))
+        try XCTUnwrap(helper.downstreamSubscription).cancel()
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited), .cancelled])
+        XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription)])
+        XCTAssertEqual(scheduler.history, [.schedule])
+
+        XCTAssertEqual(helper.publisher.send(0), .none)
+        helper.publisher.send(completion: .finished)
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited), .cancelled])
+        XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription)])
+        XCTAssertEqual(scheduler.history, [.schedule])
     }
 
-    func testDelayDurationAndValues() {
-        struct Context {
-            let time: Double
-            let value: Int
-        }
+    func testReceiveCompletionImmediatelyAfterSubscription() {
         let scheduler = VirtualTimeScheduler()
-        func currentTime() -> Double {
-            return Double(scheduler.now.date)
-        }
-        let passthrow: PassthroughSubject<Int, Never> = PassthroughSubject()
-        let tolerance = scheduler.minimumTolerance
-        let toleranceValue: Double = Double(tolerance.magnitude)
-        let delayTime: Double = 1.0
-
-        let delay = Publishers.Delay(upstream: passthrow,
-                                     interval: 1.0,
-                                     tolerance: tolerance,
-                                     scheduler: scheduler)
-
-        var receivedValues: [Context] = []
-        let cancel = delay.sink { value in
-            let received = Context(time: currentTime(), value: value)
-            receivedValues.append(received)
-        }
-        var sentValues: [Context] = []
-        // Send 1st value at start
-        scheduler.schedule {
-            let first = Context(time: currentTime(), value: 10)
-            passthrow.send(first.value)
-            sentValues.append(first)
-        }
-        // Send 2nd value after 1 sec
-        scheduler.schedule(after: scheduler.now.advanced(by: 1)) {
-            let second = Context(time: currentTime(), value: 654)
-            passthrow.send(second.value)
-            sentValues.append(second)
-        }
-        // Send 3d value after 2 sec
-        scheduler.schedule(after: scheduler.now.advanced(by: 2)) {
-            let fird = Context(time: currentTime(), value: 82375)
-            passthrow.send(fird.value)
-            sentValues.append(fird)
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        initialDemand: .unlimited,
+                                        receiveValueDemand: .none) {
+            $0.delay(for: .nanoseconds(123),
+                     tolerance: .nanoseconds(5),
+                     scheduler: scheduler,
+                     options: VirtualTimeScheduler.SchedulerOptions())
         }
 
-        scheduler.flush()
-        cancel.cancel()
+        helper.publisher.send(completion: .failure(.oops))
 
-        XCTAssertTrue(sentValues.count == 3)
-        XCTAssertTrue(receivedValues.count == 3)
+        XCTAssertEqual(helper.tracking.history, [])
+        XCTAssertEqual(helper.subscription.history, [])
+        XCTAssertEqual(scheduler.history,
+                       [.schedule,
+                        .now,
+                        .scheduleAfterDate(.init(nanoseconds: 123),
+                                           tolerance: .nanoseconds(5))])
 
-        if sentValues.count == 3, receivedValues.count == 3 {
-            // Check values
-            XCTAssertTrue(sentValues[0].value == receivedValues[0].value)
-            XCTAssertTrue(sentValues[1].value == receivedValues[1].value)
-            XCTAssertTrue(sentValues[2].value == receivedValues[2].value)
+        scheduler.executeScheduledActions()
 
-            let min = delayTime
-            // 0.005 - error of time calculation
-            let max = delayTime + toleranceValue + 0.005
-            let delay1 = receivedValues[0].time - sentValues[0].time
-            XCTAssertTrue(delay1 >= min && delay1 < max)
+        XCTAssertEqual(helper.tracking.history, [.completion(.failure(.oops))])
+        XCTAssertEqual(helper.subscription.history, [])
+    }
 
-            let delay2 = receivedValues[1].time - sentValues[1].time
-            XCTAssertTrue(delay2 >= min && delay1 < max)
+    func testReceiveCompletionImmediatelyAfterValue() {
+        let scheduler = VirtualTimeScheduler()
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        initialDemand: .unlimited,
+                                        receiveValueDemand: .max(418)) {
+            $0.delay(for: .nanoseconds(123),
+                     tolerance: .nanoseconds(5),
+                     scheduler: scheduler,
+                     options: VirtualTimeScheduler.SchedulerOptions())
+        }
+        XCTAssertEqual(helper.publisher.send(-1), .none)
+        scheduler.executeScheduledActions()
 
-            let delay3 = receivedValues[2].time - sentValues[2].time
-            XCTAssertTrue(delay3 >= min && delay1 < max)
+        XCTAssertEqual(helper.publisher.send(1000), .none)
+        helper.publisher.send(completion: .finished)
+
+        XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription),
+                                                 .value(-1)])
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
+                                                     .requested(.max(418))])
+        XCTAssertEqual(scheduler.history,
+                       [.schedule,
+                        .now,
+                        .scheduleAfterDate(.init(nanoseconds: 123),
+                                           tolerance: .nanoseconds(5)),
+                        .now,
+                        .scheduleAfterDate(.init(nanoseconds: 246),
+                                           tolerance: .nanoseconds(5)),
+                        .now,
+                        .scheduleAfterDate(.init(nanoseconds: 246),
+                                           tolerance: .nanoseconds(5))])
+
+        scheduler.executeScheduledActions()
+
+        XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription),
+                                                 .value(-1),
+                                                 .value(1000),
+                                                 .completion(.finished)])
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
+                                                     .requested(.max(418))])
+    }
+
+    func testCrashesWhenReceivingInputRecursively() {
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        initialDemand: .unlimited,
+                                        receiveValueDemand: .max(418)) {
+            $0.delay(for: .nanoseconds(123), scheduler: ImmediateScheduler.shared)
+        }
+
+        helper.tracking.onValue = { _ in
+            _ = helper.publisher.send(-1)
+        }
+
+        assertCrashes {
+            _ = helper.publisher.send(0)
+        }
+    }
+
+    func testReceiveCompletionRecursively() {
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        initialDemand: .unlimited,
+                                        receiveValueDemand: .max(418)) {
+            $0.delay(for: .nanoseconds(123), scheduler: ImmediateScheduler.shared)
+        }
+        helper.tracking.onFinish = {
+            helper.publisher.send(completion: .finished)
+        }
+        helper.publisher.send(completion: .finished)
+    }
+
+    func testWeakCaptureWhenSchedulingSubscription() {
+        let scheduler = VirtualTimeScheduler()
+        var subscription: Subscription?
+        var subscriberReleased = false
+        do {
+            let publisher = CustomPublisher(subscription: CustomSubscription())
+            let delay = publisher.delay(for: 0.35, scheduler: scheduler)
+            let tracking = TrackingSubscriber(receiveSubscription: { subscription = $0 },
+                                              onDeinit: { subscriberReleased = true })
+            delay.subscribe(tracking)
+            XCTAssertEqual(tracking.history, [])
+            XCTAssertEqual(scheduler.history, [.minimumTolerance, .schedule])
+            publisher.cancel()
+        }
+        scheduler.executeScheduledActions()
+        XCTAssertNil(subscription)
+        XCTAssertTrue(subscriberReleased)
+    }
+
+    func testWeakCaptureWhenSchedulingValue() {
+        let scheduler = VirtualTimeScheduler()
+        var value: Int?
+        var subscriberReleased = false
+        do {
+            let publisher = CustomPublisher(subscription: CustomSubscription())
+            let delay = publisher.delay(for: 0.35, scheduler: scheduler)
+            let tracking = TrackingSubscriber(receiveValue: { value = $0; return .none },
+                                              onDeinit: { subscriberReleased = true })
+            delay.subscribe(tracking)
+            scheduler.executeScheduledActions()
+            XCTAssertEqual(tracking.history, [.subscription(delaySubscription)])
+            XCTAssertEqual(publisher.send(42), .none)
+            XCTAssertEqual(tracking.history, [.subscription(delaySubscription)])
+            XCTAssertEqual(scheduler.history,
+                           [.minimumTolerance,
+                            .schedule,
+                            .now,
+                            .scheduleAfterDate(.init(nanoseconds: 350000000),
+                                               tolerance: 0)])
+            tracking.cancel()
+            publisher.cancel()
+        }
+        scheduler.executeScheduledActions()
+        XCTAssertNil(value)
+        XCTAssertTrue(subscriberReleased)
+    }
+
+    func testWeakCaptureWhenSchedulingCompletion() {
+        let scheduler = VirtualTimeScheduler()
+        var completion: Subscribers.Completion<TestingError>?
+        var subscriberReleased = false
+        do {
+            let publisher = CustomPublisher(subscription: CustomSubscription())
+            let delay = publisher.delay(for: 0.35, scheduler: scheduler)
+            let tracking = TrackingSubscriber(receiveCompletion: { completion = $0 },
+                                              onDeinit: { subscriberReleased = true })
+            delay.subscribe(tracking)
+            scheduler.executeScheduledActions()
+            XCTAssertEqual(tracking.history, [.subscription(delaySubscription)])
+            publisher.send(completion: .finished)
+            XCTAssertEqual(tracking.history, [.subscription(delaySubscription)])
+            XCTAssertEqual(scheduler.history,
+                           [.minimumTolerance,
+                            .schedule,
+                            .now,
+                            .scheduleAfterDate(.init(nanoseconds: 350000000),
+                                               tolerance: 0)])
+            tracking.cancel()
+            publisher.cancel()
+        }
+        scheduler.executeScheduledActions()
+        XCTAssertNil(completion)
+        XCTAssertTrue(subscriberReleased)
+    }
+
+    func testDelayReceiveSubscriptionTwice() throws {
+        try testReceiveSubscriptionTwice {
+            $0.delay(for: 0.35, scheduler: ImmediateScheduler.shared)
+        }
+    }
+
+    func testDelayReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 213,
+                                           expected: .history([], demand: .none)) {
+            $0.delay(for: 0.35, scheduler: ImmediateScheduler.shared)
+        }
+    }
+
+    func testDelayReceiveCompletionBeforeSubscription()  {
+        testReceiveCompletionBeforeSubscription(inputType: Int.self,
+                                                expected: .history([])) {
+            $0.delay(for: 0.35, scheduler: ImmediateScheduler.shared)
+        }
+    }
+
+    func testDelayRequestBeforeSubscription() {
+        testRequestBeforeSubscription(inputType: Int.self, shouldCrash: false) {
+            $0.delay(for: 0.35, scheduler: ImmediateScheduler.shared)
+        }
+    }
+
+    func testDelayCancelBeforeSubscription() {
+        testCancelBeforeSubscription(inputType: Int.self, shouldCrash: false) {
+            $0.delay(for: 0.35, scheduler: ImmediateScheduler.shared)
+        }
+    }
+
+    func testDelayReflection() throws {
+        /// Delay's Inner doesn't customize its reflection
+        try testReflection(parentInput: Int.self,
+                           parentFailure: Error.self,
+                           description: nil,
+                           customMirror: nil,
+                           playgroundDescription: nil) {
+            $0.delay(for: 42, scheduler: ImmediateScheduler.shared)
+        }
+    }
+
+    func testDelayLifecycle() throws {
+        try testLifecycle(sendValue: 31,
+                          cancellingSubscriptionReleasesSubscriber: true) {
+            $0.delay(for: 42, scheduler: ImmediateScheduler.shared)
         }
     }
 }
