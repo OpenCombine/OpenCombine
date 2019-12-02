@@ -1,41 +1,42 @@
 //
-//  PriorityQueue.swift
+//  FairPriorityQueue.swift
 //  
 //
 //  Created by Sergej Jaskiewicz on 02.12.2019.
 //
 
-/// A priproty queue based on binary max-heap.
-struct PriorityQueue<Element> {
-    private var storage: [Element]
-    private let areInIncreasingOrder: (Element, Element) -> Bool
+/// A priproty queue based on binary min-heap.
+/// If two elements with the same priority are added, the element that was added
+/// earlier has will have "better" priority (i. e. it will be also extracted earlier).
+struct FairPriorityQueue<Priority: Comparable, Element> {
 
-    init(_ areInIncreasingOrder: @escaping (Element, Element) -> Bool) {
-        self.storage = []
-        self.areInIncreasingOrder = areInIncreasingOrder
-    }
+    private var storage: [((Priority, UInt), Element)] = []
+    private var next: UInt = 0
 
-    mutating func insert(_ element: Element) {
-        storage.append(element)
+    init() {}
+
+    mutating func insert(_ element: Element, priority: Priority) {
+        storage.append(((priority, next), element))
+        next += 1
         var newElementIndex = storage.endIndex - 1
         while let parent = self.parent(of: newElementIndex),
-              areInIncreasingOrder(storage[parent], storage[newElementIndex]) {
+              storage[parent].0 > storage[newElementIndex].0 {
             storage.swapAt(newElementIndex, parent)
             newElementIndex = parent
         }
     }
 
-    func max() -> Element? {
-        return storage.first
+    func min() -> Element? {
+        return storage.first?.1
     }
 
     @discardableResult
-    mutating func extractMax() -> Element? {
+    mutating func extractMin() -> (Priority, Element)? {
         guard let max = storage.first else { return nil }
         storage[0] = storage[storage.endIndex - 1]
         storage.removeLast()
-        maxHeapify(0)
-        return max
+        minHeapify(0)
+        return (max.0.0, max.1)
     }
 
     var count: Int {
@@ -64,17 +65,15 @@ struct PriorityQueue<Element> {
         return (index - 1) / 2
     }
 
-    private mutating func maxHeapify(_ root: Int) {
+    private mutating func minHeapify(_ root: Int) {
         var root = root
         var largest = root
         while true {
             assert(largest == root)
-            if let left = leftChild(of: root),
-               areInIncreasingOrder(storage[root], storage[left]) {
+            if let left = leftChild(of: root), storage[root].0 > storage[left].0 {
                 largest = left
             }
-            if let right = rightChild(of: root),
-               areInIncreasingOrder(storage[largest], storage[right]) {
+            if let right = rightChild(of: root), storage[largest].0 > storage[right].0 {
                 largest = right
             }
             if largest == root {
@@ -86,22 +85,16 @@ struct PriorityQueue<Element> {
     }
 }
 
-extension PriorityQueue where Element: Comparable {
-    init() {
-        self.init(<)
-    }
-}
-
-extension PriorityQueue: Sequence {
+extension FairPriorityQueue: Sequence {
     struct Iterator: IteratorProtocol {
-        private var queue: PriorityQueue
+        private var queue: FairPriorityQueue
 
-        fileprivate init(_ queue: PriorityQueue) {
+        fileprivate init(_ queue: FairPriorityQueue) {
             self.queue = queue
         }
 
-        mutating func next() -> Element? {
-            return queue.extractMax()
+        mutating func next() -> (Priority, Element)? {
+            return queue.extractMin()
         }
     }
 

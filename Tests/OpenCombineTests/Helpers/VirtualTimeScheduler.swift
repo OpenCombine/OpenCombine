@@ -129,30 +129,14 @@ final class VirtualTimeScheduler: Scheduler {
         }
     }
 
-    struct SchedulerOptions: Equatable {
+    enum SchedulerOptions: Equatable, CustomStringConvertible {
+        case nontrivialOptions
 
-        let value: Int
-
-        init(_ value: Int) {
-            self.value = value
-        }
-    }
-
-    private struct EnqueuedAction: Comparable {
-        let time: SchedulerTimeType
-        let action: () -> Void
-
-        init(time: SchedulerTimeType, action: @escaping () -> Void) {
-            self.time = time
-            self.action = action
-        }
-
-        static func < (lhs: EnqueuedAction, rhs: EnqueuedAction) -> Bool {
-            return lhs.time > rhs.time
-        }
-
-        static func == (lhs: EnqueuedAction, rhs: EnqueuedAction) -> Bool {
-            return lhs.time == rhs.time
+        var description: String {
+            switch self {
+            case .nontrivialOptions:
+                return ".nontrivialOptions"
+            }
         }
     }
 
@@ -180,7 +164,7 @@ final class VirtualTimeScheduler: Scheduler {
         var description: String {
 
             func describeOptions(_ options: SchedulerOptions?) -> String {
-                return options.map { ".init(\($0.value)" } ?? "nil"
+                return options.map(String.init(describing:)) ?? "nil"
             }
 
             func describeDate(_ date: SchedulerTimeType) -> String {
@@ -217,12 +201,15 @@ final class VirtualTimeScheduler: Scheduler {
 
     private(set) var history = [Event]()
 
+    /// All private methods should reference this property instead of `now`
+    /// to prevent polluting the scheduler history. Accessing `now` creates an entry
+    /// in the `history` array.
     private var _now = SchedulerTimeType(nanoseconds: 0)
 
-    private var workQueue = PriorityQueue<EnqueuedAction>()
+    private var workQueue = FairPriorityQueue<SchedulerTimeType, () -> Void>()
 
     var scheduledDates: [SchedulerTimeType] {
-        return workQueue.map { $0.time }
+        return workQueue.map { $0.0 }
     }
 
     var now: SchedulerTimeType {
@@ -237,7 +224,7 @@ final class VirtualTimeScheduler: Scheduler {
 
     func schedule(options: SchedulerOptions?, _ action: @escaping () -> Void) {
         history.append(.schedule(options: options))
-        workQueue.insert(.init(time: _now, action: action))
+        workQueue.insert(action, priority: _now)
     }
 
     func schedule(after date: SchedulerTimeType,
@@ -245,7 +232,7 @@ final class VirtualTimeScheduler: Scheduler {
                   options: SchedulerOptions?,
                   _ action: @escaping () -> Void) {
         history.append(.scheduleAfterDate(date, tolerance: tolerance, options: options))
-        workQueue.insert(.init(time: date, action: action))
+        workQueue.insert(action, priority: date)
     }
 
     func schedule(after date: SchedulerTimeType,
@@ -269,7 +256,7 @@ final class VirtualTimeScheduler: Scheduler {
                                    interval: SchedulerTimeType.Stride,
                                    cancellableToken: CancellableToken,
                                    action: @escaping () -> Void) {
-        let enqueuedAction = EnqueuedAction(time: date) { [unowned self] in
+        let enqueuedAction: () -> Void = { [unowned self] in
             if cancellableToken.isCancelled { return }
             action()
             self.repeatedlyExecute(after: date + interval,
@@ -277,13 +264,22 @@ final class VirtualTimeScheduler: Scheduler {
                                    cancellableToken: cancellableToken,
                                    action: action)
         }
-        workQueue.insert(enqueuedAction)
+        workQueue.insert(enqueuedAction, priority: date)
+    }
+
+    /// Sets `now` to the provided value. Useful for testing that an entity that
+    /// uses the scheduler doesn't rely on clock monotonicity.
+    ///
+    /// - Note: The actions that were already executed will not be executed again.
+    ///   This function does **not** provide time machine-like functionality.
+    func rewind(to time: SchedulerTimeType) {
+        _now = time
     }
 
     func executeScheduledActions() {
-        while let enqueuedAction = workQueue.extractMax() {
-            _now = enqueuedAction.time
-            enqueuedAction.action()
+        while let (time, action) = workQueue.extractMin() {
+            _now = time
+            action()
         }
     }
 }

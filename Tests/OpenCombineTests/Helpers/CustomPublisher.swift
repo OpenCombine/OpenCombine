@@ -40,7 +40,9 @@ class CustomPublisherBase<Output, Failure: Error>: Publisher, Cancellable {
     private(set) var erasedSubscriber: Any?
     private let subscription: Subscription?
 
-    var onSubscribe: ((AnySubscriber<Output, Failure>) -> Void)?
+    var willSubscribe: ((AnySubscriber<Output, Failure>) -> Void)?
+
+    var didSubscribe: ((AnySubscriber<Output, Failure>) -> Void)?
 
     required init(subscription: Subscription?) {
         self.subscription = subscription
@@ -51,9 +53,10 @@ class CustomPublisherBase<Output, Failure: Error>: Publisher, Cancellable {
     {
         let anySubscriber = AnySubscriber(subscriber)
         self.subscriber = anySubscriber
-        onSubscribe?(anySubscriber)
+        willSubscribe?(anySubscriber)
         erasedSubscriber = subscriber
         subscription.map(subscriber.receive(subscription:))
+        didSubscribe?(anySubscriber)
     }
 
     func send(subscription: CustomSubscription) {
