@@ -129,7 +129,14 @@ final class VirtualTimeScheduler: Scheduler {
         }
     }
 
-    struct SchedulerOptions {}
+    struct SchedulerOptions: Equatable {
+
+        let value: Int
+
+        init(_ value: Int) {
+            self.value = value
+        }
+    }
 
     private struct EnqueuedAction: Comparable {
         let time: SchedulerTimeType
@@ -161,31 +168,48 @@ final class VirtualTimeScheduler: Scheduler {
     enum Event: Equatable, CustomStringConvertible {
         case now
         case minimumTolerance
-        case schedule
+        case schedule(options: SchedulerOptions?)
         case scheduleAfterDate(SchedulerTimeType,
-                               tolerance: SchedulerTimeType.Stride)
+                               tolerance: SchedulerTimeType.Stride,
+                               options: SchedulerOptions?)
         case scheduleAfterDateWithInterval(SchedulerTimeType,
                                            interval: SchedulerTimeType.Stride,
-                                           tolerance: SchedulerTimeType.Stride)
+                                           tolerance: SchedulerTimeType.Stride,
+                                           options: SchedulerOptions?)
 
         var description: String {
+
+            func describeOptions(_ options: SchedulerOptions?) -> String {
+                return options.map { ".init(\($0.value)" } ?? "nil"
+            }
+
+            func describeDate(_ date: SchedulerTimeType) -> String {
+                return ".init(nanoseconds: \(date.time)"
+            }
+
+            func describeStride(_ stride: SchedulerTimeType.Stride) -> String {
+                return ".nanoseconds(\(stride.magnitude))"
+            }
+
             switch self {
             case .now:
                 return ".now"
             case .minimumTolerance:
                 return ".minimumTolerance"
-            case .schedule:
-                return ".schedule"
-            case let .scheduleAfterDate(date, tolerance):
+            case let .schedule(options):
+                return ".schedule(options: \(describeOptions(options)))"
+            case let .scheduleAfterDate(date, tolerance, options):
                 return """
-                .scheduleAfterDate(.init(nanoseconds: \(date.time)), \
-                tolerance: .nanoseconds(\(tolerance.magnitude)))
+                .scheduleAfterDate(\(describeDate(date)), \
+                tolerance: \(describeStride(tolerance)), \
+                options: \(describeOptions(options)))
                 """
-            case let .scheduleAfterDateWithInterval(date, interval, tolerance):
+            case let .scheduleAfterDateWithInterval(date, interval, tolerance, options):
                 return """
-                .scheduleAfterDateWithInterval(.init(nanoseconds: \(date.time)), \
-                interval: .nanoseconds(\(interval.magnitude)), \
-                tolerance: .nanoseconds(\(tolerance.magnitude)))
+                .scheduleAfterDateWithInterval(\(describeDate(date)), \
+                interval: \(describeStride(interval)), \
+                tolerance: \(describeStride(tolerance)), \
+                options: \(describeOptions(options)))
                 """
             }
         }
@@ -212,7 +236,7 @@ final class VirtualTimeScheduler: Scheduler {
     }
 
     func schedule(options: SchedulerOptions?, _ action: @escaping () -> Void) {
-        history.append(.schedule)
+        history.append(.schedule(options: options))
         workQueue.insert(.init(time: _now, action: action))
     }
 
@@ -220,7 +244,7 @@ final class VirtualTimeScheduler: Scheduler {
                   tolerance: SchedulerTimeType.Stride,
                   options: SchedulerOptions?,
                   _ action: @escaping () -> Void) {
-        history.append(.scheduleAfterDate(date, tolerance: tolerance))
+        history.append(.scheduleAfterDate(date, tolerance: tolerance, options: options))
         workQueue.insert(.init(time: date, action: action))
     }
 
@@ -231,7 +255,8 @@ final class VirtualTimeScheduler: Scheduler {
                   _ action: @escaping () -> Void) -> Cancellable {
         history.append(.scheduleAfterDateWithInterval(date,
                                                       interval: interval,
-                                                      tolerance: tolerance))
+                                                      tolerance: tolerance,
+                                                      options: options))
         let cancellableToken = CancellableToken()
         repeatedlyExecute(after: date,
                           interval: interval,
