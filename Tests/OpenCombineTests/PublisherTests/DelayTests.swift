@@ -57,22 +57,22 @@ final class DelayTests: XCTestCase {
 
         XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription)])
         XCTAssertEqual(helper.subscription.history, [.requested(.max(100))])
-        XCTAssertEqual(scheduler.scheduledDates, [.init(nanoseconds: 200),
-                                                  .init(nanoseconds: 200),
-                                                  .init(nanoseconds: 200)])
+        XCTAssertEqual(scheduler.scheduledDates, [.nanoseconds(200),
+                                                  .nanoseconds(200),
+                                                  .nanoseconds(200)])
 
         XCTAssertEqual(scheduler.history,
                        [.schedule(options: .nontrivialOptions),
                         .now,
-                        .scheduleAfterDate(.init(nanoseconds: 200),
+                        .scheduleAfterDate(.nanoseconds(200),
                                            tolerance: .nanoseconds(5),
                                            options: .nontrivialOptions),
                         .now,
-                        .scheduleAfterDate(.init(nanoseconds: 200),
+                        .scheduleAfterDate(.nanoseconds(200),
                                            tolerance: .nanoseconds(5),
                                            options: .nontrivialOptions),
                         .now,
-                        .scheduleAfterDate(.init(nanoseconds: 200),
+                        .scheduleAfterDate(.nanoseconds(200),
                                            tolerance: .nanoseconds(5),
                                            options: .nontrivialOptions)])
 
@@ -91,15 +91,15 @@ final class DelayTests: XCTestCase {
         XCTAssertEqual(scheduler.history,
                        [.schedule(options: .nontrivialOptions),
                         .now,
-                        .scheduleAfterDate(.init(nanoseconds: 200),
+                        .scheduleAfterDate(.nanoseconds(200),
                                            tolerance: .nanoseconds(5),
                                            options: .nontrivialOptions),
                         .now,
-                        .scheduleAfterDate(.init(nanoseconds: 200),
+                        .scheduleAfterDate(.nanoseconds(200),
                                            tolerance: .nanoseconds(5),
                                            options: .nontrivialOptions),
                         .now,
-                        .scheduleAfterDate(.init(nanoseconds: 200),
+                        .scheduleAfterDate(.nanoseconds(200),
                                            tolerance: .nanoseconds(5),
                                            options: .nontrivialOptions)])
 
@@ -115,23 +115,23 @@ final class DelayTests: XCTestCase {
                                                      .requested(.max(12)),
                                                      .requested(.max(12)),
                                                      .requested(.max(12))])
-        XCTAssertEqual(scheduler.scheduledDates, [.init(nanoseconds: 400)])
+        XCTAssertEqual(scheduler.scheduledDates, [.nanoseconds(400)])
         XCTAssertEqual(scheduler.history,
                        [.schedule(options: .nontrivialOptions),
                         .now,
-                        .scheduleAfterDate(.init(nanoseconds: 200),
+                        .scheduleAfterDate(.nanoseconds(200),
                                            tolerance: .nanoseconds(5),
                                            options: .nontrivialOptions),
                         .now,
-                        .scheduleAfterDate(.init(nanoseconds: 200),
+                        .scheduleAfterDate(.nanoseconds(200),
                                            tolerance: .nanoseconds(5),
                                            options: .nontrivialOptions),
                         .now,
-                        .scheduleAfterDate(.init(nanoseconds: 200),
+                        .scheduleAfterDate(.nanoseconds(200),
                                            tolerance: .nanoseconds(5),
                                            options: .nontrivialOptions),
                         .now,
-                        .scheduleAfterDate(.init(nanoseconds: 400),
+                        .scheduleAfterDate(.nanoseconds(400),
                                            tolerance: .nanoseconds(5),
                                            options: .nontrivialOptions)])
 
@@ -148,22 +148,22 @@ final class DelayTests: XCTestCase {
         XCTAssertEqual(scheduler.history,
                        [.schedule(options: .nontrivialOptions),
                         .now,
-                        .scheduleAfterDate(.init(nanoseconds: 200),
+                        .scheduleAfterDate(.nanoseconds(200),
                                            tolerance: .nanoseconds(5),
                                            options: .nontrivialOptions),
                         .now,
-                        .scheduleAfterDate(.init(nanoseconds: 200),
+                        .scheduleAfterDate(.nanoseconds(200),
                                            tolerance: .nanoseconds(5),
                                            options: .nontrivialOptions),
                         .now,
-                        .scheduleAfterDate(.init(nanoseconds: 200),
+                        .scheduleAfterDate(.nanoseconds(200),
                                            tolerance: .nanoseconds(5),
                                            options: .nontrivialOptions),
                         .now,
-                        .scheduleAfterDate(.init(nanoseconds: 400),
+                        .scheduleAfterDate(.nanoseconds(400),
                                            tolerance: .nanoseconds(5),
                                            options: .nontrivialOptions)])
-        XCTAssertEqual(scheduler.now, .init(nanoseconds: 400))
+        XCTAssertEqual(scheduler.now, .nanoseconds(400))
     }
 
     func testRequest() throws {
@@ -251,7 +251,7 @@ final class DelayTests: XCTestCase {
         XCTAssertEqual(scheduler.history,
                        [.schedule(options: .nontrivialOptions),
                         .now,
-                        .scheduleAfterDate(.init(nanoseconds: 123),
+                        .scheduleAfterDate(.nanoseconds(123),
                                            tolerance: .nanoseconds(5),
                                            options: .nontrivialOptions)])
 
@@ -284,15 +284,15 @@ final class DelayTests: XCTestCase {
         XCTAssertEqual(scheduler.history,
                        [.schedule(options: .nontrivialOptions),
                         .now,
-                        .scheduleAfterDate(.init(nanoseconds: 123),
+                        .scheduleAfterDate(.nanoseconds(123),
                                            tolerance: .nanoseconds(5),
                                            options: .nontrivialOptions),
                         .now,
-                        .scheduleAfterDate(.init(nanoseconds: 246),
+                        .scheduleAfterDate(.nanoseconds(246),
                                            tolerance: .nanoseconds(5),
                                            options: .nontrivialOptions),
                         .now,
-                        .scheduleAfterDate(.init(nanoseconds: 246),
+                        .scheduleAfterDate(.nanoseconds(246),
                                            tolerance: .nanoseconds(5),
                                            options: .nontrivialOptions)])
 
@@ -372,7 +372,7 @@ final class DelayTests: XCTestCase {
                            [.minimumTolerance,
                             .schedule(options: nil),
                             .now,
-                            .scheduleAfterDate(.init(nanoseconds: 350000000),
+                            .scheduleAfterDate(.seconds(0.35),
                                                tolerance: 0,
                                                options: nil)])
             tracking.cancel()
@@ -402,7 +402,7 @@ final class DelayTests: XCTestCase {
                            [.minimumTolerance,
                             .schedule(options: nil),
                             .now,
-                            .scheduleAfterDate(.init(nanoseconds: 350000000),
+                            .scheduleAfterDate(.seconds(0.35),
                                                tolerance: 0,
                                                options: nil)])
             tracking.cancel()

@@ -42,9 +42,9 @@ final class ReceiveOnTests: XCTestCase {
 
         XCTAssertEqual(helper.tracking.history, [.subscription("ReceiveOn")])
         XCTAssertEqual(helper.subscription.history, [.requested(.max(100))])
-        XCTAssertEqual(scheduler.scheduledDates, [.init(nanoseconds: 0),
-                                                  .init(nanoseconds: 0),
-                                                  .init(nanoseconds: 0)])
+        XCTAssertEqual(scheduler.scheduledDates, [.nanoseconds(0),
+                                                  .nanoseconds(0),
+                                                  .nanoseconds(0)])
 
         XCTAssertEqual(scheduler.history, [.schedule(options: .nontrivialOptions),
                                            .schedule(options: .nontrivialOptions),
@@ -80,7 +80,7 @@ final class ReceiveOnTests: XCTestCase {
                                                      .requested(.max(12)),
                                                      .requested(.max(12)),
                                                      .requested(.max(12))])
-        XCTAssertEqual(scheduler.scheduledDates, [.init(nanoseconds: 0)])
+        XCTAssertEqual(scheduler.scheduledDates, [.nanoseconds(0)])
         XCTAssertEqual(scheduler.history, [.schedule(options: .nontrivialOptions),
                                            .schedule(options: .nontrivialOptions),
                                            .schedule(options: .nontrivialOptions),
@@ -101,7 +101,7 @@ final class ReceiveOnTests: XCTestCase {
                                            .schedule(options: .nontrivialOptions),
                                            .schedule(options: .nontrivialOptions),
                                            .schedule(options: .nontrivialOptions)])
-        XCTAssertEqual(scheduler.now, .init(nanoseconds: 0))
+        XCTAssertEqual(scheduler.now, .nanoseconds(0))
     }
 
     func testRequest() throws {

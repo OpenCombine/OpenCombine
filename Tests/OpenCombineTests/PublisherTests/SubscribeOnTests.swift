@@ -90,7 +90,7 @@ final class SubscribeOnTests: XCTestCase {
 
         try XCTUnwrap(helper.downstreamSubscription).request(.max(17))
         try XCTUnwrap(helper.downstreamSubscription).request(.unlimited)
-        try XCTUnwrap(helper.downstreamSubscription).request(.max(2))
+        try XCTUnwrap(helper.downstreamSubscription).request(.none)
 
         XCTAssertEqual(helper.tracking.history, [.subscription("SubscribeOn")])
         XCTAssertEqual(helper.subscription.history, [])
@@ -104,14 +104,14 @@ final class SubscribeOnTests: XCTestCase {
         XCTAssertEqual(helper.tracking.history, [.subscription("SubscribeOn")])
         XCTAssertEqual(helper.subscription.history, [.requested(.max(17)),
                                                      .requested(.unlimited),
-                                                     .requested(.max(2))])
+                                                     .requested(.none)])
 
         try XCTUnwrap(helper.downstreamSubscription).cancel()
 
         XCTAssertEqual(helper.tracking.history, [.subscription("SubscribeOn")])
         XCTAssertEqual(helper.subscription.history, [.requested(.max(17)),
                                                      .requested(.unlimited),
-                                                     .requested(.max(2))])
+                                                     .requested(.none)])
         XCTAssertEqual(scheduler.history, [.schedule(options: .nontrivialOptions),
                                            .schedule(options: .nontrivialOptions),
                                            .schedule(options: .nontrivialOptions),
@@ -123,7 +123,7 @@ final class SubscribeOnTests: XCTestCase {
         XCTAssertEqual(helper.tracking.history, [.subscription("SubscribeOn")])
         XCTAssertEqual(helper.subscription.history, [.requested(.max(17)),
                                                      .requested(.unlimited),
-                                                     .requested(.max(2)),
+                                                     .requested(.none),
                                                      .cancelled])
     }
 
