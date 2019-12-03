@@ -14,7 +14,11 @@ import OpenCombine
 @available(macOS 10.15, iOS 13.0, *)
 final class VirtualTimeScheduler: Scheduler {
 
-    struct SchedulerTimeType: Strideable, Comparable, Hashable {
+    struct SchedulerTimeType: Strideable,
+                              Comparable,
+                              Hashable,
+                              SchedulerTimeIntervalConvertible
+    {
 
         struct Stride: ExpressibleByFloatLiteral,
                        Comparable,
@@ -94,7 +98,7 @@ final class VirtualTimeScheduler: Scheduler {
         /// Time in virtual nanoseconds
         let time: UInt64
 
-        init(nanoseconds time: UInt64) {
+        private init(nanoseconds time: UInt64) {
             self.time = time
         }
 
@@ -126,6 +130,33 @@ final class VirtualTimeScheduler: Scheduler {
 
         static func + (lhs: SchedulerTimeType, rhs: Stride) -> SchedulerTimeType {
             return lhs.advanced(by: rhs)
+        }
+
+        static let beginningOfTime = SchedulerTimeType(nanoseconds: 0)
+
+        static func seconds(_ value: Int) -> SchedulerTimeType {
+            precondition(value >= 0, "value must not be negative")
+            return .init(nanoseconds: UInt64(value) * 1_000_000_000)
+        }
+
+        static func seconds(_ value: Double) -> SchedulerTimeType {
+            precondition(value >= 0, "value must not be negative")
+            return .init(nanoseconds: UInt64(value * 1_000_000_000))
+        }
+
+        static func milliseconds(_ value: Int) -> SchedulerTimeType {
+            precondition(value >= 0, "value must not be negative")
+            return .init(nanoseconds: UInt64(value) * 1_000_000)
+        }
+
+        static func microseconds(_ value: Int) -> SchedulerTimeType {
+            precondition(value >= 0, "value must not be negative")
+            return .init(nanoseconds: UInt64(value) * 1_000)
+        }
+
+        static func nanoseconds(_ value: Int) -> SchedulerTimeType {
+            precondition(value >= 0, "value must not be negative")
+            return .init(nanoseconds: UInt64(value))
         }
     }
 
@@ -168,7 +199,7 @@ final class VirtualTimeScheduler: Scheduler {
             }
 
             func describeDate(_ date: SchedulerTimeType) -> String {
-                return ".init(nanoseconds: \(date.time)"
+                return ".nanoseconds(\(date.time)"
             }
 
             func describeStride(_ stride: SchedulerTimeType.Stride) -> String {
@@ -204,7 +235,7 @@ final class VirtualTimeScheduler: Scheduler {
     /// All private methods should reference this property instead of `now`
     /// to prevent polluting the scheduler history. Accessing `now` creates an entry
     /// in the `history` array.
-    private var _now = SchedulerTimeType(nanoseconds: 0)
+    private var _now = SchedulerTimeType.beginningOfTime
 
     private var workQueue = FairPriorityQueue<SchedulerTimeType, () -> Void>()
 
@@ -278,7 +309,7 @@ final class VirtualTimeScheduler: Scheduler {
 
     func executeScheduledActions() {
         while let (time, action) = workQueue.extractMin() {
-            _now = time
+            _now = max(time, _now)
             action()
         }
     }

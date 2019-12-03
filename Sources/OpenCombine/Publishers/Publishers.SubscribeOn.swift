@@ -83,7 +83,7 @@ extension Publishers.SubscribeOn {
           CustomStringConvertible,
           CustomReflectable,
           CustomPlaygroundDisplayConvertible
-    where Downstream.Input == Upstream.Output, Downstream.Failure == Upstream.Failure
+        where Downstream.Input == Upstream.Output, Downstream.Failure == Upstream.Failure
     {
         typealias Input = Upstream.Output
 
@@ -91,7 +91,7 @@ extension Publishers.SubscribeOn {
 
         typealias SubscribeOn = Publishers.SubscribeOn<Upstream, Context>
 
-        enum State {
+       private enum State {
             case ready(SubscribeOn, Downstream)
             case subscribed(SubscribeOn, Downstream, Subscription)
             case terminal

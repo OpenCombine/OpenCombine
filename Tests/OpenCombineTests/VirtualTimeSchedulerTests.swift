@@ -29,33 +29,33 @@ final class VirtualTimeSchedulerTests: XCTestCase {
             history.append(2)
         }
 
-        XCTAssertEqual(scheduler.now, .init(nanoseconds: 0))
-        XCTAssertEqual(scheduler.scheduledDates, [.init(nanoseconds: 0),
-                                                  .init(nanoseconds: 0),
-                                                  .init(nanoseconds: 5),
-                                                  .init(nanoseconds: 10)])
+        XCTAssertEqual(scheduler.now, .nanoseconds(0))
+        XCTAssertEqual(scheduler.scheduledDates, [.nanoseconds(0),
+                                                  .nanoseconds(0),
+                                                  .nanoseconds(5),
+                                                  .nanoseconds(10)])
 
         scheduler.executeScheduledActions()
         XCTAssertEqual(history, [1, 2, 3, 4, 5])
-        XCTAssertEqual(scheduler.now, .init(nanoseconds: 10))
+        XCTAssertEqual(scheduler.now, .nanoseconds(10))
         XCTAssertEqual(scheduler.scheduledDates, [])
 
         XCTAssertEqual(scheduler.history, [.now,
                                            .minimumTolerance,
-                                           .scheduleAfterDate(.init(nanoseconds: 10),
+                                           .scheduleAfterDate(.nanoseconds(10),
                                                               tolerance: 0,
                                                               options: nil),
                                            .schedule(options: nil),
                                            .now,
                                            .minimumTolerance,
-                                           .scheduleAfterDate(.init(nanoseconds: 5),
+                                           .scheduleAfterDate(.nanoseconds(5),
                                                               tolerance: 0,
                                                               options: nil),
                                            .schedule(options: nil),
                                            .now,
                                            .now,
                                            .minimumTolerance,
-                                           .scheduleAfterDate(.init(nanoseconds: 7),
+                                           .scheduleAfterDate(.nanoseconds(7),
                                                               tolerance: 0,
                                                               options: nil),
                                            .now])
@@ -71,8 +71,7 @@ final class VirtualTimeSchedulerTests: XCTestCase {
         scheduler.schedule(after: scheduler.now + .milliseconds(300)) {
             cancellable.cancel()
         }
-        XCTAssertEqual(scheduler.scheduledDates, [.init(nanoseconds: 2_000),
-                                                  .init(nanoseconds: 300_000_000)])
+        XCTAssertEqual(scheduler.scheduledDates, [.microseconds(2), .milliseconds(300)])
         scheduler.executeScheduledActions()
 
         XCTAssertEqual(history, [2000,
@@ -83,17 +82,17 @@ final class VirtualTimeSchedulerTests: XCTestCase {
                                  200002000,
                                  240002000,
                                  280002000])
-        XCTAssertEqual(scheduler.now, .init(nanoseconds: 320002000))
+        XCTAssertEqual(scheduler.now, .microseconds(320002))
         XCTAssertEqual(scheduler.history,
                        [.now,
                         .minimumTolerance,
-                        .scheduleAfterDateWithInterval(.init(nanoseconds: 2000),
-                                                       interval: .nanoseconds(40000000),
+                        .scheduleAfterDateWithInterval(.microseconds(2),
+                                                       interval: .milliseconds(40),
                                                        tolerance: 0,
                                                        options: nil),
                         .now,
                         .minimumTolerance,
-                        .scheduleAfterDate(.init(nanoseconds: 300000000),
+                        .scheduleAfterDate(.milliseconds(300),
                                            tolerance: .nanoseconds(0),
                                            options: nil),
                         .now,
