@@ -37,19 +37,19 @@ final class DelayTests: XCTestCase {
             $0.delay(for: .nanoseconds(200),
                      tolerance: .nanoseconds(5),
                      scheduler: scheduler,
-                     options: .init(481516))
+                     options: .nontrivialOptions)
         }
         XCTAssertNotNil(helper.publisher.subscriber)
 
         XCTAssertEqual(helper.tracking.history, [])
         XCTAssertEqual(helper.subscription.history, [])
-        XCTAssertEqual(scheduler.history, [.schedule(options: .init(481516))])
+        XCTAssertEqual(scheduler.history, [.schedule(options: .nontrivialOptions)])
 
         scheduler.executeScheduledActions()
 
         XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription)])
         XCTAssertEqual(helper.subscription.history, [.requested(.max(100))])
-        XCTAssertEqual(scheduler.history, [.schedule(options: .init(481516))])
+        XCTAssertEqual(scheduler.history, [.schedule(options: .nontrivialOptions)])
 
         XCTAssertEqual(helper.publisher.send(1), .none)
         XCTAssertEqual(helper.publisher.send(2), .none)
@@ -62,26 +62,26 @@ final class DelayTests: XCTestCase {
                                                   .init(nanoseconds: 200)])
 
         XCTAssertEqual(scheduler.history,
-                       [.schedule(options: .init(481516)),
+                       [.schedule(options: .nontrivialOptions),
                         .now,
                         .scheduleAfterDate(.init(nanoseconds: 200),
                                            tolerance: .nanoseconds(5),
-                                           options: .init(481516)),
+                                           options: .nontrivialOptions),
                         .now,
                         .scheduleAfterDate(.init(nanoseconds: 200),
                                            tolerance: .nanoseconds(5),
-                                           options: .init(481516)),
+                                           options: .nontrivialOptions),
                         .now,
                         .scheduleAfterDate(.init(nanoseconds: 200),
                                            tolerance: .nanoseconds(5),
-                                           options: .init(481516))])
+                                           options: .nontrivialOptions)])
 
         scheduler.executeScheduledActions()
 
         XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription),
                                                  .value(1),
-                                                 .value(3),
-                                                 .value(2)])
+                                                 .value(2),
+                                                 .value(3)])
 
         XCTAssertEqual(helper.subscription.history, [.requested(.max(100)),
                                                      .requested(.max(12)),
@@ -89,19 +89,19 @@ final class DelayTests: XCTestCase {
                                                      .requested(.max(12))])
 
         XCTAssertEqual(scheduler.history,
-                       [.schedule(options: .init(481516)),
+                       [.schedule(options: .nontrivialOptions),
                         .now,
                         .scheduleAfterDate(.init(nanoseconds: 200),
                                            tolerance: .nanoseconds(5),
-                                           options: .init(481516)),
+                                           options: .nontrivialOptions),
                         .now,
                         .scheduleAfterDate(.init(nanoseconds: 200),
                                            tolerance: .nanoseconds(5),
-                                           options: .init(481516)),
+                                           options: .nontrivialOptions),
                         .now,
                         .scheduleAfterDate(.init(nanoseconds: 200),
                                            tolerance: .nanoseconds(5),
-                                           options: .init(481516))])
+                                           options: .nontrivialOptions)])
 
         helper.publisher.send(completion: .failure(.oops))
         helper.publisher.send(completion: .finished)
@@ -109,60 +109,60 @@ final class DelayTests: XCTestCase {
 
         XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription),
                                                  .value(1),
-                                                 .value(3),
-                                                 .value(2)])
+                                                 .value(2),
+                                                 .value(3)])
         XCTAssertEqual(helper.subscription.history, [.requested(.max(100)),
                                                      .requested(.max(12)),
                                                      .requested(.max(12)),
                                                      .requested(.max(12))])
         XCTAssertEqual(scheduler.scheduledDates, [.init(nanoseconds: 400)])
         XCTAssertEqual(scheduler.history,
-                       [.schedule(options: .init(481516)),
+                       [.schedule(options: .nontrivialOptions),
                         .now,
                         .scheduleAfterDate(.init(nanoseconds: 200),
                                            tolerance: .nanoseconds(5),
-                                           options: .init(481516)),
+                                           options: .nontrivialOptions),
                         .now,
                         .scheduleAfterDate(.init(nanoseconds: 200),
                                            tolerance: .nanoseconds(5),
-                                           options: .init(481516)),
+                                           options: .nontrivialOptions),
                         .now,
                         .scheduleAfterDate(.init(nanoseconds: 200),
                                            tolerance: .nanoseconds(5),
-                                           options: .init(481516)),
+                                           options: .nontrivialOptions),
                         .now,
                         .scheduleAfterDate(.init(nanoseconds: 400),
                                            tolerance: .nanoseconds(5),
-                                           options: .init(481516))])
+                                           options: .nontrivialOptions)])
 
         scheduler.executeScheduledActions()
         XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription),
                                                  .value(1),
-                                                 .value(3),
                                                  .value(2),
+                                                 .value(3),
                                                  .completion(.failure(.oops))])
         XCTAssertEqual(helper.subscription.history, [.requested(.max(100)),
                                                      .requested(.max(12)),
                                                      .requested(.max(12)),
                                                      .requested(.max(12))])
         XCTAssertEqual(scheduler.history,
-                       [.schedule(options: .init(481516)),
+                       [.schedule(options: .nontrivialOptions),
                         .now,
                         .scheduleAfterDate(.init(nanoseconds: 200),
                                            tolerance: .nanoseconds(5),
-                                           options: .init(481516)),
+                                           options: .nontrivialOptions),
                         .now,
                         .scheduleAfterDate(.init(nanoseconds: 200),
                                            tolerance: .nanoseconds(5),
-                                           options: .init(481516)),
+                                           options: .nontrivialOptions),
                         .now,
                         .scheduleAfterDate(.init(nanoseconds: 200),
                                            tolerance: .nanoseconds(5),
-                                           options: .init(481516)),
+                                           options: .nontrivialOptions),
                         .now,
                         .scheduleAfterDate(.init(nanoseconds: 400),
                                            tolerance: .nanoseconds(5),
-                                           options: .init(481516))])
+                                           options: .nontrivialOptions)])
         XCTAssertEqual(scheduler.now, .init(nanoseconds: 400))
     }
 
@@ -174,7 +174,7 @@ final class DelayTests: XCTestCase {
             $0.delay(for: .nanoseconds(200),
                      tolerance: .nanoseconds(5),
                      scheduler: scheduler,
-                     options: .init(481516))
+                     options: .nontrivialOptions)
         }
         scheduler.executeScheduledActions()
 
@@ -210,7 +210,7 @@ final class DelayTests: XCTestCase {
             $0.delay(for: .nanoseconds(200),
                      tolerance: .nanoseconds(5),
                      scheduler: scheduler,
-                     options: .init(481516))
+                     options: .nontrivialOptions)
         }
 
         scheduler.executeScheduledActions()
@@ -223,14 +223,14 @@ final class DelayTests: XCTestCase {
 
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited), .cancelled])
         XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription)])
-        XCTAssertEqual(scheduler.history, [.schedule(options: .init(481516))])
+        XCTAssertEqual(scheduler.history, [.schedule(options: .nontrivialOptions)])
 
         XCTAssertEqual(helper.publisher.send(0), .none)
         helper.publisher.send(completion: .finished)
 
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited), .cancelled])
         XCTAssertEqual(helper.tracking.history, [.subscription(delaySubscription)])
-        XCTAssertEqual(scheduler.history, [.schedule(options: .init(481516))])
+        XCTAssertEqual(scheduler.history, [.schedule(options: .nontrivialOptions)])
     }
 
     func testReceiveCompletionImmediatelyAfterSubscription() {
@@ -241,7 +241,7 @@ final class DelayTests: XCTestCase {
             $0.delay(for: .nanoseconds(123),
                      tolerance: .nanoseconds(5),
                      scheduler: scheduler,
-                     options: .init(481516))
+                     options: .nontrivialOptions)
         }
 
         helper.publisher.send(completion: .failure(.oops))
@@ -249,11 +249,11 @@ final class DelayTests: XCTestCase {
         XCTAssertEqual(helper.tracking.history, [])
         XCTAssertEqual(helper.subscription.history, [])
         XCTAssertEqual(scheduler.history,
-                       [.schedule(options: .init(481516)),
+                       [.schedule(options: .nontrivialOptions),
                         .now,
                         .scheduleAfterDate(.init(nanoseconds: 123),
                                            tolerance: .nanoseconds(5),
-                                           options: .init(481516))])
+                                           options: .nontrivialOptions)])
 
         scheduler.executeScheduledActions()
 
@@ -269,7 +269,7 @@ final class DelayTests: XCTestCase {
             $0.delay(for: .nanoseconds(123),
                      tolerance: .nanoseconds(5),
                      scheduler: scheduler,
-                     options: .init(481516))
+                     options: .nontrivialOptions)
         }
         XCTAssertEqual(helper.publisher.send(-1), .none)
         scheduler.executeScheduledActions()
@@ -282,19 +282,19 @@ final class DelayTests: XCTestCase {
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
                                                      .requested(.max(418))])
         XCTAssertEqual(scheduler.history,
-                       [.schedule(options: .init(481516)),
+                       [.schedule(options: .nontrivialOptions),
                         .now,
                         .scheduleAfterDate(.init(nanoseconds: 123),
                                            tolerance: .nanoseconds(5),
-                                           options: .init(481516)),
+                                           options: .nontrivialOptions),
                         .now,
                         .scheduleAfterDate(.init(nanoseconds: 246),
                                            tolerance: .nanoseconds(5),
-                                           options: .init(481516)),
+                                           options: .nontrivialOptions),
                         .now,
                         .scheduleAfterDate(.init(nanoseconds: 246),
                                            tolerance: .nanoseconds(5),
-                                           options: .init(481516))])
+                                           options: .nontrivialOptions)])
 
         scheduler.executeScheduledActions()
 
@@ -349,9 +349,9 @@ final class DelayTests: XCTestCase {
                                                .schedule(options: nil)])
             publisher.cancel()
         }
+        XCTAssertTrue(subscriberReleased)
         scheduler.executeScheduledActions()
         XCTAssertNil(subscription)
-        XCTAssertTrue(subscriberReleased)
     }
 
     func testWeakCaptureWhenSchedulingValue() {
@@ -378,6 +378,7 @@ final class DelayTests: XCTestCase {
             tracking.cancel()
             publisher.cancel()
         }
+        XCTAssertFalse(subscriberReleased)
         scheduler.executeScheduledActions()
         XCTAssertNil(value)
         XCTAssertTrue(subscriberReleased)
@@ -407,6 +408,7 @@ final class DelayTests: XCTestCase {
             tracking.cancel()
             publisher.cancel()
         }
+        XCTAssertFalse(subscriberReleased)
         scheduler.executeScheduledActions()
         XCTAssertNil(completion)
         XCTAssertTrue(subscriberReleased)

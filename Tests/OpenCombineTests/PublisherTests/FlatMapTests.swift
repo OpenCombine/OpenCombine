@@ -75,7 +75,7 @@ final class FlatMapTests: XCTestCase {
                 XCTAssertNil(upstream.erasedSubscriber)
             }
         )
-        upstream.onSubscribe = { _ in
+        upstream.willSubscribe = { _ in
             upstreamReceivedSubscriber = true
             XCTAssertEqual(tracking.history, [.subscription("FlatMap")])
         }
@@ -564,7 +564,7 @@ final class FlatMapTests: XCTestCase {
             createSut: { $0.flatMap(maxPublishers: .max(1)) { $0 } }
         )
 
-        child.onSubscribe = { subscriber in
+        child.willSubscribe = { subscriber in
             helper.publisher.send(completion: .finished)
         }
 
