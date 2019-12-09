@@ -5,7 +5,9 @@
 //  Created by Sergej Jaskiewicz on 16.06.2019.
 //
 
+#if canImport(COpenCombineHelpers)
 import COpenCombineHelpers
+#endif
 
 extension Publisher {
 

@@ -5,7 +5,9 @@
 //  Created by Max Desiatov on 24/11/2019.
 //
 
+#if canImport(COpenCombineHelpers)
 import COpenCombineHelpers
+#endif
 
 /// A publisher that eventually produces one value and then finishes or fails.
 public final class Future<Output, Failure>: Publisher where Failure: Error {

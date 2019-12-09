@@ -5,7 +5,9 @@
 //  Created by Sergej Jaskiewicz on 03.12.2019.
 //
 
+#if canImport(COpenCombineHelpers)
 import COpenCombineHelpers
+#endif
 
 extension Publisher {
 
@@ -148,21 +150,21 @@ extension Publishers.Breakpoint {
 
         func receive(subscription: Subscription) {
             if breakpoint.receiveSubscription?(subscription) == true {
-                stopInDebugger()
+                __stopInDebugger()
             }
             downstream.receive(subscription: subscription)
         }
 
         func receive(_ input: Upstream.Output) -> Subscribers.Demand {
             if breakpoint.receiveOutput?(input) == true {
-                stopInDebugger()
+                __stopInDebugger()
             }
             return downstream.receive(input)
         }
 
         func receive(completion: Subscribers.Completion<Upstream.Failure>) {
             if breakpoint.receiveCompletion?(completion) == true {
-                stopInDebugger()
+                __stopInDebugger()
             }
             downstream.receive(completion: completion)
         }

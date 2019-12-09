@@ -20,6 +20,8 @@ Pod::Spec.new do |spec|
   spec.watchos.deployment_target = "2.0"
   spec.tvos.deployment_target    = "9.0"
 
-  spec.source_files = "Sources/OpenCombine/**/*.swift"
-  spec.dependency     "COpenCombineHelpers"
+  spec.source_files        = "Sources/COpenCombineHelpers/**/*.{h,cpp}", "Sources/OpenCombine/**/*.swift"
+  spec.public_header_files = "Sources/COpenCombineHelpers/include/*.h"
+
+  spec.libraries = "c++"
 end
