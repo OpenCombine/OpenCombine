@@ -5,7 +5,9 @@
 //  Created by Sergej Jaskiewicz on 02.12.2019.
 //
 
+#if canImport(COpenCombineHelpers)
 import COpenCombineHelpers
+#endif
 
 extension Publisher {
     /// Specifies the scheduler on which to receive elements from the publisher.

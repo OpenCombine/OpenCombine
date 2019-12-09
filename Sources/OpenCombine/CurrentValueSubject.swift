@@ -5,7 +5,9 @@
 //  Created by Sergej Jaskiewicz on 11.06.2019.
 //
 
+#if canImport(COpenCombineHelpers)
 import COpenCombineHelpers
+#endif
 
 /// A subject that wraps a single value and publishes a new element whenever the value
 /// changes.

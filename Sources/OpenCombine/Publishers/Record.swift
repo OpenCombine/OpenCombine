@@ -5,7 +5,9 @@
 //  Created by Sergej Jaskiewicz on 12.11.2019.
 //
 
+#if canImport(COpenCombineHelpers)
 import COpenCombineHelpers
+#endif
 
 /// A publisher that allows for recording a series of inputs and a completion for later
 /// playback to each subscriber.
