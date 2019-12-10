@@ -1,10 +1,10 @@
 Pod::Spec.new do |spec|
   spec.name          = "OpenCombineDispatch"
-  spec.version       = "0.6.0"
+  spec.version       = "0.7.0"
   spec.summary       = "OpenCombine + Dispatch interoperability"
 
   spec.description   = <<-DESC
-  Extends `DispatchQueue` with new methods and nested types.
+  Extends `DispatchQueue` with conformance to the `Scheduler` protocol
   DESC
 
   spec.homepage      = "https://github.com/broadwaylamb/OpenCombine/"
@@ -21,5 +21,5 @@ Pod::Spec.new do |spec|
   spec.tvos.deployment_target    = "9.0"
 
   spec.source_files = "Sources/OpenCombineDispatch/**/*.swift"
-  spec.dependency     "OpenCombine"
+  spec.dependency     "OpenCombine", '>= 0.6'
 end
