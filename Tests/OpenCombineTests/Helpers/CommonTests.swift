@@ -164,13 +164,6 @@ extension XCTest {
         try XCTUnwrap(helper.downstreamSubscription).cancel()
 
         XCTAssertEqual(helper.subscription.history, [.cancelled, .cancelled])
-
-        let thirdSubscription = CustomSubscription()
-
-        try XCTUnwrap(helper.publisher.subscriber)
-            .receive(subscription: thirdSubscription)
-
-        XCTAssertEqual(thirdSubscription.history, [.cancelled])
     }
 }
 
