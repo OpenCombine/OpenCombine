@@ -88,6 +88,7 @@ extension Publishers.ReplaceEmpty {
         private var pendingDemand = Subscribers.Demand.none
         private var lock = UnfairLock.allocate()
         private var isEmpty = true
+        private var requestedDemand = false
 
         fileprivate init(downstream: Downstream, output: Output) {
             self.downstream = downstream
@@ -106,11 +107,7 @@ extension Publishers.ReplaceEmpty {
                 return
             }
             status = .subscribed(subscription)
-            let pendingDemand = self.pendingDemand
             lock.unlock()
-            if pendingDemand > 0 {
-                subscription.request(pendingDemand)
-            }
         }
 
         func receive(_ input: Upstream.Output) -> Subscribers.Demand {
@@ -134,6 +131,10 @@ extension Publishers.ReplaceEmpty {
 
         func receive(completion: Subscribers.Completion<Upstream.Failure>) {
             lock.lock()
+            guard case .subscribed = status else {
+                lock.unlock()
+                return
+            }
             status = .terminal
             lock.unlock()
             switch completion {
@@ -162,8 +163,16 @@ extension Publishers.ReplaceEmpty {
                 lock.unlock()
                 return
             }
+            var shouldRequestUnlimited = false
+            if !requestedDemand {
+                requestedDemand = true
+                shouldRequestUnlimited = true
+            }
             lock.unlock()
             subscription.request(demand)
+            if shouldRequestUnlimited {
+                subscription.request(.unlimited)
+            }
         }
 
         func cancel() {
