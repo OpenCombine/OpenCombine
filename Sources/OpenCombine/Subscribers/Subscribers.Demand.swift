@@ -330,6 +330,7 @@ extension Subscribers {
 
         /// Returns `true` if `lhs` and `rhs` are not equal. `.unlimited` is not equal to
         /// any integer.
+        @inlinable
         public static func != (lhs: Demand, rhs: Int) -> Bool {
             if lhs == .unlimited {
                 return true
@@ -340,6 +341,7 @@ extension Subscribers {
 
         /// Returns `true` if `lhs` and `rhs` are equal. `.unlimited` is not equal to any
         /// integer.
+        @inlinable
         public static func == (lhs: Int, rhs: Demand) -> Bool {
             if rhs == .unlimited {
                 return false
@@ -350,6 +352,7 @@ extension Subscribers {
 
         /// Returns `true` if `lhs` and `rhs` are not equal. `.unlimited` is not equal to
         /// any integer.
+        @inlinable
         public static func != (lhs: Int, rhs: Demand) -> Bool {
             if rhs == .unlimited {
                 return true
@@ -358,8 +361,13 @@ extension Subscribers {
             }
         }
 
+        @inlinable
+        public static func == (lhs: Demand, rhs: Demand) -> Bool {
+            return lhs.rawValue == rhs.rawValue
+        }
+
         /// Returns the number of requested values, or `nil` if `.unlimited`.
-        public var max: Int? {
+        @inlinable public var max: Int? {
             if self == .unlimited {
                 return nil
             } else {
