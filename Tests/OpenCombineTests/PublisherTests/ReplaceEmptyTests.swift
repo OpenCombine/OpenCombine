@@ -332,7 +332,6 @@ final class ReplaceEmptyTests: XCTestCase {
     }
 
     func testReplaceEmptyLifecycle() throws {
-        // TODO: Fix this test to match combine behavior
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,
                           finishingIsPassedThrough: false,
