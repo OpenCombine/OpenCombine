@@ -62,7 +62,6 @@ extension Publishers {
         {
             let inner = Inner(downstream: subscriber, output: output)
             upstream.subscribe(inner)
-            subscriber.receive(subscription: inner)
         }
     }
 }
@@ -86,11 +85,8 @@ extension Publishers.ReplaceEmpty {
         private let downstream: Downstream
 
         private var status = SubscriptionStatus.awaitingSubscription
-        private var terminated = false
-        private var pendingDemand = Subscribers.Demand.none
         private var lock = UnfairLock.allocate()
         private var isEmpty = true
-        private var requestedDemand = false
 
         fileprivate init(downstream: Downstream, output: Output) {
             self.downstream = downstream
@@ -110,6 +106,8 @@ extension Publishers.ReplaceEmpty {
             }
             status = .subscribed(subscription)
             lock.unlock()
+            downstream.receive(subscription: self)
+            subscription.request(.unlimited)
         }
 
         func receive(_ input: Upstream.Output) -> Subscribers.Demand {
@@ -119,15 +117,11 @@ extension Publishers.ReplaceEmpty {
                 return .none
             }
             isEmpty = false
-            pendingDemand -= 1
             lock.unlock()
             let demand = downstream.receive(input)
             guard demand > 0 else {
                 return .none
             }
-            lock.lock()
-            pendingDemand += demand
-            lock.unlock()
             return demand
         }
 
@@ -153,28 +147,12 @@ extension Publishers.ReplaceEmpty {
         func request(_ demand: Subscribers.Demand) {
             demand.assertNonZero()
             lock.lock()
-            if terminated {
-                status = .terminal
-                lock.unlock()
-                _ = downstream.receive(output)
-                downstream.receive(completion: .finished)
-                return
-            }
-            pendingDemand += demand
             guard case let .subscribed(subscription) = status else {
                 lock.unlock()
                 return
             }
-            var shouldRequestUnlimited = false
-            if !requestedDemand {
-                requestedDemand = true
-                shouldRequestUnlimited = true
-            }
             lock.unlock()
             subscription.request(demand)
-            if shouldRequestUnlimited {
-                subscription.request(.unlimited)
-            }
         }
 
         func cancel() {

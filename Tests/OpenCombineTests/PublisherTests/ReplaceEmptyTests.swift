@@ -236,4 +236,33 @@ final class ReplaceEmptyTests: XCTestCase {
                                                      .cancelled])
         XCTAssertEqual(helper.tracking.history, [.subscription("ReplaceEmpty")])
     }
+
+    func testReceiveSubscriptionTwice() throws {
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisher.self,
+            initialDemand: nil,
+            receiveValueDemand: .none,
+            createSut: { $0.replaceEmpty(with: 22) }
+        )
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+
+        let secondSubscription = CustomSubscription()
+
+        try XCTUnwrap(helper.publisher.subscriber)
+            .receive(subscription: secondSubscription)
+
+        XCTAssertEqual(secondSubscription.history, [.cancelled])
+
+        try XCTUnwrap(helper.publisher.subscriber)
+            .receive(subscription: helper.subscription)
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited), .cancelled])
+
+        try XCTUnwrap(helper.downstreamSubscription).cancel()
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
+                                                     .cancelled,
+                                                     .cancelled])
+    }
 }
