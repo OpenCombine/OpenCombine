@@ -5,10 +5,6 @@
 //  Created by Anton Nazarov on 25.06.2019.
 //
 
-#if canImport(COpenCombineHelpers)
-import COpenCombineHelpers
-#endif
-
 extension Publisher {
 
     /// Transforms all elements from the upstream publisher with a provided closure.

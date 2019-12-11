@@ -5,10 +5,6 @@
 //  Created by Sergej Jaskiewicz on 22.09.2019.
 //
 
-#if canImport(COpenCombineHelpers)
-import COpenCombineHelpers
-#endif
-
 /// A helper class that acts like both subscriber and subscription.
 ///
 /// Reduce-like operators send an instance of their `Inner` class that is subclass

@@ -5,10 +5,6 @@
 //  Created by Sergej Jaskiewicz on 23.10.2019.
 //
 
-#if canImport(COpenCombineHelpers)
-import COpenCombineHelpers
-#endif
-
 /// A helper class that acts like both subscriber and subscription.
 ///
 /// Filter-like operators send an instance of their `Inner` class that is subclass

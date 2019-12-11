@@ -5,10 +5,6 @@
 //  Created by Sergej Jaskiewicz on 19.06.2019.
 //
 
-#if canImport(COpenCombineHelpers)
-import COpenCombineHelpers
-#endif
-
 extension Publishers {
 
     /// A publisher that publishes a given sequence of elements.

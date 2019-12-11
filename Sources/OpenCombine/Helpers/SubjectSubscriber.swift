@@ -5,10 +5,6 @@
 //  Created by Sergej Jaskiewicz on 16/09/2019.
 //
 
-#if canImport(COpenCombineHelpers)
-import COpenCombineHelpers
-#endif
-
 // NOTE: This class has been audited for thread safety.
 internal final class SubjectSubscriber<Downstream: Subject>
     : Subscriber,

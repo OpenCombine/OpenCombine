@@ -5,10 +5,6 @@
 //  Created by Sergej Jaskiewicz on 02.12.2019.
 //
 
-#if canImport(COpenCombineHelpers)
-import COpenCombineHelpers
-#endif
-
 extension Publisher {
     /// Specifies the scheduler on which to receive elements from the publisher.
     ///
@@ -101,7 +97,7 @@ extension Publishers.ReceiveOn {
 
         private let lock = UnfairLock.allocate()
         private var state: State
-        private let downstreamLock = UnfairLock.allocate()
+        private let downstreamLock = UnfairRecursiveLock.allocate()
 
         init(_ receiveOn: ReceiveOn, downstream: Downstream) {
             state = .ready(receiveOn, downstream)
@@ -120,18 +116,6 @@ extension Publishers.ReceiveOn {
                 return
             }
             state = .subscribed(receiveOn, downstream, subscription)
-            lock.unlock()
-            receiveOn.scheduler.schedule(options: receiveOn.options) { [weak self] in
-                self?.scheduledReceive(subscription: subscription)
-            }
-        }
-
-        private func scheduledReceive(subscription: Subscription) {
-            lock.lock()
-            guard case let .subscribed(_, downstream, _) = state else {
-                lock.unlock()
-                return
-            }
             lock.unlock()
             downstreamLock.lock()
             downstream.receive(subscription: self)

@@ -206,7 +206,10 @@ final class SubscribeOnTests: XCTestCase {
             $0.subscribe(on: ImmediateScheduler.shared)
         }
 
+        var recursionCounter = 5
         helper.subscription.onRequest = { _ in
+            if recursionCounter == 0 { return }
+            recursionCounter -= 1
             helper.downstreamSubscription?.request(.unlimited)
         }
 

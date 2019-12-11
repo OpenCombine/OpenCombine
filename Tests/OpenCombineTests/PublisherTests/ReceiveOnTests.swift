@@ -26,15 +26,15 @@ final class ReceiveOnTests: XCTestCase {
         XCTAssertNotNil(helper.publisher.subscriber,
                         "Subscription must be performed synchronously")
 
-        XCTAssertEqual(helper.tracking.history, [])
-        XCTAssertEqual(helper.subscription.history, [])
-        XCTAssertEqual(scheduler.history, [.schedule(options: .nontrivialOptions)])
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReceiveOn")])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(100))])
+        XCTAssertEqual(scheduler.history, [])
 
         scheduler.executeScheduledActions()
 
         XCTAssertEqual(helper.tracking.history, [.subscription("ReceiveOn")])
         XCTAssertEqual(helper.subscription.history, [.requested(.max(100))])
-        XCTAssertEqual(scheduler.history, [.schedule(options: .nontrivialOptions)])
+        XCTAssertEqual(scheduler.history, [])
 
         XCTAssertEqual(helper.publisher.send(1), .none)
         XCTAssertEqual(helper.publisher.send(2), .none)
@@ -47,7 +47,6 @@ final class ReceiveOnTests: XCTestCase {
                                                   .nanoseconds(0)])
 
         XCTAssertEqual(scheduler.history, [.schedule(options: .nontrivialOptions),
-                                           .schedule(options: .nontrivialOptions),
                                            .schedule(options: .nontrivialOptions),
                                            .schedule(options: .nontrivialOptions)])
 
@@ -64,7 +63,6 @@ final class ReceiveOnTests: XCTestCase {
                                                      .requested(.max(12))])
 
         XCTAssertEqual(scheduler.history, [.schedule(options: .nontrivialOptions),
-                                           .schedule(options: .nontrivialOptions),
                                            .schedule(options: .nontrivialOptions),
                                            .schedule(options: .nontrivialOptions)])
 
@@ -84,7 +82,6 @@ final class ReceiveOnTests: XCTestCase {
         XCTAssertEqual(scheduler.history, [.schedule(options: .nontrivialOptions),
                                            .schedule(options: .nontrivialOptions),
                                            .schedule(options: .nontrivialOptions),
-                                           .schedule(options: .nontrivialOptions),
                                            .schedule(options: .nontrivialOptions)])
         scheduler.executeScheduledActions()
         XCTAssertEqual(helper.tracking.history, [.subscription("ReceiveOn"),
@@ -97,7 +94,6 @@ final class ReceiveOnTests: XCTestCase {
                                                      .requested(.max(12)),
                                                      .requested(.max(12))])
         XCTAssertEqual(scheduler.history, [.schedule(options: .nontrivialOptions),
-                                           .schedule(options: .nontrivialOptions),
                                            .schedule(options: .nontrivialOptions),
                                            .schedule(options: .nontrivialOptions),
                                            .schedule(options: .nontrivialOptions)])
@@ -155,14 +151,14 @@ final class ReceiveOnTests: XCTestCase {
 
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited), .cancelled])
         XCTAssertEqual(helper.tracking.history, [.subscription("ReceiveOn")])
-        XCTAssertEqual(scheduler.history, [.schedule(options: nil)])
+        XCTAssertEqual(scheduler.history, [])
 
         XCTAssertEqual(helper.publisher.send(0), .none)
         helper.publisher.send(completion: .finished)
 
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited), .cancelled])
         XCTAssertEqual(helper.tracking.history, [.subscription("ReceiveOn")])
-        XCTAssertEqual(scheduler.history, [.schedule(options: nil)])
+        XCTAssertEqual(scheduler.history, [])
     }
 
     func testReceiveCompletionImmediatelyAfterSubscription() {
@@ -175,15 +171,15 @@ final class ReceiveOnTests: XCTestCase {
 
         helper.publisher.send(completion: .failure(.oops))
 
-        XCTAssertEqual(helper.tracking.history, [])
-        XCTAssertEqual(helper.subscription.history, [])
-        XCTAssertEqual(scheduler.history, [.schedule(options: nil),
-                                           .schedule(options: nil)])
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReceiveOn")])
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+        XCTAssertEqual(scheduler.history, [.schedule(options: nil)])
 
         scheduler.executeScheduledActions()
 
-        XCTAssertEqual(helper.tracking.history, [.completion(.failure(.oops))])
-        XCTAssertEqual(helper.subscription.history, [])
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReceiveOn"),
+                                                 .completion(.failure(.oops))])
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
     }
 
     func testReceiveCompletionImmediatelyAfterValue() {
@@ -205,7 +201,6 @@ final class ReceiveOnTests: XCTestCase {
                                                      .requested(.max(418))])
         XCTAssertEqual(scheduler.history, [.schedule(options: nil),
                                            .schedule(options: nil),
-                                           .schedule(options: nil),
                                            .schedule(options: nil)])
 
         scheduler.executeScheduledActions()
@@ -218,20 +213,35 @@ final class ReceiveOnTests: XCTestCase {
                                                      .requested(.max(418))])
     }
 
-    func testCrashesWhenReceivingInputRecursively() {
+    func testReceiveInputRecursively() {
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
                                         initialDemand: .unlimited,
                                         receiveValueDemand: .max(418)) {
             $0.receive(on: ImmediateScheduler.shared)
         }
 
+        var recursionCounter = 5
         helper.tracking.onValue = { _ in
+            if recursionCounter == 0 { return }
+            recursionCounter -= 1
             _ = helper.publisher.send(-1)
         }
 
-        assertCrashes {
-            _ = helper.publisher.send(0)
-        }
+        XCTAssertEqual(helper.publisher.send(0), .none)
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReceiveOn"),
+                                                 .value(0),
+                                                 .value(-1),
+                                                 .value(-1),
+                                                 .value(-1),
+                                                 .value(-1),
+                                                 .value(-1)])
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
+                                                     .requested(.max(418)),
+                                                     .requested(.max(418)),
+                                                     .requested(.max(418)),
+                                                     .requested(.max(418)),
+                                                     .requested(.max(418)),
+                                                     .requested(.max(418))])
     }
 
     func testReceiveCompletionRecursively() {
@@ -244,25 +254,6 @@ final class ReceiveOnTests: XCTestCase {
             helper.publisher.send(completion: .finished)
         }
         helper.publisher.send(completion: .finished)
-    }
-
-    func testWeakCaptureWhenSchedulingSubscription() {
-        let scheduler = VirtualTimeScheduler()
-        var subscription: Subscription?
-        var subscriberReleased = false
-        do {
-            let publisher = CustomPublisher(subscription: CustomSubscription())
-            let receiveOn = publisher.receive(on: scheduler)
-            let tracking = TrackingSubscriber(receiveSubscription: { subscription = $0 },
-                                              onDeinit: { subscriberReleased = true })
-            receiveOn.subscribe(tracking)
-            XCTAssertEqual(tracking.history, [])
-            XCTAssertEqual(scheduler.history, [.schedule(options: nil)])
-            publisher.cancel()
-        }
-        XCTAssertTrue(subscriberReleased)
-        scheduler.executeScheduledActions()
-        XCTAssertNil(subscription)
     }
 
     func testWeakCaptureWhenSchedulingValue() {
@@ -279,8 +270,7 @@ final class ReceiveOnTests: XCTestCase {
             XCTAssertEqual(tracking.history, [.subscription("ReceiveOn")])
             XCTAssertEqual(publisher.send(42), .none)
             XCTAssertEqual(tracking.history, [.subscription("ReceiveOn")])
-            XCTAssertEqual(scheduler.history, [.schedule(options: nil),
-                                               .schedule(options: nil)])
+            XCTAssertEqual(scheduler.history, [.schedule(options: nil)])
             tracking.cancel()
             publisher.cancel()
         }
@@ -304,8 +294,7 @@ final class ReceiveOnTests: XCTestCase {
             XCTAssertEqual(tracking.history, [.subscription("ReceiveOn")])
             publisher.send(completion: .finished)
             XCTAssertEqual(tracking.history, [.subscription("ReceiveOn")])
-            XCTAssertEqual(scheduler.history, [.schedule(options: nil),
-                                               .schedule(options: nil)])
+            XCTAssertEqual(scheduler.history, [.schedule(options: nil)])
             tracking.cancel()
             publisher.cancel()
         }

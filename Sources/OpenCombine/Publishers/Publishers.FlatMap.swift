@@ -4,10 +4,6 @@
 //  Created by Eric Patey on 16.08.2019.
 //
 
-#if canImport(COpenCombineHelpers)
-import COpenCombineHelpers
-#endif
-
 extension Publisher {
     /// Transforms all elements from an upstream publisher into a new or existing
     /// publisher.
@@ -92,10 +88,9 @@ extension Publishers.FlatMap {
         /// by the `downstreamLock`.
         private let lock = UnfairLock.allocate()
 
-        // Must be recursive lock. Probably a bug in Combine.
         /// All the calls to the downstream subscriber should be made with this lock
         /// acquired.
-        private let downstreamLock = UnfairLock.allocate()
+        private let downstreamLock = UnfairRecursiveLock.allocate()
 
         private let downstream: Downstream
 

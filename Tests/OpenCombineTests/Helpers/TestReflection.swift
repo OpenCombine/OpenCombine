@@ -133,7 +133,7 @@ internal func testSubscriptionReflection<Sut: Publisher>(
     customMirror customMirrorPredicate: ((Mirror) -> Bool)?,
     playgroundDescription: String,
     sut: Sut
-) throws where Sut.Output: Equatable {
+) throws {
     let tracking = TrackingSubscriberBase<Sut.Output, Sut.Failure>()
     sut.subscribe(tracking)
 

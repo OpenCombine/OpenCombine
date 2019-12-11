@@ -4,10 +4,6 @@
 //  Created by Eric Patey on 26.08.2019.
 //
 
-#if canImport(COpenCombineHelpers)
-import COpenCombineHelpers
-#endif
-
 extension Publisher {
 
     /// Transforms elements from the upstream publisher by providing the current element

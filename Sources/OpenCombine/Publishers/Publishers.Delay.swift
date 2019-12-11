@@ -5,10 +5,6 @@
 //  Created by Евгений Богомолов on 07/09/2019.
 //
 
-#if canImport(COpenCombineHelpers)
-import COpenCombineHelpers
-#endif
-
 extension Publisher {
 
     /// Delays delivery of all output to the downstream receiver by a specified amount
@@ -104,7 +100,7 @@ extension Publishers.Delay {
 
         private let lock = UnfairLock.allocate()
         private var state: State
-        private let downstreamLock = UnfairLock.allocate()
+        private let downstreamLock = UnfairRecursiveLock.allocate()
 
         fileprivate init(_ publisher: Delay, downstream: Downstream) {
             state = .ready(publisher, downstream)
@@ -115,13 +111,7 @@ extension Publishers.Delay {
             downstreamLock.deallocate()
         }
 
-        private func schedule(_ delay: Delay,
-                              immediate: Bool,
-                              work: @escaping () -> Void) {
-            if immediate {
-                delay.scheduler.schedule(options: delay.options, work)
-                return
-            }
+        private func schedule(_ delay: Delay, work: @escaping () -> Void) {
             delay
                 .scheduler
                 .schedule(after: delay.scheduler.now.advanced(by: delay.interval),
@@ -139,18 +129,6 @@ extension Publishers.Delay {
             }
             state = .subscribed(delay, downstream, subscription)
             lock.unlock()
-            schedule(delay, immediate: true) { [weak self] in
-                self?.scheduledReceive(subscription: subscription)
-            }
-        }
-
-        private func scheduledReceive(subscription: Subscription) {
-            lock.lock()
-            guard case let .subscribed(_, downstream, _) = state else {
-                lock.unlock()
-                return
-            }
-            lock.unlock()
             downstreamLock.lock()
             downstream.receive(subscription: self)
             downstreamLock.unlock()
@@ -163,8 +141,8 @@ extension Publishers.Delay {
                 return .none
             }
             lock.unlock()
-            schedule(delay, immediate: false) { [weak self] in
-                self?.scheduledReceive(input, downstream: downstream)
+            schedule(delay) {
+                self.scheduledReceive(input, downstream: downstream)
             }
             return .none
         }
@@ -193,8 +171,8 @@ extension Publishers.Delay {
             }
             state = .terminal
             lock.unlock()
-            schedule(delay, immediate: false) { [weak self] in
-                self?.scheduledReceive(completion: completion, downstream: downstream)
+            schedule(delay) {
+                self.scheduledReceive(completion: completion, downstream: downstream)
             }
         }
 

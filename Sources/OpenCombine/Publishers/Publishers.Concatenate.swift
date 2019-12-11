@@ -145,9 +145,7 @@ extension Publishers.Concatenate {
 
         private let lock = UnfairLock.allocate()
 
-        // ??? This lock is non-recursive in Combine, but it should be!
-        // (FB7404824 if Apple folks are watching)
-        private let downstreamLock = UnfairLock.allocate()
+        private let downstreamLock = UnfairRecursiveLock.allocate()
 
         fileprivate init(downstream: Downstream, suffix: Suffix) {
             self.downstream = downstream

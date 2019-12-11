@@ -88,11 +88,11 @@ final class PublishedTests: XCTestCase {
             receiveSubscription: { downstreamSubscription = $0 }
         )
         testObject.objectWillChange.subscribe(tracking1)
-        tracking1.assertHistoryEqual([.subscription("PassthroughSubject")])
+        tracking1.assertHistoryEqual([.subscription("ObservableObjectPublisher")])
         downstreamSubscription?.request(.max(2))
-        tracking1.assertHistoryEqual([.subscription("PassthroughSubject")])
+        tracking1.assertHistoryEqual([.subscription("ObservableObjectPublisher")])
         testObject.state = 100
-        tracking1.assertHistoryEqual([.subscription("PassthroughSubject")])
+        tracking1.assertHistoryEqual([.subscription("ObservableObjectPublisher")])
     }
 }
 
