@@ -134,7 +134,10 @@ extension Publishers.ReplaceEmpty {
             lock.unlock()
             switch completion {
             case .finished:
-                guard downstreamRequested else { return }
+                guard downstreamRequested else {
+                    finishedWithoutUpstream = true
+                    return
+                }
                 if receivedUpstream {
                     _ = downstream.receive(output)
                 }
