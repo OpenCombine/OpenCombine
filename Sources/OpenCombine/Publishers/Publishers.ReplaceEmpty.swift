@@ -151,6 +151,12 @@ extension Publishers.ReplaceEmpty {
             demand.assertNonZero()
             lock.lock()
             downstreamRequested = true
+            if finishedWithoutUpstream {
+                lock.unlock()
+                _ = downstream.receive(output)
+                downstream.receive(completion: .finished)
+                return
+            }
             guard case let .subscribed(subscription) = status else {
                 lock.unlock()
                 return

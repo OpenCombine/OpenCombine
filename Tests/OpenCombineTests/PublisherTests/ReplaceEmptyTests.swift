@@ -113,6 +113,11 @@ final class ReplaceEmptyTests: XCTestCase {
 
         helper.subscription.request(.max(3))
         XCTAssertEqual(helper.tracking.history, [.subscription("ReplaceEmpty")])
+
+        helper.downstreamSubscription?.request(.max(1))
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReplaceEmpty"),
+                                                 .value(22),
+                                                 .completion(.finished)])
     }
 
     // MARK: - Basic Behavior
