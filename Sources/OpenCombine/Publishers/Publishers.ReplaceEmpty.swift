@@ -80,27 +80,62 @@ extension Publishers.ReplaceEmpty {
         typealias Input = Upstream.Output
         typealias Failure = Upstream.Failure
 
-        private let output: Upstream.Output
+        private let output: Output
         private let downstream: Downstream
-        private var subscription: Subscription?
 
-        var isEmpty = true
+        private var status = SubscriptionStatus.awaitingSubscription
+        private var terminated = false
+        private var pendingDemand = Subscribers.Demand.none
+        private var lock = UnfairLock.allocate()
+        private var isEmpty = true
 
-        fileprivate init(downstream: Downstream, output: Upstream.Output) {
+        fileprivate init(downstream: Downstream, output: Output) {
             self.downstream = downstream
             self.output = output
         }
 
-        func receive(subscription: Subscription) {
-            self.subscription = subscription
+        deinit {
+            lock.deallocate()
         }
 
-        func receive(_ input: Output) -> Subscribers.Demand {
+        func receive(subscription: Subscription) {
+            lock.lock()
+            guard case .awaitingSubscription = status else {
+                lock.unlock()
+                subscription.cancel()
+                return
+            }
+            status = .subscribed(subscription)
+            let pendingDemand = self.pendingDemand
+            lock.unlock()
+            if pendingDemand > 0 {
+                subscription.request(pendingDemand)
+            }
+        }
+
+        func receive(_ input: Upstream.Output) -> Subscribers.Demand {
+            lock.lock()
+            guard case .subscribed = status else {
+                lock.unlock()
+                return .none
+            }
             isEmpty = false
-            return downstream.receive(input)
+            pendingDemand -= 1
+            lock.unlock()
+            let demand = downstream.receive(input)
+            guard demand > 0 else {
+                return .none
+            }
+            lock.lock()
+            pendingDemand += demand
+            lock.unlock()
+            return demand
         }
 
         func receive(completion: Subscribers.Completion<Upstream.Failure>) {
+            lock.lock()
+            status = .terminal
+            lock.unlock()
             switch completion {
             case .finished:
                 if isEmpty {
@@ -113,11 +148,33 @@ extension Publishers.ReplaceEmpty {
         }
 
         func request(_ demand: Subscribers.Demand) {
-            subscription?.request(demand)
+            demand.assertNonZero()
+            lock.lock()
+            if terminated {
+                status = .terminal
+                lock.unlock()
+                _ = downstream.receive(output)
+                downstream.receive(completion: .finished)
+                return
+            }
+            pendingDemand += demand
+            guard case let .subscribed(subscription) = status else {
+                lock.unlock()
+                return
+            }
+            lock.unlock()
+            subscription.request(demand)
         }
 
         func cancel() {
-            subscription?.cancel()
+            lock.lock()
+            guard case let .subscribed(subscription) = status else {
+                lock.unlock()
+                return
+            }
+            status = .terminal
+            lock.unlock()
+            subscription.cancel()
         }
 
         var description: String { return "ReplaceEmpty" }
