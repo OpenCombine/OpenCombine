@@ -274,4 +274,51 @@ final class ReplaceEmptyTests: XCTestCase {
                            playgroundDescription: "ReplaceEmpty",
                            { $0.replaceEmpty(with: 0) })
     }
+
+    func testCrashesWhenRequestedZeroDemand() {
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisher.self,
+            initialDemand: nil,
+            receiveValueDemand: .none,
+            createSut: { $0.replaceEmpty(with: 9) }
+        )
+
+        assertCrashes {
+            helper.downstreamSubscription?.request(.none)
+        }
+    }
+
+    func testReplaceEmptyReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 213,
+                                           expected: .history([], demand: .none)) {
+            $0.replaceEmpty(with: 742)
+        }
+    }
+
+    func testReplaceEmptyReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(inputType: Int.self,
+                                                expected: .history([])) {
+            $0.replaceEmpty(with: -14)
+        }
+    }
+
+    func testReplaceEmptyRequestBeforeSubscription() {
+        testRequestBeforeSubscription(inputType: Int.self, shouldCrash: false) {
+            $0.replaceEmpty(with: 19)
+        }
+    }
+
+    func testReplaceEmptyCancelBeforeSubscription() {
+        testCancelBeforeSubscription(inputType: Int.self, shouldCrash: false) {
+            $0.replaceEmpty(with: 1337)
+        }
+    }
+
+    func testReplaceEmptyLifecycle() throws {
+        // TODO: Fix this test to match combine behavior
+        try testLifecycle(sendValue: 31,
+                          cancellingSubscriptionReleasesSubscriber: false,
+                          finishingIsPassedThrough: false,
+                          { $0.replaceEmpty(with: 13) })
+    }
 }

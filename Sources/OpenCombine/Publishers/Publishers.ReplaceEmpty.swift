@@ -27,7 +27,7 @@ extension Publisher {
 extension Publishers {
 
     /// A publisher that replaces an empty stream with a provided element.
-    public struct ReplaceEmpty<Upstream>: Publisher where Upstream: Publisher {
+    public struct ReplaceEmpty<Upstream: Publisher>: Publisher {
 
         /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
@@ -118,11 +118,7 @@ extension Publishers.ReplaceEmpty {
             }
             isEmpty = false
             lock.unlock()
-            let demand = downstream.receive(input)
-            guard demand > 0 else {
-                return .none
-            }
-            return demand
+            return downstream.receive(input)
         }
 
         func receive(completion: Subscribers.Completion<Upstream.Failure>) {
