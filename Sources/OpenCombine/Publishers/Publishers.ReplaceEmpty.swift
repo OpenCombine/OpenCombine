@@ -37,7 +37,8 @@ extension Publishers {
         /// Use `Never` if this `Publisher` does not publish errors.
         public typealias Failure = Upstream.Failure
 
-        /// The element to deliver when the upstream publisher finishes without delivering any elements.
+        /// The element to deliver when the upstream publisher finishes
+        /// without delivering any elements.
         public let output: Upstream.Output
 
         /// The publisher from which this publisher receives elements.
@@ -48,7 +49,8 @@ extension Publishers {
             self.output = output
         }
 
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        /// This function is called to attach the specified `Subscriber`
+        /// to this `Publisher` by `subscribe(_:)`
         ///
         /// - SeeAlso: `subscribe(_:)`
         /// - Parameters:
