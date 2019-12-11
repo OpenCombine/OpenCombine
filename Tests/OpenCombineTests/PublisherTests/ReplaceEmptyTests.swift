@@ -103,6 +103,18 @@ final class ReplaceEmptyTests: XCTestCase {
                                                  .completion(.failure(.oops))])
     }
 
+    func testUpstreamCompletesEmptyBeforeDownstreamRequests() {
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        initialDemand: nil,
+                                        receiveValueDemand: .none,
+                                        createSut: { $0.replaceEmpty(with: 22) })
+        helper.publisher.send(completion: .finished)
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReplaceEmpty")])
+
+        helper.subscription.request(.max(3))
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReplaceEmpty")])
+    }
+
     // MARK: - Basic Behavior
     func testBasicBehavior() {
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,

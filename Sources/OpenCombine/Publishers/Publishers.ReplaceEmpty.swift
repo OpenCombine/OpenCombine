@@ -84,9 +84,12 @@ extension Publishers.ReplaceEmpty {
         private let output: Output
         private let downstream: Downstream
 
-        private var status = SubscriptionStatus.awaitingSubscription
+        private var receivedUpstream = true
         private var lock = UnfairLock.allocate()
-        private var isEmpty = true
+        private var downstreamRequested = false
+        private var finishedWithoutUpstream = false
+
+        private var status = SubscriptionStatus.awaitingSubscription
 
         fileprivate init(downstream: Downstream, output: Output) {
             self.downstream = downstream
@@ -116,7 +119,7 @@ extension Publishers.ReplaceEmpty {
                 lock.unlock()
                 return .none
             }
-            isEmpty = false
+            receivedUpstream = false
             lock.unlock()
             return downstream.receive(input)
         }
@@ -131,7 +134,8 @@ extension Publishers.ReplaceEmpty {
             lock.unlock()
             switch completion {
             case .finished:
-                if isEmpty {
+                guard downstreamRequested else { return }
+                if receivedUpstream {
                     _ = downstream.receive(output)
                 }
                 downstream.receive(completion: .finished)
@@ -143,6 +147,7 @@ extension Publishers.ReplaceEmpty {
         func request(_ demand: Subscribers.Demand) {
             demand.assertNonZero()
             lock.lock()
+            downstreamRequested = true
             guard case let .subscribed(subscription) = status else {
                 lock.unlock()
                 return
