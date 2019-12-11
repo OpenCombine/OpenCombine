@@ -265,4 +265,13 @@ final class ReplaceEmptyTests: XCTestCase {
                                                      .cancelled,
                                                      .cancelled])
     }
+
+    func testReplaceEmptyReflection() throws {
+        try testReflection(parentInput: Int.self,
+                           parentFailure: Error.self,
+                           description: "ReplaceEmpty",
+                           customMirror: childrenIsEmpty,
+                           playgroundDescription: "ReplaceEmpty",
+                           { $0.replaceEmpty(with: 0) })
+    }
 }
