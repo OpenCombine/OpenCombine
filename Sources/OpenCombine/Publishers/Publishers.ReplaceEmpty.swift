@@ -1,0 +1,131 @@
+//
+//  Publishers.ReplaceEmpty.swift
+//  OpenCombine
+//
+//  Created by Joe Spadafora on 12/10/19.
+//
+
+#if canImport(COpenCombineHelpers)
+import COpenCombineHelpers
+#endif
+
+extension Publisher {
+
+    /// Replaces an empty stream with the provided element.
+    ///
+    /// If the upstream publisher finishes without producing any elements,
+    /// this publisher emits the provided element, then finishes normally.
+    /// - Parameter output: An element to emit when the upstream publisher
+    ///                     finishes without emitting any elements.
+    /// - Returns: A publisher that replaces an empty stream with
+    ///            the provided output element.
+    public func replaceEmpty(with output: Output) -> Publishers.ReplaceEmpty<Self> {
+        return .init(upstream: self, output: output)
+    }
+}
+
+extension Publishers {
+
+    /// A publisher that replaces an empty stream with a provided element.
+    public struct ReplaceEmpty<Upstream>: Publisher where Upstream: Publisher {
+
+        /// The kind of values published by this publisher.
+        public typealias Output = Upstream.Output
+
+        /// The kind of errors this publisher might publish.
+        ///
+        /// Use `Never` if this `Publisher` does not publish errors.
+        public typealias Failure = Upstream.Failure
+
+        /// The element to deliver when the upstream publisher finishes without delivering any elements.
+        public let output: Upstream.Output
+
+        /// The publisher from which this publisher receives elements.
+        public let upstream: Upstream
+
+        public init(upstream: Upstream, output: Output) {
+            self.upstream = upstream
+            self.output = output
+        }
+
+        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
+        ///
+        /// - SeeAlso: `subscribe(_:)`
+        /// - Parameters:
+        ///     - subscriber: The subscriber to attach to this `Publisher`.
+        ///                   once attached it can begin to receive values.
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where Upstream.Failure == Downstream.Failure,
+                  Upstream.Output == Downstream.Input
+        {
+            let inner = Inner(downstream: subscriber, output: output)
+            upstream.subscribe(inner)
+            subscriber.receive(subscription: inner)
+        }
+    }
+}
+
+extension Publishers.ReplaceEmpty {
+
+    private final class Inner<Downstream: Subscriber>
+        : Subscriber,
+          Subscription,
+          CustomStringConvertible,
+          CustomReflectable,
+          CustomPlaygroundDisplayConvertible
+        where Upstream.Failure == Downstream.Failure,
+              Upstream.Output == Downstream.Input
+    {
+
+        typealias Input = Upstream.Output
+        typealias Failure = Upstream.Failure
+
+        private let output: Upstream.Output
+        private let downstream: Downstream
+        private var subscription: Subscription?
+
+        var isEmpty = true
+
+        fileprivate init(downstream: Downstream, output: Upstream.Output) {
+            self.downstream = downstream
+            self.output = output
+        }
+
+        func receive(subscription: Subscription) {
+            self.subscription = subscription
+        }
+
+        func receive(_ input: Output) -> Subscribers.Demand {
+            isEmpty = false
+            return downstream.receive(input)
+        }
+
+        func receive(completion: Subscribers.Completion<Upstream.Failure>) {
+            switch completion {
+            case .finished:
+                if isEmpty {
+                    _ = downstream.receive(output)
+                }
+                downstream.receive(completion: .finished)
+            case .failure:
+                downstream.receive(completion: completion)
+            }
+        }
+
+        func request(_ demand: Subscribers.Demand) {
+            subscription?.request(demand)
+        }
+
+        func cancel() {
+            subscription?.cancel()
+        }
+
+        var description: String { return "ReplaceEmpty" }
+
+        var customMirror: Mirror {
+            return Mirror(self, children: EmptyCollection())
+        }
+
+        var playgroundDescription: Any { return description }
+    }
+}
