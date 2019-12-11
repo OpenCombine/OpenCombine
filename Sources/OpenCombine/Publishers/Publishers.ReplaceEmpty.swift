@@ -84,7 +84,7 @@ extension Publishers.ReplaceEmpty {
         private let output: Output
         private let downstream: Downstream
 
-        private var receivedUpstream = true
+        private var receivedUpstream = false
         private var lock = UnfairLock.allocate()
         private var downstreamRequested = false
         private var finishedWithoutUpstream = false
@@ -119,7 +119,7 @@ extension Publishers.ReplaceEmpty {
                 lock.unlock()
                 return .none
             }
-            receivedUpstream = false
+            receivedUpstream = true
             lock.unlock()
             return downstream.receive(input)
         }
@@ -138,7 +138,7 @@ extension Publishers.ReplaceEmpty {
                     finishedWithoutUpstream = true
                     return
                 }
-                if receivedUpstream {
+                if !receivedUpstream {
                     _ = downstream.receive(output)
                 }
                 downstream.receive(completion: .finished)
