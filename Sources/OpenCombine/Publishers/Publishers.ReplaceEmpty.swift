@@ -131,18 +131,23 @@ extension Publishers.ReplaceEmpty {
                 return
             }
             status = .terminal
-            lock.unlock()
+            if receivedUpstream {
+                lock.unlock()
+                downstream.receive(completion: completion)
+                return
+            }
             switch completion {
             case .finished:
-                guard downstreamRequested else {
-                    finishedWithoutUpstream = true
+                if downstreamRequested {
+                    lock.unlock()
+                    _ = downstream.receive(output)
+                    downstream.receive(completion: completion)
                     return
                 }
-                if !receivedUpstream {
-                    _ = downstream.receive(output)
-                }
-                downstream.receive(completion: .finished)
+                finishedWithoutUpstream = true
+                lock.unlock()
             case .failure:
+                lock.unlock()
                 downstream.receive(completion: completion)
             }
         }
