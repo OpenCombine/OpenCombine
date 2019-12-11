@@ -177,6 +177,10 @@ final class TrackingSubscriberBase<Value, Failure: Error>
         for subscription in subscriptions {
             subscription.cancel()
         }
+        clearHistory()
+    }
+
+    func clearHistory() {
         history = []
     }
 

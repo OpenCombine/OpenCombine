@@ -15,10 +15,10 @@ import OpenCombine
 
 let childrenIsEmpty: (Mirror) -> Bool = { $0.children.isEmpty }
 
-enum ExpectedMirrorChildValue: Equatable, ExpressibleByStringLiteral {
+enum ExpectedMirrorChildValue: ExpressibleByStringLiteral {
     case anything
-    case matches(String)
-    case contains(String)
+    case matches(@autoclosure () -> String)
+    case contains(@autoclosure () -> String)
 
     typealias StringLiteralType = String
 
@@ -49,10 +49,11 @@ func expectedChildren(_ expectedChildren: (String?, ExpectedMirrorChildValue)...
             case (_, .anything):
                 continue
             case let (lhs, .matches(rhs)):
-                XCTAssertEqual(lhs, rhs, file: file, line: line)
+                XCTAssertEqual(lhs, rhs(), file: file, line: line)
             case let (lhs, .contains(rhs)):
-                XCTAssert(lhs.contains(rhs),
-                          "\"\(lhs)\" doesn't contain substring \"\(rhs)\"",
+                let evaluatedRHS = rhs()
+                XCTAssert(lhs.contains(evaluatedRHS),
+                          "\"\(lhs)\" doesn't contain substring \"\(evaluatedRHS)\"",
                           file: file,
                           line: line)
             }
