@@ -84,8 +84,6 @@ final class DispatchQueueSchedulerTests: XCTestCase {
     // MARK: - Scheduler.SchedulerTimeType.Stride
 
     func testStrideToDispatchTimeInterval() {
-        typealias Stride = Scheduler.SchedulerTimeType.Stride
-
         switch (Stride.seconds(2).timeInterval,
                 Stride.milliseconds(2).timeInterval,
                 Stride.microseconds(2).timeInterval,
@@ -100,24 +98,116 @@ final class DispatchQueueSchedulerTests: XCTestCase {
         }
     }
 
-    func testStrideFromDispatchTimeInterval() {
-        typealias Stride = Scheduler.SchedulerTimeType.Stride
-
+    func testStrideFromDispatchTimeInterval() throws {
         XCTAssertEqual(Stride(.seconds(2)).magnitude, 2_000_000_000)
         XCTAssertEqual(Stride(.milliseconds(2)).magnitude, 2_000_000)
         XCTAssertEqual(Stride(.microseconds(2)).magnitude, 2_000)
         XCTAssertEqual(Stride(.nanoseconds(2)).magnitude, 2)
+
         XCTAssertEqual(Stride(.never).magnitude, .max)
+        XCTAssertEqual(Stride(.nanoseconds(.max)).magnitude, .max)
+        XCTAssertEqual(Stride(.nanoseconds(.min)).magnitude, .min)
+        XCTAssertEqual(Stride(.microseconds(.max)).magnitude, .max)
+        XCTAssertEqual(Stride(.microseconds(.min)).magnitude, .min)
+        XCTAssertEqual(Stride(.milliseconds(.max)).magnitude, .max)
+        XCTAssertEqual(Stride(.milliseconds(.min)).magnitude, .min)
+        XCTAssertEqual(Stride(.seconds(.max)).magnitude, .max)
+        XCTAssertEqual(Stride(.seconds(.min)).magnitude, .min)
+    }
+
+    func testStrideFromUnknownDispatchTimeIntervalCase() {
+        // Here we're testing out internal API that is not present in Combine.
+        // Although we prefer only testing public APIs, this case is special.
+        let makeStride: (DispatchTimeInterval) -> Stride
+#if OPENCOMBINE_COMPATIBILITY_TEST
+        makeStride = Stride.init(_:)
+#else
+        makeStride = Stride.init(__guessFromUnknown:)
+#endif
+        XCTAssertEqual(makeStride(.nanoseconds(.min / 7)).magnitude, .min / 7)
+        XCTAssertEqual(makeStride(.nanoseconds(-128)).magnitude, -128)
+        XCTAssertEqual(makeStride(.nanoseconds(-57)).magnitude, -57)
+        XCTAssertEqual(makeStride(.nanoseconds(-33)).magnitude, -33)
+        XCTAssertEqual(makeStride(.nanoseconds(-17)).magnitude, -17)
+        XCTAssertEqual(makeStride(.nanoseconds(-8)).magnitude, -8)
+        XCTAssertEqual(makeStride(.nanoseconds(-3)).magnitude, -3)
+        XCTAssertEqual(makeStride(.nanoseconds(-1)).magnitude, -1)
+        XCTAssertEqual(makeStride(.nanoseconds(0)).magnitude, 0)
+        XCTAssertEqual(makeStride(.nanoseconds(1)).magnitude, 1)
+        XCTAssertEqual(makeStride(.nanoseconds(3)).magnitude, 3)
+        XCTAssertEqual(makeStride(.nanoseconds(8)).magnitude, 8)
+        XCTAssertEqual(makeStride(.nanoseconds(17)).magnitude, 17)
+        XCTAssertEqual(makeStride(.nanoseconds(33)).magnitude, 33)
+        XCTAssertEqual(makeStride(.nanoseconds(57)).magnitude, 57)
+        XCTAssertEqual(makeStride(.nanoseconds(128)).magnitude, 128)
+        XCTAssertEqual(makeStride(.nanoseconds(.max / 3)).magnitude, .max / 3)
+
+        XCTAssertEqual(makeStride(.microseconds(-128)).magnitude, -128_000)
+        XCTAssertEqual(makeStride(.microseconds(-57)).magnitude, -57_000)
+        XCTAssertEqual(makeStride(.microseconds(-33)).magnitude, -33_000)
+        XCTAssertEqual(makeStride(.microseconds(-17)).magnitude, -17_000)
+        XCTAssertEqual(makeStride(.microseconds(-8)).magnitude, -8_000)
+        XCTAssertEqual(makeStride(.microseconds(-3)).magnitude, -3_000)
+        XCTAssertEqual(makeStride(.microseconds(-1)).magnitude, -1_000)
+        XCTAssertEqual(makeStride(.microseconds(0)).magnitude, 0)
+        XCTAssertEqual(makeStride(.microseconds(1)).magnitude, 1_000)
+        XCTAssertEqual(makeStride(.microseconds(3)).magnitude, 3_000)
+        XCTAssertEqual(makeStride(.microseconds(8)).magnitude, 8_000)
+        XCTAssertEqual(makeStride(.microseconds(17)).magnitude, 17_000)
+        XCTAssertEqual(makeStride(.microseconds(33)).magnitude, 33_000)
+        XCTAssertEqual(makeStride(.microseconds(57)).magnitude, 57_000)
+        XCTAssertEqual(makeStride(.microseconds(128)).magnitude, 128_000)
+
+        XCTAssertEqual(makeStride(.milliseconds(-128)).magnitude, -128_000_000)
+        XCTAssertEqual(makeStride(.milliseconds(-57)).magnitude, -57_000_000)
+        XCTAssertEqual(makeStride(.milliseconds(-33)).magnitude, -33_000_000)
+        XCTAssertEqual(makeStride(.milliseconds(-17)).magnitude, -17_000_000)
+        XCTAssertEqual(makeStride(.milliseconds(-8)).magnitude, -8_000_000)
+        XCTAssertEqual(makeStride(.milliseconds(-3)).magnitude, -3_000_000)
+        XCTAssertEqual(makeStride(.milliseconds(-1)).magnitude, -1_000_000)
+        XCTAssertEqual(makeStride(.milliseconds(0)).magnitude, 0)
+        XCTAssertEqual(makeStride(.milliseconds(1)).magnitude, 1_000_000)
+        XCTAssertEqual(makeStride(.milliseconds(3)).magnitude, 3_000_000)
+        XCTAssertEqual(makeStride(.milliseconds(8)).magnitude, 8_000_000)
+        XCTAssertEqual(makeStride(.milliseconds(17)).magnitude, 17_000_000)
+        XCTAssertEqual(makeStride(.milliseconds(33)).magnitude, 33_000_000)
+        XCTAssertEqual(makeStride(.milliseconds(57)).magnitude, 57_000_000)
+        XCTAssertEqual(makeStride(.milliseconds(128)).magnitude, 128_000_000)
+
+        XCTAssertEqual(makeStride(.seconds(-2)).magnitude, -2_000_000_000)
+        XCTAssertEqual(makeStride(.seconds(-1)).magnitude, -1_000_000_000)
+        XCTAssertEqual(makeStride(.seconds(0)).magnitude, 0)
+        XCTAssertEqual(makeStride(.seconds(1)).magnitude, 1_000_000_000)
+        XCTAssertEqual(makeStride(.seconds(2)).magnitude, 2_000_000_000)
     }
 
     func testStrideFromNumericValue() {
-        typealias Stride = Scheduler.SchedulerTimeType.Stride
-
         XCTAssertEqual(Stride.seconds(1.2).magnitude, 1_200_000_000)
         XCTAssertEqual(Stride.seconds(2).magnitude, 2_000_000_000)
         XCTAssertEqual(Stride.milliseconds(2).magnitude, 2_000_000)
         XCTAssertEqual(Stride.microseconds(2).magnitude, 2_000)
         XCTAssertEqual(Stride.nanoseconds(2).magnitude, 2)
+
+#if arch(x86_64) || arch(arm64) || arch(s390x) || arch(powerpc64) || arch(powerpc64le)
+        // 64-bit platforms
+        XCTAssertEqual(
+            Stride.seconds(Double(Int.max) / 1_000_000_000 - 1).magnitude,
+            9223372035854776320
+        )
+#elseif arch(i386) || arch(arm)
+        // 32-bit platforms
+        XCTAssertEqual(
+            Stride.seconds(Double(Int.max) / 1_000_000_000).magnitude,
+            .max
+        )
+#else
+#error("This architecture isn't known. Add it to the 32-bit or 64-bit line.")
+#endif
+
+        XCTAssertEqual(Stride.seconds(.max).magnitude, .max)
+        XCTAssertEqual(Stride.milliseconds(.max).magnitude, .max)
+        XCTAssertEqual(Stride.microseconds(.max).magnitude, .max)
+        XCTAssertEqual(Stride.nanoseconds(.max).magnitude, .max)
 
         XCTAssertEqual((1.2 as Stride).magnitude, 1_200_000_000)
         XCTAssertEqual((2 as Stride).magnitude, 2_000_000_000)
@@ -126,17 +216,33 @@ final class DispatchQueueSchedulerTests: XCTestCase {
         XCTAssertEqual(Stride(exactly: 871 as UInt64)?.magnitude, 871)
     }
 
-    func testStrideComparable() {
-        typealias Stride = Scheduler.SchedulerTimeType.Stride
+    func testStrideFromTooMuchSecondsCrashes() {
+        assertCrashes {
+#if arch(x86_64) || arch(arm64) || arch(s390x) || arch(powerpc64) || arch(powerpc64le)
+            // 64-bit platforms
+            XCTAssertGreaterThan(
+                Stride.seconds(Double(Int.max) / 1_000_000_000).magnitude,
+                .max
+            )
+#elseif arch(i386) || arch(arm)
+            // 32-bit platforms
+            XCTAssertGreaterThan(
+                Stride.seconds(Double(Int.max) / 1_000_000_000 + 1).magnitude,
+                .max
+            )
+#else
+#error("This architecture isn't known. Add it to the 32-bit or 64-bit line.")
+#endif
+        }
+    }
 
+    func testStrideComparable() {
         XCTAssertLessThan(Stride.nanoseconds(1), .nanoseconds(2))
         XCTAssertGreaterThan(Stride.nanoseconds(-2), .microseconds(-10))
         XCTAssertLessThan(Stride.milliseconds(2), .seconds(2))
     }
 
     func testStrideMultiplication() {
-        typealias Stride = Scheduler.SchedulerTimeType.Stride
-
         XCTAssertEqual((Stride.nanoseconds(0) * .nanoseconds(61346)).magnitude, 0)
         XCTAssertEqual((Stride.nanoseconds(61346) * .nanoseconds(0)).magnitude, 0)
         XCTAssertEqual((Stride.nanoseconds(18) * .nanoseconds(1)).magnitude, 18)
@@ -196,8 +302,6 @@ final class DispatchQueueSchedulerTests: XCTestCase {
     }
 
     func testStrideAddition() {
-        typealias Stride = Scheduler.SchedulerTimeType.Stride
-
         XCTAssertEqual((Stride.nanoseconds(0) + .microseconds(2)).magnitude, 2000)
         XCTAssertEqual((Stride.nanoseconds(2) + .microseconds(0)).magnitude, 2)
         XCTAssertEqual((Stride.nanoseconds(7) + .nanoseconds(12)).magnitude, 19)
@@ -243,8 +347,6 @@ final class DispatchQueueSchedulerTests: XCTestCase {
     }
 
     func testStrideSubtraction() {
-        typealias Stride = Scheduler.SchedulerTimeType.Stride
-
         XCTAssertEqual((Stride.nanoseconds(0) - .microseconds(2)).magnitude, -2000)
         XCTAssertEqual((Stride.nanoseconds(2) - .microseconds(0)).magnitude, 2)
         XCTAssertEqual((Stride.nanoseconds(7) - .nanoseconds(12)).magnitude, -5)
@@ -290,8 +392,6 @@ final class DispatchQueueSchedulerTests: XCTestCase {
     }
 
     func testStrideCodable() throws {
-        typealias Stride = Scheduler.SchedulerTimeType.Stride
-
         let encoder = JSONEncoder()
         let decoder = JSONDecoder()
 
@@ -428,6 +528,9 @@ private let mainScheduler = DispatchQueue.main.ocombine
 private let backgroundScheduler = DispatchQueue.global(qos: .background).ocombine
 
 #endif
+
+@available(macOS 10.15, iOS 13.0, *)
+private typealias Stride = Scheduler.SchedulerTimeType.Stride
 
 private struct KeyedWrapper<Value: Codable & Equatable>: Codable, Equatable {
     let value: Value

@@ -126,10 +126,40 @@ extension DispatchQueue {
                     case .nanoseconds(let nanoseconds):
                         self = .nanoseconds(nanoseconds)
                     case .never:
-                        fallthrough
-                    @unknown default:
                         self = .nanoseconds(.max)
+                    @unknown default:
+                        self.init(__guessFromUnknown: timeInterval)
                     }
+                }
+
+                public // testable
+                init(__guessFromUnknown timeInterval: DispatchTimeInterval) {
+                    // Let's take some reference time,
+                    // add `timeInterval` to it, take the `rawValue` from the result
+                    // and subtract the `rawValue` of the reference time.
+                    //
+                    // We won't be able to provide the exact implementation though,
+                    // because something will definitely overflow.
+                    //
+                    // However, we can try to support as wide a range of values
+                    // as possible.
+                    //
+                    // By trial and error I got that the `rawValue` of `UInt64.max / 13`
+                    // gives us propably the widest range of supported values:
+                    // from `Int.min / 7` to `Int.max / 3` nanoseconds.
+                    // That's with Int being 64 bits. Since here only UInt64 can overflow,
+                    // when Int is 32 bits, we don't have this issue.
+                    // It should be more than enough.
+
+                    let referenceTime = DispatchTime(uptimeNanoseconds: .max / 13)
+
+                    let (partial, overflow) = (referenceTime + timeInterval).rawValue
+                        .subtractingReportingOverflow(referenceTime.rawValue)
+
+                    let result = overflow
+                        ? -Int(.max &- partial + 1) // Dont' ask.
+                        : Int(partial)
+                    self = .nanoseconds(result)
                 }
 
                 /// Creates a dispatch queue time interval from a floating-point
@@ -191,15 +221,15 @@ extension DispatchQueue {
                 }
 
                 public static func seconds(_ value: Int) -> Stride {
-                    return Stride(magnitude: value * 1_000_000_000)
+                    return Stride(magnitude: clampedIntProduct(value, 1_000_000_000))
                 }
 
                 public static func milliseconds(_ value: Int) -> Stride {
-                    return Stride(magnitude: value * 1_000_000)
+                    return Stride(magnitude: clampedIntProduct(value, 1_000_000))
                 }
 
                 public static func microseconds(_ value: Int) -> Stride {
-                    return Stride(magnitude: value * 1_000)
+                    return Stride(magnitude: clampedIntProduct(value, 1_000))
                 }
 
                 public static func nanoseconds(_ value: Int) -> Stride {
@@ -336,3 +366,18 @@ extension DispatchQueue: OpenCombine.Scheduler {
     }
 }
 #endif
+
+// This function is taken from swift-corlibs-libdispatch:
+// https://github.com/apple/swift-corelibs-libdispatch/blob/c992dacf3ca114806e6ac9ffc9113b19255be9fe/src/swift/Time.swift#L134-L144
+//
+// Returns m1 * m2, clamped to the range [Int.min, Int.max].
+// Because of the way this function is used, we can always assume
+// that m2 > 0.
+private func clampedIntProduct(_ lhs: Int, _ rhs: Int) -> Int {
+    assert(rhs > 0, "multiplier must be positive")
+    let (result, overflow) = lhs.multipliedReportingOverflow(by: rhs)
+    if overflow {
+        return lhs > 0 ? .max : .min
+    }
+    return result
+}
