@@ -7,6 +7,7 @@ let package = Package(
     products: [
         .library(name: "OpenCombine", targets: ["OpenCombine"]),
         .library(name: "OpenCombineDispatch", targets: ["OpenCombineDispatch"]),
+        .library(name: "OpenCombineFoundation", targets: ["OpenCombineFoundation"]),
     ],
     targets: [
         .target(name: "COpenCombineHelpers"),
