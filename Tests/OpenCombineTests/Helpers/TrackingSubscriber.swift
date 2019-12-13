@@ -5,6 +5,7 @@
 //  Created by Sergej Jaskiewicz on 11.06.2019.
 //
 
+import Foundation
 import XCTest
 
 #if OPENCOMBINE_COMPATIBILITY_TEST
@@ -224,8 +225,8 @@ extension TrackingSubscriberBase.Event {
             switch (lhs, rhs) {
             case (.finished, .finished):
                 return true
-            case let (.failure(lhs), .failure(rhs)):
-                return (lhs as? TestingError) == (rhs as? TestingError)
+            case let (.failure(lhs as EquatableError), .failure(rhs as EquatableError)):
+                return lhs.isEqual(rhs)
             default:
                 return false
             }
@@ -281,8 +282,9 @@ final class TrackingSubjectBase<Output: Equatable, Failure: Error>
                 switch (lhs, rhs) {
                 case (.finished, .finished):
                     return true
-                case let (.failure(lhs), .failure(rhs)):
-                    return (lhs as? TestingError) == (rhs as? TestingError)
+                case let (.failure(lhs as EquatableError),
+                          .failure(rhs as EquatableError)):
+                    return lhs.isEqual(rhs)
                 default:
                     return false
                 }

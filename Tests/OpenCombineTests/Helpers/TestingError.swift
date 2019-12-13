@@ -40,6 +40,20 @@ extension TestingError: ExpressibleByStringLiteral {
     }
 }
 
+protocol EquatableError: Error {
+    func isEqual(_ other: EquatableError) -> Bool
+}
+
+extension EquatableError where Self: Equatable {
+    func isEqual(_ other: EquatableError) -> Bool {
+        return self == (other as? Self)
+    }
+}
+
+extension TestingError: EquatableError {}
+
+extension NSError: EquatableError {}
+
 func assertThrowsError<Result>(_ expression: @autoclosure () throws -> Result,
                                _ expected: TestingError,
                                _ message: @autoclosure () -> String = "",
