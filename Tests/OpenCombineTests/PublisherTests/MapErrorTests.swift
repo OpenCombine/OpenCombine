@@ -210,10 +210,15 @@ final class MapErrorTests: XCTestCase {
     }
 }
 
-private struct OtherError: Error {
-    let original: Error
+private struct OtherError: EquatableError {
+    let original: EquatableError
 
-    init(_ original: Error) {
+    init(_ original: EquatableError) {
         self.original = original
+    }
+
+    func isEqual(_ other: EquatableError) -> Bool {
+        guard let other = other as? OtherError else { return false }
+        return original.isEqual(other.original)
     }
 }

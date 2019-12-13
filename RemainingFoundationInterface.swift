@@ -54,19 +54,6 @@ extension Timer {
   }
 }
 
-extension URLSession {
-  public func dataTaskPublisher(for url: Foundation.URL) -> Foundation.URLSession.DataTaskPublisher
-  public func dataTaskPublisher(for request: Foundation.URLRequest) -> Foundation.URLSession.DataTaskPublisher
-  public struct DataTaskPublisher : Combine.Publisher {
-    public typealias Output = (data: Foundation.Data, response: Foundation.URLResponse)
-    public typealias Failure = Foundation.URLError
-    public let request: Foundation.URLRequest
-    public let session: Foundation.URLSession
-    public init(request: Foundation.URLRequest, session: Foundation.URLSession)
-    public func receive<S>(subscriber: S) where S : Combine.Subscriber, S.Failure == Foundation.URLSession.DataTaskPublisher.Failure, S.Input == Foundation.URLSession.DataTaskPublisher.Output
-  }
-}
-
 extension OperationQueue : Combine.Scheduler {
   public struct SchedulerTimeType : Swift.Strideable, Swift.Codable, Swift.Hashable {
     public var date: Foundation.Date
