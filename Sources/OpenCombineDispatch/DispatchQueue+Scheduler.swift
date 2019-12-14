@@ -125,10 +125,25 @@ extension DispatchQueue {
                         self = .microseconds(microseconds)
                     case .nanoseconds(let nanoseconds):
                         self = .nanoseconds(nanoseconds)
+// This dance is to avoid the warning 'default will never be executed'
+// on non-Darwin platforms.
+// There really shouldn't be a warning.
+// See https://forums.swift.org/t/unknown-default-produces-a-warning-on-linux-with-non-frozen-enum/31687
+//
+// Thanks to Jeremy David Giesbrecht for suggesting this workaround.
+#if canImport(Darwin)
                     case .never:
                         self = .nanoseconds(.max)
                     @unknown default:
                         self.init(__guessFromUnknown: timeInterval)
+#else
+                    default:
+                        if case .never = timeInterval {
+                            self = .nanoseconds(.max)
+                        } else {
+                            self.init(__guessFromUnknown: timeInterval)
+                        }
+#endif
                     }
                 }
 

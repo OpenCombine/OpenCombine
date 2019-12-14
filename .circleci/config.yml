@@ -11,6 +11,7 @@ jobs:
           name: Building and running tests in debug mode with coverage
           command: |
             make test-debug \
+              SWIFT_BUILD_FLAGS="-Xswiftc -warnings-as-errors" \
               SWIFT_TEST_FLAGS="--enable-code-coverage --build-path .build-test-debug"
             xcrun llvm-cov show \
               -instr-profile=.build-test-debug/debug/codecov/default.profdata \
@@ -20,15 +21,17 @@ jobs:
           name: Building and running tests in debug mode with TSan
           command: |
             make test-debug-sanitize-thread \
+              SWIFT_BUILD_FLAGS="-Xswiftc -warnings-as-errors" \
               SWIFT_TEST_FLAGS="--build-path .build-test-debug-sanitize-thread"
       - run:
           name: Building and running tests in release mode
           command: |
             make test-release \
+              SWIFT_BUILD_FLAGS="-Xswiftc -warnings-as-errors" \
               SWIFT_TEST_FLAGS="--build-path .build-test-release"
       - run:
           name: Generating Xcode project
-          command: make generate-xcodeproj
+          command: make generate-xcodeproj SWIFT_BUILD_FLAGS="-Xswiftc -warnings-as-errors"
       - run:
           name: Building for testing on macOS 10.15.0 with xcodebuild
           command: |
@@ -125,7 +128,7 @@ jobs:
       - run:
           name: Generating Xcode project
           command: |
-            make generate-xcodeproj
+            make generate-xcodeproj SWIFT_BUILD_FLAGS="-Xswiftc -warnings-as-errors"
             xcodebuild -scheme OpenCombine-Package -showdestinations
       - run:
            name: Building for testing on iOS 9.3 with xcodebuild
@@ -182,6 +185,7 @@ jobs:
               > /dev/null 2>&1 \
               || true
             make test-debug \
+              SWIFT_BUILD_FLAGS="-Xswiftc -warnings-as-errors" \
               SWIFT_TEST_FLAGS="--enable-test-discovery \
                                 --enable-index-store \
                                 --enable-code-coverage \
@@ -194,6 +198,7 @@ jobs:
           name: Building and running tests in debug mode with TSan
           command: | # We need to run the test command twice because of https://bugs.swift.org/browse/SR-10783
             make test-debug-sanitize-thread \
+              SWIFT_BUILD_FLAGS="-Xswiftc -warnings-as-errors" \
               SWIFT_TEST_FLAGS="--enable-test-discovery \
                                 --enable-index-store \
                                 --build-path .build-test-debug-sanitize-thread" \
@@ -207,6 +212,7 @@ jobs:
           name: Building and running tests in release mode
           command: |
             make test-release \
+              SWIFT_BUILD_FLAGS="-Xswiftc -warnings-as-errors" \
               SWIFT_TEST_FLAGS="--enable-test-discovery \
                                 --enable-index-store \
                                 --build-path .build-test-release"
