@@ -5,10 +5,6 @@
 //  Created by Sergej Jaskiewicz on 11.06.2019.
 //
 
-#if canImport(COpenCombineHelpers)
-import COpenCombineHelpers
-#endif
-
 /// A subject that passes along values and completion.
 ///
 /// Use a `PassthroughSubject` in unit tests when you want a publisher than can publish

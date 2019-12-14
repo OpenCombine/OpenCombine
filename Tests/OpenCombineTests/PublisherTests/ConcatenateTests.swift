@@ -359,9 +359,21 @@ final class ConcatenateTests: XCTestCase {
             helper.publisher.send(completion: .failure(.oops))
         }
 
-        assertCrashes {
-            helper.publisher.send(completion: .failure(.oops))
-        }
+        helper.publisher.send(completion: .failure(.oops))
+
+        XCTAssertEqual(helper.tracking.history, [.subscription("Concatenate"),
+                                                 .completion(.failure(.oops)),
+                                                 .completion(.failure(.oops)),
+                                                 .completion(.failure(.oops)),
+                                                 .completion(.failure(.oops)),
+                                                 .completion(.failure(.oops)),
+                                                 .completion(.failure(.oops)),
+                                                 .completion(.failure(.oops)),
+                                                 .completion(.failure(.oops)),
+                                                 .completion(.failure(.oops)),
+                                                 .completion(.failure(.oops)),
+                                                 .completion(.failure(.oops))])
+        XCTAssertEqual(helper.subscription.history, [])
     }
 
     func testHelperMethods() {

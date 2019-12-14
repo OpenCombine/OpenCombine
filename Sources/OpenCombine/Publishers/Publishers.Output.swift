@@ -5,10 +5,6 @@
 //  Created by Sergej Jaskiewicz on 24.10.2019.
 //
 
-#if canImport(COpenCombineHelpers)
-import COpenCombineHelpers
-#endif
-
 extension Publisher {
 
     /// Republishes elements up to the specified maximum count.

@@ -23,22 +23,27 @@ final class ObservableObjectPublisherTests: XCTestCase {
             receiveSubscription: { downstreamSubscription1 = $0 }
         )
         publisher.subscribe(tracking1)
-        tracking1.assertHistoryEqual([.subscription("PassthroughSubject")])
+        tracking1.assertHistoryEqual([.subscription("ObservableObjectPublisher")])
         downstreamSubscription1?.request(.max(1))
-        tracking1.assertHistoryEqual([.subscription("PassthroughSubject")])
+        tracking1.assertHistoryEqual([.subscription("ObservableObjectPublisher")])
         publisher.send()
-        tracking1.assertHistoryEqual([.subscription("PassthroughSubject"),
+        tracking1.assertHistoryEqual([.subscription("ObservableObjectPublisher"),
                                       .signal])
         publisher.send()
         publisher.send()
         downstreamSubscription1?.request(.max(3))
-        tracking1.assertHistoryEqual([.subscription("PassthroughSubject"),
+        tracking1.assertHistoryEqual([.subscription("ObservableObjectPublisher"),
+                                      .signal,
+                                      .signal,
                                       .signal])
         publisher.send()
         publisher.send()
         publisher.send()
         publisher.send()
-        tracking1.assertHistoryEqual([.subscription("PassthroughSubject"),
+        tracking1.assertHistoryEqual([.subscription("ObservableObjectPublisher"),
+                                      .signal,
+                                      .signal,
+                                      .signal,
                                       .signal,
                                       .signal,
                                       .signal,
@@ -49,28 +54,48 @@ final class ObservableObjectPublisherTests: XCTestCase {
             receiveSubscription: { $0.request(.unlimited) }
         )
         publisher.subscribe(tracking2)
-        tracking2.assertHistoryEqual([.subscription("PassthroughSubject")])
+        tracking2.assertHistoryEqual([.subscription("ObservableObjectPublisher")])
 
         publisher.send()
-        tracking1.assertHistoryEqual([.subscription("PassthroughSubject"),
+        tracking1.assertHistoryEqual([.subscription("ObservableObjectPublisher"),
+                                      .signal,
+                                      .signal,
+                                      .signal,
                                       .signal,
                                       .signal,
                                       .signal,
                                       .signal,
                                       .signal])
-        tracking2.assertHistoryEqual([.subscription("PassthroughSubject"),
+        tracking2.assertHistoryEqual([.subscription("ObservableObjectPublisher"),
                                       .signal])
 
         downstreamSubscription1?.cancel()
         publisher.send()
-        tracking1.assertHistoryEqual([.subscription("PassthroughSubject"),
+        tracking1.assertHistoryEqual([.subscription("ObservableObjectPublisher"),
+                                      .signal,
+                                      .signal,
+                                      .signal,
                                       .signal,
                                       .signal,
                                       .signal,
                                       .signal,
                                       .signal])
-        tracking2.assertHistoryEqual([.subscription("PassthroughSubject"),
+        tracking2.assertHistoryEqual([.subscription("ObservableObjectPublisher"),
                                       .signal,
                                       .signal])
+
+        tracking1.cancel()
+        tracking2.cancel()
+    }
+
+    func testObservableObjectPublisherReflection() throws {
+        try testSubscriptionReflection(
+            description: "ObservableObjectPublisher",
+            customMirror: expectedChildren(
+                ("downstream", .contains("TrackingSubscriberBase"))
+            ),
+            playgroundDescription: "ObservableObjectPublisher",
+            sut: ObservableObjectPublisher()
+        )
     }
 }

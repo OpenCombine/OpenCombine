@@ -5,10 +5,6 @@
 //  Created by Bogdan Vlad on 8/29/19.
 //
 
-#if canImport(COpenCombineHelpers)
-import COpenCombineHelpers
-#endif
-
 extension Publisher {
     /// Replaces any errors in the stream with the provided element.
     ///

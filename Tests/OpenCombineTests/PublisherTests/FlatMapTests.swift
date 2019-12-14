@@ -390,11 +390,15 @@ final class FlatMapTests: XCTestCase {
     }
 
     func testChildValueReceivedWhileSendingValue() throws {
-        let upstreamPublisher = PassthroughSubject<AnyPublisher<Int, TestingError>,
-            TestingError>()
+        let upstreamSubscription = CustomSubscription()
+        let upstreamPublisher = CustomPublisherBase<CustomPublisher, TestingError>(
+            subscription: upstreamSubscription
+        )
 
-        let child1Publisher = CustomPublisher(subscription: CustomSubscription())
-        let child2Publisher = CustomPublisher(subscription: CustomSubscription())
+        let childSubscription1 = CustomSubscription()
+        let childSubscription2 = CustomSubscription()
+        let child1Publisher = CustomPublisher(subscription: childSubscription1)
+        let child2Publisher = CustomPublisher(subscription: childSubscription2)
 
         let flatMap = upstreamPublisher.flatMap { $0 }
 
@@ -408,12 +412,17 @@ final class FlatMapTests: XCTestCase {
 
         flatMap.subscribe(downstreamSubscriber)
 
-        upstreamPublisher.send(AnyPublisher(child1Publisher))
-        upstreamPublisher.send(AnyPublisher(child2Publisher))
+        XCTAssertEqual(upstreamPublisher.send(child1Publisher), .none)
+        XCTAssertEqual(upstreamPublisher.send(child2Publisher), .none)
 
-        assertCrashes {
-            XCTAssertEqual(child1Publisher.send(666), .max(1))
-        }
+        XCTAssertEqual(child1Publisher.send(666), .max(1))
+
+        XCTAssertEqual(upstreamSubscription.history, [.requested(.unlimited)])
+        XCTAssertEqual(downstreamSubscriber.history, [.subscription("FlatMap"),
+                                                      .value(666),
+                                                      .value(777)])
+        XCTAssertEqual(childSubscription1.history, [.requested(.max(1))])
+        XCTAssertEqual(childSubscription2.history, [.requested(.max(1))])
     }
 
     func testOuterLockReentrance() {
@@ -462,9 +471,6 @@ final class FlatMapTests: XCTestCase {
         // Create some downstream demand
         try XCTUnwrap(helper.downstreamSubscription).request(.max(5))
 
-        // If Apple changes the implementation to use recursive lock,
-        // we must make sure no stack overflow occurs here,
-        // which will also be detected as a crash, which is not what we want.
         var recursionDepth = 10
         helper.tracking.onFailure = { _ in
             if recursionDepth <= 0 {
@@ -474,10 +480,13 @@ final class FlatMapTests: XCTestCase {
             _ = child.send(1)
         }
 
-        // Expected deadlock
-        assertCrashes {
-            child.send(completion: .failure(.oops))
-        }
+        child.send(completion: .failure(.oops))
+
+        XCTAssertEqual(helper.tracking.history, [.subscription("FlatMap"),
+                                                 .completion(.failure(.oops)),
+                                                 .value(1)])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(1))])
+        XCTAssertEqual(childSubscription.history, [.requested(.max(1))])
     }
 
     func testCompletesProperlyWhenUpstreamOutlivesChildren() {

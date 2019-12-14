@@ -5,10 +5,6 @@
 //  Created by Sven Weidauer on 03.10.2019.
 //
 
-#if canImport(COpenCombineHelpers)
-import COpenCombineHelpers
-#endif
-
 extension Publisher {
     /// Omits the specified number of elements before republishing subsequent elements.
     ///

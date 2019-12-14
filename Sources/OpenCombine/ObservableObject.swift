@@ -67,19 +67,126 @@ public final class ObservableObjectPublisher: Publisher {
 
     public typealias Failure = Never
 
-    private let subject: PassthroughSubject<Void, Never>
+    private let lock = UnfairLock.allocate()
 
-    public init() {
-        subject = .init()
+    private var connections = Set<Conduit>()
+
+    // TODO: Combine needs this for some reason
+    private var identifier: ObjectIdentifier?
+
+    public init() {}
+
+    deinit {
+        lock.deallocate()
     }
 
     public func receive<Downstream: Subscriber>(subscriber: Downstream)
         where Downstream.Input == Void, Downstream.Failure == Never
     {
-        subject.subscribe(subscriber)
+        let inner = Inner(downstream: subscriber, parent: self)
+        lock.lock()
+        connections.insert(inner)
+        lock.unlock()
+        subscriber.receive(subscription: inner)
     }
 
     public func send() {
-        subject.send()
+        lock.lock()
+        let connections = self.connections
+        lock.unlock()
+        for connection in connections {
+            connection.send()
+        }
+    }
+
+    private func remove(_ conduit: Conduit) {
+        lock.lock()
+        connections.remove(conduit)
+        lock.unlock()
+    }
+}
+
+extension ObservableObjectPublisher {
+    private class Conduit: Hashable {
+
+        fileprivate func send() {
+            abstractMethod()
+        }
+
+        fileprivate static func == (lhs: Conduit, rhs: Conduit) -> Bool {
+            return lhs === rhs
+        }
+
+        fileprivate func hash(into hasher: inout Hasher) {
+            hasher.combine(ObjectIdentifier(self))
+        }
+    }
+
+    private final class Inner<Downstream: Subscriber>
+        : Conduit,
+          Subscription,
+          CustomStringConvertible,
+          CustomReflectable,
+          CustomPlaygroundDisplayConvertible
+        where Downstream.Input == Void, Downstream.Failure == Never
+    {
+        private enum State {
+            case initialized
+            case active
+            case terminal
+        }
+
+        private weak var parent: ObservableObjectPublisher?
+        private let downstream: Downstream
+        private let downstreamLock = UnfairRecursiveLock.allocate()
+        private let lock = UnfairLock.allocate()
+        private var state = State.initialized
+
+        init(downstream: Downstream, parent: ObservableObjectPublisher) {
+            self.parent = parent
+            self.downstream = downstream
+        }
+
+        deinit {
+            downstreamLock.deallocate()
+            lock.deallocate()
+        }
+
+        override func send() {
+            lock.lock()
+            let state = self.state
+            lock.unlock()
+            if state == .active {
+                downstreamLock.lock()
+                _ = downstream.receive()
+                downstreamLock.unlock()
+            }
+        }
+
+        func request(_ demand: Subscribers.Demand) {
+            lock.lock()
+            if state == .initialized {
+                state = .active
+            }
+            lock.unlock()
+        }
+
+        func cancel() {
+            lock.lock()
+            state = .terminal
+            lock.unlock()
+            parent?.remove(self)
+        }
+
+        var description: String { return "ObservableObjectPublisher" }
+
+        var customMirror: Mirror {
+            let children = CollectionOfOne<Mirror.Child>(("downstream", downstream))
+            return Mirror(self, children: children)
+        }
+
+        var playgroundDescription: Any {
+            return description
+        }
     }
 }
