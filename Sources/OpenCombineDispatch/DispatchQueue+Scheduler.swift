@@ -50,8 +50,12 @@ extension DispatchQueue {
             /// - Parameter other: Another dispatch queue time.
             /// - Returns: The time interval between this time and the provided time.
             public func distance(to other: SchedulerTimeType) -> Stride {
+                let start = dispatchTime.rawValue
+                let end = other.dispatchTime.rawValue
                 return .nanoseconds(
-                    dispatchTime.rawValue.distance(to: other.dispatchTime.rawValue)
+                    end >= start
+                        ? Int(Int64(bitPattern: end) - Int64(bitPattern: start))
+                        : -Int(Int64(bitPattern: start) - Int64(bitPattern: end))
                 )
             }
 
@@ -62,7 +66,9 @@ extension DispatchQueue {
             /// - Returns: A dispatch queue time advanced by the given
             ///   interval from this instance’s time.
             public func advanced(by stride: Stride) -> SchedulerTimeType {
-                return .init(dispatchTime + stride.timeInterval)
+                return stride.magnitude == .max
+                    ? .init(.distantFuture)
+                    : .init(dispatchTime + stride.timeInterval)
             }
 
             public func hash(into hasher: inout Hasher) {
@@ -173,7 +179,7 @@ extension DispatchQueue {
 
                     let result = overflow
                         ? -Int(.max &- partial + 1) // Dont' ask.
-                        : Int(partial)
+                        : Int(exactly: partial) ?? .max
                     self = .nanoseconds(result)
                 }
 

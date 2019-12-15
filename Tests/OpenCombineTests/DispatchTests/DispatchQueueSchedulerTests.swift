@@ -23,13 +23,34 @@ final class DispatchQueueSchedulerTests: XCTestCase {
     func testSchedulerTimeTypeDistance() {
         let time1 = Scheduler.SchedulerTimeType(.init(uptimeNanoseconds: 10000))
         let time2 = Scheduler.SchedulerTimeType(.init(uptimeNanoseconds: 10431))
+        let distantFuture = Scheduler.SchedulerTimeType(.distantFuture)
+        let notSoDistantFuture = Scheduler.SchedulerTimeType(
+            DispatchTime(
+                uptimeNanoseconds: DispatchTime.distantFuture.uptimeNanoseconds - 1024
+            )
+        )
 
         XCTAssertEqual(time1.distance(to: time2), .nanoseconds(431))
         XCTAssertEqual(time2.distance(to: time1), .nanoseconds(-431))
+
+        XCTAssertEqual(time1.distance(to: distantFuture), .nanoseconds(-10001))
+        XCTAssertEqual(distantFuture.distance(to: time1), .nanoseconds(10001))
+        XCTAssertEqual(time2.distance(to: distantFuture), .nanoseconds(-10432))
+        XCTAssertEqual(distantFuture.distance(to: time2), .nanoseconds(10432))
+
+        XCTAssertEqual(time1.distance(to: notSoDistantFuture), .nanoseconds(-11025))
+        XCTAssertEqual(notSoDistantFuture.distance(to: time1), .nanoseconds(11025))
+        XCTAssertEqual(time2.distance(to: notSoDistantFuture), .nanoseconds(-11456))
+        XCTAssertEqual(notSoDistantFuture.distance(to: time2), .nanoseconds(11456))
+
+        XCTAssertEqual(distantFuture.distance(to: distantFuture), .nanoseconds(0))
+        XCTAssertEqual(notSoDistantFuture.distance(to: notSoDistantFuture),
+                       .nanoseconds(0))
     }
 
     func testSchedulerTimeTypeAdvanced() {
         let time = Scheduler.SchedulerTimeType(.init(uptimeNanoseconds: 10000))
+        let beginningOfTime = Scheduler.SchedulerTimeType(.init(uptimeNanoseconds: 1))
         let stride1 = Scheduler.SchedulerTimeType.Stride.nanoseconds(431)
         let stride2 = Scheduler.SchedulerTimeType.Stride.nanoseconds(-220)
 
@@ -38,6 +59,12 @@ final class DispatchQueueSchedulerTests: XCTestCase {
 
         XCTAssertEqual(time.advanced(by: stride2),
                        Scheduler.SchedulerTimeType(.init(uptimeNanoseconds: 9780)))
+
+        XCTAssertEqual(time.advanced(by: .nanoseconds(.max)).dispatchTime,
+                       .distantFuture)
+
+        XCTAssertEqual(beginningOfTime.advanced(by: .nanoseconds(-1000)).dispatchTime,
+                       DispatchTime(uptimeNanoseconds: 1))
     }
 
     func testSchedulerTimeTypeEquatable() {
@@ -87,11 +114,13 @@ final class DispatchQueueSchedulerTests: XCTestCase {
         switch (Stride.seconds(2).timeInterval,
                 Stride.milliseconds(2).timeInterval,
                 Stride.microseconds(2).timeInterval,
-                Stride.nanoseconds(2).timeInterval) {
+                Stride.nanoseconds(2).timeInterval,
+                Stride.nanoseconds(.max).timeInterval) {
         case (.nanoseconds(2_000_000_000),
               .nanoseconds(2_000_000),
               .nanoseconds(2_000),
-              .nanoseconds(2)):
+              .nanoseconds(2),
+              .nanoseconds(.max)):
             break // pass
         case let intervals:
             XCTFail("Unexpected DispatchTimeInterval: \(intervals)")
@@ -179,6 +208,8 @@ final class DispatchQueueSchedulerTests: XCTestCase {
         XCTAssertEqual(makeStride(.seconds(0)).magnitude, 0)
         XCTAssertEqual(makeStride(.seconds(1)).magnitude, 1_000_000_000)
         XCTAssertEqual(makeStride(.seconds(2)).magnitude, 2_000_000_000)
+
+        XCTAssertEqual(makeStride(.never).magnitude, .max)
     }
 
     func testStrideFromNumericValue() {
