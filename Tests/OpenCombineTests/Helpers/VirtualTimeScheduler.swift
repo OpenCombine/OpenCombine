@@ -12,6 +12,14 @@ import OpenCombine
 #endif
 
 @available(macOS 10.15, iOS 13.0, *)
+protocol CancellableTokenProtocol: Cancellable {
+
+    init(_ scheduler: VirtualTimeScheduler)
+
+    var isCancelled: Bool { get }
+}
+
+@available(macOS 10.15, iOS 13.0, *)
 final class VirtualTimeScheduler: Scheduler {
 
     struct SchedulerTimeType: Strideable,
@@ -171,13 +179,40 @@ final class VirtualTimeScheduler: Scheduler {
         }
     }
 
-    private final class CancellableToken: Cancellable {
+    final class CancellableToken: CancellableTokenProtocol {
+
+        weak var scheduler: VirtualTimeScheduler?
 
         private(set) var isCancelled = false
+
+        init(_ scheduler: VirtualTimeScheduler) {
+            self.scheduler = scheduler
+        }
+
+        deinit {
+            scheduler?.cancellableTokenDeinitCount += 1
+        }
 
         func cancel() {
             isCancelled = true
         }
+    }
+
+    final class NoopCancellableToken: CancellableTokenProtocol {
+
+        weak var scheduler: VirtualTimeScheduler?
+
+        init(_ scheduler: VirtualTimeScheduler) {
+            self.scheduler = scheduler
+        }
+
+        deinit {
+            scheduler?.cancellableTokenDeinitCount += 1
+        }
+
+        var isCancelled: Bool { return false }
+
+        func cancel() {}
     }
 
     enum Event: Equatable, CustomStringConvertible {
@@ -239,6 +274,14 @@ final class VirtualTimeScheduler: Scheduler {
 
     private var workQueue = FairPriorityQueue<SchedulerTimeType, () -> Void>()
 
+    private let cancellableTokenType: CancellableTokenProtocol.Type
+
+    fileprivate(set) var cancellableTokenDeinitCount = 0
+
+    init(cancellableTokenType: CancellableTokenProtocol.Type = CancellableToken.self) {
+        self.cancellableTokenType = cancellableTokenType
+    }
+
     var scheduledDates: [SchedulerTimeType] {
         return workQueue.map { $0.0 }
     }
@@ -275,7 +318,7 @@ final class VirtualTimeScheduler: Scheduler {
                                                       interval: interval,
                                                       tolerance: tolerance,
                                                       options: options))
-        let cancellableToken = CancellableToken()
+        let cancellableToken = cancellableTokenType.init(self)
         repeatedlyExecute(after: date,
                           interval: interval,
                           cancellableToken: cancellableToken,
@@ -285,7 +328,7 @@ final class VirtualTimeScheduler: Scheduler {
 
     private func repeatedlyExecute(after date: SchedulerTimeType,
                                    interval: SchedulerTimeType.Stride,
-                                   cancellableToken: CancellableToken,
+                                   cancellableToken: CancellableTokenProtocol,
                                    action: @escaping () -> Void) {
         let enqueuedAction: () -> Void = { [unowned self] in
             if cancellableToken.isCancelled { return }
