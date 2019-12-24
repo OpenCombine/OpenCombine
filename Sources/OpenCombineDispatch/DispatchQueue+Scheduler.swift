@@ -167,20 +167,14 @@ extension DispatchQueue {
                     //
                     // By trial and error I got that the `rawValue` of `UInt64.max / 13`
                     // gives us propably the widest range of supported values:
-                    // from `Int.min / 7` to `Int.max / 3` nanoseconds.
+                    // from `Int.min / 6.5` to `Int.max / 2.889` nanoseconds.
                     // That's with Int being 64 bits. Since here only UInt64 can overflow,
                     // when Int is 32 bits, we don't have this issue.
                     // It should be more than enough.
 
                     let referenceTime = DispatchTime(uptimeNanoseconds: .max / 13)
-
-                    let (partial, overflow) = (referenceTime + timeInterval).rawValue
-                        .subtractingReportingOverflow(referenceTime.rawValue)
-
-                    let result = overflow
-                        ? -Int(.max &- partial + 1) // Dont' ask.
-                        : Int(exactly: partial) ?? .max
-                    self = .nanoseconds(result)
+                    self = SchedulerTimeType(referenceTime)
+                        .distance(to: SchedulerTimeType(referenceTime + timeInterval))
                 }
 
                 /// Creates a dispatch queue time interval from a floating-point

@@ -153,7 +153,19 @@ final class DispatchQueueSchedulerTests: XCTestCase {
 #else
         makeStride = Stride.init(__guessFromUnknown:)
 #endif
-        XCTAssertEqual(makeStride(.nanoseconds(.min / 7)).magnitude, .min / 7)
+
+#if arch(x86_64) || arch(arm64) || arch(s390x) || arch(powerpc64) || arch(powerpc64le)
+        // 64-bit platforms
+        let minNanoseconds = -0x13B13B13B13B13B0 // Int64.min / 6.5
+        let maxNanoseconds =  0x2C4EC4EC4EC4EC4D // Int64.max / 2.889
+#elseif arch(i386) || arch(arm)
+        // 32-bit platforms
+        let minNanoseconds = Int.min + 1
+        let maxNanoseconds = Int.max
+#else
+#error("This architecture isn't known. Add it to the 32-bit or 64-bit line.")
+#endif
+        XCTAssertEqual(makeStride(.nanoseconds(minNanoseconds)).magnitude, minNanoseconds)
         XCTAssertEqual(makeStride(.nanoseconds(-128)).magnitude, -128)
         XCTAssertEqual(makeStride(.nanoseconds(-57)).magnitude, -57)
         XCTAssertEqual(makeStride(.nanoseconds(-33)).magnitude, -33)
@@ -169,7 +181,7 @@ final class DispatchQueueSchedulerTests: XCTestCase {
         XCTAssertEqual(makeStride(.nanoseconds(33)).magnitude, 33)
         XCTAssertEqual(makeStride(.nanoseconds(57)).magnitude, 57)
         XCTAssertEqual(makeStride(.nanoseconds(128)).magnitude, 128)
-        XCTAssertEqual(makeStride(.nanoseconds(.max / 3)).magnitude, .max / 3)
+        XCTAssertEqual(makeStride(.nanoseconds(maxNanoseconds)).magnitude, maxNanoseconds)
 
         XCTAssertEqual(makeStride(.microseconds(-128)).magnitude, -128_000)
         XCTAssertEqual(makeStride(.microseconds(-57)).magnitude, -57_000)
@@ -208,8 +220,6 @@ final class DispatchQueueSchedulerTests: XCTestCase {
         XCTAssertEqual(makeStride(.seconds(0)).magnitude, 0)
         XCTAssertEqual(makeStride(.seconds(1)).magnitude, 1_000_000_000)
         XCTAssertEqual(makeStride(.seconds(2)).magnitude, 2_000_000_000)
-
-        XCTAssertEqual(makeStride(.never).magnitude, .max)
     }
 
     func testStrideFromNumericValue() {
