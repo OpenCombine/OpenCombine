@@ -204,46 +204,9 @@ extension Publishers {
         ///                   once attached it can begin to receive values.
         public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, S.Input == [Upstream.Output]
     }
-
-    /// A publisher that buffers a maximum number of items.
-    public struct CollectByCount<Upstream> : Publisher where Upstream : Publisher {
-
-        /// The kind of values published by this publisher.
-        public typealias Output = [Upstream.Output]
-
-        /// The kind of errors this publisher might publish.
-        ///
-        /// Use `Never` if this `Publisher` does not publish errors.
-        public typealias Failure = Upstream.Failure
-
-        /// The publisher from which this publisher receives elements.
-        public let upstream: Upstream
-
-        ///  The maximum number of received elements to buffer before publishing.
-        public let count: Int
-
-        public init(upstream: Upstream, count: Int)
-
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
-        ///
-        /// - SeeAlso: `subscribe(_:)`
-        /// - Parameters:
-        ///     - subscriber: The subscriber to attach to this `Publisher`.
-        ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, S.Input == [Upstream.Output]
-    }
 }
 
 extension Publisher {
-
-    /// Collects up to the specified number of elements, and then emits a single array of the collection.
-    ///
-    /// If the upstream publisher finishes before filling the buffer, this publisher sends an array of all the items it has received. This may be fewer than `count` elements.
-    /// If the upstream publisher fails with an error, this publisher forwards the error to the downstream receiver instead of sending its output.
-    /// Note: When this publisher receives a request for `.max(n)` elements, it requests `.max(count * n)` from the upstream publisher.
-    /// - Parameter count: The maximum number of received elements to buffer before publishing.
-    /// - Returns: A publisher that collects up to the specified number of elements, and then publishes them as an array.
-    public func collect(_ count: Int) -> Publishers.CollectByCount<Self>
 
     /// Collects elements by a given strategy, and emits a single array of the collection.
     ///
@@ -1398,19 +1361,6 @@ extension Publishers.CombineLatest4 : Equatable where A : Equatable, B : Equatab
     ///   - lhs: A value to compare.
     ///   - rhs: Another value to compare.
     public static func == (lhs: Publishers.CombineLatest4<A, B, C, D>, rhs: Publishers.CombineLatest4<A, B, C, D>) -> Bool
-}
-
-extension Publishers.CollectByCount : Equatable where Upstream : Equatable {
-
-    /// Returns a Boolean value indicating whether two values are equal.
-    ///
-    /// Equality is the inverse of inequality. For any values `a` and `b`,
-    /// `a == b` implies that `a != b` is `false`.
-    ///
-    /// - Parameters:
-    ///   - lhs: A value to compare.
-    ///   - rhs: Another value to compare.
-    public static func == (lhs: Publishers.CollectByCount<Upstream>, rhs: Publishers.CollectByCount<Upstream>) -> Bool
 }
 
 extension Publishers.Merge : Equatable where A : Equatable, B : Equatable {
