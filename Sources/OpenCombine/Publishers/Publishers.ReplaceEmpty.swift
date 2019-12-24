@@ -5,10 +5,6 @@
 //  Created by Joe Spadafora on 12/10/19.
 //
 
-#if canImport(COpenCombineHelpers)
-import COpenCombineHelpers
-#endif
-
 extension Publisher {
 
     /// Replaces an empty stream with the provided element.
@@ -29,12 +25,8 @@ extension Publishers {
     /// A publisher that replaces an empty stream with a provided element.
     public struct ReplaceEmpty<Upstream: Publisher>: Publisher {
 
-        /// The kind of values published by this publisher.
         public typealias Output = Upstream.Output
 
-        /// The kind of errors this publisher might publish.
-        ///
-        /// Use `Never` if this `Publisher` does not publish errors.
         public typealias Failure = Upstream.Failure
 
         /// The element to deliver when the upstream publisher finishes
@@ -49,13 +41,6 @@ extension Publishers {
             self.output = output
         }
 
-        /// This function is called to attach the specified `Subscriber`
-        /// to this `Publisher` by `subscribe(_:)`
-        ///
-        /// - SeeAlso: `subscribe(_:)`
-        /// - Parameters:
-        ///     - subscriber: The subscriber to attach to this `Publisher`.
-        ///                   once attached it can begin to receive values.
         public func receive<Downstream: Subscriber>(subscriber: Downstream)
             where Upstream.Failure == Downstream.Failure,
                   Upstream.Output == Downstream.Input
@@ -65,6 +50,9 @@ extension Publishers {
         }
     }
 }
+
+extension Publishers.ReplaceEmpty: Equatable
+    where Upstream: Equatable, Upstream.Output: Equatable {}
 
 extension Publishers.ReplaceEmpty {
 
