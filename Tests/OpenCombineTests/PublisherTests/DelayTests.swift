@@ -445,7 +445,7 @@ final class DelayTests: XCTestCase {
     }
 
     func testDelayReflection() throws {
-        /// Delay's Inner doesn't customize its reflection
+        // Delay's Inner doesn't customize its reflection
         try testReflection(parentInput: Int.self,
                            parentFailure: Error.self,
                            description: nil,

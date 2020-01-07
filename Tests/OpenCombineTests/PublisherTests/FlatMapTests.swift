@@ -142,32 +142,43 @@ final class FlatMapTests: XCTestCase {
         // Simply making it here shows that there's no dealock
     }
 
-    func testCancelCancels() {
+    func testCancelCancels() throws {
         let upstreamSubscription = CustomSubscription()
         let upstreamPublisher = CustomPublisherBase<Int, Never>(
-            subscription: upstreamSubscription)
+            subscription: upstreamSubscription
+        )
 
         let childSubscription = CustomSubscription()
         let childPublisher = CustomPublisherBase<Int, Never>(
-            subscription: childSubscription)
+            subscription: childSubscription
+        )
 
         let flatMap = upstreamPublisher.flatMap { _ in childPublisher }
 
         var downstreamSubscription: Subscription?
-        let downstreamSubscriber = TrackingSubscriberBase<Int, Never>(receiveSubscription:
-        {
-            downstreamSubscription = $0
-            $0.request(.unlimited)
-        })
+        let downstreamSubscriber = TrackingSubscriberBase<Int, Never>(
+            receiveSubscription: {
+                downstreamSubscription = $0
+                $0.request(.max(42))
+            }
+        )
+
+        upstreamSubscription.onCancel = {
+            XCTAssertEqual(childSubscription.history, [.requested(.max(1)), .cancelled])
+        }
+
+        childSubscription.onCancel = {
+            XCTAssertEqual(upstreamSubscription.history, [.requested(.unlimited)])
+        }
 
         flatMap.subscribe(downstreamSubscriber)
 
         XCTAssertEqual(upstreamPublisher.send(1), .none)
 
-        downstreamSubscription?.cancel()
+        try XCTUnwrap(downstreamSubscription).cancel()
 
-        XCTAssertEqual(upstreamSubscription.history.last, .cancelled)
-        XCTAssertEqual(childSubscription.history.last, .cancelled)
+        XCTAssertEqual(upstreamSubscription.history, [.requested(.unlimited), .cancelled])
+        XCTAssertEqual(childSubscription.history, [.requested(.max(1)), .cancelled])
     }
 
     func testCancelTwice() throws {
