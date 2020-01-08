@@ -44,8 +44,14 @@ class CustomPublisherBase<Output, Failure: Error>: Publisher, Cancellable {
 
     var didSubscribe: ((AnySubscriber<Output, Failure>) -> Void)?
 
+    var onDeinit: (() -> Void)?
+
     required init(subscription: Subscription?) {
         self.subscription = subscription
+    }
+
+    deinit {
+        onDeinit?()
     }
 
     func receive<Downstream: Subscriber>(subscriber: Downstream)

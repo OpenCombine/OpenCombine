@@ -220,4 +220,8 @@ func unreachable<T>(_: T) -> Never {
     fatalError("unreachable")
 }
 
+func unreachable() -> Never {
+    fatalError("unreachable")
+}
+
 // swiftlint:enable generic_type_name
