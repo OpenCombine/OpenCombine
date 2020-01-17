@@ -126,21 +126,21 @@ extension Publishers.Buffer {
             case terminal
         }
 
-        private let lock = UnfairLock.allocate() // 0x10
+        private let lock = UnfairLock.allocate()
 
-        private var recursion = false // 0x18
+        private var recursion = false
 
         private var state: State
 
-        private var downstreamDemand = Subscribers.Demand.none // 0x88
+        private var downstreamDemand = Subscribers.Demand.none
 
         // TODO: Use a deque here?
         // Need to measure performance with large buffers and `dropOldest` strategy.
         private var values = [Input]()
 
-        private var upstreamFailed = false // 0xA0
+        private var upstreamFailed = false
 
-        private var terminal: Subscribers.Completion<Failure>? // 0xA8
+        private var terminal: Subscribers.Completion<Failure>?
 
         init(downstream: Downstream, buffer: Publishers.Buffer<Upstream>) {
             state = .ready(buffer, downstream)

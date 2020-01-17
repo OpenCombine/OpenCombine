@@ -1,6 +1,6 @@
 Pod::Spec.new do |spec|
   spec.name          = "OpenCombine"
-  spec.version       = "0.7.0"
+  spec.version       = "0.8.0"
   spec.summary       = "Open source implementation of Apple's Combine framework for processing values over time."
 
   spec.description   = <<-DESC
