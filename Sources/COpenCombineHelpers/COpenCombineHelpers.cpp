@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <system_error>
 #include <pthread.h>
+#include <signal.h>
 
 #ifdef __APPLE__
 #include <os/lock.h>
@@ -233,6 +234,10 @@ void opencombine_unfair_lock_dealloc(OpenCombineUnfairLock lock) {
 
 void opencombine_unfair_recursive_lock_dealloc(OpenCombineUnfairRecursiveLock lock) {
     return delete static_cast<PlatformIndependentMutex*>(lock.opaque);
+}
+
+void opencombine_stop_in_debugger(void) {
+    raise(SIGTRAP);
 }
 
 } // extern "C"

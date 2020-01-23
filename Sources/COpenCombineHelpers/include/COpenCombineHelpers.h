@@ -9,18 +9,11 @@
 #define COPENCOMBINEHELPERS_H
 
 #include <stdint.h>
-#include <signal.h>
 
 #if __has_attribute(swift_name)
 # define OPENCOMBINE_SWIFT_NAME(_name) __attribute__((swift_name(#_name)))
 #else
 # define OPENCOMBINE_SWIFT_NAME(_name)
-#endif
-
-#if __has_attribute(always_inline)
-# define OPENCOMBINE_ALWAYS_INLINE __attribute__((always_inline))
-#else
-# define OPENCOMBINE_ALWAYS_INLINE
 #endif
 
 #ifdef __cplusplus
@@ -77,12 +70,7 @@ void opencombine_unfair_recursive_lock_dealloc(OpenCombineUnfairRecursiveLock lo
 
 #pragma mark - Breakpoint
 
-OPENCOMBINE_ALWAYS_INLINE
-inline void opencombine_stop_in_debugger(void) OPENCOMBINE_SWIFT_NAME(__stopInDebugger());
-
-void opencombine_stop_in_debugger(void) {
-    raise(SIGTRAP);
-}
+void opencombine_stop_in_debugger(void) OPENCOMBINE_SWIFT_NAME(__stopInDebugger());
 
 #ifdef __cplusplus
 } // extern "C"
