@@ -89,3 +89,16 @@ GYB template files have the `.gyb` extension. Run `make gyb` to generate Swift c
 templates. The generated files are prefixed with `GENERATED-`  and are checked into source control. Those
 files should never be edited directly. Instead, the `.gyb` template should be edited, and after that the files
 should be regenerated using `make gyb`.
+
+#### Debugger Support
+
+The file `opencombine_lldb.py`  defines some `lldb` type summaries for easier debugging. These type summaries improve the way `lldb` and Xcode display some OpenCombine values.
+
+To use `opencombine_lldb.py`, figure out its full path. Let's say the full path is `~/projects/OpenCombine/opencombine_lldb.py`. Then the following statement to your `~/.lldbinit` file:
+
+    command script import ~/projects/OpenCombine/opencombine_lldb.py
+
+Currently, `opencombine_lldb.py` defines type summaries for these types:
+
+- `Subscribers.Demand`
+- That's all for now.
