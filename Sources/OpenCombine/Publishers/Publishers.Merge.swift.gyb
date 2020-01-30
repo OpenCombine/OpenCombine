@@ -1,0 +1,285 @@
+${template_header}
+//
+//  Publishers.Merge.swift.gyb
+//  
+//
+//  Created by Sergej Jaskiewicz on 04/10/2019.
+//
+%{
+from gyb_opencombine_support import (
+    suffix_variadic,
+    list_with_suffix_variadic,
+    indent
+)
+
+import string
+
+instantiations = [(2, 'two', 'A second'),
+                  (3, 'three', 'A third'),
+                  (4, 'four', 'A fourth'),
+                  (5, 'five', 'A fifth'),
+                  (6, 'six', 'A sixth'),
+                  (7, 'seven', 'A seventh'),
+                  (8, 'eight', 'An eighth')]
+
+def make_publisher_name(arity):
+    return suffix_variadic('Merge', arity, arity - 1)
+
+def make_upstream_types(arity, start=0):
+    return [str(c) for c in string.ascii_uppercase[start:arity]]
+
+def make_upstream_types_reversed(arity):
+    return [str(c) for c in reversed(string.ascii_uppercase)][:arity]
+
+def make_upstream_generic_constraints(upstream_types, first_is_self=False):
+
+    format_string = '{0}Failure == {1}.Failure, {0}Output == {1}.Output'
+
+    def format(i):
+        return format_string.format(upstream_types[i] + '.',
+                                    upstream_types[i + 1])
+
+    result = [format(i) for i in range(len(upstream_types) - 1)]
+
+    if first_is_self:
+        result.insert(0, format_string.format('', upstream_types[0]))
+
+    return result
+
+def declare_merge_method(arg_count, arity, indent_spaces_count):
+    assert(arg_count <= arity - 1)
+    is_specialization = arg_count < arity - 1
+
+    declaration_format = """\
+public func merge<
+    {}
+>(with {}) -> Publishers.{}<{}>\
+"""
+
+    where_clause_format = '\n    where {}'
+
+    if arg_count == 1:
+        upstream_types = ['P']
+    elif is_specialization:
+        upstream_types = make_upstream_types_reversed(arg_count)
+    else:
+        upstream_types = make_upstream_types(arg_count + 1, 1)
+
+    method_generic_params = \
+        [upstream_type + ': Publisher' for upstream_type in upstream_types]
+
+    cs_method_generic_params = \
+        (',\n    ').join(method_generic_params)
+
+    method_args = ['other: P'] \
+        if arg_count == 1 else ['{}: {}'.format(upstream_type.lower(), upstream_type) \
+                                for upstream_type in upstream_types]
+
+    cs_method_args = ',\n     _ '.join(method_args)
+
+    publisher_name = make_publisher_name(arity)
+
+    self_generic_params = make_upstream_types(arity - arg_count) \
+        if is_specialization else ['Self']
+
+    publisher_generic_params = self_generic_params + upstream_types
+
+    cs_publisher_generic_params = ', '.join(publisher_generic_params)
+
+    generic_constraints = make_upstream_generic_constraints(upstream_types, True)
+
+    cs_generic_constraints = \
+         ',\n          '.join(generic_constraints)
+
+    declaration = declaration_format.format(cs_method_generic_params,
+                                            cs_method_args,
+                                            publisher_name,
+                                            cs_publisher_generic_params)
+
+    if not is_specialization:
+        declaration += where_clause_format.format(cs_generic_constraints)
+
+    return indent(declaration, indent_spaces_count)
+}%
+
+// swiftlint:disable generic_type_name
+// swiftlint:disable vertical_parameter_alignment
+
+// MARK: - Merge methods on Publisher
+
+extension Publisher {
+
+% for arity, _, _ in instantiations:
+%
+%     doc_cardinal = 'another publisher' \
+%         if arity == 2 else (instantiations[arity - 2][1] + ' other publishers')
+%     argument_names = ['other'] \
+%         if arity == 2 else [upstream_type.lower() \
+%                             for upstream_type in make_upstream_types(arity, 1)]
+    /// Combines elements from this publisher with those from ${doc_cardinal},
+    /// delivering an interleaved sequence of elements.
+    ///
+    /// The merged publisher continues to emit elements until all upstream publishers
+    /// finish. If an upstream publisher produces an error, the merged publisher fails
+    /// with that error.
+    ///
+    /// - Parameters:
+%     for i in range(arity - 1):
+%         param_doc = 'Another' if arity == 2 else instantiations[i][2]
+    ///   - ${argument_names[i]}: ${param_doc} publisher.
+%     end
+    /// - Returns: A publisher that emits an event when any upstream publisher emits
+    ///   an event.
+${declare_merge_method(arity - 1, arity, 4)}
+    {
+        return .init(self, ${', '.join(argument_names)})
+    }
+% end
+}
+
+extension Publisher {
+
+    /// Combines elements from this publisher with those from another publisher of
+    /// the same type, delivering an interleaved sequence of elements.
+    ///
+    /// - Parameter other: Another publisher of this publisher's type.
+    /// - Returns: A publisher that emits an event when either upstream publisher emits
+    ///   an event.
+    public func merge(with other: Self) -> Publishers.MergeMany<Self> {
+        return .init([self, other])
+    }
+}
+
+// MARK: - Merge publishers
+
+extension Publishers {
+% for arity, cardinal, _ in instantiations:
+%
+%     publisher_name = make_publisher_name(arity)
+%
+%     upstream_types = make_upstream_types(arity)
+%
+%     upstream_generic_params = \
+%         [upstream_type + ': Publisher' for upstream_type in upstream_types]
+%
+%     cs_upstream_generic_params = \
+%         (',\n' + (19 + len(publisher_name)) * ' ').join(upstream_generic_params)
+%
+%     upstream_generic_constraints = \
+%         make_upstream_generic_constraints(upstream_types)
+%
+%     cs_upstream_generic_constraints = \
+%         ',\n              '.join(upstream_generic_constraints)
+%
+%     init_args = ['_ {}: {}'.format(upstream_type.lower(), upstream_type) \
+%                  for upstream_type in upstream_types]
+%     cs_init_args = ',\n            '.join(init_args)
+%
+%     self_fields = [upstream_type.lower() for upstream_type in upstream_types]
+
+    /// A publisher created by applying the merge function to ${cardinal} upstream
+    /// publishers.
+    public struct ${publisher_name}<${cs_upstream_generic_params}>: Publisher
+        where ${cs_upstream_generic_constraints}
+    {
+        public typealias Output = ${upstream_types[0]}.Output
+
+        public typealias Failure = ${upstream_types[0]}.Failure
+%     for upstream_type in upstream_types:
+
+        public let ${upstream_type.lower()}: ${upstream_type}
+%     end
+
+        public init(
+            ${cs_init_args}
+        ) {
+%     for self_field in self_fields:
+            self.${self_field} = ${self_field}
+%     end
+        }
+
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where ${upstream_types[0]}.Failure == Downstream.Failure,
+                  ${upstream_types[0]}.Output == Downstream.Input
+        {
+            typealias Merged = _Merged<Output, Failure, Downstream>
+            let merged = Merged(downstream: subscriber, count: ${arity})
+%     for i in range(len(self_fields)):
+            ${self_fields[i]}.subscribe(Merged.Side(index: ${i}, merger: merged))
+%     end
+            subscriber.receive(subscription: merged)
+        }
+%     for i in range(len(instantiations) + 1 - arity):
+%         argument_names = ['other'] \
+%              if i == 0 else [upstream_type.lower() \
+%                              for upstream_type in make_upstream_types_reversed(i + 1)]
+%
+
+${declare_merge_method(i + 1, arity + i + 1, 8)}
+        {
+            return .init(${', '.join(self_fields + argument_names)})
+        }
+%     end
+    }
+% end
+}
+
+extension Publishers {
+    public struct MergeMany<Upstream: Publisher>: Publisher {
+
+        public typealias Output = Upstream.Output
+
+        public typealias Failure = Upstream.Failure
+
+        public let publishers: [Upstream]
+
+        public init(_ upstream: Upstream...) {
+            self.publishers = upstream
+        }
+
+        public init<UpstreamPublishers: Swift.Sequence>(_ upstream: UpstreamPublishers)
+            where Upstream == UpstreamPublishers.Element
+        {
+            publishers = Array(upstream)
+        }
+
+        public func receive<Downstream: Subscriber>(subscriber: Downstream)
+            where Upstream.Failure == Downstream.Failure,
+                  Upstream.Output == Downstream.Input
+        {
+            typealias Merged = _Merged<Output, Failure, Downstream>
+            let merged = Merged(downstream: subscriber, count: publishers.count)
+            for (i, upstream) in publishers.enumerated() {
+                upstream.subscribe(Merged.Side(index: i, merger: merged))
+            }
+            subscriber.receive(subscription: merged)
+        }
+
+        public func merge(with other: Upstream) -> Publishers.MergeMany<Upstream> {
+            var newPublishers = publishers
+            newPublishers.append(other)
+            return .init(newPublishers)
+        }
+    }
+}
+
+// MARK: - Equatable conformances
+% for arity, cardinal, _ in instantiations:
+%
+%     publisher_name = make_publisher_name(arity)
+%
+%     upstream_types = make_upstream_types(arity)
+%
+%     constraints = [upstream_type + ': Equatable' for upstream_type in upstream_types]
+%     cs_constraints = ',\n'.join(constraints)
+%     cs_constraints = indent(cs_constraints, 8)
+%
+
+extension Publishers.${publisher_name}: Equatable
+    where
+${cs_constraints} {}
+% end
+
+extension Publishers.MergeMany: Equatable
+    where
+        Upstream: Equatable {}
