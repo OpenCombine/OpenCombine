@@ -38,11 +38,18 @@ final class CustomSubscription: Subscription, CustomStringConvertible {
 
     var onRequest: ((Subscribers.Demand) -> Void)?
     var onCancel: (() -> Void)?
+    var onDeinit: (() -> Void)?
 
     init(onRequest: ((Subscribers.Demand) -> Void)? = nil,
-         onCancel: (() -> Void)? = nil) {
+         onCancel: (() -> Void)? = nil,
+         onDeinit: (() -> Void)? = nil) {
         self.onRequest = onRequest
         self.onCancel = onCancel
+        self.onDeinit = onDeinit
+    }
+
+    deinit {
+        onDeinit?()
     }
 
     var lastRequested: Subscribers.Demand? {

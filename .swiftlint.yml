@@ -65,6 +65,10 @@ opt_in_rules:
   - vertical_whitespace_closing_braces
   - yoda_condition
 
+implicit_return:
+  included: 
+    - closure
+
 line_length:
   warning: 90
   error: 120

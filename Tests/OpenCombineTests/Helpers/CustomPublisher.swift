@@ -87,7 +87,7 @@ class CustomPublisherBase<Output, Failure: Error>: Publisher, Cancellable {
 typealias CustomConnectablePublisher = CustomConnectablePublisherBase<Int, TestingError>
 
 @available(macOS 10.15, iOS 13.0, *)
-final class CustomConnectablePublisherBase<Output: Equatable, Failure: Error>
+final class CustomConnectablePublisherBase<Output, Failure: Error>
     : CustomPublisherBase<Output, Failure>,
       ConnectablePublisher
 {
