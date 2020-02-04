@@ -344,8 +344,10 @@ extension DispatchQueue {
 #if !canImport(Combine)
 extension DispatchQueue: OpenCombine.Scheduler {
 
+    /// Options that affect the operation of the dispatch queue scheduler.
     public typealias SchedulerOptions = OCombine.SchedulerOptions
 
+    /// The scheduler time type used by the dispatch queue.
     public typealias SchedulerTimeType = OCombine.SchedulerTimeType
 
     public var minimumTolerance: OCombine.SchedulerTimeType.Stride {
