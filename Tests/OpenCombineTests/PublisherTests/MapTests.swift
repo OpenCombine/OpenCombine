@@ -221,6 +221,7 @@ final class MapTests: XCTestCase {
                            description: "Map",
                            customMirror: childrenIsEmpty,
                            playgroundDescription: "Map",
+                           subscriberIsAlsoSubscription: false,
                            { $0.map { $0 * 2 } })
     }
 

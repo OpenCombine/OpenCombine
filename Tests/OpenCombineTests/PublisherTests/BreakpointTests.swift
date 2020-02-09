@@ -168,6 +168,7 @@ final class BreakpointTests: XCTestCase {
                                ("upstream", .contains("CustomConnectablePublisherBase"))
                            ),
                            playgroundDescription: "Breakpoint",
+                           subscriberIsAlsoSubscription: false,
                            { $0.breakpointOnError() })
     }
 }

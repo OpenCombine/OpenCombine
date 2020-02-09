@@ -152,6 +152,7 @@ final class ScanTests: XCTestCase {
                                ("result", "0")
                            ),
                            playgroundDescription: "Scan",
+                           subscriberIsAlsoSubscription: false,
                            { $0.scan(0, +) })
     }
 
@@ -313,7 +314,7 @@ final class ScanTests: XCTestCase {
                            description: "TryScan",
                            customMirror: expectedChildren(
                                ("downstream", .contains("TrackingSubscriber")),
-                               ("status", .contains("awaitingSubscription")),
+                               ("status", .anything),
                                ("result", "0")
                            ),
                            playgroundDescription: "TryScan",

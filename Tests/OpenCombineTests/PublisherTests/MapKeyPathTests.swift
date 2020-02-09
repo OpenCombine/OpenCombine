@@ -126,6 +126,7 @@ final class MapKeyPathTests: XCTestCase {
                                ("keyPath", .contains("KeyPath"))
                            ),
                            playgroundDescription: "ValueForKey",
+                           subscriberIsAlsoSubscription: false,
                            { $0.map(\.doubled) })
 
         try testReflection(parentInput: Int.self,
@@ -136,6 +137,7 @@ final class MapKeyPathTests: XCTestCase {
                                ("keyPath1", .contains("KeyPath"))
                            ),
                            playgroundDescription: "ValueForKeys",
+                           subscriberIsAlsoSubscription: false,
                            { $0.map(\.doubled, \.tripled) })
 
         try testReflection(parentInput: Int.self,
@@ -147,6 +149,7 @@ final class MapKeyPathTests: XCTestCase {
                                ("keyPath2", .contains("KeyPath"))
                            ),
                            playgroundDescription: "ValueForKeys",
+                           subscriberIsAlsoSubscription: false,
                            { $0.map(\.doubled, \.tripled, \.quadripled) })
     }
 

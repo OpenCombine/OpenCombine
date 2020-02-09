@@ -208,7 +208,7 @@ final class IgnoreOutputTests: XCTestCase {
                            description: "IgnoreOutput",
                            customMirror: expectedChildren(
                                ("downstream", .contains("TrackingSubscriberBase")),
-                               ("status", .contains("awaitingSubscription"))
+                               ("status", .anything)
                            ),
                            playgroundDescription: "IgnoreOutput",
                            { $0.ignoreOutput() })

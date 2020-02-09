@@ -74,6 +74,7 @@ final class AssertNoFailureTests: XCTestCase {
                 ("prefix", "PREFIX")
             ),
             playgroundDescription: "AssertNoFailure",
+            subscriberIsAlsoSubscription: false,
             { $0.assertNoFailure("PREFIX", file: "SomeFile.swift", line: 1987) }
         )
     }

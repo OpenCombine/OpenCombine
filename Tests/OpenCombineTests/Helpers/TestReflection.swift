@@ -68,7 +68,7 @@ func reduceLikeOperatorMirror(file: StaticString = #file,
         ("downstream", .contains("TrackingSubscriberBase")),
         ("result", .anything),
         ("initial", .anything),
-        ("status", .contains("awaitingSubscription")),
+        ("status", .anything),
         file: file,
         line: line
     )
@@ -83,6 +83,7 @@ internal func testReflection<Output, Failure: Error, Operator: Publisher>(
     description expectedDescription: String?,
     customMirror customMirrorPredicate: ((Mirror) -> Bool)?,
     playgroundDescription: String?,
+    subscriberIsAlsoSubscription: Bool = true,
     _ makeOperator: (CustomConnectablePublisherBase<Output, Failure>) -> Operator
 ) throws {
     let publisher = CustomConnectablePublisherBase<Output, Failure>(subscription: nil)
@@ -124,6 +125,43 @@ internal func testReflection<Output, Failure: Error, Operator: Publisher>(
         file: file,
         line: line
     )
+
+    if subscriberIsAlsoSubscription {
+        publisher.send(subscription: CustomSubscription())
+        let subscription = try XCTUnwrap(tracking.subscriptions.first?.underlying)
+
+        XCTAssertEqual((subscription as? CustomStringConvertible)?.description,
+                       expectedDescription,
+                       file: file,
+                       line: line)
+
+        if let customMirrorPredicate = customMirrorPredicate {
+            let customMirror =
+                try XCTUnwrap((subscription as? CustomReflectable)?.customMirror,
+                              file: file,
+                              line: line)
+            XCTAssert(customMirrorPredicate(customMirror),
+                      "customMirror doesn't satisfy the predicate",
+                      file: file,
+                      line: line)
+        } else {
+            XCTAssertFalse(subscription is CustomReflectable,
+                           "subscription shouldn't conform to CustomReflectable")
+        }
+
+        XCTAssertFalse(subscription is CustomDebugStringConvertible,
+                       "subscription shouldn't conform to CustomDebugStringConvertible",
+                       file: file,
+                       line: line)
+
+        XCTAssertEqual(
+            ((subscription as? CustomPlaygroundDisplayConvertible)?
+                .playgroundDescription as? String),
+            playgroundDescription,
+            file: file,
+            line: line
+        )
+    }
 }
 
 @available(macOS 10.15, iOS 13.0, *)
@@ -162,7 +200,7 @@ internal func testSubscriptionReflection<Sut: Publisher>(
     }
 
     XCTAssertFalse(subscription is CustomDebugStringConvertible,
-                   "subscriber shouldn't conform to CustomDebugStringConvertible",
+                   "Subscription shouldn't conform to CustomDebugStringConvertible",
                    file: file,
                    line: line)
 

@@ -151,6 +151,7 @@ final class AutoconnectTests: XCTestCase {
                            description: "Autoconnect",
                            customMirror: customMirrorPredicate,
                            playgroundDescription: "Autoconnect",
+                           subscriberIsAlsoSubscription: false,
                            { $0.autoconnect() })
 
         let subscription = CustomSubscription()
