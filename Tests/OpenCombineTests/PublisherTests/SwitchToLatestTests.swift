@@ -38,22 +38,39 @@ final class SwitchToLatestTests: XCTestCase {
         XCTAssertEqual(history, [1, 2, 3, 4, 2, 3, 4, 5, 3, 4, 5, 6, 4, 5, 6, 7])
     }
 
-    func testCrashesWhenRequestedOneByOne() {
+    func testRequestOneByOne() {
         let tracking = TrackingSubscriberBase<Int, Never>(
             receiveSubscription: { $0.request(.max(1)) },
             receiveValue: { _ in .max(1) }
         )
         tracking.store(in: &cancellables)
 
-        assertCrashes {
-            (1 ..< 5)
-                .publisher
-                .map {
-                    ($0 ..< $0 + 4).publisher
-                }
-                .switchToLatest()
-                .subscribe(tracking)
-        }
+        (1 ..< 5)
+            .publisher
+            .map {
+                ($0 ..< $0 + 4).publisher
+            }
+            .switchToLatest()
+            .subscribe(tracking)
+
+        XCTAssertEqual(tracking.history, [.subscription("SwitchToLatest"),
+                                          .value(1),
+                                          .value(2),
+                                          .value(3),
+                                          .value(4),
+                                          .value(2),
+                                          .value(3),
+                                          .value(4),
+                                          .value(5),
+                                          .value(3),
+                                          .value(4),
+                                          .value(5),
+                                          .value(6),
+                                          .value(4),
+                                          .value(5),
+                                          .value(6),
+                                          .value(7),
+                                          .completion(.finished)])
     }
 
     func testSendsChildValuesFromLatestOuterPublisher() {
@@ -100,24 +117,22 @@ final class SwitchToLatestTests: XCTestCase {
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
         XCTAssertEqual(subscription1.history, [])
 
-        try XCTUnwrap(helper.downstreamSubscription).request(.none)
         try XCTUnwrap(helper.downstreamSubscription).request(.max(1)) // demand == 1
-        XCTAssertEqual(subscription1.history, [.requested(.none), .requested(.max(1))])
+        XCTAssertEqual(subscription1.history, [.requested(.max(1))])
 
         nestedPublisher1.send(completion: .finished)
 
-        try XCTUnwrap(helper.downstreamSubscription).request(.none)
         try XCTUnwrap(helper.downstreamSubscription).request(.max(41)) // demand == 42
         try XCTUnwrap(helper.downstreamSubscription).request(.max(1)) // demand == 43
 
-        XCTAssertEqual(subscription1.history, [.requested(.none), .requested(.max(1))])
+        XCTAssertEqual(subscription1.history, [.requested(.max(1))])
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
 
         let subscription2 = CustomSubscription()
         let nestedPublisher2 = CustomPublisher(subscription: subscription2)
 
         XCTAssertEqual(helper.publisher.send(nestedPublisher2), .none)
-        XCTAssertEqual(subscription1.history, [.requested(.max(0)), .requested(.max(1))])
+        XCTAssertEqual(subscription1.history, [.requested(.max(1))])
         XCTAssertEqual(subscription2.history, [.requested(.max(43))])
 
         XCTAssertEqual(nestedPublisher2.send(1), .max(5)) // demand == 42
@@ -129,12 +144,26 @@ final class SwitchToLatestTests: XCTestCase {
 
         XCTAssertEqual(helper.publisher.send(nestedPublisher3), .none)
         XCTAssertEqual(subscription2.history, [.requested(.max(43)), .cancelled])
-        XCTAssertEqual(subscription3.history, [.requested(.max(41))])
+        XCTAssertEqual(subscription3.history, [.requested(.max(51))])
 
         helper.publisher.send(completion: .finished)
 
         try XCTUnwrap(helper.downstreamSubscription).request(.max(9)) // demand == 50
-        XCTAssertEqual(subscription3.history, [.requested(.max(41))])
+        XCTAssertEqual(subscription3.history, [.requested(.max(51)),
+                                               .requested(.max(9))])
+    }
+
+    func testCrashesWhenRequestingZeroFromOuterDemand() {
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisherBase<CustomPublisher, TestingError>.self,
+            initialDemand: nil,
+            receiveValueDemand: .max(5),
+            createSut: { $0.switchToLatest() }
+        )
+
+        assertCrashes {
+            helper.downstreamSubscription?.request(.none)
+        }
     }
 
     func testCrashesWhenReceivingUnwantedValueFromNestedPublisher() {
@@ -197,6 +226,36 @@ final class SwitchToLatestTests: XCTestCase {
         XCTAssertEqual(childSubscription.history, [.requested(.max(42)), .cancelled])
     }
 
+    func testInnerFails() {
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisherBase<CustomPublisher, TestingError>.self,
+            initialDemand: .max(1),
+            receiveValueDemand: .max(1),
+            createSut: { $0.switchToLatest() }
+        )
+
+        let subscription = CustomSubscription()
+        let nestedPublisher = CustomPublisher(subscription: subscription)
+
+        XCTAssertEqual(helper.publisher.send(nestedPublisher), .none)
+
+        XCTAssertNotNil(nestedPublisher.subscriber)
+
+        XCTAssertEqual(nestedPublisher.send(1), .max(1))
+        XCTAssertEqual(nestedPublisher.send(2), .max(1))
+        nestedPublisher.send(completion: .failure(.oops))
+        nestedPublisher.send(completion: .failure(.oops))
+        nestedPublisher.send(completion: .finished)
+        XCTAssertEqual(nestedPublisher.send(-1), .none)
+
+        XCTAssertEqual(helper.tracking.history, [.subscription("SwitchToLatest"),
+                                                 .value(1),
+                                                 .value(2),
+                                                 .completion(.failure(.oops))])
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited), .cancelled])
+        XCTAssertEqual(subscription.history, [.requested(.max(1))])
+    }
+
     func testSwitchToLatestOuterReceiveSubscriptionTwice() throws {
         let subscription1 = CustomSubscription()
         let publisher =
@@ -208,7 +267,7 @@ final class SwitchToLatestTests: XCTestCase {
         tracking.store(in: &cancellables)
         publisher.switchToLatest().subscribe(tracking)
 
-        XCTAssertEqual(tracking.history, [])
+        XCTAssertEqual(tracking.history, [.subscription("SwitchToLatest")])
 
         publisher.send(subscription: subscription1)
 
@@ -252,16 +311,9 @@ final class SwitchToLatestTests: XCTestCase {
         XCTAssertEqual(subscription1.history, [])
         XCTAssertEqual(subscription2.history, [.cancelled])
 
-        try XCTUnwrap(nestedPublisher1.erasedSubscriber as? Subscription).cancel()
-
-        XCTAssertEqual(subscription1.history, [.cancelled])
-
         let subscription3 = CustomSubscription()
         nestedPublisher1.send(subscription: subscription3)
-        XCTAssertEqual(subscription3.history, [])
-
-        try XCTUnwrap(nestedPublisher1.erasedSubscriber as? Subscription).cancel()
-        XCTAssertEqual(subscription3.history, [])
+        XCTAssertEqual(subscription3.history, [.cancelled])
 
         let nestedPublisher2 = CustomPublisher(subscription: nil)
 
@@ -281,15 +333,12 @@ final class SwitchToLatestTests: XCTestCase {
         let subscription5 = CustomSubscription()
         nestedPublisher2.send(subscription: subscription5)
         XCTAssertEqual(subscription5.history, [])
-
-        try XCTUnwrap(nestedPublisher2.erasedSubscriber as? Subscription).cancel()
-        XCTAssertEqual(subscription5.history, [])
     }
 
     func testSwitchToLatestOuterReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(
             value: CustomPublisherBase<Int, Never>(subscription: CustomSubscription()),
-            expected: .history([], demand: .none),
+            expected: .history([.subscription("SwitchToLatest")], demand: .none),
             { $0.switchToLatest() }
         )
     }
@@ -314,7 +363,8 @@ final class SwitchToLatestTests: XCTestCase {
     func testSwitchToLatestOuterReceiveCompletionBeforeSubscription() {
         testReceiveCompletionBeforeSubscription(
             inputType: CustomPublisherBase<Int, Never>.self,
-            expected: .history([]),
+            expected: .history([.subscription("SwitchToLatest"),
+                                .completion(.finished)]),
             { $0.switchToLatest() }
         )
     }
@@ -331,8 +381,54 @@ final class SwitchToLatestTests: XCTestCase {
 
         let nestedPublisher = CustomPublisher(subscription: nil)
         XCTAssertEqual(publisher.send(nestedPublisher), .none)
-        nestedPublisher.send(completion: .finished)
-        XCTAssertEqual(tracking.history, [.subscription("SwitchToLatest")])
+
+        assertCrashes {
+            nestedPublisher.send(completion: .finished)
+        }
+    }
+
+    func testSwitchToLatestOuterReceiveCompletionWhileWaitingForInnerSubscription() {
+
+        let completions: [Subscribers.Completion<TestingError>] =
+            [.finished, .failure(.oops)]
+
+        for completion in completions {
+            let publisher = CustomPublisherBase<CustomPublisher, TestingError>(
+                subscription: CustomSubscription()
+            )
+            let tracking = TrackingSubscriber(
+                receiveSubscription: { $0.request(.unlimited) },
+                receiveValue: { _ in .max(42) }
+            )
+            tracking.store(in: &cancellables)
+            publisher.switchToLatest().subscribe(tracking)
+            XCTAssertEqual(tracking.history, [.subscription("SwitchToLatest")])
+
+            let nestedPublisher = CustomPublisher(subscription: nil)
+            XCTAssertEqual(publisher.send(nestedPublisher), .none)
+
+            publisher.send(completion: completion)
+
+            switch completion {
+            case .finished:
+                XCTAssertEqual(tracking.history, [.subscription("SwitchToLatest")])
+            case .failure:
+                XCTAssertEqual(tracking.history, [.subscription("SwitchToLatest"),
+                                                  .completion(.failure(.oops))])
+            }
+
+            let subscription = CustomSubscription()
+            nestedPublisher.send(subscription: subscription)
+
+            switch completion {
+            case .finished:
+                XCTAssertEqual(tracking.history, [.subscription("SwitchToLatest")])
+            case .failure:
+                XCTAssertEqual(tracking.history, [.subscription("SwitchToLatest"),
+                                                  .completion(.failure(.oops))])
+            }
+            XCTAssertEqual(subscription.history, [.requested(.unlimited)])
+        }
     }
 
     func testSwitchToLatestInnerReceiveFailureBeforeSubscription() {
@@ -347,9 +443,10 @@ final class SwitchToLatestTests: XCTestCase {
 
         let nestedPublisher = CustomPublisher(subscription: nil)
         XCTAssertEqual(publisher.send(nestedPublisher), .none)
-        nestedPublisher.send(completion: .failure(.oops))
-        XCTAssertEqual(tracking.history, [.subscription("SwitchToLatest"),
-                                          .completion(.failure(.oops))])
+
+        assertCrashes {
+            nestedPublisher.send(completion: .failure(.oops))
+        }
     }
 
     func testOuterIgnoresInputAfterCancelling() throws {
@@ -423,7 +520,7 @@ final class SwitchToLatestTests: XCTestCase {
         XCTAssertEqual(helper.tracking.history, [.subscription("SwitchToLatest")])
     }
 
-    func testInnerIgnoresInputAfterOuterFinishes() throws {
+    func testInnerReceivesInputAfterOuterFinishes() throws {
         let helper = OperatorTestHelper(
             publisherType: CustomPublisherBase<CustomPublisher, TestingError>.self,
             initialDemand: .max(1),
@@ -446,8 +543,9 @@ final class SwitchToLatestTests: XCTestCase {
         XCTAssertEqual(nestedSubscription.history, [.requested(.max(1))])
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
 
-        XCTAssertEqual(nestedPublisher.send(1), .none)
-        XCTAssertEqual(helper.tracking.history, [.subscription("SwitchToLatest")])
+        XCTAssertEqual(nestedPublisher.send(1), .max(100))
+        XCTAssertEqual(helper.tracking.history, [.subscription("SwitchToLatest"),
+                                                 .value(1)])
     }
 
     func testOuterIgnoresCompletionAfterCancelling() throws {
@@ -484,7 +582,11 @@ final class SwitchToLatestTests: XCTestCase {
         helper.publisher.send(completion: .failure(.oops))
         helper.publisher.send(completion: .finished)
         helper.publisher.send(completion: .failure(.oops))
-        XCTAssertEqual(helper.tracking.history, [.subscription("SwitchToLatest")])
+        XCTAssertEqual(helper.tracking.history, [.subscription("SwitchToLatest"),
+                                                 .completion(.finished),
+                                                 .completion(.failure(.oops)),
+                                                 .completion(.finished),
+                                                 .completion(.failure(.oops))])
     }
 
     func testInnerIgnoresCompletionAfterCancelling() throws {
@@ -535,13 +637,14 @@ final class SwitchToLatestTests: XCTestCase {
         helper.publisher.send(completion: .failure(.oops))
 
         XCTAssertEqual(nestedSubscription.history, [.requested(.max(1)), .cancelled])
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited), .cancelled])
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
 
-        XCTAssertEqual(nestedPublisher.send(1), .none)
+        XCTAssertEqual(nestedPublisher.send(1), .max(100))
         nestedPublisher.send(completion: .finished)
         nestedPublisher.send(completion: .failure(.oops))
         XCTAssertEqual(helper.tracking.history, [.subscription("SwitchToLatest"),
-                                                 .completion(.failure(.oops))])
+                                                 .completion(.failure(.oops)),
+                                                 .value(1)])
     }
 
     func testInnerIgnoresEventsAfterOuterFinishes() throws {
@@ -567,10 +670,12 @@ final class SwitchToLatestTests: XCTestCase {
         XCTAssertEqual(nestedSubscription.history, [.requested(.max(1))])
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
 
-        XCTAssertEqual(nestedPublisher.send(1), .none)
+        XCTAssertEqual(nestedPublisher.send(1), .max(100))
         nestedPublisher.send(completion: .finished)
         nestedPublisher.send(completion: .failure(.oops))
-        XCTAssertEqual(helper.tracking.history, [.subscription("SwitchToLatest")])
+        XCTAssertEqual(helper.tracking.history, [.subscription("SwitchToLatest"),
+                                                 .value(1),
+                                                 .completion(.finished)])
     }
 
     func testOuterFinishesThenInnerFinishes() {
@@ -596,7 +701,8 @@ final class SwitchToLatestTests: XCTestCase {
 
         nestedPublisher.send(completion: .finished)
 
-        XCTAssertEqual(helper.tracking.history, [.subscription("SwitchToLatest")])
+        XCTAssertEqual(helper.tracking.history, [.subscription("SwitchToLatest"),
+                                                 .completion(.finished)])
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
         XCTAssertEqual(nestedSubscription.history, [.requested(.max(1))])
     }
@@ -632,11 +738,11 @@ final class SwitchToLatestTests: XCTestCase {
 
     func testSwitchToLatestLifecycle() throws {
         try testLifecycle(sendValue: CustomPublisher(subscription: CustomSubscription()),
-                          cancellingSubscriptionReleasesSubscriber: true,
+                          cancellingSubscriptionReleasesSubscriber: false,
                           { $0.switchToLatest() })
     }
 
-    func testSwitchToLatestReflection() {
+    func testSwitchToLatestReflection() throws {
         let publisher = CustomPublisherBase<CustomPublisher, TestingError>(
             subscription: CustomSubscription()
         )
@@ -646,18 +752,19 @@ final class SwitchToLatestTests: XCTestCase {
         XCTAssert(publisher.erasedSubscriber is Subscription)
 
         guard let outer = publisher.erasedSubscriber,
-              let routingSubscription = tracking.subscriptions.first?.underlying else {
+              let downstreamSubscription = tracking.subscriptions.first?.underlying else {
             XCTFail("Missing subscriber/subscription")
             return
         }
 
-        XCTAssert(type(of: outer) != type(of: routingSubscription),
-                  "outer and routingSubscription must be of different types")
+        XCTAssert(type(of: outer) == type(of: downstreamSubscription))
 
-        XCTAssertEqual(routingSubscription.combineIdentifier,
-                       (outer as? Subscription)?.combineIdentifier)
+        let outerCombineID = try XCTUnwrap((outer as? Subscription)?.combineIdentifier)
+
+        XCTAssertEqual(downstreamSubscription.combineIdentifier, outerCombineID)
 
         func testReflections(_ subject: Any,
+                             hasChildren: Bool,
                              file: StaticString = #file,
                              line: UInt = #line) {
             XCTAssertEqual((subject as? CustomStringConvertible)?.description,
@@ -675,9 +782,16 @@ final class SwitchToLatestTests: XCTestCase {
                 line: line
             )
             if let mirror = (subject as? CustomReflectable)?.customMirror {
-                XCTAssert(childrenIsEmpty(mirror),
-                          file: file,
-                          line: line)
+                if hasChildren {
+                    XCTAssert(expectedChildren(
+                                  ("parentSubscription",
+                                   .matches(String(describing: outerCombineID))),
+                                  file: file,
+                                  line: line
+                              )(mirror),
+                              file: file,
+                              line: line)
+                }
             } else {
                 XCTFail("subject should conform to CustomReflectable",
                         file: file,
@@ -685,19 +799,23 @@ final class SwitchToLatestTests: XCTestCase {
             }
         }
 
-        testReflections(outer)
-        testReflections(routingSubscription)
+        testReflections(outer, hasChildren: false)
+        testReflections(downstreamSubscription, hasChildren: false)
 
         let nestedPublisher = CustomPublisher(subscription: CustomSubscription())
         _ = publisher.send(nestedPublisher)
-        guard let innerLatest = nestedPublisher.erasedSubscriber else {
-            XCTFail("Missing InnerLatest")
+
+        guard let side = nestedPublisher
+            .erasedSubscriber as? CustomCombineIdentifierConvertible else {
+
+            XCTFail("Missing Side")
             return
         }
 
-        XCTAssert(innerLatest is Subscription)
-        XCTAssert(type(of: innerLatest) != type(of: outer))
-        XCTAssert(type(of: innerLatest) != type(of: routingSubscription))
-        testReflections(innerLatest)
+        XCTAssertFalse(side is Subscription)
+        XCTAssert(type(of: side) != type(of: outer))
+        XCTAssert(type(of: side) != type(of: downstreamSubscription))
+        XCTAssertNotEqual(side.combineIdentifier, outerCombineID)
+        testReflections(side, hasChildren: true)
     }
 }

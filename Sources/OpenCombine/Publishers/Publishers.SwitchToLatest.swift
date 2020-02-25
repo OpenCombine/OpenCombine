@@ -55,7 +55,9 @@ extension Publishers {
         public func receive<Downstream: Subscriber>(subscriber: Downstream)
             where Downstream.Input == Output, Downstream.Failure == Failure
         {
-            upstream.subscribe(Outer(downstream: subscriber))
+            let outer = Outer(downstream: subscriber)
+            subscriber.receive(subscription: outer)
+            upstream.subscribe(outer)
         }
     }
 }
@@ -74,115 +76,123 @@ extension Publishers.SwitchToLatest {
 
         typealias Failure = Upstream.Failure
 
-        private let _lock = UnfairLock.allocate()
+        private let downstream: Downstream
+        private var outerSubscription: Subscription?
+        private var currentInnerSubscription: Subscription?
+        private var currentInnerIndex: UInt64 = 0
+        private var nextInnerIndex: UInt64 = 1
+        private let lock = UnfairLock.allocate()
         private let downstreamLock = UnfairRecursiveLock.allocate()
-        private var _actualDownstream: Downstream?
-        private var _upstreamSubscription: Subscription?
-        private var _currentGenerationID: UInt64 = 0
-        private var _latest: InnerLatest?
-        private var _demand = Subscribers.Demand.none
-        private var _outerDone = false
-        private var _innerDone = false
+        private var cancelled = false
+        private var finished = false
+        private var sentCompletion = false
+        private var awaitingInnerSubscription = false
+        private var downstreamDemand = Subscribers.Demand.none
 
         init(downstream: Downstream) {
-            _actualDownstream = downstream
+            self.downstream = downstream
         }
 
         deinit {
-            _lock.deallocate()
+            lock.deallocate()
             downstreamLock.deallocate()
         }
 
         func receive(subscription: Subscription) {
-            _lock.lock()
-            guard _upstreamSubscription == nil, let downstream = _actualDownstream else {
-                _lock.unlock()
+            lock.lock()
+            guard outerSubscription == nil && !cancelled else {
+                lock.unlock()
                 subscription.cancel()
                 return
             }
-            _upstreamSubscription = subscription
-            _lock.unlock()
-            downstreamLock.lock()
-            downstream.receive(subscription: RoutingSubscription(parent: self))
-            downstreamLock.unlock()
+            outerSubscription = subscription
+            lock.unlock()
             subscription.request(.unlimited)
         }
 
         func receive(_ input: Input) -> Subscribers.Demand {
-            _lock.lock()
-            if _actualDownstream == nil {
-                _lock.unlock()
+            lock.lock()
+            if cancelled || finished {
+                lock.unlock()
                 return .none
             }
-            let previous = _latest
-            _currentGenerationID += 1
-            let innerLatest = InnerLatest(parent: self, identifier: _currentGenerationID)
-            _latest = innerLatest
-            _innerDone = false
-            _lock.unlock()
-            previous?.cancel()
-            input.subscribe(innerLatest)
+
+            if let currentInnerSubscription = self.currentInnerSubscription  {
+                self.currentInnerSubscription = nil
+                lock.unlock()
+                currentInnerSubscription.cancel()
+                lock.lock()
+            }
+
+            let index = nextInnerIndex
+            currentInnerIndex = index
+            nextInnerIndex += 1
+            awaitingInnerSubscription = true
+            lock.unlock()
+            input.subscribe(Side(inner: self, index: index))
             return .none
         }
 
         func receive(completion: Subscribers.Completion<Failure>) {
-            _lock.lock()
-            guard let downstream = _actualDownstream,
-                  let subscription = _upstreamSubscription else {
-                _lock.unlock()
+            lock.lock()
+            outerSubscription = nil
+            finished = true
+
+            if cancelled {
+                lock.unlock()
                 return
             }
-            let latest = _latest
-            _latest = nil
-            _actualDownstream = nil
-            _upstreamSubscription = nil
 
-            let error: Bool
-            let bothDone: Bool
             switch completion {
             case .finished:
-                error = false
-                _outerDone = true
-                bothDone = _innerDone
+                if awaitingInnerSubscription {
+                    lock.unlock()
+                    return
+                }
+                if currentInnerSubscription == nil {
+                    sentCompletion = true
+                    lock.unlock()
+                    downstreamLock.lock()
+                    downstream.receive(completion: completion)
+                    downstreamLock.unlock()
+                } else {
+                    lock.unlock()
+                }
             case .failure:
-                error = true
-                bothDone = false
+                let currentInnerSubscription = self.currentInnerSubscription
+                self.currentInnerSubscription = nil
+                sentCompletion = true
+                lock.unlock()
+                currentInnerSubscription?.cancel()
+                downstreamLock.lock()
+                downstream.receive(completion: completion)
+                downstreamLock.unlock()
             }
-            _lock.unlock()
-            terminate(error: error,
-                      bothDone: bothDone,
-                      upstreamSubscription: subscription,
-                      downstream: downstream,
-                      latest: latest,
-                      event: completion)
         }
 
         func request(_ demand: Subscribers.Demand) {
-            _lock.lock()
-            if _actualDownstream == nil {
-                _lock.unlock()
-                return
+            demand.assertNonZero()
+            lock.lock()
+            downstreamDemand += demand
+            if let currentInnerSubscription = self.currentInnerSubscription {
+                lock.unlock()
+                currentInnerSubscription.request(demand)
+            } else {
+                lock.unlock()
             }
-            let latest = _latest
-            _demand += demand
-            _lock.unlock()
-            latest?.request(demand)
         }
 
         func cancel() {
-            _lock.lock()
-            if _actualDownstream == nil {
-                _lock.unlock()
-                return
-            }
-            let subscription = _upstreamSubscription
-            let latest = _latest
-            _actualDownstream = nil
-            _upstreamSubscription = nil
-            _lock.unlock()
+            lock.lock()
+            cancelled = true
+            let currentInnerSubscription = self.currentInnerSubscription
+            self.currentInnerSubscription = nil
+            let outerSubscription = self.outerSubscription
+            self.outerSubscription = nil
+            lock.unlock()
 
-            latest?.cancel()
-            subscription?.cancel()
+            currentInnerSubscription?.cancel()
+            outerSubscription?.cancel()
         }
 
         var description: String { return "SwitchToLatest" }
@@ -193,93 +203,92 @@ extension Publishers.SwitchToLatest {
 
         var playgroundDescription: Any { return description }
 
-        private func innerReceive(subscription: Subscription) {
-            _lock.lock()
-            let demand = _demand
-            if demand > 0 {
-                _lock.unlock()
-                subscription.request(demand)
-            } else {
-                _lock.unlock()
+        private func receiveInner(subscription: Subscription, _ index: UInt64) {
+            lock.lock()
+            guard currentInnerIndex == index &&
+                  !cancelled &&
+                  currentInnerSubscription == nil else {
+                lock.unlock()
+                subscription.cancel()
+                return
+            }
+
+            currentInnerSubscription = subscription
+            awaitingInnerSubscription = false
+            let downstreamDemand = self.downstreamDemand
+            lock.unlock()
+            if downstreamDemand > 0 {
+                subscription.request(downstreamDemand)
             }
         }
 
-        private func innerReceive(_ input: NestedPublisher.Output) -> Subscribers.Demand {
-            _lock.lock()
-            guard let downstream = _actualDownstream,
-                  _latest!._identifier == _currentGenerationID else {
-                _lock.unlock()
+        private func receiveInner(_ input: NestedPublisher.Output,
+                                  _ index: UInt64) -> Subscribers.Demand {
+            lock.lock()
+            guard currentInnerIndex == index && !cancelled else {
+                lock.unlock()
                 return .none
             }
 
             // This will crash if we don't have any demand yet.
             // Combine crashes here too.
-            _demand -= 1
+            downstreamDemand -= 1
 
-            _lock.unlock()
+            lock.unlock()
             downstreamLock.lock()
             let newDemand = downstream.receive(input)
             downstreamLock.unlock()
+            if newDemand > 0 {
+                lock.lock()
+                downstreamDemand += newDemand
+                lock.unlock()
+            }
+
             return newDemand
         }
 
-        private func innerReceive(completion: Subscribers.Completion<Failure>) {
-            _lock.lock()
-            guard let downstream = _actualDownstream,
-                  let subscription = _upstreamSubscription,
-                  let latest = _latest,
-                  latest._identifier == _currentGenerationID else {
-                _lock.unlock()
+        private func receiveInner(completion: Subscribers.Completion<Failure>,
+                                  _ index: UInt64) {
+            lock.lock()
+            guard currentInnerIndex == index && !cancelled else {
+                lock.unlock()
                 return
             }
-
-            let error: Bool
-            let bothDone: Bool
+            precondition(!awaitingInnerSubscription, "Unexpected completion")
+            currentInnerSubscription = nil
             switch completion {
             case .finished:
-                error = false
-                _innerDone = true
-                bothDone = _outerDone
+                if sentCompletion || !finished {
+                    lock.unlock()
+                    return
+                }
+                sentCompletion = true
+                lock.unlock()
+                downstreamLock.lock()
+                downstream.receive(completion: completion)
+                downstreamLock.unlock()
             case .failure:
-                error = true
-                bothDone = false
+                if sentCompletion {
+                    lock.unlock()
+                    return
+                }
+                cancelled = true
+                let outerSubscription = self.outerSubscription
+                self.outerSubscription = nil
+                sentCompletion = true
+                lock.unlock()
+                outerSubscription?.cancel()
+                downstreamLock.lock()
+                downstream.receive(completion: completion)
+                downstreamLock.unlock()
             }
-            _lock.unlock()
-            terminate(error: error,
-                      bothDone: bothDone,
-                      upstreamSubscription: subscription,
-                      downstream: downstream,
-                      latest: latest,
-                      event: completion)
-        }
-
-        private func terminate(error: Bool,
-                               bothDone: Bool,
-                               upstreamSubscription: Subscription,
-                               downstream: Downstream,
-                               latest: InnerLatest?,
-                               event: Subscribers.Completion<Failure>) {
-
-            guard error || bothDone else {
-                return
-            }
-
-            if error {
-                upstreamSubscription.cancel()
-                latest?.cancel()
-            }
-
-            downstreamLock.lock()
-            downstream.receive(completion: event)
-            downstreamLock.unlock()
         }
     }
 }
 
 extension Publishers.SwitchToLatest.Outer {
-    private final class InnerLatest
+    private struct Side
         : Subscriber,
-          Subscription,
           CustomStringConvertible,
           CustomReflectable,
           CustomPlaygroundDisplayConvertible
@@ -288,125 +297,38 @@ extension Publishers.SwitchToLatest.Outer {
 
         typealias Failure = NestedPublisher.Failure
 
-        typealias Parent =
+        typealias Outer =
             Publishers.SwitchToLatest<NestedPublisher, Upstream>.Outer<Downstream>
 
-        private let _lock = UnfairLock.allocate()
-        private var _parent: Parent?
-        fileprivate let _identifier: UInt64
-        private var _innerSubscription: Subscription?
+        private let index: UInt64
+        private let outer: Outer
 
-        init(parent: Parent, identifier: UInt64) {
-            _parent = parent
-            _identifier = identifier
-        }
+        let combineIdentifier = CombineIdentifier()
 
-        deinit {
-            _lock.deallocate()
+        init(inner: Outer, index: UInt64) {
+            self.index = index
+            self.outer = inner
         }
 
         func receive(subscription: Subscription) {
-            _lock.lock()
-            guard let parent = _parent else {
-                _lock.unlock()
-                return
-            }
-            if _innerSubscription == nil {
-                _innerSubscription = subscription
-                _lock.unlock()
-                parent.innerReceive(subscription: subscription)
-            } else {
-                _lock.unlock()
-                subscription.cancel()
-            }
+            outer.receiveInner(subscription: subscription, index)
         }
 
         func receive(_ input: Input) -> Subscribers.Demand {
-            _lock.lock()
-            guard let parent = _parent else {
-                _lock.unlock()
-                return .none
-            }
-            _lock.unlock()
-            return parent.innerReceive(input)
+            return outer.receiveInner(input, index)
         }
 
         func receive(completion: Subscribers.Completion<Failure>) {
-            _lock.lock()
-            guard let parent = _parent else {
-                _lock.unlock()
-                return
-            }
-            _parent = nil
-            _innerSubscription = nil
-            _lock.unlock()
-            return parent.innerReceive(completion: completion)
-        }
-
-        func request(_ demand: Subscribers.Demand) {
-            _lock.lock()
-            guard _parent != nil, let subscription = _innerSubscription else {
-                _lock.unlock()
-                return
-            }
-            _lock.unlock()
-            subscription.request(demand)
-        }
-
-        func cancel() {
-            _lock.lock()
-            guard _parent != nil, let subscription = _innerSubscription else {
-                _lock.unlock()
-                return
-            }
-            _parent = nil
-            _innerSubscription = nil
-            _lock.unlock()
-            subscription.cancel()
+            outer.receiveInner(completion: completion, index)
         }
 
         var description: String { return "SwitchToLatest" }
 
         var customMirror: Mirror {
-            return Mirror(self, children: EmptyCollection())
-        }
-
-        var playgroundDescription: Any { return description }
-    }
-}
-
-extension Publishers.SwitchToLatest.Outer {
-    private struct RoutingSubscription
-        : Subscription,
-          CustomStringConvertible,
-          CustomReflectable,
-          CustomPlaygroundDisplayConvertible
-    {
-        typealias Parent =
-            Publishers.SwitchToLatest<NestedPublisher, Upstream>.Outer<Downstream>
-
-        private let _parent: Parent
-
-        init(parent: Parent) {
-            _parent = parent
-        }
-
-        var combineIdentifier: CombineIdentifier {
-            return _parent.combineIdentifier
-        }
-
-        func request(_ demand: Subscribers.Demand) {
-            _parent.request(demand)
-        }
-
-        func cancel() {
-            _parent.cancel()
-        }
-
-        var description: String { return "SwitchToLatest" }
-
-        var customMirror: Mirror {
-            return Mirror(self, children: EmptyCollection())
+            let children = CollectionOfOne<Mirror.Child>(
+                ("parentSubscription", outer.combineIdentifier)
+            )
+            return Mirror(self, children: children)
         }
 
         var playgroundDescription: Any { return description }

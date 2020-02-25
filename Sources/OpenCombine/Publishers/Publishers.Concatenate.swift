@@ -110,8 +110,8 @@ extension Publishers {
             where Suffix.Failure == Downstream.Failure, Suffix.Output == Downstream.Input
         {
             let inner = Inner(downstream: subscriber, suffix: suffix)
-            prefix.subscribe(inner)
             subscriber.receive(subscription: inner)
+            prefix.subscribe(inner)
         }
     }
 }

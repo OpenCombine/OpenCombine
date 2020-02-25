@@ -18,8 +18,7 @@
 @propertyWrapper
 public struct Published<Value> {
 
-    /// Initialize the storage of the `Published` property as well as the corresponding
-    /// `Publisher`.
+    @inlinable // trivially forwarding
     public init(initialValue: Value) {
         self.init(wrappedValue: initialValue)
     }

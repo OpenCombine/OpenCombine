@@ -167,10 +167,10 @@ final class DropUntilOutputTests: XCTestCase {
         let dropUntilOutput = publisher.drop(untilOutputFrom: otherPublisher)
         let tracking = TrackingSubscriber(
             receiveSubscription: { _ in
-                XCTAssertNotNil(publisher.subscriber)
-                XCTAssertNotNil(otherPublisher.subscriber)
+                XCTAssertNil(publisher.subscriber)
+                XCTAssertNil(otherPublisher.subscriber)
                 XCTAssertEqual(subscription.history, [])
-                XCTAssertEqual(otherSubscription.history, [.requested(.max(1))])
+                XCTAssertEqual(otherSubscription.history, [])
             }
         )
 
@@ -220,15 +220,15 @@ final class DropUntilOutputTests: XCTestCase {
 
         dropUntilOutput.subscribe(tracking)
 
-        XCTAssertEqual(tracking.history, [.completion(.finished),
-                                          .subscription("DropUntilOutput")])
+        XCTAssertEqual(tracking.history, [.subscription("DropUntilOutput"),
+                                          .completion(.finished)])
 
         let subscription = CustomSubscription()
         try XCTUnwrap(publisher.subscriber).receive(subscription: subscription)
 
         XCTAssertEqual(subscription.history, [.requested(.max(14))])
-        XCTAssertEqual(tracking.history, [.completion(.finished),
-                                          .subscription("DropUntilOutput")])
+        XCTAssertEqual(tracking.history, [.subscription("DropUntilOutput"),
+                                          .completion(.finished)])
     }
 
     func testReusableOtherSubscriber() throws {
@@ -285,7 +285,7 @@ final class DropUntilOutputTests: XCTestCase {
     func testDropUntilOutputOtherReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(
             value: 42,
-            expected: .history([.completion(.finished), .subscription("DropUntilOutput")],
+            expected: .history([.subscription("DropUntilOutput"), .completion(.finished)],
                                demand: .none),
             { Empty<Int, Never>().drop(untilOutputFrom: $0) }
         )
@@ -294,8 +294,8 @@ final class DropUntilOutputTests: XCTestCase {
     func testDropUntilOutputReceiveCompletionBeforeSubscription() {
         testReceiveCompletionBeforeSubscription(
             inputType: Int.self,
-            expected: .history([.completion(.finished),
-                                .subscription("DropUntilOutput"),
+            expected: .history([.subscription("DropUntilOutput"),
+                                .completion(.finished),
                                 .completion(.finished)]),
             { $0.drop(untilOutputFrom: Empty<Int, Never>()) }
         )
@@ -304,8 +304,8 @@ final class DropUntilOutputTests: XCTestCase {
     func testDropUntilOutputOtherReceiveCompletionBeforeSubscription() {
         testReceiveCompletionBeforeSubscription(
             inputType: Int.self,
-            expected: .history([.completion(.finished),
-                                .subscription("DropUntilOutput"),
+            expected: .history([.subscription("DropUntilOutput"),
+                                .completion(.finished),
                                 .completion(.finished)]),
             { Empty<Int, Never>().drop(untilOutputFrom: $0) }
         )
