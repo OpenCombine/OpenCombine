@@ -196,7 +196,7 @@ final class ConcatenateTests: XCTestCase {
         var didSubscribe = false
 
         publisher.didSubscribe = { _ in
-            XCTAssertEqual(tracking.history, [])
+            XCTAssertEqual(tracking.history, [.subscription("Concatenate")])
             didSubscribe = true
         }
 

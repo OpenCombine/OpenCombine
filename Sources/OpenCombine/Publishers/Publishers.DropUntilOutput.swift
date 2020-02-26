@@ -65,9 +65,9 @@ extension Publishers {
                   Other.Failure == Downstream.Failure
         {
             let inner = Inner(downstream: subscriber)
+            subscriber.receive(subscription: inner)
             other.subscribe(Inner.OtherSubscriber(inner: inner))
             upstream.subscribe(inner)
-            subscriber.receive(subscription: inner)
         }
     }
 }

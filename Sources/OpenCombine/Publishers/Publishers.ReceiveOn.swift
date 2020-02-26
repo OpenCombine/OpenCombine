@@ -129,8 +129,8 @@ extension Publishers.ReceiveOn {
                 return .none
             }
             lock.unlock()
-            receiveOn.scheduler.schedule(options: receiveOn.options) { [weak self] in
-                self?.scheduledReceive(input, downstream: downstream)
+            receiveOn.scheduler.schedule(options: receiveOn.options) {
+                self.scheduledReceive(input, downstream: downstream)
             }
             return .none
         }
@@ -159,8 +159,8 @@ extension Publishers.ReceiveOn {
             }
             state = .terminal
             lock.unlock()
-            receiveOn.scheduler.schedule(options: receiveOn.options) { [weak self] in
-                self?.scheduledReceive(completion: completion, downstream: downstream)
+            receiveOn.scheduler.schedule(options: receiveOn.options) {
+                self.scheduledReceive(completion: completion, downstream: downstream)
             }
         }
 

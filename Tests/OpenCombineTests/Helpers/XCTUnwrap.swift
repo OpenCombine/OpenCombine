@@ -7,7 +7,9 @@
 
 import XCTest
 
-// FIXME: XCTUnwrap is unavailable in Swift Package Manager yet.
+// XCTUnwrap is not available when using Swift Package Manager.
+// This has been fixed in Swift 5.2, but we want to maintain compatibility.
+#if swift(<5.2)
 
 private struct UnwrappingFailure: Error, LocalizedError {
 
@@ -52,3 +54,4 @@ public func XCTUnwrap<Result>(_ expression: @autoclosure () throws -> Result?,
         throw error
     }
 }
+#endif

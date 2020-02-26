@@ -256,7 +256,7 @@ final class ReceiveOnTests: XCTestCase {
         helper.publisher.send(completion: .finished)
     }
 
-    func testWeakCaptureWhenSchedulingValue() {
+    func testStrongCaptureWhenSchedulingValue() {
         let scheduler = VirtualTimeScheduler()
         var value: Int?
         var subscriberReleased = false
@@ -276,11 +276,11 @@ final class ReceiveOnTests: XCTestCase {
         }
         XCTAssertFalse(subscriberReleased)
         scheduler.executeScheduledActions()
-        XCTAssertNil(value)
+        XCTAssertEqual(value, 42)
         XCTAssertTrue(subscriberReleased)
     }
 
-    func testWeakCaptureWhenSchedulingCompletion() {
+    func testStrongCaptureWhenSchedulingCompletion() {
         let scheduler = VirtualTimeScheduler()
         var completion: Subscribers.Completion<TestingError>?
         var subscriberReleased = false
@@ -300,7 +300,7 @@ final class ReceiveOnTests: XCTestCase {
         }
         XCTAssertFalse(subscriberReleased)
         scheduler.executeScheduledActions()
-        XCTAssertNil(completion)
+        XCTAssertEqual(completion, .finished)
         XCTAssertTrue(subscriberReleased)
     }
 

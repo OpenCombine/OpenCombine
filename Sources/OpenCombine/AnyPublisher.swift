@@ -11,6 +11,7 @@ extension Publisher {
     ///
     /// Use `eraseToAnyPublisher()` to expose an instance of `AnyPublisher` to
     /// the downstream subscriber, rather than this publisher’s actual type.
+    @inlinable
     public func eraseToAnyPublisher() -> AnyPublisher<Output, Failure> {
         return .init(self)
     }

@@ -247,14 +247,24 @@ extension Publishers.Buffer {
             var upstreamDemand = Subscribers.Demand.none
             lock.lock()
             while true {
-                guard case let .subscribed(buffer, downstream, _) = state,
-                      downstreamDemand > 0 else {
+                guard case let .subscribed(buffer, downstream, _) = state else {
                     lock.unlock()
                     return upstreamDemand
                 }
 
-                if values.isEmpty {
-                    if let completion = terminal {
+                if downstreamDemand > 0 {
+                    if values.isEmpty {
+                        if let completion = terminal {
+                            state = .terminal
+                            lock.unlock()
+                            downstream.receive(completion: completion)
+                        } else {
+                            lock.unlock()
+                        }
+                        return upstreamDemand
+                    }
+                } else {
+                    if let completion = terminal, case .failure = completion {
                         state = .terminal
                         lock.unlock()
                         downstream.receive(completion: completion)
