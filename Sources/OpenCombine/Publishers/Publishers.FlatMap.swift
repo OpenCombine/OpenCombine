@@ -78,9 +78,8 @@ extension Publishers.FlatMap {
         /// acquired.
         private var outerSubscription: Subscription?
 
-        // Must be recursive lock. Probably a bug in Combine.
         /// The lock for requesting from `outerSubscription`.
-        private let outerLock = UnfairLock.allocate()
+        private let outerLock = UnfairRecursiveLock.allocate()
 
         /// The lock for modifying the state. All mutable state here should be
         /// read and modified with this lock acquired.
