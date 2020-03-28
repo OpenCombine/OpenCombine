@@ -447,10 +447,7 @@ final class FlatMapTests: XCTestCase {
         let childSubscription = CustomSubscription()
         let child = CustomPublisher(subscription: childSubscription)
 
-        // If Apple changes the implementation to use recursive lock,
-        // we must make sure no stack overflow occurs here,
-        // which will also be detected as a crash, which is not what we want.
-        var recursionDepth = 10
+        var recursionDepth = 5
         helper.subscription.onRequest = { _ in
             if recursionDepth <= 0 {
                 return
@@ -461,9 +458,17 @@ final class FlatMapTests: XCTestCase {
 
         XCTAssertEqual(helper.publisher.send(child), .none)
 
-        assertCrashes {
-            child.send(completion: .finished)
-        }
+        child.send(completion: .finished)
+
+        XCTAssertEqual(helper.tracking.history, [.subscription("FlatMap")])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(1)),
+                                                     .requested(.max(1)),
+                                                     .requested(.max(1)),
+                                                     .requested(.max(1)),
+                                                     .requested(.max(1)),
+                                                     .requested(.max(1)),
+                                                     .requested(.max(1))])
+        XCTAssertEqual(childSubscription.history, [.requested(.max(1))])
     }
 
     func testDownstreamLockReentrance() throws {

@@ -134,15 +134,17 @@ final class ShareTests: XCTestCase {
     }
 
     func testShareReceiveValueBeforeSubscription() {
-        testReceiveValueBeforeSubscription(value: 0,
-                                           expected: .crash,
-                                           { $0.share() })
+        testReceiveValueBeforeSubscription(
+            value: 0,
+            expected: .history([.subscription("Multicast")], demand: .none),
+            { $0.share() }
+        )
     }
 
     func testShareCompletionBeforeSubscription() {
         testReceiveCompletionBeforeSubscription(
             inputType: Int.self,
-            expected: .crash,
+            expected: .history([.subscription("Multicast")]),
             { $0.share() }
         )
     }
