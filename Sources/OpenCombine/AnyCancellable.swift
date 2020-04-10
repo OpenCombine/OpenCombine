@@ -57,7 +57,7 @@ extension AnyCancellable {
 
     /// Stores this AnyCancellable in the specified set.
     /// Parameters:
-    ///    - collection: The set to store this AnyCancellable.
+    ///    - set: The set to store this AnyCancellable.
     public func store(in set: inout Set<AnyCancellable>) {
         set.insert(self)
     }
