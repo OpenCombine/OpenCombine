@@ -225,11 +225,8 @@ extension Timer {
         private lazy var timer: Timer? = {
           let t = Timer(
             timeInterval: parent?.interval ?? 0,
-            target: self,
-            selector: #selector(timerFired),
-            userInfo: nil,
             repeats: true
-          )
+          ) { [weak self] _ in self?.timerFired() }
 
           t.tolerance = parent?.tolerance ?? 0
 
