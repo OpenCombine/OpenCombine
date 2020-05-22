@@ -146,8 +146,8 @@ extension Timer {
 
         func addSubscriber<Sub: Subscriber>(_ sub: Sub)
           where
-          S.Failure == Failure,
-          S.Input == Output {
+          Sub.Failure == Failure,
+          Sub.Input == Output {
           lock.lock()
           subscribers.append(AnySubscriber(sub))
           lock.unlock()
