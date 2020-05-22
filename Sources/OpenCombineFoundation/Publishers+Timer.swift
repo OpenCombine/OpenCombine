@@ -27,9 +27,10 @@ extension Timer {
   /// Returns a publisher that repeatedly emits the current date on the given interval.
   ///
   /// - Parameters:
-  ///   - interval: The time interval on which to publish events. For example, a value of `0.5` publishes an event
-  ///     approximately every half-second.
-  ///   - tolerance: The allowed timing variance when emitting events. Defaults to `nil`, which allows any variance.
+  ///   - interval: The time interval on which to publish events. For example, 
+  ///     a value of `0.5` publishes an event approximately every half-second.
+  ///   - tolerance: The allowed timing variance when emitting events. Defaults to `nil`, 
+  ///     which allows any variance.
   ///   - runLoop: The run loop on which the timer runs.
   ///   - mode: The run loop mode in which to run the timer.
   ///   - options: Scheduler options passed to the timer. Defaults to `nil`.
@@ -45,7 +46,7 @@ extension Timer {
     return .init(interval: interval, runLoop: runLoop, mode: mode, options: options)
   }
 
-  public struct OCombine {
+  public enum OCombine {
     /// A publisher that repeatedly emits the current date on a given interval.
     public final class TimerPublisher: ConnectablePublisher {
       public typealias Output = Date
@@ -61,17 +62,19 @@ extension Timer {
         RoutingSubscription(parent: self)
       }()
 
-      // Stores if a `.connect()` happened before subscription, internally readable for tests
+      // Stores if a `.connect()` happened before subscription, 
+      // internally readable for tests
       internal var isConnected: Bool {
         return routingSubscription.isConnected
       }
 
-      /// Creates a publisher that repeatedly emits the current date on the given interval.
+      /// Creates a publisher that repeatedly emits the current date 
+      /// on the given interval.
       ///
       /// - Parameters:
       ///   - interval: The interval on which to publish events.
-      ///   - tolerance: The allowed timing variance when emitting events. Defaults to `nil`,
-      ///     which allows any variance.
+      ///   - tolerance: The allowed timing variance when emitting events. 
+      ///     Defaults to `nil`, which allows any variance.
       ///   - runLoop: The run loop on which the timer runs.
       ///   - mode: The run loop mode in which to run the timer.
       ///   - options: Scheduler options passed to the timer. Defaults to `nil`.
@@ -89,8 +92,8 @@ extension Timer {
 
       /// Adapter subscription to allow `Timer` to multiplex to multiple subscribers
       /// the values produced by a single `TimerPublisher.Inner`
-      private class RoutingSubscription: Subscription, Subscriber, CustomStringConvertible,
-        CustomReflectable, CustomPlaygroundDisplayConvertible {
+      private class RoutingSubscription: Subscription, Subscriber,
+      CustomStringConvertible, CustomReflectable, CustomPlaygroundDisplayConvertible {
         typealias Input = Date
         typealias Failure = Never
 
@@ -99,6 +102,7 @@ extension Timer {
         private let lock: Lock
 
         // Inner is IUP due to init requirements
+        // swiftlint:disable:next implicitly_unwrapped_optional
         private var inner: Inner<RoutingSubscription>!
         private var subscribers: [ErasedSubscriber] = []
 
@@ -140,7 +144,7 @@ extension Timer {
           lock.deallocate()
         }
 
-        func addSubsriber<S: Subscriber>(_ sub: S)
+        func addSubscriber<Sub: Subscriber>(_ sub: Sub)
           where
           S.Failure == Failure,
           S.Input == Output {
@@ -207,8 +211,9 @@ extension Timer {
         }
       }
 
-      public func receive<S: Subscriber>(subscriber: S) where Failure == S.Failure, Output == S.Input {
-        routingSubscription.addSubsriber(subscriber)
+      public func receive<Sub: Subscriber>(subscriber: Sub)
+      where Failure == Sub.Failure, Output == Sub.Input {
+        routingSubscription.addSubscriber(subscriber)
       }
 
       public func connect() -> Cancellable {
@@ -217,8 +222,8 @@ extension Timer {
       }
 
       private typealias Parent = TimerPublisher
-      private final class Inner<Downstream: Subscriber>: NSObject, Subscription, CustomReflectable,
-        CustomPlaygroundDisplayConvertible
+      private final class Inner<Downstream: Subscriber>: NSObject, Subscription,
+        CustomReflectable, CustomPlaygroundDisplayConvertible
         where
         Downstream.Input == Date,
         Downstream.Failure == Never {
@@ -313,7 +318,8 @@ extension Timer {
             return
           }
 
-          // This publisher drops events on the floor when there is no space in the subscriber
+          // This publisher drops events on the floor 
+          // when there is no space in the subscriber
           guard demand > 0 else {
             lock.unlock()
             return
