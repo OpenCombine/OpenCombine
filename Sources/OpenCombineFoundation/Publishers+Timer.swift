@@ -306,8 +306,7 @@ extension Timer {
           demand += n
         }
 
-        @objc
-        func timerFired(arg _: Any) {
+        func timerFired() {
           lock.lock()
           guard let ds = downstream, parent != nil else {
             lock.unlock()
