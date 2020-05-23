@@ -228,10 +228,9 @@ extension Timer {
         Downstream.Input == Date,
         Downstream.Failure == Never {
         private lazy var timer: Timer? = {
-          let t = Timer(
-            timeInterval: parent?.interval ?? 0,
-            repeats: true
-          ) { [weak self] _ in self?.timerFired() }
+          let t = Timer(timeInterval: parent?.interval ?? 0, repeats: true) {
+            [weak self] _ in self?.timerFired()
+          }
 
           t.tolerance = parent?.tolerance ?? 0
 
