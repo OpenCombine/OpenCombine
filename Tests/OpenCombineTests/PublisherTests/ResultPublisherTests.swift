@@ -144,6 +144,33 @@ final class ResultPublisherTests: XCTestCase {
         """)
     }
 
+    func testResultPublisherMultiThreaded() throws
+    {
+      class ExternallyTriggered: Subscriber {
+        typealias Input = Int
+        typealias Failure = Never
+
+        let combineIdentifier = CombineIdentifier()
+        var sub: Subscription?
+
+        func receive(subscription: Subscription) { sub = subscription }
+        func receive(_ input: Input) -> Subscribers.Demand { return .none }
+        func receive(completion: Subscribers.Completion<Failure>) {}
+
+        func request() { sub?.request(.unlimited) }
+        func cancel() { sub?.cancel() }
+      }
+
+      for i in 1...1000
+      {
+        let pub = Result<Int, Never>.OCombine.Publisher(i)
+        let sub = ExternallyTriggeredSubscriber()
+        pub.subscribe(sub)
+        DispatchQueue.global(qos: .utility).async { sub.request() }
+        DispatchQueue.global(qos: .utility).async { sub.cancel() }
+      }
+    }
+
     // MARK: - Operator specializations for Once
 
     func testMinOperatorSpecialization() {
