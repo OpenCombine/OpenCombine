@@ -148,7 +148,7 @@ final class ResultPublisherTests: XCTestCase {
     {
       class ExternallyTriggered: Subscriber {
         typealias Input = Int
-        typealias Failure = Never
+        typealias Failure = TestingError
 
         let combineIdentifier = CombineIdentifier()
         var sub: Subscription?
@@ -161,13 +161,16 @@ final class ResultPublisherTests: XCTestCase {
         func cancel() { sub?.cancel() }
       }
 
-      for i in 1...1000
-      {
-        let pub = Result<Int, Never>.OCombine.Publisher(i)
-        let sub = ExternallyTriggeredSubscriber()
-        pub.subscribe(sub)
-        DispatchQueue.global(qos: .utility).async { sub.request() }
-        DispatchQueue.global(qos: .utility).async { sub.cancel() }
+      assertCrashes {
+        for i in 1...10000 {
+          let pub = makePublisher(i)
+//          let pub = Optional.OCombine.Publisher(i)
+//          let pub = Just(i)
+          let sub = ExternallyTriggered()
+          pub.subscribe(sub)
+          DispatchQueue.global(qos: .utility).async { sub.request() }
+          DispatchQueue.global(qos: .utility).async { sub.cancel() }
+        }
       }
     }
 
