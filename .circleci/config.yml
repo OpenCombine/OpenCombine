@@ -161,11 +161,11 @@ jobs:
           command: |
             bash <(curl -s https://codecov.io/bash) -D DerivedData
 
-  "Execute tests on Ubuntu 18.04 (Swift 5.1.1)":
+  "Execute tests on Ubuntu 18.04 (Swift 5.2)":
     docker:
-      - image: swift:5.1.1-bionic
+      - image: swift:5.2-bionic
     environment:
-      SWIFT_VERSION: "5.1.1"
+      SWIFT_VERSION: "5.2"
     steps:
       - checkout
       - run:
@@ -265,7 +265,7 @@ workflows:
       - "Execute tests on iOS 9.3 (Xcode 10.2.1, Swift 5.0.1)"
   "OpenCombine: execute tests on Linux":
     jobs:
-      - "Execute tests on Ubuntu 18.04 (Swift 5.1.1)"
+      - "Execute tests on Ubuntu 18.04 (Swift 5.2)"
   "OpenCombine: run SwiftLint and Danger":
     jobs:
       - "Run SwiftLint and Danger"
