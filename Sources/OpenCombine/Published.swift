@@ -87,6 +87,9 @@ public struct Published<Value> {
             return object[keyPath: storageKeyPath].value
         }
         set {
+            if object[keyPath: storageKeyPath].objectWillChange == nil {
+                object[keyPath: storageKeyPath].objectWillChange = getObservablePublisher(object)
+            }
             object[keyPath: storageKeyPath].objectWillChange?.send()
             object[keyPath: storageKeyPath].publisher?.subject.send(newValue)
             object[keyPath: storageKeyPath].value = newValue
@@ -94,6 +97,15 @@ public struct Published<Value> {
         // TODO: Benchmark and explore a possibility to use _modify
     }
 }
+
+func getObservablePublisher<T:ObservableObject>(_ observable: T) -> ObservableObjectPublisher? {
+  return observable.objectWillChange as? ObservableObjectPublisher
+}
+
+func getObservablePublisher<T>(_ observable: T) -> ObservableObjectPublisher? {
+  return nil
+}
+
 #else
 
 @available(swift, introduced: 5.1)
