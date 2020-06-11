@@ -88,7 +88,7 @@ public struct Published<Value> {
         }
         set {
             if object[keyPath: storageKeyPath].objectWillChange == nil {
-                object[keyPath: storageKeyPath].objectWillChange = getObservablePublisher(object)
+                object[keyPath: storageKeyPath].objectWillChange = getPublisher(object)
             }
             object[keyPath: storageKeyPath].objectWillChange?.send()
             object[keyPath: storageKeyPath].publisher?.subject.send(newValue)
@@ -98,12 +98,14 @@ public struct Published<Value> {
     }
 }
 
-func getObservablePublisher<T:ObservableObject>(_ observable: T) -> ObservableObjectPublisher? {
-  return observable.objectWillChange as? ObservableObjectPublisher
+private func getPublisher<Observable:ObservableObject>(_ observable: Observable)
+                                                       -> ObservableObjectPublisher? {
+    return observable.objectWillChange as? ObservableObjectPublisher
 }
 
-func getObservablePublisher<T>(_ observable: T) -> ObservableObjectPublisher? {
-  return nil
+private func getPublisher<NonObservable>(_ observable: NonObservable) 
+                                         -> ObservableObjectPublisher? {
+    return nil
 }
 
 #else
