@@ -108,6 +108,7 @@ final class ReplaceNilTests: XCTestCase {
                            description: "Map",
                            customMirror: childrenIsEmpty,
                            playgroundDescription: "Map",
+                           subscriberIsAlsoSubscription: false,
                            { $0.replaceNil(with: 0) })
     }
 }

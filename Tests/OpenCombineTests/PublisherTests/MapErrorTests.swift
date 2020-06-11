@@ -185,6 +185,7 @@ final class MapErrorTests: XCTestCase {
                            description: "MapError",
                            customMirror: childrenIsEmpty,
                            playgroundDescription: "MapError",
+                           subscriberIsAlsoSubscription: false,
                            { $0.mapError { $0 } })
     }
 

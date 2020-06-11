@@ -367,7 +367,7 @@ final class BufferTests: XCTestCase {
             description: "Buffer",
             customMirror: expectedChildren(
                 ("values", "[]"),
-                ("state", .contains("ready(")),
+                ("state", .anything),
                 ("downstreamDemand", "max(0)"),
                 ("terminal", "nil")
             ),

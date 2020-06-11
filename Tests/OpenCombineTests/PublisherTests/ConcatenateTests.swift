@@ -430,7 +430,7 @@ final class ConcatenateTests: XCTestCase {
                            description: "Concatenate",
                            customMirror: expectedChildren(
                                ("downstream", .contains("TrackingSubscriberBase")),
-                               ("upstreamSubscription", "nil"),
+                               ("upstreamSubscription", .anything),
                                ("suffix", .contains("(sequence: [2.0, 3.0, 5.0, 7.0])")),
                                ("demand", "max(0)")
                            ),

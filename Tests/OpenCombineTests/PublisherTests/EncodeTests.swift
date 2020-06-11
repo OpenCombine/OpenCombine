@@ -155,7 +155,7 @@ final class EncodeTests: XCTestCase {
                            customMirror: expectedChildren(
                                ("downstream", .contains("TrackingSubscriberBase")),
                                ("finished", "false"),
-                               ("upstreamSubscription", "nil")
+                               ("upstreamSubscription", .anything)
                            ),
                            playgroundDescription: "Encode",
                            { $0.encode(encoder: encoder) })
@@ -275,7 +275,7 @@ final class EncodeTests: XCTestCase {
                            customMirror: expectedChildren(
                                ("downstream", .contains("TrackingSubscriberBase")),
                                ("finished", "false"),
-                               ("upstreamSubscription", "nil")
+                               ("upstreamSubscription", .anything)
                            ),
                            playgroundDescription: "Decode",
                            { $0.decode(type: Int.self, decoder: decoder) })

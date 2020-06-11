@@ -180,6 +180,7 @@ final class SetFailureTypeTests: XCTestCase {
                            description: "SetFailureType",
                            customMirror: childrenIsEmpty,
                            playgroundDescription: "SetFailureType",
+                           subscriberIsAlsoSubscription: false,
                            { $0.setFailureType(to: Error.self) })
     }
 }

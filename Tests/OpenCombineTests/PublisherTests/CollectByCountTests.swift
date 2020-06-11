@@ -217,7 +217,7 @@ final class CollectByCountTests: XCTestCase {
                            description: "CollectByCount",
                            customMirror: expectedChildren(
                                ("downstream", .contains("TrackingSubscriberBase")),
-                               ("upstreamSubscription", "nil"),
+                               ("upstreamSubscription", .anything),
                                ("buffer", "[]"),
                                ("count", "53")
                            ),
