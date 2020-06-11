@@ -103,7 +103,7 @@ private func getPublisher<Observable:ObservableObject>(_ observable: Observable)
     return observable.objectWillChange as? ObservableObjectPublisher
 }
 
-private func getPublisher<NonObservable>(_ observable: NonObservable) 
+private func getPublisher<NonObservable>(_ observable: NonObservable)
                                          -> ObservableObjectPublisher? {
     return nil
 }
