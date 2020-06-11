@@ -55,6 +55,55 @@ final class CatchTests: XCTestCase {
         }
     }
 
+    func testCatchRecursion() {
+        testRecursion(expectedSubscription: "Catch") {
+            $0.catch($1)
+        }
+    }
+
+    func testCatchReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 1, expected: .crash) {
+            $0.catch { _ in Just(13) }
+        }
+    }
+
+    func testCatchReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([]),
+            { $0.catch { _ in Just(13) } }
+        )
+    }
+
+    func testCatchRequestPendingPost() {
+        CatchTests.testRequestPendingPost(expectedSubscription: "Catch",
+                                          { $0.catch($1) })
+    }
+
+    func testCatchCancelPendingPost() {
+        CatchTests.testCancelPendingPost(expectedSubscription: "Catch",
+                                         { $0.catch($1) })
+    }
+
+    func testCatchRequestPost() throws {
+        try CatchTests.testRequestPost(expectedSubscription: "Catch",
+                                       { $0.catch($1) })
+    }
+
+    func testCatchCancellationBeforeRecovering() throws {
+        try CatchTests.testCancellationBeforeRecovering(expectedSubscription: "Catch",
+                                                        { $0.catch($1) })
+    }
+
+    func testCatchCancellationAfterRecovering() throws {
+        try CatchTests.testCancellationAfterRecovering(expectedSubscription: "Catch",
+                                                       { $0.catch($1) })
+    }
+
+    func testCatchUpstreamFailsTwice() {
+        testUpstreamFailsTwice(expectedSubscription: "Catch") { $0.catch($1) }
+    }
+
     func testCatchReflection() throws {
         try testReflection(parentInput: Int.self,
                            parentFailure: TestingError.self,
@@ -121,6 +170,95 @@ final class CatchTests: XCTestCase {
         CatchTests.testUpstreamFinishes(expectedSubscription: "TryCatch") {
             $0.tryCatch($1)
         }
+    }
+
+    func testTryCatchHandlerThrows() {
+
+        var handledErrors = [TestingError]()
+
+        func handler(_ error: TestingError) throws -> Just<Int> {
+            handledErrors.append(error)
+            throw "oops2" as TestingError
+        }
+
+        let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
+                                        initialDemand: .unlimited,
+                                        receiveValueDemand: .none,
+                                        createSut: { $0.tryCatch(handler) })
+
+        XCTAssertEqual(helper.publisher.send(1), .none)
+        XCTAssertEqual(helper.publisher.send(2), .none)
+        helper.publisher.send(completion: .failure(.oops))
+
+        XCTAssertEqual(helper.tracking.history,
+                       [.subscription("TryCatch"),
+                        .value(1),
+                        .value(2),
+                        .completion(.failure("oops2" as TestingError))])
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+        XCTAssertEqual(handledErrors, [.oops])
+
+        XCTAssertEqual(helper.publisher.send(-1), .none)
+        helper.publisher.send(completion: .failure(.oops))
+        helper.publisher.send(completion: .finished)
+
+        XCTAssertEqual(helper.tracking.history,
+                       [.subscription("TryCatch"),
+                        .value(1),
+                        .value(2),
+                        .completion(.failure("oops2" as TestingError)),
+                        .value(-1)])
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+        XCTAssertEqual(handledErrors, [.oops])
+    }
+
+    func testTryCatchRecursion() {
+        testRecursion(expectedSubscription: "TryCatch") {
+            $0.tryCatch($1)
+        }
+    }
+
+    func testTryCatchReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(value: 1, expected: .crash) {
+            $0.tryCatch { _ in Just(13) }
+        }
+    }
+
+    func testTryCatchReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([]),
+            { $0.tryCatch { _ in Just(13) } }
+        )
+    }
+
+    func testTryCatchRequestPendingPost() {
+        CatchTests.testRequestPendingPost(expectedSubscription: "TryCatch",
+                                          { $0.tryCatch($1) })
+    }
+
+    func testTryCatchCancelPendingPost() {
+        CatchTests.testCancelPendingPost(expectedSubscription: "TryCatch",
+                                         { $0.tryCatch($1) })
+    }
+
+    func testTryCatchRequestPost() throws {
+        try CatchTests.testRequestPost(expectedSubscription: "TryCatch",
+                                       { $0.tryCatch($1) })
+    }
+
+    func testTryCatchCancellationBeforeRecovering() throws {
+        try CatchTests.testCancellationBeforeRecovering(expectedSubscription: "TryCatch",
+                                                        { $0.tryCatch($1) })
+    }
+
+    func testTryCatchCancellationAfterRecovering() throws {
+        try CatchTests.testCancellationAfterRecovering(expectedSubscription: "TryCatch",
+                                                       { $0.tryCatch($1) })
+    }
+
+    func testTryCatchUpstreamFailsTwice() {
+        testUpstreamFailsTwice(expectedSubscription: "TryCatch") { $0.tryCatch($1) }
     }
 
     func testTryCatchReflection() throws {
@@ -259,5 +397,226 @@ final class CatchTests: XCTestCase {
                                                  .completion(.finished)])
         XCTAssertEqual(helper.subscription.history, [.requested(.max(2))])
         XCTAssertEqual(counter, 0)
+    }
+
+    private func testRecursion<Operator: Publisher>(
+        expectedSubscription: StringSubscription,
+        _ makeCatch: @escaping (CustomPublisher,
+                                @escaping (TestingError) -> Just<Int>) -> Operator
+    ) where Operator.Output == Int {
+
+        func createSut(_ publisher: CustomPublisher) -> Operator {
+            return makeCatch(publisher) { _ in
+                publisher.send(completion: .failure(.oops))
+                return Just(13)
+            }
+        }
+
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisher.self,
+            initialDemand: .unlimited,
+            receiveValueDemand: .none,
+            createSut: createSut
+        )
+
+        XCTAssertEqual(helper.publisher.send(1), .none)
+        XCTAssertEqual(helper.publisher.send(2), .none)
+
+        assertCrashes {
+            helper.publisher.send(completion: .failure(.oops))
+        }
+    }
+
+    private static func testRequestPendingPost<Operator: Publisher>(
+        expectedSubscription: StringSubscription,
+        _ makeCatch: (CustomPublisher,
+                      @escaping (TestingError) -> CustomPublisher) -> Operator
+    ) where Operator.Output == Int {
+
+        let handlerSubscription = CustomSubscription()
+        let handlerPublisher = CustomPublisher(subscription: handlerSubscription)
+
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisher.self,
+            initialDemand: .max(3),
+            receiveValueDemand: .none,
+            createSut: { makeCatch($0) { _ in handlerPublisher } }
+        )
+
+        handlerPublisher.willSubscribe = { _ in
+            guard let downstreamSubscription = helper.downstreamSubscription else {
+                XCTFail("missing downstream subscription")
+                return
+            }
+            downstreamSubscription.request(.max(10))
+            XCTAssertEqual(handlerSubscription.history, [])
+        }
+
+        XCTAssertEqual(helper.publisher.send(1), .none)
+        helper.publisher.send(completion: .failure(.oops))
+
+        XCTAssertEqual(helper.tracking.history, [.subscription(expectedSubscription),
+                                                 .value(1)])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(3))])
+        XCTAssertEqual(handlerSubscription.history, [.requested(.max(12))])
+    }
+
+    private static func testCancelPendingPost<Operator: Publisher>(
+        expectedSubscription: StringSubscription,
+        _ makeCatch: (CustomPublisher,
+                      @escaping (TestingError) -> CustomPublisher) -> Operator
+    ) where Operator.Output == Int {
+
+        let handlerSubscription = CustomSubscription()
+        let handlerPublisher = CustomPublisher(subscription: handlerSubscription)
+
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisher.self,
+            initialDemand: .max(3),
+            receiveValueDemand: .none,
+            createSut: { makeCatch($0) { _ in handlerPublisher } }
+        )
+
+        handlerPublisher.willSubscribe = { _ in
+            guard let downstreamSubscription = helper.downstreamSubscription else {
+                XCTFail("missing downstream subscription")
+                return
+            }
+            downstreamSubscription.cancel()
+            XCTAssertEqual(handlerSubscription.history, [])
+        }
+
+        helper.publisher.send(completion: .failure(.oops))
+
+        XCTAssertEqual(helper.tracking.history, [.subscription(expectedSubscription)])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(3))])
+        XCTAssertEqual(handlerSubscription.history, [.requested(.max(3))])
+
+        handlerPublisher.send(completion: .finished)
+
+        XCTAssertEqual(helper.tracking.history, [.subscription(expectedSubscription),
+                                                 .completion(.finished)])
+        XCTAssertEqual(handlerSubscription.history, [.requested(.max(3))])
+    }
+
+    private static func testRequestPost<Operator: Publisher>(
+        expectedSubscription: StringSubscription,
+        _ makeCatch: (CustomPublisher,
+                      @escaping (TestingError) -> CustomPublisher) -> Operator
+    ) throws where Operator.Output == Int {
+
+        let handlerSubscription = CustomSubscription()
+        let handlerPublisher = CustomPublisher(subscription: handlerSubscription)
+
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisher.self,
+            initialDemand: nil,
+            receiveValueDemand: .none,
+            createSut: { makeCatch($0) { _ in handlerPublisher } }
+        )
+
+        helper.publisher.send(completion: .failure(.oops))
+
+        XCTAssertEqual(helper.tracking.history, [.subscription(expectedSubscription)])
+        XCTAssertEqual(helper.subscription.history, [])
+        XCTAssertNotNil(handlerPublisher.subscriber)
+
+        try XCTUnwrap(helper.downstreamSubscription).request(.max(12))
+        XCTAssertEqual(handlerSubscription.history, [.requested(.max(12))])
+        XCTAssertEqual(helper.tracking.history, [.subscription(expectedSubscription)])
+
+        XCTAssertEqual(handlerPublisher.send(100), .none)
+
+        XCTAssertEqual(helper.tracking.history, [.subscription(expectedSubscription),
+                                                 .value(100)])
+    }
+
+    private static func testCancellationBeforeRecovering<Operator: Publisher>(
+        expectedSubscription: StringSubscription,
+        _ makeCatch: (CustomPublisher,
+                      @escaping (TestingError) -> CustomPublisher) -> Operator
+    ) throws where Operator.Output == Int {
+
+        func handler(_ error: TestingError) -> CustomPublisher {
+            XCTFail("Should not be called")
+            return CustomPublisher(subscription: CustomSubscription())
+        }
+
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisher.self,
+            initialDemand: .max(1),
+            receiveValueDemand: .max(3),
+            createSut: { makeCatch($0, handler) }
+        )
+
+        let downstreamSubscription = try XCTUnwrap(helper.downstreamSubscription)
+
+        downstreamSubscription.cancel()
+        downstreamSubscription.request(.max(199))
+
+        XCTAssertEqual(helper.publisher.send(1), .max(3))
+        helper.publisher.send(completion: .failure(.oops))
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(1)), .cancelled])
+        XCTAssertEqual(helper.tracking.history, [.subscription(expectedSubscription),
+                                                 .value(1)])
+    }
+
+    private static func testCancellationAfterRecovering<Operator: Publisher>(
+        expectedSubscription: StringSubscription,
+        _ makeCatch: (CustomPublisher,
+                      @escaping (TestingError) -> CustomPublisher) -> Operator
+    ) throws where Operator.Output == Int {
+
+        let handlerSubscription = CustomSubscription()
+        let handlerPublisher = CustomPublisher(subscription: handlerSubscription)
+
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisher.self,
+            initialDemand: nil,
+            receiveValueDemand: .max(3),
+            createSut: { makeCatch($0) { _ in handlerPublisher } }
+        )
+
+        helper.publisher.send(completion: .failure(.oops))
+
+        let downstreamSubscription = try XCTUnwrap(helper.downstreamSubscription)
+        downstreamSubscription.cancel()
+
+        XCTAssertEqual(handlerPublisher.send(1), .max(3))
+        handlerPublisher.send(completion: .finished)
+        handlerPublisher.send(completion: .failure(.oops))
+
+        XCTAssertEqual(helper.tracking.history, [.subscription(expectedSubscription),
+                                                 .value(1)])
+        XCTAssertEqual(helper.subscription.history, [])
+        XCTAssertEqual(handlerSubscription.history, [.cancelled])
+
+        let extraSubscription = CustomSubscription()
+        handlerPublisher.send(subscription: extraSubscription)
+        XCTAssertEqual(extraSubscription.history, [.cancelled])
+    }
+
+    private func testUpstreamFailsTwice<Operator: Publisher>(
+        expectedSubscription: StringSubscription,
+        _ makeCatch: (CustomPublisher,
+                      @escaping (TestingError) -> CustomPublisher) -> Operator
+    ) where Operator.Output == Int {
+
+        let handlerSubscription = CustomSubscription()
+        let handlerPublisher = CustomPublisher(subscription: handlerSubscription)
+
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisher.self,
+            initialDemand: nil,
+            receiveValueDemand: .max(3),
+            createSut: { makeCatch($0) { _ in handlerPublisher } }
+        )
+
+        helper.publisher.send(completion: .failure(.oops))
+
+        assertCrashes {
+            helper.publisher.send(completion: .failure(.oops))
+        }
     }
 }

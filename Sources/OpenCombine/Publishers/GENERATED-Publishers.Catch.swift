@@ -215,11 +215,11 @@ extension Publishers.Catch {
             case cancelled
         }
 
-        private let lock = UnfairLock.allocate() // 0x10
+        private let lock = UnfairLock.allocate()
 
-        private var demand = Subscribers.Demand.none // 0x18
+        private var demand = Subscribers.Demand.none
 
-        private var state = State.pendingPre // 0x20
+        private var state = State.pendingPre
 
         private let downstream: Downstream
 
@@ -262,21 +262,25 @@ extension Publishers.Catch {
             switch completion {
             case .finished:
                 lock.lock()
-                if case .pre = state {
+                switch state {
+                case .pre:
                     state = .cancelled
                     lock.unlock()
                     downstream.receive(completion: .finished)
-                } else {
+                case .pendingPre, .pendingPost, .post, .cancelled:
                     lock.unlock()
                 }
             case .failure(let error):
                 lock.lock()
-                if case .pre = state {
+                switch state {
+                case .pre:
                     state = .pendingPost
                     lock.unlock()
                     handler(error).subscribe(CaughtS(inner: self))
-                } else {
+                case .cancelled:
                     lock.unlock()
+                case .pendingPre, .post, .pendingPost:
+                    completionBeforeSubscription()
                 }
             }
         }
@@ -316,8 +320,11 @@ extension Publishers.Catch {
             lock.lock()
             switch state {
             case .pendingPre:
-                lock.unlock()
-                // TODO: Test this case
+                // The client is only able to call the `request` method after we've sent
+                // `self` downstream. We only do it in the `receivePre(subscription:)`
+                // method, after setting `state` to `pre`.
+                // After that `state` never becomes `pendingPre`.
+                requestBeforeSubscription()
             case let .pre(subscription):
                 self.demand += demand
                 lock.unlock()
@@ -330,20 +337,17 @@ extension Publishers.Catch {
                 subscription.request(demand)
             case .cancelled:
                 lock.unlock()
-                // TODO: Test this case
             }
         }
 
         func cancel() {
             lock.lock()
-            // TODO: Test all cases
             switch state {
             case let .pre(subscription), let .post(subscription):
                 state = .cancelled
                 lock.unlock()
                 subscription.cancel()
-            default:
-                state = .cancelled
+            case .pendingPre, .pendingPost, .cancelled:
                 lock.unlock()
             }
         }
@@ -443,11 +447,11 @@ extension Publishers.TryCatch {
             case cancelled
         }
 
-        private let lock = UnfairLock.allocate() // 0x10
+        private let lock = UnfairLock.allocate()
 
-        private var demand = Subscribers.Demand.none // 0x18
+        private var demand = Subscribers.Demand.none
 
-        private var state = State.pendingPre // 0x20
+        private var state = State.pendingPre
 
         private let downstream: Downstream
 
@@ -490,16 +494,18 @@ extension Publishers.TryCatch {
             switch completion {
             case .finished:
                 lock.lock()
-                if case .pre = state {
+                switch state {
+                case .pre:
                     state = .cancelled
                     lock.unlock()
                     downstream.receive(completion: .finished)
-                } else {
+                case .pendingPre, .pendingPost, .post, .cancelled:
                     lock.unlock()
                 }
             case .failure(let error):
                 lock.lock()
-                if case .pre = state {
+                switch state {
+                case .pre:
                     state = .pendingPost
                     lock.unlock()
                     do {
@@ -510,8 +516,10 @@ extension Publishers.TryCatch {
                         lock.unlock()
                         downstream.receive(completion: .failure(anotherError))
                     }
-                } else {
+                case .cancelled:
                     lock.unlock()
+                case .pendingPre, .post, .pendingPost:
+                    completionBeforeSubscription()
                 }
             }
         }
@@ -551,8 +559,11 @@ extension Publishers.TryCatch {
             lock.lock()
             switch state {
             case .pendingPre:
-                lock.unlock()
-                // TODO: Test this case
+                // The client is only able to call the `request` method after we've sent
+                // `self` downstream. We only do it in the `receivePre(subscription:)`
+                // method, after setting `state` to `pre`.
+                // After that `state` never becomes `pendingPre`.
+                requestBeforeSubscription()
             case let .pre(subscription):
                 self.demand += demand
                 lock.unlock()
@@ -565,20 +576,17 @@ extension Publishers.TryCatch {
                 subscription.request(demand)
             case .cancelled:
                 lock.unlock()
-                // TODO: Test this case
             }
         }
 
         func cancel() {
             lock.lock()
-            // TODO: Test all cases
             switch state {
             case let .pre(subscription), let .post(subscription):
                 state = .cancelled
                 lock.unlock()
                 subscription.cancel()
-            default:
-                state = .cancelled
+            case .pendingPre, .pendingPost, .cancelled:
                 lock.unlock()
             }
         }
@@ -595,4 +603,18 @@ extension Publishers.TryCatch {
 
         var playgroundDescription: Any { return description }
     }
+}
+
+private func completionBeforeSubscription(file: StaticString = #file,
+                                          line: UInt = #line) -> Never {
+    fatalError("Unexpected state: received completion but do not have subscription",
+               file: file,
+               line: line)
+}
+
+private func requestBeforeSubscription(file: StaticString = #file,
+                                       line: UInt = #line) -> Never {
+    fatalError("Unexpected state: request before subscription sent",
+               file: file,
+               line: line)
 }
