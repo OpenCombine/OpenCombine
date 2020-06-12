@@ -69,6 +69,28 @@ Or enable the `-DOPENCOMBINE_COMPATIBILITY_TEST` compiler flag in Xcode's build 
 
 > NOTE: Before starting to work on some feature, please consult the [GitHub project](https://github.com/broadwaylamb/OpenCombine/projects/2) to make sure that nobody's already making progress on the same feature! If not, then please create a draft PR to indicate that you're beginning your work.
 
+#### Releasing a new version
+
+1. Create a new branch from master and call it `release/<major>.<minor>.<patch>`.
+1. Replace the usages of the old version in `README.md` with the new version (make sure to check the [Swift Package Manager](#swift-package-manager) and [CocoaPods](#cocoapods) sections).
+1. Bump the version in `OpenCombine.podspec`, `OpenCombineDispatch.podspec` and `OpenCombineFoundation.podspec`. In the latter two you will also need to set the `spec.dependency "OpenCombine"` property to the **previous** version. Why? Because otherwise the `pod lib lint` command that we run on our regular CI will fail when validating the `OpenCombineDispatch` and `OpenCombineFoundation` podspecs, since the dependencies are not yet in the trunk. If we set the dependencies to the previous version (which is already in the trunk), everything will be fine. This is purely to make the CI work. The clients will not experience any issues, since the version is specified as `>=`.
+1. Create a pull request to master for the release branch and make sure the CI passes.
+1. Merge the pull request.
+1. In the GitHub web interface on the [releases](https://github.com/broadwaylamb/OpenCombine/releases) page, click the **Draft a new release** button.
+1. The **Tag version** and **Release title** fields should be filled with the version number.
+1. The description of the release should be consistent with the previous releases. It is a good practice to divide the description into several sections: additions, bugfixes, known issues etc. Also, be sure to mention the nicknames of the contributors of the new release.
+1. Publish the release.
+1. Switch to the master branch and pull the changes.
+1. Push the release to CocoaPods trunk. For that, execute the following commands:
+
+    ```
+    pod trunk push OpenCombine.podspec --verbose --allow-warnings
+    pod trunk push OpenCombineDispatch.podspec --verbose --allow-warnings
+    pod trunk push OpenCombineFoundation.podspec --verbose --allow-warnings
+    ```
+   
+   Note that you need to be one of the owners of the pod for that.
+
 #### GYB
 
 Some publishers in OpenCombine (like `Publishers.MapKeyPath`, `Publishers.Merge`) exist in several
