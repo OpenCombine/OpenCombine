@@ -43,20 +43,20 @@ final class VirtualTimeSchedulerTests: XCTestCase {
         XCTAssertEqual(scheduler.history, [.now,
                                            .minimumTolerance,
                                            .scheduleAfterDate(.nanoseconds(10),
-                                                              tolerance: 0,
+                                                              tolerance: .nanoseconds(7),
                                                               options: nil),
                                            .schedule(options: nil),
                                            .now,
                                            .minimumTolerance,
                                            .scheduleAfterDate(.nanoseconds(5),
-                                                              tolerance: 0,
+                                                              tolerance: .nanoseconds(7),
                                                               options: nil),
                                            .schedule(options: nil),
                                            .now,
                                            .now,
                                            .minimumTolerance,
                                            .scheduleAfterDate(.nanoseconds(7),
-                                                              tolerance: 0,
+                                                              tolerance: .nanoseconds(7),
                                                               options: nil),
                                            .now])
     }
@@ -88,12 +88,12 @@ final class VirtualTimeSchedulerTests: XCTestCase {
                         .minimumTolerance,
                         .scheduleAfterDateWithInterval(.microseconds(2),
                                                        interval: .milliseconds(40),
-                                                       tolerance: 0,
+                                                       tolerance: .nanoseconds(7),
                                                        options: nil),
                         .now,
                         .minimumTolerance,
                         .scheduleAfterDate(.milliseconds(300),
-                                           tolerance: .nanoseconds(0),
+                                           tolerance: .nanoseconds(7),
                                            options: nil),
                         .now,
                         .now,
@@ -104,5 +104,46 @@ final class VirtualTimeSchedulerTests: XCTestCase {
                         .now,
                         .now,
                         .now])
+    }
+
+    func testRewindForward() {
+        let scheduler = VirtualTimeScheduler()
+        var history = [Int]()
+        let cancellable = scheduler.schedule(after: scheduler.now + .microseconds(2),
+                                             interval: .milliseconds(40)) {
+            history.append(Int(scheduler.now.time))
+        }
+        scheduler.schedule(after: scheduler.now + .milliseconds(300)) {
+            cancellable.cancel()
+        }
+        XCTAssertEqual(scheduler.scheduledDates, [.microseconds(2), .milliseconds(300)])
+        scheduler.rewind(to: .milliseconds(81))
+
+        XCTAssertEqual(history, [2000,
+                                 40002000,
+                                 80002000])
+
+        scheduler.executeScheduledActions()
+
+        XCTAssertEqual(history, [2000,
+                                 40002000,
+                                 80002000,
+                                 120002000,
+                                 160002000,
+                                 200002000,
+                                 240002000,
+                                 280002000])
+
+        scheduler.rewind(to: .milliseconds(0))
+        scheduler.executeScheduledActions()
+
+        XCTAssertEqual(history, [2000,
+                                 40002000,
+                                 80002000,
+                                 120002000,
+                                 160002000,
+                                 200002000,
+                                 240002000,
+                                 280002000])
     }
 }

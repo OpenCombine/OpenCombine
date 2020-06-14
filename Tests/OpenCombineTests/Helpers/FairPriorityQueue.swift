@@ -26,8 +26,8 @@ struct FairPriorityQueue<Priority: Comparable, Element> {
         }
     }
 
-    func min() -> Element? {
-        return storage.first?.1
+    func min() -> (Priority, Element)? {
+        return storage.first.map { ($0.0.0, $0.1) }
     }
 
     @discardableResult

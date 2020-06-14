@@ -221,7 +221,7 @@ final class VirtualTimeScheduler: Scheduler {
                 """
             case let .scheduleAfterDateWithInterval(date, interval, tolerance, options):
                 return """
-                .scheduleAfterDateWithInterval(\(describeDate(date)), \
+                .scheduleAfterDateWithInterval(\(describeDate(date))), \
                 interval: \(describeStride(interval)), \
                 tolerance: \(describeStride(tolerance)), \
                 options: \(describeOptions(options)))
@@ -250,7 +250,7 @@ final class VirtualTimeScheduler: Scheduler {
 
     var minimumTolerance: SchedulerTimeType.Stride {
         history.append(.minimumTolerance)
-        return 0
+        return .nanoseconds(7)
     }
 
     func schedule(options: SchedulerOptions?, _ action: @escaping () -> Void) {
@@ -304,11 +304,20 @@ final class VirtualTimeScheduler: Scheduler {
     /// - Note: The actions that were already executed will not be executed again.
     ///   This function does **not** provide time machine-like functionality.
     func rewind(to time: SchedulerTimeType) {
+        if time > _now {
+            while let (nextActionTime, action) = workQueue.min(), nextActionTime <= time {
+                workQueue.extractMin()
+                _now = max(nextActionTime, _now)
+                action()
+            }
+        }
         _now = time
     }
 
-    func executeScheduledActions() {
-        while let (time, action) = workQueue.extractMin() {
+    func executeScheduledActions(until deadline: SchedulerTimeType = .nanoseconds(.max)) {
+        precondition(deadline >= _now)
+        while let (time, action) = workQueue.min(), time <= deadline {
+            workQueue.extractMin()
             _now = max(time, _now)
             action()
         }
