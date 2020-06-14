@@ -1,54 +1,53 @@
 //
-//  RunLoop+Scheduler.swift
+//  OperationQueue+Scheduler.swift
 //  
 //
-//  Created by Sergej Jaskiewicz on 13.12.2019.
+//  Created by Sergej Jaskiewicz on 14.06.2020.
 //
 
-import CoreFoundation
 import Foundation
 import OpenCombine
 
-extension RunLoop {
+extension OperationQueue {
 
     /// A namespace for disambiguation when both OpenCombine and Combine are imported.
     ///
-    /// Foundation overlay for Combine extends `RunLoop` with new methods and nested
-    /// types.
+    /// Foundation overlay for Combine extends `OperationQueue` with new methods and
+    /// nested types.
     /// If you import both OpenCombine and Foundation, you will not be able
-    /// to write `RunLoop.SchedulerTimeType`,
+    /// to write `OperationQueue.SchedulerTimeType`,
     /// because Swift is unable to understand which `SchedulerTimeType`
     /// you're referring to.
     ///
-    /// So you have to write `RunLoop.OCombine.SchedulerTimeType`.
+    /// So you have to write `OperationQueue.OCombine.SchedulerTimeType`.
     ///
     /// This bug is tracked [here](https://bugs.swift.org/browse/SR-11183).
     ///
     /// You can omit this whenever Combine is not available (e. g. on Linux).
     public struct OCombine: Scheduler {
 
-        public let runLoop: RunLoop
+        public let queue: OperationQueue
 
-        public init(_ runLoop: RunLoop) {
-            self.runLoop = runLoop
+        public init(_ queue: OperationQueue) {
+            self.queue = queue
         }
 
-        /// The scheduler time type used by the run loop.
+        /// The scheduler time type used by the operation queue.
         public struct SchedulerTimeType: Strideable, Codable, Hashable {
 
             /// The date represented by this type.
             public var date: Date
 
-            /// Initializes a run loop scheduler time with the given date.
+            /// Initializes a operation queue scheduler time with the given date.
             ///
             /// - Parameter date: The date to represent.
             public init(_ date: Date) {
                 self.date = date
             }
 
-            /// Returns the distance to another run loop scheduler time.
+            /// Returns the distance to another operation queue scheduler time.
             ///
-            /// - Parameter other: Another run loop time.
+            /// - Parameter other: Another operation queue time.
             /// - Returns: The time interval between this time and the provided time.
             public func distance(to other: SchedulerTimeType) -> Stride {
                 let absoluteSelf = date.timeIntervalSinceReferenceDate
@@ -56,17 +55,17 @@ extension RunLoop {
                 return Stride(absoluteSelf.distance(to: absoluteOther))
             }
 
-            /// Returns a run loop scheduler time calculated by advancing this instance’s
-            /// time by the given interval.
+            /// Returns an operation queue scheduler time calculated by advancing this
+            /// instance’s time by the given interval.
             ///
-            /// - Parameter value: A time interval to advance.
-            /// - Returns: A run loop time advanced by the given interval from this
-            ///   instance’s time.
+            /// - Parameter n: A time interval to advance.
+            /// - Returns: An operation queue time advanced by the given interval from
+            ///   this instance’s time.
             public func advanced(by value: Stride) -> SchedulerTimeType {
                 return SchedulerTimeType(date + value.magnitude)
             }
 
-            /// The interval by which run loop times advance.
+            /// The interval by which operation queue times advance.
             public struct Stride: SchedulerTimeIntervalConvertible,
                                   Comparable,
                                   SignedNumeric,
@@ -77,26 +76,26 @@ extension RunLoop {
 
                 public typealias IntegerLiteralType = TimeInterval
 
-                /// A type that can represent the absolute value of any possible value
-                /// of the conforming type.
                 public typealias Magnitude = TimeInterval
 
                 /// The value of this time interval in seconds.
                 public var magnitude: TimeInterval
 
                 /// The value of this time interval in seconds.
-                public var timeInterval: TimeInterval { return magnitude }
+                public var timeInterval: TimeInterval {
+                    return magnitude
+                }
 
                 public init(integerLiteral value: TimeInterval) {
-                    self.magnitude = value
+                    magnitude = value
                 }
 
                 public init(floatLiteral value: TimeInterval) {
-                    self.magnitude = value
+                    magnitude = value
                 }
 
                 public init(_ timeInterval: TimeInterval) {
-                    self.magnitude = timeInterval
+                    magnitude = timeInterval
                 }
 
                 public init?<Source: BinaryInteger>(exactly source: Source) {
@@ -154,34 +153,57 @@ extension RunLoop {
             }
         }
 
-        /// Options that affect the operation of the run loop scheduler.
+        /// Options that affect the operation of the operation queue scheduler.
         public struct SchedulerOptions {
         }
 
-        public func schedule(options: SchedulerOptions?, _ action: @escaping () -> Void) {
-            let cfRunLoop = runLoop.getCFRunLoop()
-            CFRunLoopPerformBlock(cfRunLoop, defaultRunLoopModeString, action)
-            CFRunLoopWakeUp(cfRunLoop)
+        private final class DelayReadyOperation: Operation, Cancellable {
+
+            private static let readySchedulingQueue =
+                DispatchQueue(label: "DelayReadyOperation")
+
+            private var action: (() -> Void)?
+            private var readyFromAfter: Bool
+
+            init(_ action: @escaping() -> Void, after: SchedulerTimeType) {
+                self.action = action
+                readyFromAfter = false
+                super.init()
+                let deadline = DispatchTime.now() + after.date.timeIntervalSinceNow
+                DelayReadyOperation.readySchedulingQueue
+                    .asyncAfter(deadline: deadline) { [weak self] in
+                        self?.becomeReady()
+                    }
+            }
+
+            override func main() {
+                action!()
+                action = nil
+            }
+
+            private func becomeReady() {
+                willChangeValue(for: \.isReady)
+                readyFromAfter = true
+                didChangeValue(for: \.isReady)
+            }
+
+            override var isReady: Bool {
+                return super.isReady && readyFromAfter
+            }
+        }
+
+        public func schedule(options: SchedulerOptions?,
+                             _ action: @escaping () -> Void) {
+            let op = BlockOperation(block: action)
+            queue.addOperation(op)
         }
 
         public func schedule(after date: SchedulerTimeType,
                              tolerance: SchedulerTimeType.Stride,
                              options: SchedulerOptions?,
                              _ action: @escaping () -> Void) {
-            let timer = CFRunLoopTimerCreateWithHandler(
-                nil,
-                date.date.timeIntervalSinceReferenceDate,
-                0,
-                0,
-                0,
-                { _ in action() }
-            )
-            // A bug in Combine. The schedule(after:tolerance:options:_:) methods
-            // always executes the action on the current runloop.
-            // (FB7493579 if Apple folks are watching)
-            let theWrongRunLoop = CFRunLoopGetCurrent()
-            CFRunLoopAddTimer(theWrongRunLoop, timer, defaultRunLoopMode)
-            CFRunLoopWakeUp(theWrongRunLoop)
+            let op = DelayReadyOperation(action, after: date)
+            queue.addOperation(op)
         }
 
         public func schedule(after date: SchedulerTimeType,
@@ -189,18 +211,9 @@ extension RunLoop {
                              tolerance: SchedulerTimeType.Stride,
                              options: SchedulerOptions?,
                              _ action: @escaping () -> Void) -> Cancellable {
-            let timer = CFRunLoopTimerCreateWithHandler(
-                nil,
-                date.date.timeIntervalSinceReferenceDate,
-                interval.magnitude,
-                0,
-                0,
-                { _ in action() }
-            )
-            let cfRunLoop = runLoop.getCFRunLoop()
-            CFRunLoopAddTimer(cfRunLoop, timer, defaultRunLoopMode)
-            CFRunLoopWakeUp(cfRunLoop)
-            return AnyCancellable { CFRunLoopTimerInvalidate(timer) }
+            let op = DelayReadyOperation(action, after: date.advanced(by: interval))
+            queue.addOperation(op)
+            return AnyCancellable(op)
         }
 
         public var now: SchedulerTimeType {
@@ -208,20 +221,20 @@ extension RunLoop {
         }
 
         public var minimumTolerance: SchedulerTimeType.Stride {
-            return .init(0)
+            return .init(0.0)
         }
     }
 
     /// A namespace for disambiguation when both OpenCombine and Foundation are imported.
     ///
-    /// Foundation overlay for Combine extends `RunLoop` with new methods and nested
-    /// types.
+    /// Foundation overlay for Combine extends `OperationQueue` with new methods and
+    /// nested types.
     /// If you import both OpenCombine and Foundation, you will not be able
-    /// to write `RunLoop.main.schedule { doThings() }`,
+    /// to write `OperationQueue.main.schedule { doThings() }`,
     /// because Swift is unable to understand which `schedule` method
     /// you're referring to.
     ///
-    /// So you have to write `RunLoop.main.ocombine.schedule { doThings() }`.
+    /// So you have to write `OperationQueue.main.ocombine.schedule { doThings() }`.
     ///
     /// This bug is tracked [here](https://bugs.swift.org/browse/SR-11183).
     ///
@@ -232,7 +245,7 @@ extension RunLoop {
 }
 
 #if !canImport(Combine)
-extension RunLoop: OpenCombine.Scheduler {
+extension OperationQueue: OpenCombine.Scheduler {
 
     /// Options that affect the operation of the run loop scheduler.
     public typealias SchedulerOptions = OCombine.SchedulerOptions
@@ -272,19 +285,3 @@ extension RunLoop: OpenCombine.Scheduler {
     }
 }
 #endif
-
-private var defaultRunLoopMode: CFRunLoopMode {
-#if canImport(Darwin)
-    return CFRunLoopMode.defaultMode
-#else
-    return kCFRunLoopDefaultMode
-#endif
-}
-
-private var defaultRunLoopModeString: CFString {
-#if canImport(Darwin)
-    return CFRunLoopMode.defaultMode.rawValue
-#else
-    return kCFRunLoopDefaultMode
-#endif
-}
