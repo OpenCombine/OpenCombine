@@ -177,7 +177,7 @@ extension OperationQueue {
             }
 
             override func main() {
-                action!()
+                action?()
                 action = nil
             }
 
