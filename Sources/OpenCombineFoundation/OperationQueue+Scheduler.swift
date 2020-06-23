@@ -163,11 +163,12 @@ extension OperationQueue {
                 DispatchQueue(label: "DelayReadyOperation")
 
             private var action: (() -> Void)?
-            private var readyFromAfter: Bool
+
+            private var readyFromAfter = false
+            private let lock = UnfairLock.allocate()
 
             init(_ action: @escaping() -> Void, after: SchedulerTimeType) {
                 self.action = action
-                readyFromAfter = false
                 super.init()
                 let deadline = DispatchTime.now() + after.date.timeIntervalSinceNow
                 DelayReadyOperation.readySchedulingQueue
@@ -176,19 +177,28 @@ extension OperationQueue {
                     }
             }
 
+            deinit {
+                lock.deallocate()
+            }
+
             override func main() {
-                action?()
+                action!()
                 action = nil
             }
 
             private func becomeReady() {
                 willChangeValue(for: \.isReady)
+                lock.lock()
                 readyFromAfter = true
+                lock.unlock()
                 didChangeValue(for: \.isReady)
             }
 
             override var isReady: Bool {
-                return super.isReady && readyFromAfter
+                guard super.isReady else { return false }
+                lock.lock()
+                defer { lock.unlock() }
+                return readyFromAfter
             }
         }
 
