@@ -37,23 +37,6 @@ extension NSObject.KeyValueObservingPublisher : Combine.Publisher {
   public func receive<S>(subscriber: S) where Value == S.Input, S : Combine.Subscriber, S.Failure == ObjectiveC.NSObject.KeyValueObservingPublisher<Subject, Value>.Failure
 }
 
-extension Timer {
-  public static func publish(every interval: Foundation.TimeInterval, tolerance: Foundation.TimeInterval? = nil, on runLoop: Foundation.RunLoop, in mode: Foundation.RunLoop.Mode, options: Foundation.RunLoop.SchedulerOptions? = nil) -> Foundation.Timer.TimerPublisher
-  final public class TimerPublisher : Combine.ConnectablePublisher {
-    public typealias Output = Foundation.Date
-    public typealias Failure = Swift.Never
-    final public let interval: Foundation.TimeInterval
-    final public let tolerance: Foundation.TimeInterval?
-    final public let runLoop: Foundation.RunLoop
-    final public let mode: Foundation.RunLoop.Mode
-    final public let options: Foundation.RunLoop.SchedulerOptions?
-    public init(interval: Foundation.TimeInterval, tolerance: Foundation.TimeInterval? = nil, runLoop: Foundation.RunLoop, mode: Foundation.RunLoop.Mode, options: Foundation.RunLoop.SchedulerOptions? = nil)
-    final public func receive<S>(subscriber: S) where S : Combine.Subscriber, S.Failure == Foundation.Timer.TimerPublisher.Failure, S.Input == Foundation.Timer.TimerPublisher.Output
-    final public func connect() -> Combine.Cancellable
-    @objc deinit
-  }
-}
-
 extension OperationQueue : Combine.Scheduler {
   public struct SchedulerTimeType : Swift.Strideable, Swift.Codable, Swift.Hashable {
     public var date: Foundation.Date
