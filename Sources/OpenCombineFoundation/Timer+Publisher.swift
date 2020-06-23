@@ -65,11 +65,6 @@ extension Timer {
                 RoutingSubscription(parent: self)
             }()
 
-            // Stores if a `.connect()` happened before subscription.
-            fileprivate var isConnected: Bool {
-                return routingSubscription.isConnected
-            }
-
             /// Creates a publisher that repeatedly emits the current date
             /// on the given interval.
             ///
@@ -96,9 +91,8 @@ extension Timer {
 
             /// Adapter subscription to allow `Timer` to multiplex to multiple subscribers
             /// the values produced by a single `TimerPublisher.Inner`
-            private class RoutingSubscription
+            private final class RoutingSubscription
                 : Subscription,
-                  Subscriber,
                   CustomStringConvertible,
                   CustomReflectable,
                   CustomPlaygroundDisplayConvertible
@@ -112,33 +106,11 @@ extension Timer {
 
                 // Inner is IUP due to init requirements
                 // swiftlint:disable:next implicitly_unwrapped_optional
-                private var inner: Inner<RoutingSubscription>!
+                private var inner: Inner!
 
                 private var subscribers: [ErasedSubscriber] = []
 
-                private var _lockedIsConnected = false
-
-                var isConnected: Bool {
-                    get {
-                        lock.lock()
-                        defer { lock.unlock() }
-                        return _lockedIsConnected
-                    }
-                    set {
-                        lock.lock()
-                        let oldValue = _lockedIsConnected
-                        _lockedIsConnected = newValue
-
-                        // Inner will always be non-nil
-                        let inner = self.inner!
-                        lock.unlock()
-
-                        guard newValue, !oldValue else {
-                            return
-                        }
-                        inner.enqueue()
-                    }
-                }
+                private var isConnected = false
 
                 init(parent: TimerPublisher) {
                     inner = Inner(parent: parent, downstream: self)
@@ -158,24 +130,17 @@ extension Timer {
                     downstream.receive(subscription: self)
                 }
 
-                func receive(subscription: Subscription) {
-                    lock.lock()
-                    let subscribers = self.subscribers
-                    lock.unlock()
-
-                    for subscriber in subscribers {
-                        subscriber.receive(subscription: subscription)
-                    }
-                }
-
                 func receive(_ value: Input) -> Subscribers.Demand {
                     var resultingDemand = Subscribers.Demand.none
                     lock.lock()
                     let subscribers = self.subscribers
-                    let isConnected = _lockedIsConnected
+                    let isConnected = self.isConnected
                     lock.unlock()
 
-                    guard isConnected else { return .none }
+                    guard isConnected else {
+                        // This branch is only reachable in case of a race condition.
+                        return .none
+                    }
 
                     for subscriber in subscribers {
                         resultingDemand += subscriber.receive(value)
@@ -183,19 +148,8 @@ extension Timer {
                     return resultingDemand
                 }
 
-                func receive(completion: Subscribers.Completion<Failure>) {
-                    lock.lock()
-                    let subscribers = self.subscribers
-                    lock.unlock()
-
-                    for subscriber in subscribers {
-                        subscriber.receive(completion: completion)
-                    }
-                }
-
                 func request(_ demand: Subscribers.Demand) {
                     lock.lock()
-                    // Inner will always be non-nil
                     let inner = self.inner!
                     lock.unlock()
 
@@ -204,9 +158,8 @@ extension Timer {
 
                 func cancel() {
                     lock.lock()
-                    // Inner will always be non-nil
                     let inner = self.inner!
-                    _lockedIsConnected = false
+                    isConnected = false
                     subscribers = []
                     lock.unlock()
 
@@ -222,6 +175,16 @@ extension Timer {
                 var combineIdentifier: CombineIdentifier {
                     return inner.combineIdentifier
                 }
+
+                func startPublishing() {
+                    lock.lock()
+                    let isConnected = self.isConnected
+                    self.isConnected = true
+                    let inner = self.inner!
+                    lock.unlock()
+                    if isConnected { return }
+                    inner.startPublishing()
+                }
             }
 
             public func receive<Downstream: Subscriber>(subscriber: Downstream)
@@ -231,18 +194,17 @@ extension Timer {
             }
 
             public func connect() -> Cancellable {
-                routingSubscription.isConnected = true
+                routingSubscription.startPublishing()
                 return routingSubscription
             }
 
             private typealias Parent = TimerPublisher
 
-            private final class Inner<Downstream: Subscriber>
-                : Subscription,
-                  CustomStringConvertible,
+            private final class Inner
+                : NSObject,
+                  Subscription,
                   CustomReflectable,
                   CustomPlaygroundDisplayConvertible
-                where Downstream.Input == Date, Downstream.Failure == Never
             {
                 private lazy var timer: CFRunLoopTimer? = {
                     let timer = CFRunLoopTimerCreateWithHandler(
@@ -259,7 +221,7 @@ extension Timer {
 
                 private let lock = UnfairLock.allocate()
 
-                private var downstream: Downstream?
+                private var downstream: RoutingSubscription?
 
                 private var parent: Parent?
 
@@ -267,7 +229,7 @@ extension Timer {
 
                 private var demand = Subscribers.Demand.none
 
-                init(parent: Parent, downstream: Downstream) {
+                init(parent: Parent, downstream: RoutingSubscription) {
                     self.parent = parent
                     self.downstream = downstream
                 }
@@ -276,7 +238,7 @@ extension Timer {
                     lock.deallocate()
                 }
 
-                func enqueue() {
+                func startPublishing() {
                     lock.lock()
                     guard let timer = self.timer,
                           let parent = self.parent,
@@ -310,16 +272,16 @@ extension Timer {
                     CFRunLoopTimerInvalidate(timer)
                 }
 
-                func request(_ n: Subscribers.Demand) {
+                func request(_ demand: Subscribers.Demand) {
                     lock.lock()
                     defer { lock.unlock() }
                     guard parent != nil else {
                         return
                     }
-                    demand += n
+                    self.demand += demand
                 }
 
-                var description: String { return "Timer" }
+                override var description: String { return "Timer" }
 
                 var customMirror: Mirror {
                     lock.lock()
@@ -338,7 +300,8 @@ extension Timer {
                     lock.lock()
                     guard let downstream = self.downstream,
                           parent != nil,
-                          demand > 0 else {
+                          demand > 0
+                    else {
                         lock.unlock()
                         return
                     }
