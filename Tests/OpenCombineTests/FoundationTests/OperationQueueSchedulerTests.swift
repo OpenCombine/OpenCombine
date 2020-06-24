@@ -140,6 +140,12 @@ final class OperationQueueSchedulerTests: XCTestCase {
             XCTFail("Unexpected history")
             return
         }
+        XCTAssertFalse(op is BlockOperation)
+        XCTAssertFalse(op.isReady)
+        XCTAssertFalse(op.isFinished)
+        XCTAssertFalse(op.isCancelled)
+        XCTAssertFalse(op.isAsynchronous)
+        XCTAssertFalse(op.isConcurrent)
         XCTAssert(op is Cancellable)
 
         XCTAssertEqual(counter.value, 0)
@@ -159,7 +165,7 @@ final class OperationQueueSchedulerTests: XCTestCase {
         let mainQueue = OperationQueue.main
         let startDate = Date()
         var actualDate = Date.distantPast
-        let desiredDelay: TimeInterval = 0.8
+        let desiredDelay: TimeInterval = 2
         executeOnBackgroundThread {
             let scheduler = makeScheduler(mainQueue)
             scheduler
@@ -171,7 +177,7 @@ final class OperationQueueSchedulerTests: XCTestCase {
         }
 
         XCTAssertEqual(actualDate, .distantPast)
-        RunLoop.main.run(until: Date() + desiredDelay * 3)
+        RunLoop.main.run(until: Date() + desiredDelay * 2)
         XCTAssertEqual(
             actualDate.timeIntervalSinceReferenceDate -
                 startDate.timeIntervalSinceReferenceDate,
@@ -199,6 +205,12 @@ final class OperationQueueSchedulerTests: XCTestCase {
             XCTFail("Unexpected history")
             return
         }
+        XCTAssertFalse(op is BlockOperation)
+        XCTAssertFalse(op.isReady)
+        XCTAssertFalse(op.isFinished)
+        XCTAssertFalse(op.isCancelled)
+        XCTAssertFalse(op.isAsynchronous)
+        XCTAssertFalse(op.isConcurrent)
         XCTAssert(op is Cancellable)
         XCTAssert(cancellable is AnyCancellable)
 

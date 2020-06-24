@@ -187,11 +187,25 @@ extension OperationQueue {
             }
 
             private func becomeReady() {
+#if canImport(Darwin)
+                // The smart key paths don't work with NSOperation on OS versions prior to
+                // iOS 11. The string key paths work fine everywhere.
+                // https://forums.swift.org/t/keypath-translation-for-kvo-notification-seems-to-not-work-properly-on-ios-10/15898
+                willChangeValue(forKey: "isReady")
+#else
                 willChangeValue(for: \.isReady)
+#endif
                 lock.lock()
                 readyFromAfter = true
                 lock.unlock()
+#if canImport(Darwin)
+                // The smart key paths don't work with NSOperation on OS versions prior to
+                // iOS 11. The string key paths work fine everywhere.
+                // https://forums.swift.org/t/keypath-translation-for-kvo-notification-seems-to-not-work-properly-on-ios-10/15898
+                didChangeValue(forKey: "isReady")
+#else
                 didChangeValue(for: \.isReady)
+#endif
             }
 
             override var isReady: Bool {
