@@ -73,6 +73,12 @@ final class OperationQueueSchedulerTests: XCTestCase {
 
     // MARK: - Scheduler
 
+#if canImport(Darwin)
+    // FIXME: These tests crash with swift-corelibs-foundation.
+    // The issue has been resolved in
+    // https://github.com/apple/swift-corelibs-foundation/pull/2779
+    // but it hasn't made it into an official release yet.
+
     func testScheduleActionOnceNowWithTestQueue() {
         let queue = TestOperationQueue()
         let scheduler = makeScheduler(queue)
@@ -118,8 +124,6 @@ final class OperationQueueSchedulerTests: XCTestCase {
                        accuracy: 0.1)
     }
 
-#if canImport(Darwin)
-    // This test crashes with swift-corelibs-foundation for some reason.
     func testScheduleActionOnceLaterWithTestQueue() {
         let queue = TestOperationQueue()
         let scheduler = makeScheduler(queue)
@@ -150,7 +154,6 @@ final class OperationQueueSchedulerTests: XCTestCase {
             op.main()
         }
     }
-#endif // canImport(Darwin)
 
     func testScheduleActionOnceLaterWithRealQueue() {
         let mainQueue = OperationQueue.main
@@ -177,8 +180,6 @@ final class OperationQueueSchedulerTests: XCTestCase {
         )
     }
 
-#if canImport(Darwin)
-    // This test crashes with swift-corelibs-foundation for some reason.
     func testScheduleRepeatingWithTestQueue() {
         let queue = TestOperationQueue()
         let scheduler = makeScheduler(queue)
@@ -214,7 +215,6 @@ final class OperationQueueSchedulerTests: XCTestCase {
             op.main()
         }
     }
-#endif // canImport(Darwin)
 
     func testScheduleRepeatingWithRealQueue() {
         let mainQueue = OperationQueue.main
@@ -260,6 +260,7 @@ final class OperationQueueSchedulerTests: XCTestCase {
             accuracy: expectedDelay / 3
         )
     }
+#endif // canImport(Darwin)
 
     func testMinimumTolerance() {
         let scheduler = makeScheduler(.main)
