@@ -34,16 +34,16 @@ final class TimerPublisherTests: XCTestCase {
     }
 
     func testConnectAndPublish() {
-        let desiredInterval: TimeInterval = 0.1
+        let desiredInterval: TimeInterval = 0.5
         var ticks = [TimeInterval]()
 
         let tracking1 = TrackingSubscriberBase<Date, Never>(
             receiveSubscription: {
-                $0.request(.max(10))
+                $0.request(.max(3))
             },
             receiveValue: {
                 ticks.append($0.timeIntervalSinceReferenceDate)
-                return ticks.count < 10 ? .max(1) : .none
+                return ticks.count < 3 ? .max(1) : .none
             }
         )
 
@@ -57,7 +57,7 @@ final class TimerPublisherTests: XCTestCase {
                 $0.request(.max(1))
             },
             receiveValue: { _ in
-                ticks.count < 10 ? .max(1) : .none
+                ticks.count < 3 ? .max(1) : .none
             }
         )
 
@@ -70,17 +70,17 @@ final class TimerPublisherTests: XCTestCase {
 
         XCTAssertEqual(tracking1.history, [.subscription("Timer")])
 
-        RunLoop.main.run(until: Date() + 0.5)
+        RunLoop.main.run(until: Date() + 1)
 
         // Test that no output is produced until we connect
         XCTAssertEqual(tracking1.history, [.subscription("Timer")])
 
         let connection = publisher.connect()
 
-        RunLoop.main.run(until: Date() + 6)
+        RunLoop.main.run(until: Date() + 10)
 
         assertCorrectIntervals(ticks: ticks,
-                               expectedNumberOfTicks: 31,
+                               expectedNumberOfTicks: 10,
                                desiredInterval: desiredInterval)
 
         let fullHistory =
@@ -90,7 +90,7 @@ final class TimerPublisherTests: XCTestCase {
         connection.cancel()
         XCTAssert(connection is Subscription)
 
-        RunLoop.main.run(until: Date() + 0.5)
+        RunLoop.main.run(until: Date() + 1)
 
         XCTAssertEqual(tracking1.history, fullHistory)
         XCTAssertEqual(tracking2.history, fullHistory)
