@@ -171,7 +171,7 @@ final class OperationQueueSchedulerTests: XCTestCase {
         }
 
         XCTAssertEqual(actualDate, .distantPast)
-        RunLoop.main.run(until: Date() + desiredDelay * 1.333)
+        RunLoop.main.run(until: Date() + desiredDelay * 3)
         XCTAssertEqual(
             actualDate.timeIntervalSinceReferenceDate -
                 startDate.timeIntervalSinceReferenceDate,
