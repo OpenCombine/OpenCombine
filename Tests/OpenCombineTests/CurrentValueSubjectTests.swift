@@ -102,6 +102,36 @@ final class CurrentValueSubjectTests: XCTestCase {
         XCTAssertEqual(numberOfInputsHistory, expectedNumberOfInputsHistory)
     }
 
+    func testRequestSeveralTimes() throws {
+        let cvs = Sut(-1)
+        var downstreamSubscription: Subscription?
+        let tracking = TrackingSubscriber(
+            receiveSubscription: { downstreamSubscription = $0 }
+        )
+        cvs.subscribe(tracking)
+
+        XCTAssertEqual(tracking.history, [.subscription("CurrentValueSubject")])
+
+        try XCTUnwrap(downstreamSubscription).request(.max(2))
+        try XCTUnwrap(downstreamSubscription).request(.max(3))
+        try XCTUnwrap(downstreamSubscription).request(.max(1))
+
+        XCTAssertEqual(tracking.history, [.subscription("CurrentValueSubject"),
+                                          .value(-1)])
+
+        for i in 0 ..< 10 {
+            cvs.send(i)
+        }
+
+        XCTAssertEqual(tracking.history, [.subscription("CurrentValueSubject"),
+                                          .value(-1),
+                                          .value(0),
+                                          .value(1),
+                                          .value(2),
+                                          .value(3),
+                                          .value(4)])
+    }
+
     func testCrashOnZeroInitialDemand() {
         assertCrashes {
             let subscriber = TrackingSubscriber(
@@ -224,6 +254,42 @@ final class CurrentValueSubjectTests: XCTestCase {
                         .subscription("CurrentValueSubject"),
                         .value(112),
                         .subscription("CurrentValueSubject")])
+
+        for (i, subscription) in subscriber.tracking.subscriptions.enumerated()
+            where i.isMultiple(of: 2)
+        {
+            subscription.cancel()
+        }
+        cvs.value = 200
+
+        XCTAssertEqual(subscriber.tracking.history,
+                       [.value(112),
+                        .subscription("CurrentValueSubject"),
+                        .value(112),
+                        .subscription("CurrentValueSubject"),
+                        .value(112),
+                        .subscription("CurrentValueSubject"),
+                        .value(112),
+                        .subscription("CurrentValueSubject"),
+                        .value(112),
+                        .subscription("CurrentValueSubject"),
+                        .value(112),
+                        .subscription("CurrentValueSubject"),
+                        .value(112),
+                        .subscription("CurrentValueSubject"),
+                        .value(112),
+                        .subscription("CurrentValueSubject"),
+                        .value(112),
+                        .subscription("CurrentValueSubject"),
+                        .value(112),
+                        .subscription("CurrentValueSubject"),
+                        .value(112),
+                        .subscription("CurrentValueSubject"),
+                        .value(200),
+                        .value(200),
+                        .value(200),
+                        .value(200),
+                        .value(200)])
     }
 
     // Reactive Streams Spec: Rule #6
@@ -375,6 +441,100 @@ final class CurrentValueSubjectTests: XCTestCase {
         XCTAssertEqual(subscription2.history, [.requested(.unlimited)])
     }
 
+    func testCompletion() throws {
+        let passthrough = Sut(42)
+        var downstreamSubscription: Subscription?
+        let tracking = TrackingSubscriber(
+            receiveSubscription: { downstreamSubscription = $0 }
+        )
+
+        passthrough.subscribe(tracking)
+
+        try XCTUnwrap(downstreamSubscription).request(.max(12))
+
+        passthrough.send(1)
+
+        expectedChildren(
+            ("parent", .contains("CurrentValueSubject")),
+            ("downstream", .contains("TrackingSubscriberBase")),
+            ("demand", "max(10)"),
+            ("subject", .contains("CurrentValueSubject"))
+        )(Mirror(reflecting: try XCTUnwrap(downstreamSubscription)))
+
+        passthrough.send(completion: .finished)
+
+        if !hasCustomMirrorUseAfterFreeBug {
+            expectedChildren(
+                ("parent", "nil"),
+                ("downstream", "nil"),
+                ("demand", "max(10)"),
+                ("subject", "nil")
+            )(Mirror(reflecting: try XCTUnwrap(downstreamSubscription)))
+        }
+
+        XCTAssertEqual(tracking.history, [.subscription("CurrentValueSubject"),
+                                          .value(42),
+                                          .value(1),
+                                          .completion(.finished)])
+
+        passthrough.send(completion: .failure(.oops))
+        try XCTUnwrap(downstreamSubscription).cancel()
+        try XCTUnwrap(downstreamSubscription).request(.max(3))
+
+        if !hasCustomMirrorUseAfterFreeBug {
+            expectedChildren(
+                ("parent", "nil"),
+                ("downstream", "nil"),
+                ("demand", "max(10)"),
+                ("subject", "nil")
+            )(Mirror(reflecting: try XCTUnwrap(downstreamSubscription)))
+        }
+
+        XCTAssertEqual(tracking.history, [.subscription("CurrentValueSubject"),
+                                          .value(42),
+                                          .value(1),
+                                          .completion(.finished)])
+    }
+
+    func testCancellation() throws {
+        let cvs = Sut(42)
+        var downstreamSubscription: Subscription?
+        let tracking = TrackingSubscriber(
+            receiveSubscription: { downstreamSubscription = $0 }
+        )
+
+        cvs.subscribe(tracking)
+
+        try XCTUnwrap(downstreamSubscription).request(.max(12))
+
+        cvs.send(1)
+
+        expectedChildren(
+            ("parent", .contains("CurrentValueSubject")),
+            ("downstream", .contains("TrackingSubscriberBase")),
+            ("demand", "max(10)"),
+            ("subject", .contains("CurrentValueSubject"))
+        )(Mirror(reflecting: try XCTUnwrap(downstreamSubscription)))
+
+        try XCTUnwrap(downstreamSubscription).cancel()
+        try XCTUnwrap(downstreamSubscription).cancel()
+        try XCTUnwrap(downstreamSubscription).request(.max(3))
+        try XCTUnwrap(downstreamSubscription).request(.max(4))
+
+        if !hasCustomMirrorUseAfterFreeBug {
+            expectedChildren(
+                ("parent", "nil"),
+                ("downstream", "nil"),
+                ("demand", "max(10)"),
+                ("subject", "nil")
+            )(Mirror(reflecting: try XCTUnwrap(downstreamSubscription)))
+        }
+
+        XCTAssertEqual(tracking.history, [.subscription("CurrentValueSubject"),
+                                          .value(42),
+                                          .value(1)])
+    }
+
     func testLifecycle() throws {
 
         var deinitCounter = 0
@@ -425,68 +585,87 @@ final class CurrentValueSubjectTests: XCTestCase {
         XCTAssertEqual(deinitCounter, 2)
     }
 
-    func testSynchronization() {
-
-        let subscriptions = Atomic<[Subscription]>([])
-        let inputs = Atomic<[Int]>([])
-        let completions = Atomic<[Subscribers.Completion<TestingError>]>([])
-
-        let cvs = Sut(112)
-        let subscriber = AnySubscriber<Int, TestingError>(
-            receiveSubscription: { subscription in
-                subscriptions.do { $0.append(subscription) }
-                subscription.request(.unlimited)
-            },
-            receiveValue: { value in
-                inputs.do { $0.append(value) }
-                return .none
-            },
-            receiveCompletion: { completion in
-                completions.do { $0.append(completion) }
+    func testCancelsUpstreamSubscriptionsOnDeinit() {
+        let subscription = CustomSubscription()
+        do {
+            let cvs = Sut(42)
+            for _ in 0 ..< 5 {
+                cvs.send(subscription: subscription)
             }
-        )
+            XCTAssertEqual(subscription.history, [.requested(.unlimited),
+                                                  .requested(.unlimited),
+                                                  .requested(.unlimited),
+                                                  .requested(.unlimited),
+                                                  .requested(.unlimited)])
+        }
 
-        race(
-            {
-                cvs.subscribe(subscriber)
-            },
-            {
-                cvs.subscribe(subscriber)
+        XCTAssertEqual(subscription.history, [.requested(.unlimited),
+                                              .requested(.unlimited),
+                                              .requested(.unlimited),
+                                              .requested(.unlimited),
+                                              .requested(.unlimited),
+                                              .cancelled,
+                                              .cancelled,
+                                              .cancelled,
+                                              .cancelled,
+                                              .cancelled])
+    }
+
+    func testReleasesEverythingOnTermination() {
+
+        enum TerminationReason: CaseIterable {
+            case cancelled
+            case finished
+            case failed
+        }
+
+        for reason in TerminationReason.allCases {
+            weak var weakSubscriber: TrackingSubscriber?
+            weak var weakSubject: Sut?
+            weak var weakSubscription: AnyObject?
+
+            do {
+                let subject = Sut(42)
+                do {
+                    let subscriber = TrackingSubscriber(
+                        receiveSubscription: {
+                            weakSubscription = $0 as AnyObject
+                        }
+                    )
+                    weakSubscriber = subscriber
+                    weakSubject = subject
+
+                    subject.subscribe(subscriber)
+                }
+
+                switch reason {
+                case .cancelled:
+                    (weakSubscription as? Subscription)?.cancel()
+                case .finished:
+                    subject.send(completion: .finished)
+                case .failed:
+                    subject.send(completion: .failure(.oops))
+                }
+
+                XCTAssertNil(weakSubscriber, "Subscriber leaked - \(reason)")
+                XCTAssertNil(weakSubscription, "Subscription leaked - \(reason)")
             }
+
+            XCTAssertNil(weakSubject, "Subject leaked - \(reason)")
+        }
+    }
+
+    func testConduitReflection() throws {
+        try testSubscriptionReflection(
+            description: "CurrentValueSubject",
+            customMirror: expectedChildren(
+                ("parent", .contains("CurrentValueSubject")),
+                ("downstream", .contains("TrackingSubscriberBase")),
+                ("demand", "max(0)"),
+                ("subject", .contains("CurrentValueSubject"))
+            ),
+            playgroundDescription:  "CurrentValueSubject",
+            sut: CurrentValueSubject<Int, Error>(42)
         )
-
-        XCTAssertEqual(subscriptions.value.count, 200)
-
-        race(
-            {
-                cvs.value = 42
-            },
-            {
-                cvs.value = 42
-            }
-        )
-
-        XCTAssertEqual(inputs.value.count, 40200)
-        XCTAssertEqual(cvs.value, 42)
-
-        race(
-            {
-                subscriptions.value[0].request(.max(4))
-            },
-            {
-                subscriptions.value[0].request(.max(10))
-            }
-        )
-
-        race(
-            {
-                cvs.send(completion: .finished)
-            },
-            {
-                cvs.send(completion: .failure(""))
-            }
-        )
-
-        XCTAssertEqual(completions.value.count, 200)
     }
 }
