@@ -11,13 +11,3 @@ import COpenCombineHelpers
 
 internal typealias UnfairLock = __UnfairLock
 internal typealias UnfairRecursiveLock = __UnfairRecursiveLock
-
-extension UnfairRecursiveLock {
-
-    @inlinable
-    internal func `do`<Result>(_ body: () throws -> Result) rethrows -> Result {
-        lock()
-        defer { unlock() }
-        return try body()
-    }
-}

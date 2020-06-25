@@ -98,6 +98,8 @@ final class FutureTests: XCTestCase {
         future.subscribe(subscriber)
 
         subscriber.subscriptions.forEach { $0.cancel() }
+        subscriber.subscriptions.forEach { $0.cancel() }
+        subscriber.subscriptions.forEach { $0.request(.max(1)) }
 
         promise?(.success(42))
 
@@ -106,7 +108,7 @@ final class FutureTests: XCTestCase {
         ])
     }
 
-    func testSubscribeAfterResolution() {
+    func testSubscribeAfterSuccessfulResolution() {
         var promise: Sut.Promise?
 
         let future = Sut { promise = $0 }
@@ -124,15 +126,36 @@ final class FutureTests: XCTestCase {
         ])
     }
 
-    func testCrashesOnZeroDemand() {
+    func testSubscribeAfterFailure() {
+        // TODO: Remove this `if` as soon as iOS 14 is released.
+        if hasMissingFailureAfterLateSubscriptionBug { return }
+
+        var promise: Sut.Promise?
+
+        let future = Sut { promise = $0 }
+        promise?(.failure(.oops))
+
+        let subscriber = TrackingSubscriber()
+        future.subscribe(subscriber)
+
+        XCTAssertEqual(subscriber.history, [.subscription("Future"),
+                                            .completion(.failure(.oops))])
+    }
+
+    func testCrashesOnZeroDemand() throws {
         let future = Sut { _ in }
 
-        let subscriber = TrackingSubscriber(receiveSubscription: { subscription in
-            self.assertCrashes {
-                subscription.request(.none)
+        var downstreamSubscription: Subscription?
+        let subscriber = TrackingSubscriber(
+            receiveSubscription: {
+                downstreamSubscription = $0
             }
-        })
+        )
         future.subscribe(subscriber)
+
+        try self.assertCrashes {
+            try XCTUnwrap(downstreamSubscription).request(.none)
+        }
     }
 
     func testValueRecursion() {
@@ -211,7 +234,7 @@ final class FutureTests: XCTestCase {
         XCTAssertTrue(hasStarted)
     }
 
-    func testWaitsForRequest() {
+    func testWaitsForDemandSuccess() {
         var promise: Sut.Promise?
 
         let future = Sut { promise = $0 }
@@ -236,4 +259,105 @@ final class FutureTests: XCTestCase {
             .completion(.finished)
         ])
     }
+
+    func testReleasesEverythingOnTermination() {
+
+        enum TerminationReason: CaseIterable {
+            case cancelled
+            case finished
+            case failed
+        }
+
+        for reason in TerminationReason.allCases {
+            weak var weakSubscriber: TrackingSubscriber?
+            weak var weakFuture: Sut?
+            weak var weakSubscription: AnyObject?
+
+            do {
+                var promise: Sut.Promise?
+                let future = Sut { promise = $0 }
+                do {
+                    let subscriber = TrackingSubscriber(
+                        receiveSubscription: {
+                            weakSubscription = $0 as AnyObject
+                            $0.request(.max(1))
+                        }
+                    )
+                    weakSubscriber = subscriber
+                    weakFuture = future
+
+                    future.subscribe(subscriber)
+                }
+
+                switch reason {
+                case .cancelled:
+                    (weakSubscription as? Subscription)?.cancel()
+                case .finished:
+                    promise?(.success(1))
+                case .failed:
+                    promise?(.failure(.oops))
+                }
+
+                XCTAssertNil(weakSubscriber, "Subscriber leaked - \(reason)")
+                if !leaksSubscription {
+                    // This leak has been fixed in the betas.
+                    // TODO: Remove this `if` as soon as iOS 14 is released.
+                    XCTAssertNil(weakSubscription, "Subscription leaked - \(reason)")
+                }
+            }
+
+            XCTAssertNil(weakFuture, "Future leaked - \(reason)")
+        }
+    }
+
+    func testConduitReflection() throws {
+        try testSubscriptionReflection(
+            description: "Future",
+            customMirror: expectedChildren(
+                ("parent", .contains("Future")),
+                ("downstream", .contains("TrackingSubscriberBase")),
+                ("hasAnyDemand", "false"),
+                ("subject", .contains("Future"))
+            ),
+            playgroundDescription: "Future",
+            sut: Sut { _ in }
+        )
+    }
+}
+
+@available(macOS, deprecated: 10.16, message: """
+If macOS 10.16/11.0 has already been released, this property should be removed
+""")
+@available(iOS, deprecated: 14, message: """
+If iOS 14  has already been released, this property should be removed
+""")
+private var leaksSubscription: Bool { // swiftlint:disable:this let_var_whitespace
+#if OPENCOMBINE_COMPATIBILITY_TEST
+    if #available(macOS 10.16, iOS 14.0, *) {
+        return false
+    } else {
+        return true
+    }
+#else
+    return false
+#endif
+}
+
+@available(macOS, deprecated: 10.16, message: """
+If macOS 10.16/11.0 has already been released, this property should be removed
+""")
+@available(iOS, deprecated: 14, message: """
+If iOS 14  has already been released, this property should be removed
+""")
+private var hasMissingFailureAfterLateSubscriptionBug: Bool {
+// swiftlint:disable:previous let_var_whitespace
+#if OPENCOMBINE_COMPATIBILITY_TEST
+    if #available(macOS 10.16, iOS 14.0, *) {
+        return false
+    } else {
+        return true
+    }
+#else
+    return false
+#endif
 }
