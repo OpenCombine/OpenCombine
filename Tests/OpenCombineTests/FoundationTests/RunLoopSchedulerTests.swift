@@ -21,10 +21,16 @@ final class RunLoopSchedulerTests: XCTestCase {
     // MARK: - Scheduler.SchedulerTimeType
 
     func testSchedulerTimeTypeDistance() {
-        let time1 = Scheduler.SchedulerTimeType(Date(timeIntervalSince1970: 10_000))
-        let time2 = Scheduler.SchedulerTimeType(Date(timeIntervalSince1970: 10_431))
-        let distantFuture = Scheduler.SchedulerTimeType(.distantFuture)
-        let notSoDistantFuture = Scheduler.SchedulerTimeType(
+        RunLoopSchedulerTests.testSchedulerTimeTypeDistance(RunLoopScheduler.self)
+    }
+
+    static func testSchedulerTimeTypeDistance<Context: RunLoopLikeScheduler>(
+        _ schedulerType: Context.Type
+    ) {
+        let time1 = Context.SchedulerTimeType(Date(timeIntervalSince1970: 10_000))
+        let time2 = Context.SchedulerTimeType(Date(timeIntervalSince1970: 10_431))
+        let distantFuture = Context.SchedulerTimeType(.distantFuture)
+        let notSoDistantFuture = Context.SchedulerTimeType(
             Date.distantFuture - 1024
         )
 
@@ -52,12 +58,18 @@ final class RunLoopSchedulerTests: XCTestCase {
     }
 
     func testSchedulerTimeTypeAdvanced() {
+        RunLoopSchedulerTests.testSchedulerTimeTypeAdvanced(RunLoopScheduler.self)
+    }
+
+    static func testSchedulerTimeTypeAdvanced<Context: RunLoopLikeScheduler>(
+        _ schedulerType: Context.Type
+    ) {
         let time =
-            Scheduler.SchedulerTimeType(Date(timeIntervalSinceReferenceDate: 10_000))
+            Context.SchedulerTimeType(Date(timeIntervalSinceReferenceDate: 10_000))
         let beginningOfTime =
-            Scheduler.SchedulerTimeType(Date(timeIntervalSinceReferenceDate: 1))
-        let stride1 = Scheduler.SchedulerTimeType.Stride.seconds(431)
-        let stride2 = Scheduler.SchedulerTimeType.Stride.seconds(-220)
+            Context.SchedulerTimeType(Date(timeIntervalSinceReferenceDate: 1))
+        let stride1 = Context.SchedulerTimeType.Stride.seconds(431)
+        let stride2 = Context.SchedulerTimeType.Stride.seconds(-220)
 
         XCTAssertEqual(time.advanced(by: stride1),
                        .init(Date(timeIntervalSinceReferenceDate: 10431)))
@@ -91,12 +103,15 @@ final class RunLoopSchedulerTests: XCTestCase {
     }
 
     func testSchedulerTimeTypeEquatable() {
-        let time1 =
-            Scheduler.SchedulerTimeType(Date(timeIntervalSinceReferenceDate: 10000))
-        let time2 =
-            Scheduler.SchedulerTimeType(Date(timeIntervalSinceReferenceDate: 10000))
-        let time3 =
-            Scheduler.SchedulerTimeType(Date(timeIntervalSinceReferenceDate: 10001))
+        RunLoopSchedulerTests.testSchedulerTimeTypeEquatable(RunLoopScheduler.self)
+    }
+
+    static func testSchedulerTimeTypeEquatable<Context: RunLoopLikeScheduler>(
+        _ schedulerType: Context.Type
+    ) {
+        let time1 = Context.SchedulerTimeType(Date(timeIntervalSinceReferenceDate: 10000))
+        let time2 = Context.SchedulerTimeType(Date(timeIntervalSinceReferenceDate: 10000))
+        let time3 = Context.SchedulerTimeType(Date(timeIntervalSinceReferenceDate: 10001))
 
         XCTAssertEqual(time1, time1)
         XCTAssertEqual(time2, time2)
@@ -109,11 +124,17 @@ final class RunLoopSchedulerTests: XCTestCase {
     }
 
     func testSchedulerTimeTypeCodable() throws {
+        try RunLoopSchedulerTests.testSchedulerTimeTypeCodable(RunLoopScheduler.self)
+    }
+
+    static func testSchedulerTimeTypeCodable<Context: RunLoopLikeScheduler>(
+        _ schedulerType: Context.Type
+    ) throws {
         let encoder = JSONEncoder()
         let decoder = JSONDecoder()
 
         let time =
-            Scheduler.SchedulerTimeType(Date(timeIntervalSinceReferenceDate: 1024.75))
+            Context.SchedulerTimeType(Date(timeIntervalSinceReferenceDate: 1024.75))
         let encodedData = try encoder
             .encode(time)
         let encodedString = String(decoding: encodedData, as: UTF8.self)
@@ -122,7 +143,7 @@ final class RunLoopSchedulerTests: XCTestCase {
                        #"{"date":1024.75}"#)
 
         let decodedTime = try decoder
-            .decode(Scheduler.SchedulerTimeType.self, from: encodedData)
+            .decode(Context.SchedulerTimeType.self, from: encodedData)
 
         XCTAssertEqual(decodedTime, time)
     }
@@ -130,6 +151,13 @@ final class RunLoopSchedulerTests: XCTestCase {
     // MARK: - Scheduler.SchedulerTimeType.Stride
 
     func testStrideToTimeInterval() {
+        RunLoopSchedulerTests.testStrideToTimeInterval(RunLoopScheduler.self)
+    }
+
+    static func testStrideToTimeInterval<Context: RunLoopLikeScheduler>(
+        _ schedulerType: Context.Type
+    ) {
+        typealias Stride = Context.SchedulerTimeType.Stride
         XCTAssertEqual(Stride.seconds(2).timeInterval, 2)
         XCTAssertEqual(Stride.seconds(2.2).timeInterval, 2.2)
         XCTAssertEqual(Stride.seconds(Double.infinity).timeInterval, .infinity)
@@ -153,7 +181,14 @@ final class RunLoopSchedulerTests: XCTestCase {
 #endif
     }
 
-    func testStrideFromTimeInterval() throws {
+    func testStrideFromTimeInterval() {
+        RunLoopSchedulerTests.testStrideFromTimeInterval(RunLoopScheduler.self)
+    }
+
+    static func testStrideFromTimeInterval<Context: RunLoopLikeScheduler>(
+        _ schedulerType: Context.Type
+    ) {
+        typealias Stride = Context.SchedulerTimeType.Stride
         XCTAssertEqual(Stride(2).magnitude, 2)
         XCTAssertEqual(Stride(2.2).magnitude, 2.2)
         XCTAssertEqual(Stride(.infinity).magnitude, .infinity)
@@ -164,6 +199,14 @@ final class RunLoopSchedulerTests: XCTestCase {
     }
 
     func testStrideFromNumericValue() {
+        RunLoopSchedulerTests.testStrideFromNumericValue(RunLoopScheduler.self)
+    }
+
+    static func testStrideFromNumericValue<Context: RunLoopLikeScheduler>(
+        _ schedulerType: Context.Type
+    ) {
+        typealias Stride = Context.SchedulerTimeType.Stride
+
         XCTAssertEqual((1.2 as Stride).magnitude, 1.2)
         XCTAssertEqual((2 as Stride).magnitude, 2)
 
@@ -172,12 +215,27 @@ final class RunLoopSchedulerTests: XCTestCase {
     }
 
     func testStrideComparable() {
+        RunLoopSchedulerTests.testStrideComparable(RunLoopScheduler.self)
+    }
+
+    static func testStrideComparable<Context: RunLoopLikeScheduler>(
+        _ schedulerType: Context.Type
+    ) {
+        typealias Stride = Context.SchedulerTimeType.Stride
         XCTAssertLessThan(Stride.nanoseconds(1), .nanoseconds(2))
         XCTAssertGreaterThan(Stride.nanoseconds(-2), .microseconds(-10))
         XCTAssertLessThan(Stride.milliseconds(2), .seconds(2))
     }
 
     func testStrideMultiplication() {
+        RunLoopSchedulerTests.testStrideMultiplication(RunLoopScheduler.self)
+    }
+
+    static func testStrideMultiplication<Context: RunLoopLikeScheduler>(
+        _ schedulerType: Context.Type
+    ) {
+        typealias Stride = Context.SchedulerTimeType.Stride
+
         XCTAssertEqual((Stride.nanoseconds(0) * .nanoseconds(61346)).magnitude, 0)
         XCTAssertEqual((Stride.nanoseconds(61346) * .nanoseconds(0)).magnitude, 0)
         XCTAssertEqual((Stride.nanoseconds(18) * .nanoseconds(1)).magnitude, 1.8E-17)
@@ -237,6 +295,14 @@ final class RunLoopSchedulerTests: XCTestCase {
     }
 
     func testStrideAddition() {
+        RunLoopSchedulerTests.testStrideAddition(RunLoopScheduler.self)
+    }
+
+    static func testStrideAddition<Context: RunLoopLikeScheduler>(
+        _ schedulerType: Context.Type
+    ) {
+        typealias Stride = Context.SchedulerTimeType.Stride
+
         XCTAssertEqual((Stride.nanoseconds(0) + .microseconds(2)).magnitude, 2E-06)
         XCTAssertEqual((Stride.nanoseconds(2) + .microseconds(0)).magnitude, 2E-09)
         XCTAssertEqual((Stride.nanoseconds(7) + .nanoseconds(12)).magnitude,
@@ -298,6 +364,14 @@ final class RunLoopSchedulerTests: XCTestCase {
     }
 
     func testStrideSubtraction() {
+        RunLoopSchedulerTests.testStrideSubtraction(RunLoopScheduler.self)
+    }
+
+    static func testStrideSubtraction<Context: RunLoopLikeScheduler>(
+        _ schedulerType: Context.Type
+    ) {
+        typealias Stride = Context.SchedulerTimeType.Stride
+
         XCTAssertEqual((Stride.nanoseconds(0) - .microseconds(2)).magnitude, -2E-06)
         XCTAssertEqual((Stride.nanoseconds(2) - .microseconds(0)).magnitude, 2E-09)
         XCTAssertEqual((Stride.nanoseconds(7) - .nanoseconds(12)).magnitude, -5E-09)
@@ -359,6 +433,14 @@ final class RunLoopSchedulerTests: XCTestCase {
     }
 
     func testStrideCodable() throws {
+        try RunLoopSchedulerTests.testStrideCodable(RunLoopScheduler.self)
+    }
+
+    static func testStrideCodable<Context: RunLoopLikeScheduler>(
+        _ schedulerType: Context.Type
+    ) throws {
+        typealias Stride = Context.SchedulerTimeType.Stride
+
         let encoder = JSONEncoder()
         let decoder = JSONDecoder()
 
@@ -487,25 +569,65 @@ final class RunLoopSchedulerTests: XCTestCase {
         XCTAssertEqual(numberOfTicksRightAfterCancellation,
                        numberOfTicksOneSecondAfterCancellation)
     }
+
+    func testMinimumTolerance() {
+        let scheduler = makeScheduler(.main)
+        XCTAssertEqual(scheduler.minimumTolerance, .init(0))
+    }
+
+    func testNow() {
+        let scheduler = makeScheduler(.main)
+        XCTAssertEqual(scheduler.now.date.timeIntervalSinceReferenceDate,
+                       Date().timeIntervalSinceReferenceDate,
+                       accuracy: 0.001)
+    }
 }
 
 #if OPENCOMBINE_COMPATIBILITY_TEST || !canImport(Combine)
 
-private typealias Scheduler = RunLoop
+private typealias RunLoopScheduler = RunLoop
 
-private func makeScheduler(_ runLoop: RunLoop) -> RunLoop {
+private func makeScheduler(_ runLoop: RunLoop) -> RunLoopScheduler {
     return runLoop
 }
 
 #else
 
-private typealias Scheduler = RunLoop.OCombine
+private typealias RunLoopScheduler = RunLoop.OCombine
 
-private func makeScheduler(_ runLoop: RunLoop) -> RunLoop.OCombine {
+private func makeScheduler(_ runLoop: RunLoop) -> RunLoopScheduler {
     return runLoop.ocombine
 }
 
 #endif
 
+protocol DateBackedSchedulerTimeType: Strideable, Codable, Hashable {
+    init(_ date: Date)
+
+    var date: Date { get }
+}
+
+protocol TimeIntervalBackedSchedulerStride: SchedulerTimeIntervalConvertible,
+                                            Comparable,
+                                            SignedNumeric,
+                                            ExpressibleByFloatLiteral,
+                                            Codable
+    where Magnitude == TimeInterval
+{
+    init(_ timeInterval: TimeInterval)
+
+    var timeInterval: TimeInterval { get }
+}
+
+protocol RunLoopLikeScheduler: Scheduler
+    where SchedulerTimeType: DateBackedSchedulerTimeType,
+          SchedulerTimeType.Stride: TimeIntervalBackedSchedulerStride {
+}
+
 @available(macOS 10.15, iOS 13.0, *)
-private typealias Stride = Scheduler.SchedulerTimeType.Stride
+extension RunLoopScheduler.SchedulerTimeType.Stride: TimeIntervalBackedSchedulerStride {}
+
+@available(macOS 10.15, iOS 13.0, *)
+extension RunLoopScheduler.SchedulerTimeType: DateBackedSchedulerTimeType {}
+
+extension RunLoopScheduler: RunLoopLikeScheduler {}
