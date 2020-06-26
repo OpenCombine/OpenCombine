@@ -1,5 +1,5 @@
 # OpenCombine
-[![CircleCI](https://circleci.com/gh/OpenCombine/OpenCombine/tree/master.svg?style=svg)](https://circleci.com/gh/OpenCombine/OpenCombine/tree/master)
+[![OpenCombine](https://circleci.com/gh/OpenCombine/OpenCombine.svg?style=svg)](https://circleci.com/gh/OpenCombine/OpenCombine)
 [![codecov](https://codecov.io/gh/OpenCombine/OpenCombine/branch/master/graph/badge.svg)](https://codecov.io/gh/OpenCombine/OpenCombine)
 ![Language](https://img.shields.io/badge/Swift-5.0-orange.svg)
 ![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20iOS%20%7C%20watchOS%20%7C%20tvOS-lightgrey.svg)
