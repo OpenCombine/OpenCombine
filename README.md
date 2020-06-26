@@ -23,7 +23,7 @@ To add `OpenCombine` to your [SPM](https://swift.org/package-manager/) package, 
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/broadwaylamb/OpenCombine.git", from: "0.9.0")
+    .package(url: "https://github.com/OpenCombine/OpenCombine.git", from: "0.9.0")
 ],
 targets: [
     .target(name: "MyAwesomePackage", dependencies: ["OpenCombine",
@@ -35,7 +35,7 @@ targets: [
 ###### Xcode
 `OpenCombine` can also be added as a SPM dependency directly in your Xcode project *(requires Xcode 11 upwards)*.
 
-To do so, open Xcode, use **File** → **Swift Packages** → **Add Package Dependency…**, enter the [repository URL](https://github.com/broadwaylamb/OpenCombine.git), choose the latest available version, and activate the checkboxes:
+To do so, open Xcode, use **File** → **Swift Packages** → **Add Package Dependency…**, enter the [repository URL](https://github.com/OpenCombine/OpenCombine.git), choose the latest available version, and activate the checkboxes:
 
 <p align="center">
 <img alt="Select the OpenCombine and OpenCombineDispatch targets" 
@@ -55,7 +55,7 @@ pod 'OpenCombineFoundation', '~> 0.9'
 
 In order to work on this project you will need Xcode 10.2 and Swift 5.0 or later.
 
-Please refer to the [issue #1](https://github.com/broadwaylamb/OpenCombine/issues/1) for the list of operators that remain unimplemented, as well as the [RemainingCombineInterface.swift](https://github.com/broadwaylamb/OpenCombine/blob/master/RemainingCombineInterface.swift) file. The latter contains the generated interface of Apple's Combine from the latest Xcode 11 version. When the functionality is implemented in OpenCombine, it should be removed from the RemainingCombineInterface.swift file.
+Please refer to the [issue #1](https://github.com/OpenCombine/OpenCombine/issues/1) for the list of operators that remain unimplemented, as well as the [RemainingCombineInterface.swift](https://github.com/OpenCombine/OpenCombine/blob/master/RemainingCombineInterface.swift) file. The latter contains the generated interface of Apple's Combine from the latest Xcode 11 version. When the functionality is implemented in OpenCombine, it should be removed from the RemainingCombineInterface.swift file.
 
 You can refer to [this gist](https://gist.github.com/broadwaylamb/c2c8550d76b3ff851c4c1dbf0a872e26) to observe Apple's Combine API changes between different Xcode (beta) versions, or to [this gist](https://gist.github.com/broadwaylamb/82dc2ce4ffbe06527c2c352b8f10910f) to see the relevant contents of the .swiftinterface file for Combine.
 
@@ -67,7 +67,7 @@ $ make test-compatibility
 
 Or enable the `-DOPENCOMBINE_COMPATIBILITY_TEST` compiler flag in Xcode's build settings. Note that on iOS only the latter will work.
 
-> NOTE: Before starting to work on some feature, please consult the [GitHub project](https://github.com/broadwaylamb/OpenCombine/projects/2) to make sure that nobody's already making progress on the same feature! If not, then please create a draft PR to indicate that you're beginning your work.
+> NOTE: Before starting to work on some feature, please consult the [GitHub project](https://github.com/OpenCombine/OpenCombine/projects/2) to make sure that nobody's already making progress on the same feature! If not, then please create a draft PR to indicate that you're beginning your work.
 
 #### Releasing a new version
 
@@ -76,7 +76,7 @@ Or enable the `-DOPENCOMBINE_COMPATIBILITY_TEST` compiler flag in Xcode's build 
 1. Bump the version in `OpenCombine.podspec`, `OpenCombineDispatch.podspec` and `OpenCombineFoundation.podspec`. In the latter two you will also need to set the `spec.dependency "OpenCombine"` property to the **previous** version. Why? Because otherwise the `pod lib lint` command that we run on our regular CI will fail when validating the `OpenCombineDispatch` and `OpenCombineFoundation` podspecs, since the dependencies are not yet in the trunk. If we set the dependencies to the previous version (which is already in the trunk), everything will be fine. This is purely to make the CI work. The clients will not experience any issues, since the version is specified as `>=`.
 1. Create a pull request to master for the release branch and make sure the CI passes.
 1. Merge the pull request.
-1. In the GitHub web interface on the [releases](https://github.com/broadwaylamb/OpenCombine/releases) page, click the **Draft a new release** button.
+1. In the GitHub web interface on the [releases](https://github.com/OpenCombine/OpenCombine/releases) page, click the **Draft a new release** button.
 1. The **Tag version** and **Release title** fields should be filled with the version number.
 1. The description of the release should be consistent with the previous releases. It is a good practice to divide the description into several sections: additions, bugfixes, known issues etc. Also, be sure to mention the nicknames of the contributors of the new release.
 1. Publish the release.
