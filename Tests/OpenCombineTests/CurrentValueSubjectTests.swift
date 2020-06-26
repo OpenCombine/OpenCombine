@@ -169,6 +169,13 @@ final class CurrentValueSubjectTests: XCTestCase {
                                             .completion(.failure(.oops))])
     }
 
+    func testChangeValueAfterCompletion() {
+        let cvs = Sut(0)
+        cvs.send(completion: .finished)
+        cvs.value = 42
+        XCTAssertEqual(cvs.value, 0)
+    }
+
     func testMultipleSubscriptions() {
 
         let cvs = Sut(112)
