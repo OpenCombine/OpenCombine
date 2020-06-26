@@ -173,6 +173,13 @@ final class CurrentValueSubjectTests: XCTestCase {
         let cvs = Sut(0)
         cvs.send(completion: .finished)
         cvs.value = 42
+        XCTAssertEqual(cvs.value, 42)
+    }
+
+    func testSendValueAfterCompletion() {
+        let cvs = Sut(0)
+        cvs.send(completion: .finished)
+        cvs.send(42)
         XCTAssertEqual(cvs.value, 0)
     }
 

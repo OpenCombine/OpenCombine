@@ -29,7 +29,9 @@ public final class CurrentValueSubject<Output, Failure: Error>: Subject {
             return currentValue
         }
         set {
-            send(newValue)
+            lock.lock()
+            currentValue = newValue
+            sendValueAndConsumeLock(newValue)
         }
     }
 
@@ -73,15 +75,22 @@ public final class CurrentValueSubject<Output, Failure: Error>: Subject {
 
     public func send(_ input: Output) {
         lock.lock()
+        sendValueAndConsumeLock(input)
+    }
+
+    private func sendValueAndConsumeLock(_ newValue: Output) {
+#if DEBUG
+        lock.assertOwner()
+#endif
         guard active else {
             lock.unlock()
             return
         }
-        currentValue = input
+        currentValue = newValue
         let downstreams = self.downstreams
         lock.unlock()
         downstreams.forEach { conduit in
-            conduit.offer(input)
+            conduit.offer(newValue)
         }
     }
 
