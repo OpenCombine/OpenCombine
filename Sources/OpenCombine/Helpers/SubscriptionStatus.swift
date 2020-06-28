@@ -10,3 +10,14 @@ internal enum SubscriptionStatus {
     case subscribed(Subscription)
     case terminal
 }
+
+extension SubscriptionStatus {
+    internal var isAwaigingSubscription: Bool {
+        switch self {
+        case .awaitingSubscription:
+            return true
+        default:
+            return false
+        }
+    }
+}
