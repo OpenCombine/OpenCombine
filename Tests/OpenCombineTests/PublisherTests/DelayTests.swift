@@ -372,7 +372,7 @@ final class DelayTests: XCTestCase {
                            [.minimumTolerance,
                             .now,
                             .scheduleAfterDate(.seconds(0.35),
-                                               tolerance: 0,
+                                               tolerance: .nanoseconds(7),
                                                options: nil)])
             tracking.cancel()
             publisher.cancel()
@@ -401,7 +401,7 @@ final class DelayTests: XCTestCase {
                            [.minimumTolerance,
                             .now,
                             .scheduleAfterDate(.seconds(0.35),
-                                               tolerance: 0,
+                                               tolerance: .nanoseconds(7),
                                                options: nil)])
             tracking.cancel()
             publisher.cancel()
