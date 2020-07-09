@@ -202,7 +202,7 @@ final class OutputTests: XCTestCase {
 
     func testOutputCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([]),
                                      { $0.output(in: 0 ..< 3) })
     }
 

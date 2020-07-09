@@ -90,7 +90,7 @@ final class LastTests: XCTestCase {
 
     func testLastCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([.requested(.unlimited)]),
                                      { $0.last() })
     }
 
@@ -244,7 +244,7 @@ final class LastTests: XCTestCase {
 
     func testLastWhereCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([.requested(.unlimited)]),
                                      { $0.last(where: shouldNotBeCalled()) })
     }
 
@@ -420,7 +420,7 @@ final class LastTests: XCTestCase {
 
     func testTryLastWhereCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([.requested(.unlimited)]),
                                      { $0.tryLast(where: shouldNotBeCalled()) })
     }
 

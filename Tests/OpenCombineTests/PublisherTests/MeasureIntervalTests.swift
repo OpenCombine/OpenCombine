@@ -142,9 +142,11 @@ final class MeasureIntervalTests: XCTestCase {
     }
 
     func testMeasureIntervalCancelBeforeSubscription() {
-        testCancelBeforeSubscription(inputType: Int.self, shouldCrash: false) {
-            $0.measureInterval(using: ImmediateScheduler.shared)
-        }
+        testCancelBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([]),
+            { $0.measureInterval(using: ImmediateScheduler.shared) }
+        )
     }
 
     func testMeasureIntervalReflection() throws {

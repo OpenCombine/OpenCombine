@@ -138,7 +138,7 @@ final class EncodeTests: XCTestCase {
 
     func testEncodeCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([]),
                                      { $0.encode(encoder: encoder) })
     }
 
@@ -258,7 +258,7 @@ final class EncodeTests: XCTestCase {
 
     func testDecodeCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([]),
                                      { $0.decode(type: String.self, decoder: decoder) })
     }
 

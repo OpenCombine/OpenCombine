@@ -279,7 +279,7 @@ final class MapTests: XCTestCase {
 
     func testTryMapCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([]),
                                      { $0.tryMap(shouldNotBeCalled()) })
     }
 

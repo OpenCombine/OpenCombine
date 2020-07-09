@@ -440,7 +440,7 @@ final class DelayTests: XCTestCase {
     }
 
     func testDelayCancelBeforeSubscription() {
-        testCancelBeforeSubscription(inputType: Int.self, shouldCrash: false) {
+        testCancelBeforeSubscription(inputType: Int.self, expected: .history([])) {
             $0.delay(for: 0.35, scheduler: ImmediateScheduler.shared)
         }
     }

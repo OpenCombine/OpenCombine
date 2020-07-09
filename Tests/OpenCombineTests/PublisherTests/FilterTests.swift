@@ -309,7 +309,7 @@ final class FilterTests: XCTestCase {
 
     func testTryFilterCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([.cancelled]),
                                      { $0.tryFilter(shouldNotBeCalled()) })
     }
 

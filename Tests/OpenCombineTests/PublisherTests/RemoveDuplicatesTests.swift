@@ -137,7 +137,7 @@ final class RemoveDuplicatesTests: XCTestCase {
 
     func testRemoveDuplicatesCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([.cancelled]),
                                      { $0.removeDuplicates(by: shouldNotBeCalled()) })
     }
 
@@ -324,7 +324,7 @@ final class RemoveDuplicatesTests: XCTestCase {
 
     func testTryRemoveDuplicatesCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([.cancelled]),
                                      { $0.tryRemoveDuplicates(by: shouldNotBeCalled()) })
     }
 

@@ -97,7 +97,7 @@ final class AllSatisfyTests: XCTestCase {
 
     func testAllSatisfyCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([.requested(.unlimited)]),
                                      { $0.allSatisfy(shouldNotBeCalled()) })
     }
 
@@ -217,7 +217,7 @@ final class AllSatisfyTests: XCTestCase {
 
     func testTryAllSatisfyCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([.requested(.unlimited)]),
                                      { $0.tryAllSatisfy(shouldNotBeCalled()) })
     }
 

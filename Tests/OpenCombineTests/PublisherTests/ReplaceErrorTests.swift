@@ -246,7 +246,7 @@ final class ReplaceErrorTests: XCTestCase {
 
     func testReplaceErrorCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([]),
                                      { $0.replaceError(with: 0) })
     }
 }

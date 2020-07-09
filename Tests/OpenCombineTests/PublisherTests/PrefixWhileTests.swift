@@ -91,7 +91,7 @@ final class PrefixWhileTests: XCTestCase {
 
     func testPrefixWhileCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([.cancelled]),
                                      { $0.prefix(while: shouldNotBeCalled()) })
     }
 
@@ -231,7 +231,7 @@ final class PrefixWhileTests: XCTestCase {
 
     func testTryPrefixWhileCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([.cancelled]),
                                      { $0.tryPrefix(while: shouldNotBeCalled()) })
     }
 

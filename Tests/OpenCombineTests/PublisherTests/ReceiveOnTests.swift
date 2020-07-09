@@ -366,7 +366,7 @@ final class ReceiveOnTests: XCTestCase {
     }
 
     func testReceiveOnCancelBeforeSubscription() {
-        testCancelBeforeSubscription(inputType: Int.self, shouldCrash: false) {
+        testCancelBeforeSubscription(inputType: Int.self, expected: .history([])) {
             $0.receive(on: ImmediateScheduler.shared)
         }
     }
