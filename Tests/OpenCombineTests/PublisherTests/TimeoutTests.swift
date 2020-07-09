@@ -672,7 +672,7 @@ final class TimeoutTests: XCTestCase {
         let scheduler = VirtualTimeScheduler()
         testCancelBeforeSubscription(
             inputType: Int.self,
-            shouldCrash: false,
+            expected: .history([]),
             { $0.timeout(.nanoseconds(13), scheduler: scheduler) }
         )
     }

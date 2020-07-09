@@ -118,7 +118,7 @@ final class FirstTests: XCTestCase {
 
     func testFirstCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([.requested(.unlimited)]),
                                      { $0.first() })
     }
 
@@ -271,7 +271,7 @@ final class FirstTests: XCTestCase {
 
     func testFirstWhereCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([.requested(.unlimited)]),
                                      { $0.first(where: shouldNotBeCalled()) })
     }
 
@@ -439,7 +439,7 @@ final class FirstTests: XCTestCase {
 
     func testTryFirstWhereCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([.requested(.unlimited)]),
                                      { $0.tryFirst(where: shouldNotBeCalled()) })
     }
 

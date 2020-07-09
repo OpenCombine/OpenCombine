@@ -336,7 +336,7 @@ final class ScanTests: XCTestCase {
 
     func testTryScanCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([]),
                                      { $0.tryScan(0, shouldNotBeCalled()) })
     }
 

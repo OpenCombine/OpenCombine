@@ -185,19 +185,19 @@ final class ComparisonTests: XCTestCase {
 
     func testComparisonCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([.requested(.unlimited)]),
                                      { $0.min() })
 
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([.requested(.unlimited)]),
                                      { $0.max() })
 
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([.requested(.unlimited)]),
                                      { $0.min(by: shouldNotBeCalled()) })
 
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([.requested(.unlimited)]),
                                      { $0.max(by: shouldNotBeCalled()) })
     }
 
@@ -347,11 +347,11 @@ final class ComparisonTests: XCTestCase {
 
     func testTryComparisonCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([.requested(.unlimited)]),
                                      { $0.tryMin(by: shouldNotBeCalled()) })
 
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([.requested(.unlimited)]),
                                      { $0.tryMax(by: shouldNotBeCalled()) })
     }
 

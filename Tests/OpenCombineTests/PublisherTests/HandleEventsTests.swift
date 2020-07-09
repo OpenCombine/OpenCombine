@@ -218,9 +218,10 @@ final class HandleEventsTests: XCTestCase {
     func testHandleEventsCancelBeforeSubscription() {
         var history = [Event<Never>]()
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([]),
                                      { $0.handleAllEvents { history.append($0) } })
-        XCTAssertEqual(history, [.receiveCancel])
+        XCTAssertEqual(history, [.receiveCancel,
+                                 .receiveSubscription("CustomSubscription")])
     }
 
     func testHandleEventsReflection() throws {

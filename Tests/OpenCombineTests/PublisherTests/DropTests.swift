@@ -158,7 +158,7 @@ final class DropTests: XCTestCase {
 
     func testDropCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([]),
                                      { $0.dropFirst(0) })
     }
 

@@ -311,7 +311,7 @@ final class SubscribeOnTests: XCTestCase {
     }
 
     func testSubscribeOnCancelBeforeSubscription() {
-        testCancelBeforeSubscription(inputType: Int.self, shouldCrash: false) {
+        testCancelBeforeSubscription(inputType: Int.self, expected: .history([])) {
             $0.subscribe(on: ImmediateScheduler.shared)
         }
     }

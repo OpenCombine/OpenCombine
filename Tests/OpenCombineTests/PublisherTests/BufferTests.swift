@@ -918,10 +918,23 @@ final class BufferTests: XCTestCase {
         prefetch: Publishers.PrefetchStrategy,
         whenFull: Publishers.BufferingStrategy<Never>
     ) {
-        testCancelBeforeSubscription(
-            inputType: Int.self,
-            shouldCrash: false,
-            { $0.buffer(size: 2, prefetch: prefetch, whenFull: whenFull) }
-        )
+        switch prefetch {
+        case .byRequest:
+            testCancelBeforeSubscription(
+                inputType: Int.self,
+                expected: .history([.requested(.unlimited)]),
+                { $0.buffer(size: 2, prefetch: prefetch, whenFull: whenFull) }
+            )
+        case .keepFull:
+            testCancelBeforeSubscription(
+                inputType: Int.self,
+                expected: .history([.requested(.max(2))]),
+                { $0.buffer(size: 2, prefetch: prefetch, whenFull: whenFull) }
+            )
+#if OPENCOMBINE_COMPATIBILITY_TEST
+        @unknown default:
+            unreachable()
+#endif
+        }
     }
 }

@@ -98,9 +98,14 @@ extension XCTest {
         }
     }
 
+    enum CancelBeforeSubscriptionBehavior {
+        case crash
+        case history([CustomSubscription.Event])
+    }
+
     func testCancelBeforeSubscription<Value, Operator: Publisher>(
         inputType: Value.Type,
-        shouldCrash: Bool,
+        expected: CancelBeforeSubscriptionBehavior,
         _ makeOperator: (CustomConnectablePublisherBase<Value, Never>) -> Operator
     ) {
 
@@ -109,17 +114,23 @@ extension XCTest {
         let tracking = TrackingSubscriberBase<Operator.Output, Operator.Failure>()
         operatorPublisher.subscribe(tracking)
 
-        guard let subscription = publisher.erasedSubscriber as? Subscription else {
+        guard let downstreamSubscription = publisher.erasedSubscriber as? Subscription
+        else {
             XCTFail("The subscriber must also be a subscription")
             return
         }
 
-        if shouldCrash {
+        switch expected {
+        case .crash:
             assertCrashes {
-                subscription.cancel()
+                downstreamSubscription.cancel()
             }
-        } else {
-            subscription.cancel()
+        case let .history(history):
+            downstreamSubscription.cancel()
+
+            let subscription = CustomSubscription()
+            publisher.send(subscription: subscription)
+            XCTAssertEqual(subscription.history, history)
         }
     }
 

@@ -92,7 +92,7 @@ final class ContainsTests: XCTestCase {
 
     func testContainsCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([.requested(.unlimited)]),
                                      { $0.contains(0) })
     }
 
@@ -199,7 +199,7 @@ final class ContainsTests: XCTestCase {
 
     func testContainsWhereCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([.requested(.unlimited)]),
                                      { $0.contains(where: shouldNotBeCalled()) })
     }
 
@@ -325,7 +325,7 @@ final class ContainsTests: XCTestCase {
 
     func testTryContainsWhereCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([.requested(.unlimited)]),
                                      { $0.tryContains(where: shouldNotBeCalled()) })
     }
 

@@ -70,7 +70,7 @@ final class CountTests: XCTestCase {
 
     func testCountCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([.requested(.unlimited)]),
                                      { $0.count() })
     }
 

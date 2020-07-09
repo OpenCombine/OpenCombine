@@ -326,9 +326,11 @@ final class ReplaceEmptyTests: XCTestCase {
     }
 
     func testReplaceEmptyCancelBeforeSubscription() {
-        testCancelBeforeSubscription(inputType: Int.self, shouldCrash: false) {
-            $0.replaceEmpty(with: 1337)
-        }
+        testCancelBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([.requested(.unlimited)]),
+            { $0.replaceEmpty(with: 1337) }
+        )
     }
 
     func testReplaceEmptyLifecycle() throws {

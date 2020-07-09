@@ -336,7 +336,7 @@ final class CompactMapTests: XCTestCase {
 
     func testTryCompactMapCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([.cancelled]),
                                      { $0.tryCompactMap(shouldNotBeCalled()) })
     }
 

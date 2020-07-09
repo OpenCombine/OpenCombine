@@ -197,7 +197,7 @@ final class CollectByCountTests: XCTestCase {
 
     func testCollectByCountCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([]),
                                      { $0.collect(19) })
     }
 

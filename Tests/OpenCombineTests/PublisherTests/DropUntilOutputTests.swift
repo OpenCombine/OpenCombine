@@ -319,7 +319,7 @@ final class DropUntilOutputTests: XCTestCase {
 
     func testDropUntilOutputCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([.cancelled]),
                                      { $0.drop(untilOutputFrom: Empty<Int, Never>()) })
     }
 

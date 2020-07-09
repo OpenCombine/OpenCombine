@@ -62,7 +62,7 @@ final class DropWhileTests: XCTestCase {
 
     func testDropWhileCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([]),
                                      { $0.drop(while: shouldNotBeCalled()) })
     }
 
@@ -138,7 +138,7 @@ final class DropWhileTests: XCTestCase {
 
     func testTryDropWhileCancelBeforeSubscription() {
         testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
+                                     expected: .history([]),
                                      { $0.tryDrop(while: shouldNotBeCalled()) })
     }
 
