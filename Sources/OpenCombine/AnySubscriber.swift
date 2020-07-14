@@ -62,8 +62,8 @@ public struct AnySubscriber<Input, Failure: Error>: Subscriber,
 
         if let playgroundDescription = subscriber as? CustomPlaygroundDisplayConvertible {
             playgroundDescriptionThunk = { playgroundDescription.playgroundDescription }
-        } else if let desccription = subscriber as? CustomStringConvertible {
-            playgroundDescriptionThunk = { desccription.description }
+        } else if let description = subscriber as? CustomStringConvertible {
+            playgroundDescriptionThunk = { description.description }
         } else {
             let fixedDescription = String(describing: type(of: subscriber))
             playgroundDescriptionThunk = { fixedDescription }

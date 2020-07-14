@@ -6,7 +6,7 @@
 
 extension Publisher {
 
-    /// Ingores all upstream elements, but passes along a completion
+    /// Ignores all upstream elements, but passes along a completion
     /// state (finished or failed).
     ///
     /// The output type of this publisher is `Never`.

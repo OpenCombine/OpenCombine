@@ -26,7 +26,7 @@ final class MapKeyPathTests: XCTestCase {
         }
 
         MapTests.testEmpty(valueComparator: ==) {
-            $0.map(\.doubled, \.tripled, \.quadripled)
+            $0.map(\.doubled, \.tripled, \.quadrupled)
         }
     }
 
@@ -40,7 +40,7 @@ final class MapKeyPathTests: XCTestCase {
         }
 
         MapTests.testError(valueComparator: ==) {
-            $0.map(\.doubled, \.tripled, \.quadripled)
+            $0.map(\.doubled, \.tripled, \.quadrupled)
         }
     }
 
@@ -54,14 +54,14 @@ final class MapKeyPathTests: XCTestCase {
                            { $0.map(\.doubled, \.tripled) })
 
         MapTests.testRange(valueComparator: ==,
-                           mapping: { ($0.doubled, $0.tripled, $0.quadripled) },
-                           { $0.map(\.doubled, \.tripled, \.quadripled) })
+                           mapping: { ($0.doubled, $0.tripled, $0.quadrupled) },
+                           { $0.map(\.doubled, \.tripled, \.quadrupled) })
     }
 
     func testNoDemand() {
         MapTests.testNoDemand { $0.map(\.doubled) }
         MapTests.testNoDemand { $0.map(\.doubled, \.tripled) }
-        MapTests.testNoDemand { $0.map(\.doubled, \.tripled, \.quadripled) }
+        MapTests.testNoDemand { $0.map(\.doubled, \.tripled, \.quadrupled) }
     }
 
     func testRequestDemandOnSubscribe() {
@@ -74,14 +74,14 @@ final class MapKeyPathTests: XCTestCase {
         }
 
         MapTests.testRequestDemandOnSubscribe {
-            $0.map(\.doubled, \.tripled, \.quadripled)
+            $0.map(\.doubled, \.tripled, \.quadrupled)
         }
     }
 
     func testDemandOnReceive() {
         MapTests.testDemandOnReceive { $0.map(\.doubled) }
         MapTests.testDemandOnReceive { $0.map(\.doubled, \.tripled) }
-        MapTests.testDemandOnReceive { $0.map(\.doubled, \.tripled, \.quadripled) }
+        MapTests.testDemandOnReceive { $0.map(\.doubled, \.tripled, \.quadrupled) }
     }
 
     func testCompletion() {
@@ -94,27 +94,27 @@ final class MapKeyPathTests: XCTestCase {
         }
 
         MapTests.testCompletion(valueComparator: ==) {
-            $0.map(\.doubled, \.tripled, \.quadripled)
+            $0.map(\.doubled, \.tripled, \.quadrupled)
         }
     }
 
     func testCancel() throws {
         try MapTests.testCancel { $0.map(\.doubled) }
         try MapTests.testCancel { $0.map(\.doubled, \.tripled) }
-        try MapTests.testCancel { $0.map(\.doubled, \.tripled, \.quadripled) }
+        try MapTests.testCancel { $0.map(\.doubled, \.tripled, \.quadrupled) }
     }
 
     func testCancelAlreadyCancelled() throws {
-        try MapTests.testCancelAldreadyCancelled {
+        try MapTests.testCancelAlreadyCancelled {
             $0.map(\.doubled)
         }
 
-        try MapTests.testCancelAldreadyCancelled {
+        try MapTests.testCancelAlreadyCancelled {
             $0.map(\.doubled, \.tripled)
         }
 
-        try MapTests.testCancelAldreadyCancelled {
-            $0.map(\.doubled, \.tripled, \.quadripled)
+        try MapTests.testCancelAlreadyCancelled {
+            $0.map(\.doubled, \.tripled, \.quadrupled)
         }
     }
 
@@ -150,7 +150,7 @@ final class MapKeyPathTests: XCTestCase {
                            ),
                            playgroundDescription: "ValueForKeys",
                            subscriberIsAlsoSubscription: false,
-                           { $0.map(\.doubled, \.tripled, \.quadripled) })
+                           { $0.map(\.doubled, \.tripled, \.quadrupled) })
     }
 
     func testMapKeyPathReceiveValueBeforeSubscription() {
@@ -169,7 +169,7 @@ final class MapKeyPathTests: XCTestCase {
                                            expected: .history([.value((0, 0, 0))],
                                                               demand: .max(42),
                                                               comparator: ==),
-                                           { $0.map(\.doubled, \.tripled, \.quadripled) })
+                                           { $0.map(\.doubled, \.tripled, \.quadrupled) })
     }
 
     func testMapKeyPathReceiveCompletionBeforeSubscription() {
@@ -188,7 +188,7 @@ final class MapKeyPathTests: XCTestCase {
         testReceiveCompletionBeforeSubscription(
             inputType: Int.self,
             expected: .history([.completion(.finished)], comparator: ==),
-            { $0.map(\.doubled, \.tripled, \.quadripled) }
+            { $0.map(\.doubled, \.tripled, \.quadrupled) }
         )
     }
 
@@ -202,7 +202,7 @@ final class MapKeyPathTests: XCTestCase {
         }
 
         try testLifecycle(sendValue: 31, cancellingSubscriptionReleasesSubscriber: true) {
-            $0.map(\.doubled, \.tripled, \.quadripled)
+            $0.map(\.doubled, \.tripled, \.quadrupled)
         }
     }
 }
@@ -212,5 +212,5 @@ extension Int {
 
     fileprivate var tripled: Int { return self * 3 }
 
-    fileprivate var quadripled: Int { return self * 4 }
+    fileprivate var quadrupled: Int { return self * 4 }
 }

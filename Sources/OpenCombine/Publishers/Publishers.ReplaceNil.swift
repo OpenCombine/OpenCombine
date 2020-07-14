@@ -7,7 +7,7 @@
 
 extension Publisher {
 
-    /// Replaces nil elements in the stream with the proviced element.
+    /// Replaces nil elements in the stream with the provided element.
     ///
     /// - Parameter output: The element to use when replacing `nil`.
     /// - Returns: A publisher that replaces `nil` elements from

@@ -33,7 +33,7 @@ func testLifecycle<UpstreamOutput, Operator: Publisher>(
         let emptySubscriber =
             TrackingSubscriberBase<Operator.Output, Operator.Failure>(onDeinit: onDeinit)
         XCTAssertTrue(emptySubscriber.history.isEmpty,
-                      "Lifecycle test #1: thesubscriber's history should be empty",
+                      "Lifecycle test #1: the subscriber's history should be empty",
                       file: file,
                       line: line)
         operatorPublisher.subscribe(emptySubscriber)

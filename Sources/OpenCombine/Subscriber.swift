@@ -27,7 +27,7 @@ public protocol Subscriber: CustomCombineIdentifierConvertible {
     /// Tells the subscriber that the publisher has produced an element.
     ///
     /// - Parameter input: The published element.
-    /// - Returns: A `Demand` instance indicating how many more elements the subcriber
+    /// - Returns: A `Demand` instance indicating how many more elements the subscriber
     ///   expects to receive.
     func receive(_ input: Input) -> Subscribers.Demand
 

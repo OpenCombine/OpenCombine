@@ -113,7 +113,7 @@ final class IgnoreOutputTests: XCTestCase {
                                                      .cancelled])
     }
 
-    func testSendsSubcriptionDownstreamBeforeDemandUpstream() {
+    func testSendsSubscriptionDownstreamBeforeDemandUpstream() {
         var didReceiveSubscription = false
         let subscription = CustomSubscription()
         let publisher = CustomPublisherBase<Int, Error>(subscription: subscription)

@@ -85,7 +85,7 @@ extension Publisher {
 
 extension Publishers {
 
-    /// A publisher that emits all of one publisher’s elements before those from anothe
+    /// A publisher that emits all of one publisher’s elements before those from another
     /// publisher.
     public struct Concatenate<Prefix: Publisher, Suffix: Publisher>: Publisher
         where Prefix.Failure == Suffix.Failure, Prefix.Output == Suffix.Output

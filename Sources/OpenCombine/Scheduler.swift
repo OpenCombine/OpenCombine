@@ -23,7 +23,7 @@ public protocol SchedulerTimeIntervalConvertible {
 ///
 /// A scheduler used to execute code as soon as possible, or after a future date.
 /// Individual scheduler implementations use whatever time-keeping system makes sense
-/// for them. Schdedulers express this as their `SchedulerTimeType`. Since this type
+/// for them. Schedulers express this as their `SchedulerTimeType`. Since this type
 /// conforms to `SchedulerTimeIntervalConvertible`, you can always express these times
 /// with the convenience functions like `.milliseconds(500)`. Schedulers can accept
 /// options to control how they execute the actions passed to them. These options may

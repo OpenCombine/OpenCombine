@@ -7,7 +7,7 @@
 
 /// A protocol representing the connection of a subscriber to a publisher.
 ///
-/// Subcriptions are class constrained because a `Subscription` has identity -
+/// Subscriptions are class constrained because a `Subscription` has identity -
 /// defined by the moment in time a particular subscriber attached to a publisher.
 /// Canceling a `Subscription` must be thread-safe.
 ///

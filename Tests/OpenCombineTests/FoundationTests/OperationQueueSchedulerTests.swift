@@ -322,7 +322,7 @@ private final class TestOperationQueue: OperationQueue {
         case addOperation(Operation)
         case addOperations([Operation], waitUntilFinished: Bool)
         case addBlockOperation(() -> Void)
-        case addBarrierBloack(() -> Void)
+        case addBarrierBlock(() -> Void)
         case getMaxConcurrentOperationCount
         case setMaxConcurrentOperationCount(Int)
         case getIsSuspended
@@ -367,7 +367,7 @@ private final class TestOperationQueue: OperationQueue {
 #if swift(>=5.1)
     @available(macOS 10.15, iOS 13.0, *)
     override func addBarrierBlock(_ barrier: @escaping () -> Void) {
-        history.append(.addBarrierBloack(barrier))
+        history.append(.addBarrierBlock(barrier))
         super.addBarrierBlock(barrier)
     }
 #endif // swift(>=5.1)

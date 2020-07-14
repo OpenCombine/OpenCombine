@@ -58,7 +58,7 @@ extension XCTest {
             environment[childProcessEnvVariable] = childProcessEnvVariableOnValue
             childProcess.environment = environment
 
-            func printDiagostics() {
+            func printDiagnostics() {
                 print("Parent process invocation:")
                 print(ProcessInfo.processInfo.arguments.joined(separator: " "))
                 print("Child process invocation:")
@@ -73,13 +73,13 @@ extension XCTest {
                 childProcess.waitUntilExit()
                 if childProcess.terminationReason != .uncaughtSignal {
                     XCTFail("Child process should have crashed: \(childProcess)")
-                    printDiagostics()
+                    printDiagnostics()
                 }
             } catch {
                 XCTFail("""
                 Couldn't start child process for testing crash: \(childProcess) - \(error)
                 """)
-                printDiagostics()
+                printDiagnostics()
             }
         }
 #endif

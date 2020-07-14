@@ -61,7 +61,7 @@ final class VirtualTimeSchedulerTests: XCTestCase {
                                            .now])
     }
 
-    func testRepeadedAction() {
+    func testRepeatedAction() {
         let scheduler = VirtualTimeScheduler()
         var history = [Int]()
         let cancellable = scheduler.schedule(after: scheduler.now + .microseconds(2),

@@ -24,7 +24,7 @@ extension Publisher {
     /// - Parameter predicate: A closure that takes an element as a parameter and
     ///   returns a Boolean value that indicates whether to publish the element.
     /// - Returns: A publisher that only publishes the first element of a stream
-    ///   that satifies the predicate.
+    ///   that satisfies the predicate.
     public func first(
         where predicate: @escaping (Output) -> Bool
     ) -> Publishers.FirstWhere<Self> {
@@ -40,7 +40,7 @@ extension Publisher {
     /// - Parameter predicate: A closure that takes an element as a parameter and
     ///   returns a Boolean value that indicates whether to publish the element.
     /// - Returns: A publisher that only publishes the first element of a stream
-    ///   that satifies the predicate.
+    ///   that satisfies the predicate.
     public func tryFirst(
         where predicate: @escaping (Output) throws -> Bool
     ) -> Publishers.TryFirstWhere<Self> {

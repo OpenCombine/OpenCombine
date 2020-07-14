@@ -278,7 +278,7 @@ final class ResultPublisherTests: XCTestCase {
         XCTAssertEqual(count, 2)
     }
 
-    func testAllSatifyOperatorSpecialization() {
+    func testAllSatisfyOperatorSpecialization() {
         var count = 0
         let predicate: (Int) -> Bool = { count += 1; return $0 > 0 }
         XCTAssertEqual(Sut<Int>(0).allSatisfy(predicate).result, .success(false))
@@ -288,7 +288,7 @@ final class ResultPublisherTests: XCTestCase {
         XCTAssertEqual(count, 2)
     }
 
-    func testTryAllSatifyOperatorSpecialization() {
+    func testTryAllSatisfyOperatorSpecialization() {
         var count = 0
         let predicate: (Int) -> Bool = { count += 1; return $0 > 0 }
         let throwingPredicate: (Int) throws -> Bool = { _ in

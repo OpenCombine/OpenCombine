@@ -9,7 +9,7 @@
 ///
 /// Filter-like operators send an instance of their `Inner` class that is subclass
 /// of this class to the upstream publisher (as subscriber) and
-/// to the downstream subcriber (as subscription).
+/// to the downstream subscriber (as subscription).
 ///
 /// Filter-like operators include `Publishers.Filter`,
 /// `Publishers.RemoveDuplicates`, `Publishers.PrefixWhile` and more.

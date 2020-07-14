@@ -166,7 +166,7 @@ extension DispatchQueue {
                     // as possible.
                     //
                     // By trial and error I got that the `rawValue` of `UInt64.max / 13`
-                    // gives us propably the widest range of supported values:
+                    // gives us probably the widest range of supported values:
                     // from `Int.min / 6.5` to `Int.max / 2.889` nanoseconds.
                     // That's with Int being 64 bits. Since here only UInt64 can overflow,
                     // when Int is 32 bits, we don't have this issue.
@@ -384,7 +384,7 @@ extension DispatchQueue: OpenCombine.Scheduler {
 }
 #endif
 
-// This function is taken from swift-corlibs-libdispatch:
+// This function is taken from swift-corelibs-libdispatch:
 // https://github.com/apple/swift-corelibs-libdispatch/blob/c992dacf3ca114806e6ac9ffc9113b19255be9fe/src/swift/Time.swift#L134-L144
 //
 // Returns m1 * m2, clamped to the range [Int.min, Int.max].
