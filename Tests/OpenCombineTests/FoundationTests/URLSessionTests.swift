@@ -587,7 +587,7 @@ private final class TestURLSessionDataTask: URLSessionDataTask {
 #if canImport(Darwin)
             return super.earliestBeginDate
 #else
-            return nil // Deprecated in swift-corerlibs-foundation
+            return nil // Deprecated in swift-corelibs-foundation
 #endif
         }
         set {

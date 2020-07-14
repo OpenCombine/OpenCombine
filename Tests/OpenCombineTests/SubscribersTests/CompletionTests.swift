@@ -23,7 +23,7 @@ final class CompletionTests: XCTestCase {
     let encoder = TrackingEncoder()
     let decoder = JSONDecoder()
 
-    func testDecodingFinised() throws {
+    func testDecodingFinished() throws {
         let successJSON = #"{"success":true}"#
         let illFormedSuccessJSON = #"{"error":{"description":"oops"},"success":true}"#
 

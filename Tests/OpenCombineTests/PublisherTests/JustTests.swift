@@ -210,7 +210,7 @@ final class JustTests: XCTestCase {
         XCTAssertEqual(Sut("f").first(), Sut("f"))
     }
 
-    func testFirstWhereOperatorSpecializtion() {
+    func testFirstWhereOperatorSpecialization() {
         XCTAssertEqual(Sut<Int>(42).first { $0 != 42 }, .init(nil))
         XCTAssertEqual(Sut<Int>(-13).first { $0 != 42 }, .init(-13))
         XCTAssertEqual(Sut<Int>(1).first { $0 < 0 }, .init(nil))
@@ -221,7 +221,7 @@ final class JustTests: XCTestCase {
         XCTAssertEqual(Sut("g").last(), Sut("g"))
     }
 
-    func testLastWhereOperatorSpecializtion() {
+    func testLastWhereOperatorSpecialization() {
         XCTAssertEqual(Sut<Int>(42).last { $0 != 42 }, .init(nil))
         XCTAssertEqual(Sut<Int>(-13).last { $0 != 42 }, .init(-13))
         XCTAssertEqual(Sut<Int>(1).last { $0 < 0 }, .init(nil))

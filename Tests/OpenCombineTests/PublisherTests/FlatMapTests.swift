@@ -115,7 +115,7 @@ final class FlatMapTests: XCTestCase {
     //  1. FlatMap.Inner.receive(_ input:)
     //    2. Publisher.subscribe
     //      ...
-    //      3. FlatMap.Inner.ChildSubscriber.recive(subscription:)
+    //      3. FlatMap.Inner.ChildSubscriber.receive(subscription:)
     //        4. subscription.request()
     //          5. Just.Inner.request()
     //            6. FlatMap.Inner.child(_:receivedValue)
@@ -139,7 +139,7 @@ final class FlatMapTests: XCTestCase {
         flatMap.subscribe(downstreamSubscriber)
         XCTAssertEqual(upstreamPublisher.send(666), .none)
 
-        // Simply making it here shows that there's no dealock
+        // Simply making it here shows that there's no deadlock
     }
 
     func testCancelCancels() throws {
@@ -965,9 +965,9 @@ final class FlatMapTests: XCTestCase {
                                                    .requested(.max(1))])
     }
 
-    func testSendsSubcriptionDownstreamBeforeDemandUpstream() {
+    func testSendsSubscriptionDownstreamBeforeDemandUpstream() {
         let sentDemandRequestUpstream = "Sent demand request upstream"
-        let sentSubscriptionDownstream = "Sent subcription downstream"
+        let sentSubscriptionDownstream = "Sent subscription downstream"
         var receiveOrder: [String] = []
 
         let upstreamSubscription = CustomSubscription(onRequest: { _ in

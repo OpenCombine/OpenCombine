@@ -9,7 +9,7 @@ extension Publisher {
 
     /// Returns a publisher as a class instance.
     ///
-    /// The downstream subscriber receieves elements and completion states unchanged from
+    /// The downstream subscriber receives elements and completion states unchanged from
     /// the upstream publisher. Use this operator when you want to use
     /// reference semantics, such as storing a publisher instance in a property.
     ///

@@ -12,7 +12,7 @@ internal enum SubscriptionStatus {
 }
 
 extension SubscriptionStatus {
-    internal var isAwaigingSubscription: Bool {
+    internal var isAwaitingSubscription: Bool {
         switch self {
         case .awaitingSubscription:
             return true

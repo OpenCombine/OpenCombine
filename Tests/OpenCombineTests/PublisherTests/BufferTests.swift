@@ -18,14 +18,14 @@ final class BufferTests: XCTestCase {
 
     func testInitialDemandWithKeepFullPrefetchStrategy() {
         testInitialDemand(
-            withPrefetchStragety: .keepFull,
+            withPrefetchStrategy: .keepFull,
             expectedSubscriptionHistory: [.requested(.max(42))]
         )
     }
 
     func testInitialDemandWithByRequestPrefetchStrategy() {
         testInitialDemand(
-            withPrefetchStragety: .byRequest,
+            withPrefetchStrategy: .byRequest,
             expectedSubscriptionHistory: [.requested(.unlimited)]
         )
     }
@@ -379,7 +379,7 @@ final class BufferTests: XCTestCase {
     // MARK: - Generic tests
 
     private func testInitialDemand(
-        withPrefetchStragety prefetch: Publishers.PrefetchStrategy,
+        withPrefetchStrategy prefetch: Publishers.PrefetchStrategy,
         expectedSubscriptionHistory: [CustomSubscription.Event]
     ) {
         let subscription = CustomSubscription()

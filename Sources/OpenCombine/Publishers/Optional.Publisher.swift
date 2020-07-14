@@ -235,7 +235,7 @@ extension Optional.OCombine.Publisher {
         in range: RangeExpression
     ) -> Optional<Output>.OCombine.Publisher where RangeExpression.Bound == Int {
         let range = range.relative(to: 0 ..< Int.max)
-        precondition(range.lowerBound >= 0, "lowerBould must not be negative")
+        precondition(range.lowerBound >= 0, "lowerBound must not be negative")
 
         // I don't know why, but Combine has this precondition
         precondition(range.upperBound < .max - 1)

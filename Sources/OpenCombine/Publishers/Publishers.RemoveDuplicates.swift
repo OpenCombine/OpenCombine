@@ -59,7 +59,7 @@ extension Publishers {
         /// for purposes of filtering.
         public let predicate: (Output, Output) -> Bool
 
-        /// Creates a publisher that publishes only elements that don’t match the previou
+        /// Creates a publisher that publishes only elements that don’t match the previous
         /// element, as evaluated by a provided closure.
         ///
         /// - Parameter upstream: The publisher from which this publisher receives

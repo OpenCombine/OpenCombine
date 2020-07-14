@@ -146,7 +146,7 @@ extension Publishers.Debounce {
 
         func receive(_ input: Input) -> Subscribers.Demand {
             lock.lock()
-            precondition(!state.isAwaigingSubscription)
+            precondition(!state.isAwaitingSubscription)
             guard case .subscribed = state else {
                 lock.unlock()
                 return .none
@@ -172,7 +172,7 @@ extension Publishers.Debounce {
 
         func receive(completion: Subscribers.Completion<Upstream.Failure>) {
             lock.lock()
-            precondition(!state.isAwaigingSubscription)
+            precondition(!state.isAwaitingSubscription)
             guard case .subscribed = state else {
                 lock.unlock()
                 return
@@ -190,7 +190,7 @@ extension Publishers.Debounce {
 
         func request(_ demand: Subscribers.Demand) {
             lock.lock()
-            precondition(!state.isAwaigingSubscription)
+            precondition(!state.isAwaitingSubscription)
             guard case .subscribed = state else {
                 lock.unlock()
                 return

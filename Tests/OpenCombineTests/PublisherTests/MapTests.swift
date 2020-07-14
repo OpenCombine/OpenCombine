@@ -163,7 +163,7 @@ final class MapTests: XCTestCase {
     }
 
     func testMapCancelAlreadyCancelled() throws {
-        try MapTests.testCancelAldreadyCancelled { $0.map { $0 * 2 } }
+        try MapTests.testCancelAlreadyCancelled { $0.map { $0 * 2 } }
     }
 
     func testTryMapCancelAlreadyCancelled() throws {
@@ -608,7 +608,7 @@ final class MapTests: XCTestCase {
                        line: line)
     }
 
-    static func testCancelAldreadyCancelled<Map: Publisher>(
+    static func testCancelAlreadyCancelled<Map: Publisher>(
         file: StaticString = #file,
         line: UInt = #line,
         _ map: (CustomPublisher) -> Map

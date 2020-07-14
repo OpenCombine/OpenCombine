@@ -173,7 +173,7 @@ final class OptionalPublisherTests: XCTestCase {
                        "comparator should not be called for removeDuplicates(by:)")
     }
 
-    func testAllSatifyOperatorSpecialization() {
+    func testAllSatisfyOperatorSpecialization() {
 
         var count = 0
         let predicate: (Int) -> Bool = { count += 1; return $0 > 0 }
@@ -218,7 +218,7 @@ final class OptionalPublisherTests: XCTestCase {
         XCTAssertEqual(Sut<Int>(nil).first(), Sut(nil))
     }
 
-    func testFirstWhereOperatorSpecializtion() {
+    func testFirstWhereOperatorSpecialization() {
         var count = 0
         let predicate: (Int) -> Bool = { count += 1; return $0 == 42 }
 
@@ -234,7 +234,7 @@ final class OptionalPublisherTests: XCTestCase {
         XCTAssertEqual(Sut<Int>(nil).last(), Sut(nil))
     }
 
-    func testLastWhereOperatorSpecializtion() {
+    func testLastWhereOperatorSpecialization() {
         var count = 0
         let predicate: (Int) -> Bool = { count += 1; return $0 == 42 }
 

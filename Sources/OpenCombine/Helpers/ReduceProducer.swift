@@ -9,7 +9,7 @@
 ///
 /// Reduce-like operators send an instance of their `Inner` class that is subclass
 /// of this class to the upstream publisher (as subscriber) and
-/// to the downstream subcriber (as subsription).
+/// to the downstream subscriber (as subscription).
 ///
 /// Reduce-like operators include `Publishers.Reduce`, `Publishers.TryReduce`,
 /// `Publishers.Count`, `Publishers.FirstWhere`, `Publishers.AllSatisfy` and more.

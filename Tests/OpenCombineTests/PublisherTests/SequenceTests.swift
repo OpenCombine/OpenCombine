@@ -362,7 +362,7 @@ final class SequenceTests: XCTestCase {
         )
     }
 
-    func testFirstWhereOperatorSpecializtion() {
+    func testFirstWhereOperatorSpecialization() {
         XCTAssertEqual(makePublisher(1 ..< 9).first { $0.isMultiple(of: 4) }, .init(4))
         XCTAssertEqual(makePublisher(1 ..< 9).first { $0.isMultiple(of: 13) }, .init(nil))
         XCTAssertEqual(
@@ -531,7 +531,7 @@ final class SequenceTests: XCTestCase {
         XCTAssertEqual(makePublisher(EmptyCollection<Int>()).last(), .init(nil))
     }
 
-    func testLastWhereOperatorSpecializtion() {
+    func testLastWhereOperatorSpecialization() {
         XCTAssertEqual(makePublisher(1 ..< 9).last { $0.isMultiple(of: 4) }, .init(8))
         XCTAssertEqual(makePublisher(1 ..< 9).last { $0.isMultiple(of: 13) }, .init(nil))
         XCTAssertEqual(
@@ -540,7 +540,7 @@ final class SequenceTests: XCTestCase {
         )
     }
 
-    func testPrependVariadicOperatorSpezialization() {
+    func testPrependVariadicOperatorSpecialization() {
         let baseCollection = TrackingCollection<Int>([4, 5, 6, 7])
 
         XCTAssertEqual(baseCollection.history, [.initFromSequence])
@@ -613,7 +613,7 @@ final class SequenceTests: XCTestCase {
         XCTAssertEqual(newCollection.history, [.initFromSequence, .appendSequence])
     }
 
-    func testAppendVariadicOperatorSpezialization() {
+    func testAppendVariadicOperatorSpecialization() {
         let baseCollection = TrackingCollection<Int>([1, 2, 3])
 
         XCTAssertEqual(baseCollection.history, [.initFromSequence])

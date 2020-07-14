@@ -98,7 +98,7 @@ final class ReduceTests: XCTestCase {
                                                    { $0.tryReduce(1, *) })
     }
 
-    func testTryReduceFailureBecausOfThrow() throws {
+    func testTryReduceFailureBecauseOfThrow() throws {
 
         func reducer(_ accumulator: Int, _ newValue: Int) throws -> Int {
             if newValue == 5 {
