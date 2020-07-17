@@ -29,7 +29,7 @@ final class CollectTests: XCTestCase {
 
     func testtestUpstreamFinishesImmediately() {
         ReduceTests.testUpstreamFinishesImmediately(expectedSubscription: "Collect",
-                                                    expectedResult: [],
+                                                    expectedResult: [Int](),
                                                     { $0.collect() })
     }
 

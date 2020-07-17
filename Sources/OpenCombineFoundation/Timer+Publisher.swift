@@ -340,7 +340,7 @@ extension RunLoop.Mode {
             CFStringCreateWithCString(
                 nil,
                 $0,
-                CFStringEncoding(kCFStringEncodingUTF8)
+                CFStringBuiltInEncodings.UTF8.rawValue
             )
         }
 #endif
