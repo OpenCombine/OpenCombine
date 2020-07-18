@@ -337,11 +337,19 @@ extension RunLoop.Mode {
         return CFRunLoopMode(rawValue as CFString)
 #else
         return rawValue.withCString {
-            CFStringCreateWithCString(
+#if swift(>=5.3)
+            return CFStringCreateWithCString(
                 nil,
                 $0,
                 CFStringBuiltInEncodings.UTF8.rawValue
             )
+#else
+            return CFStringCreateWithCString(
+                nil,
+                $0,
+                CFStringEncoding(kCFStringEncodingUTF8)
+            )
+#endif
         }
 #endif
     }
