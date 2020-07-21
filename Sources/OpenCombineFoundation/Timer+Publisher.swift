@@ -338,18 +338,16 @@ extension RunLoop.Mode {
 #else
         return rawValue.withCString {
 #if swift(>=5.3)
-            return CFStringCreateWithCString(
-                nil,
-                $0,
-                CFStringBuiltInEncodings.UTF8.rawValue
-            )
+          let encoding = CFStringBuiltInEncodings.UTF8.rawValue
 #else
-            return CFStringCreateWithCString(
-                nil,
-                $0,
-                CFStringEncoding(kCFStringEncodingUTF8)
-            )
-#endif
+          let encoding = CFStringEncoding(kCFStringEncodingUTF8)
+#endif // swift(>=5.3)
+
+          return CFStringCreateWithCString(
+              nil,
+              $0,
+              encoding
+          )
         }
 #endif
     }
