@@ -8,6 +8,9 @@
 import Foundation
 import OpenCombine
 
+// PropertyListEncoder and PropertyListDecoder are unavailable in 
+// swift-corelibs-foundation prior to Swift 5.1.
+#if canImport(Darwin) || swift(>=5.1)
 extension PropertyListEncoder: TopLevelEncoder {
   public typealias Output = Data
 }
@@ -15,3 +18,4 @@ extension PropertyListEncoder: TopLevelEncoder {
 extension PropertyListDecoder: TopLevelDecoder {
   public typealias Input = Data
 }
+#endif
