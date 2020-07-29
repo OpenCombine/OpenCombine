@@ -187,15 +187,11 @@ extension OperationQueue {
             }
 
             private func becomeReady() {
-#if canImport(Darwin)
+// Smart key paths don't work with NSOperation in swift-corelibs-foundation prior to Swift 5.1.
+#if canImport(Darwin) || swift(>=5.1)
                 // The smart key paths don't work with NSOperation on OS versions prior to
                 // iOS 11. The string key paths work fine everywhere.
                 // https://forums.swift.org/t/keypath-translation-for-kvo-notification-seems-to-not-work-properly-on-ios-10/15898
-                willChangeValue(forKey: "isReady")
-#elseif swift(<5.1)
-                // The smart key paths don't work with NSOperation prior to Swift 5.1.
-                // The string key paths work fine everywhere.
-                // https://github.com/apple/swift-corelibs-foundation/blob/swift-5.0-branch/Foundation/Operation.swift
                 willChangeValue(forKey: "isReady")
 #else
                 willChangeValue(for: \.isReady)
@@ -203,15 +199,11 @@ extension OperationQueue {
                 lock.lock()
                 readyFromAfter = true
                 lock.unlock()
-#if canImport(Darwin)
+// Smart key paths don't work with NSOperation in swift-corelibs-foundation prior to Swift 5.1.
+#if canImport(Darwin) || swift(>=5.1)
                 // The smart key paths don't work with NSOperation on OS versions prior to
                 // iOS 11. The string key paths work fine everywhere.
                 // https://forums.swift.org/t/keypath-translation-for-kvo-notification-seems-to-not-work-properly-on-ios-10/15898
-                didChangeValue(forKey: "isReady")
-#elseif swift(<5.1)
-                // The smart key paths don't work with NSOperation prior to Swift 5.1.
-                // The string key paths work fine everywhere.
-                // https://github.com/apple/swift-corelibs-foundation/blob/swift-5.0-branch/Foundation/Operation.swift
                 didChangeValue(forKey: "isReady")
 #else
                 didChangeValue(for: \.isReady)
