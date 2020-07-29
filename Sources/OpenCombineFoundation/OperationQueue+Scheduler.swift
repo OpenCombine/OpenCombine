@@ -188,7 +188,7 @@ extension OperationQueue {
 
             private func becomeReady() {
 // Smart key paths don't work with NSOperation in swift-corelibs-foundation prior to Swift 5.1.
-#if canImport(Darwin) || swift(>=5.1)
+#if canImport(Darwin) || swift(<5.1)
                 // The smart key paths don't work with NSOperation on OS versions prior to
                 // iOS 11. The string key paths work fine everywhere.
                 // https://forums.swift.org/t/keypath-translation-for-kvo-notification-seems-to-not-work-properly-on-ios-10/15898
