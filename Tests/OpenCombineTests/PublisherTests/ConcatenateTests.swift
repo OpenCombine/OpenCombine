@@ -60,40 +60,30 @@ final class ConcatenateTests: XCTestCase {
         XCTAssertEqual(subscription1.history, [.requested(.max(10))])
         XCTAssertEqual(subscription2.history, [.requested(.max(13))])
 
-        XCTAssertEqual(publisher1.send(4000), .max(4000))
+        XCTAssertEqual(publisher1.send(4000), .none)
         XCTAssertEqual(publisher2.send(5), .max(5))
 
         XCTAssertEqual(tracking.history, [.subscription("Concatenate"),
                                           .value(1),
                                           .value(2),
                                           .value(3),
-                                          .value(4000),
                                           .value(5)])
         XCTAssertEqual(subscription1.history, [.requested(.max(10))])
         XCTAssertEqual(subscription2.history, [.requested(.max(13))])
 
         publisher2.send(completion: .finished)
         publisher2.send(completion: .finished)
-        publisher1.send(completion: .finished)
-        publisher1.send(completion: .failure(.oops))
         publisher2.send(completion: .failure(.oops))
 
-        XCTAssertEqual(publisher1.send(6000), .max(6000))
-        XCTAssertEqual(publisher2.send(7), .max(7))
+        XCTAssertEqual(publisher1.send(6000), .none)
+        XCTAssertEqual(publisher2.send(7), .none)
 
         XCTAssertEqual(tracking.history, [.subscription("Concatenate"),
                                           .value(1),
                                           .value(2),
                                           .value(3),
-                                          .value(4000),
                                           .value(5),
-                                          .completion(.finished),
-                                          .completion(.finished),
-                                          .completion(.finished),
-                                          .completion(.failure(.oops)),
-                                          .completion(.failure(.oops)),
-                                          .value(6000),
-                                          .value(7)])
+                                          .completion(.finished)])
         XCTAssertEqual(subscription1.history, [.requested(.max(10))])
         XCTAssertEqual(subscription2.history, [.requested(.max(13))])
 
@@ -104,16 +94,42 @@ final class ConcatenateTests: XCTestCase {
                                           .value(1),
                                           .value(2),
                                           .value(3),
-                                          .value(4000),
                                           .value(5),
-                                          .completion(.finished),
-                                          .completion(.finished),
-                                          .completion(.finished),
-                                          .completion(.failure(.oops)),
-                                          .completion(.failure(.oops)),
-                                          .value(6000),
-                                          .value(7)])
+                                          .completion(.finished)])
         XCTAssertEqual(subscription3.history, [.cancelled])
+    }
+
+    func testSecondCompletion() {
+        let subscription1 = CustomSubscription()
+        let subscription2 = CustomSubscription()
+        let publisher1 = CustomPublisher(subscription: subscription1)
+        let publisher2 = CustomPublisher(subscription: subscription2)
+
+        let append = publisher1.append(publisher2)
+
+        let tracking = TrackingSubscriber(
+            receiveSubscription: { $0.request(.max(10)) },
+            receiveValue: { .max($0) },
+            receiveCompletion: { _ in }
+        )
+
+        append.subscribe(tracking)
+
+        XCTAssertEqual(subscription1.history, [.requested(.max(10))])
+        XCTAssertEqual(subscription2.history, [])
+
+        publisher1.send(completion: .finished)
+        publisher1.send(completion: .finished)
+
+        XCTAssertEqual(subscription1.history, [.requested(.max(10))])
+        XCTAssertEqual(subscription2.history, [.requested(.max(10))])
+
+        publisher2.send(completion: .finished)
+
+        XCTAssertEqual(subscription1.history, [.requested(.max(10))])
+        XCTAssertEqual(subscription2.history, [.requested(.max(10))])
+        XCTAssertEqual(tracking.history, [.subscription("Concatenate"),
+                                          .completion(.finished)])
     }
 
     func testConcatenateTwoSequences() {
@@ -173,18 +189,14 @@ final class ConcatenateTests: XCTestCase {
         XCTAssertEqual(subscription1.history, [.requested(.max(10))])
         XCTAssertEqual(subscription2.history, [])
 
-        XCTAssertEqual(publisher1.send(2), .max(2))
-        publisher1.send(completion: .finished)
-        XCTAssertEqual(publisher2.send(3), .max(3))
+        XCTAssertEqual(publisher1.send(2), .none)
+        XCTAssertEqual(publisher2.send(3), .none)
         publisher2.send(completion: .finished)
 
         XCTAssertEqual(tracking.history, [.subscription("Concatenate"),
-                                          .completion(.failure(.oops)),
-                                          .value(2),
-                                          .value(3),
-                                          .completion(.finished)])
+                                          .completion(.failure(.oops))])
         XCTAssertEqual(subscription1.history, [.requested(.max(10))])
-        XCTAssertEqual(subscription2.history, [.requested(.max(11))])
+        XCTAssertEqual(subscription2.history, [])
     }
 
     func testSubscribesToUpstreamThenSendsSubscriptionDownstream() {
@@ -259,8 +271,7 @@ final class ConcatenateTests: XCTestCase {
         XCTAssertEqual(subscription1.history, [.requested(.max(10)),
                                                .requested(.none)])
         XCTAssertEqual(subscription2.history, [.requested(.max(19)),
-                                               .requested(.unlimited),
-                                               .requested(.max(42))])
+                                               .requested(.unlimited)])
     }
 
     func testCancelAlreadyCancelled() throws {
@@ -279,58 +290,48 @@ final class ConcatenateTests: XCTestCase {
         append.subscribe(tracking)
         try XCTUnwrap(downstreamSubscription).cancel()
         try XCTUnwrap(downstreamSubscription).cancel()
-        try XCTUnwrap(downstreamSubscription).request(.max(2)) // total demand is 2
+        try XCTUnwrap(downstreamSubscription).request(.max(2))
         try XCTUnwrap(downstreamSubscription).cancel()
-        try XCTUnwrap(downstreamSubscription).request(.max(3)) // total demand is 5
+        try XCTUnwrap(downstreamSubscription).request(.max(3))
 
         XCTAssertEqual(tracking.history, [.subscription("Concatenate")])
         XCTAssertEqual(subscription1.history, [.cancelled])
         XCTAssertEqual(subscription2.history, [])
 
-        XCTAssertEqual(publisher1.send(0), .none) // total demand is 4
-        publisher1.send(completion: .finished)
+        XCTAssertEqual(publisher1.send(0), .none)
 
-        XCTAssertEqual(tracking.history, [.subscription("Concatenate"),
-                                          .value(0)])
+        XCTAssertEqual(tracking.history, [.subscription("Concatenate")])
         XCTAssertEqual(subscription1.history, [.cancelled])
-        XCTAssertEqual(subscription2.history, [.requested(.max(4))])
+        XCTAssertEqual(subscription2.history, [])
+    }
 
-        XCTAssertEqual(publisher1.send(0), .none) // total demand is 3
-        publisher1.send(completion: .failure(.oops))
+    func testCompletionAfterCancellation() throws {
+        let subscription1 = CustomSubscription()
+        let subscription2 = CustomSubscription()
+        let publisher1 = CustomPublisher(subscription: subscription1)
+        let publisher2 = CustomPublisher(subscription: subscription2)
 
-        XCTAssertEqual(tracking.history, [.subscription("Concatenate"),
-                                          .value(0),
-                                          .value(0),
-                                          .completion(.failure(.oops))])
-        XCTAssertEqual(subscription1.history, [.cancelled])
-        XCTAssertEqual(subscription2.history, [.requested(.max(4))])
+        let append = publisher1.append(publisher2)
+        var downstreamSubscription: Subscription?
+        let tracking = TrackingSubscriber(
+            receiveSubscription: { downstreamSubscription = $0 },
+            receiveValue: { .max($0) },
+            receiveCompletion: { _ in }
+        )
+        append.subscribe(tracking)
 
         try XCTUnwrap(downstreamSubscription).cancel()
 
-        XCTAssertEqual(tracking.history, [.subscription("Concatenate"),
-                                          .value(0),
-                                          .value(0),
-                                          .completion(.failure(.oops))])
-        XCTAssertEqual(subscription1.history, [.cancelled])
-        XCTAssertEqual(subscription2.history, [.requested(.max(4)),
-                                               .cancelled])
+        publisher1.send(completion: .finished)
 
-        let subscription3 = CustomSubscription()
-        publisher2.send(subscription: subscription3)
-
-        XCTAssertEqual(tracking.history, [.subscription("Concatenate"),
-                                          .value(0),
-                                          .value(0),
-                                          .completion(.failure(.oops))])
         XCTAssertEqual(subscription1.history, [.cancelled])
-        XCTAssertEqual(subscription2.history, [.requested(.max(4)),
-                                               .cancelled])
-        XCTAssertEqual(subscription3.history, [.cancelled])
+        XCTAssertEqual(subscription2.history, [])
+        XCTAssertEqual(tracking.history, [.subscription("Concatenate")])
     }
 
     func testRecursivelyReceiveValue() {
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
-                                        initialDemand: nil,
+                                        initialDemand: .max(3),
                                         receiveValueDemand: .none,
                                         createSut: { $0.append() })
 
@@ -341,9 +342,12 @@ final class ConcatenateTests: XCTestCase {
             XCTAssertEqual(helper.publisher.send($0 + 1), .none)
         }
 
-        assertCrashes {
-            XCTAssertEqual(helper.publisher.send(1), .none)
-        }
+        XCTAssertEqual(helper.publisher.send(1), .none)
+
+        XCTAssertEqual(helper.tracking.history, [.subscription("Concatenate"),
+                                                 .value(1),
+                                                 .value(2),
+                                                 .value(3)])
     }
 
     func testRecursivelyReceiveFailure() {
@@ -362,18 +366,7 @@ final class ConcatenateTests: XCTestCase {
         helper.publisher.send(completion: .failure(.oops))
 
         XCTAssertEqual(helper.tracking.history, [.subscription("Concatenate"),
-                                                 .completion(.failure(.oops)),
-                                                 .completion(.failure(.oops)),
-                                                 .completion(.failure(.oops)),
-                                                 .completion(.failure(.oops)),
-                                                 .completion(.failure(.oops)),
-                                                 .completion(.failure(.oops)),
-                                                 .completion(.failure(.oops)),
-                                                 .completion(.failure(.oops)),
-                                                 .completion(.failure(.oops)),
-                                                 .completion(.failure(.oops)),
                                                  .completion(.failure(.oops))])
-        XCTAssertEqual(helper.subscription.history, [])
     }
 
     func testHelperMethods() {
@@ -384,58 +377,95 @@ final class ConcatenateTests: XCTestCase {
         XCTAssertEqual(publisher.prepend(CollectionOfOne(42)).prefix.sequence.first, 42)
     }
 
-    func testConcatenateReceiveValueBeforeSubscription() {
-        testReceiveValueBeforeSubscription(value: 12,
-                                           expected: .crash,
-                                           { $0.append(1, 2, 3) })
-
-        testReceiveValueBeforeSubscription(value: 12,
-                                           expected: .crash,
-                                           { $0.prepend(1, 2, 3) })
-    }
-
-    func testConcatenateReceiveCompletionBeforeSubscription() {
-        testReceiveCompletionBeforeSubscription(
-            inputType: Int.self,
-            expected: .history([.subscription("Concatenate")]),
+    func testAppendReceiveValueBeforeSubscription() {
+        testReceiveValueBeforeSubscription(
+            value: 12,
+            expected: .history([], demand: .none),
             { $0.append(1, 2, 3) }
         )
+    }
 
-        testReceiveCompletionBeforeSubscription(
-            inputType: Int.self,
-            expected: .history([.subscription("Concatenate")]),
-            { $0.prepend(1, 2, 3) }
+    func testPrependReceiveValueBeforeSubscription() {
+        let empty = Empty<Int, Never>(completeImmediately: true)
+        testReceiveValueBeforeSubscription(
+            value: 12,
+            expected: .history([.subscription("Concatenate")], demand: .none),
+            { $0.prepend(empty) }
         )
     }
 
-    func testConcatenateRequestBeforeSubscription() {
-        testRequestBeforeSubscription(inputType: Int.self,
-                                      shouldCrash: false,
-                                      { $0.append(1, 2, 3) })
+    func testAppendReceiveCompletionBeforeSubscription() {
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([]),
+            { $0.append(1, 2, 3) }
+        )
     }
 
-    func testConcatenateCancelBeforeSubscription() {
-        testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
-                                     { $0.append(1, 2, 3) })
+    func testPrependReceiveCompletionBeforeSubscription() {
+        let empty = Empty<Int, Never>(completeImmediately: true)
+        testReceiveCompletionBeforeSubscription(
+            inputType: Int.self,
+            expected: .history([.subscription("Concatenate")]),
+            { $0.prepend(empty) }
+        )
     }
 
-    func testConcatenateReceiveSubscriptionTwice() throws {
+    func testAppendReceiveSubscriptionTwice() throws {
         try testReceiveSubscriptionTwice { $0.append(1, 2, 3) }
+    }
+
+    func testCombineIdentifier() throws {
+        let subscription1 = CustomSubscription()
+        let subscription2 = CustomSubscription()
+        let publisher1 = CustomPublisher(subscription: subscription1)
+        let publisher2 = CustomPublisher(subscription: subscription2)
+
+        let append = publisher1.append(publisher2)
+        var _downstreamSubscription: Subscription?
+        let tracking = TrackingSubscriber(
+            receiveSubscription: { _downstreamSubscription = $0 },
+            receiveValue: { .max($0) },
+            receiveCompletion: { _ in }
+        )
+        append.subscribe(tracking)
+
+        let downstreamSubscription = try XCTUnwrap(_downstreamSubscription)
+
+        let prefixSubscriber = try XCTUnwrap(publisher1.erasedSubscriber)
+        XCTAssertEqual(
+            downstreamSubscription.combineIdentifier,
+            (prefixSubscriber as? CustomCombineIdentifierConvertible)?.combineIdentifier
+        )
+        XCTAssertNil(publisher2.erasedSubscriber)
+
+        publisher1.send(completion: .finished)
+
+        let suffixSubscriber = try XCTUnwrap(publisher2.erasedSubscriber)
+        XCTAssertEqual(
+            downstreamSubscription.combineIdentifier,
+            (suffixSubscriber as? CustomCombineIdentifierConvertible)?.combineIdentifier
+        )
+
+        XCTAssert(type(of: downstreamSubscription) != type(of: prefixSubscriber))
+        XCTAssert(type(of: downstreamSubscription) != type(of: suffixSubscriber))
+        XCTAssert(type(of: prefixSubscriber)        != type(of: suffixSubscriber))
     }
 
     func testConcatenateReflection() throws {
         try testReflection(parentInput: Float.self,
                            parentFailure: TestingError.self,
                            description: "Concatenate",
-                           customMirror: expectedChildren(
-                               ("downstream", .contains("TrackingSubscriberBase")),
-                               ("upstreamSubscription", .anything),
-                               ("suffix", .contains("(sequence: [2.0, 3.0, 5.0, 7.0])")),
-                               ("demand", "max(0)")
-                           ),
+                           customMirror: childrenIsEmpty,
                            playgroundDescription: "Concatenate",
                            { $0.append(2, 3, 5, 7) })
+
+        try testReflection(parentInput: Float.self,
+                           parentFailure: TestingError.self,
+                           description: "Concatenate",
+                           customMirror: childrenIsEmpty,
+                           playgroundDescription: "Concatenate",
+                           { Empty().append($0) })
     }
 
     func testConcatenateLifecycle() throws {
