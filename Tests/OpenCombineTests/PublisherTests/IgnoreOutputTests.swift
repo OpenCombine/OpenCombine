@@ -26,11 +26,12 @@ final class IgnoreOutputTests: XCTestCase {
         XCTAssertEqual(tracking.history, [])
 
         ignoreOutputPublisher.subscribe(tracking)
-        XCTAssertEqual(tracking.history, [.subscription("IgnoreOutput")])
+        XCTAssertEqual(tracking.history, [.subscription("CustomSubscription")])
 
         publisher.send(completion: .finished)
         publisher.send(completion: .finished)
-        XCTAssertEqual(tracking.history, [.subscription("IgnoreOutput"),
+        XCTAssertEqual(tracking.history, [.subscription("CustomSubscription"),
+                                          .completion(.finished),
                                           .completion(.finished)])
     }
 
@@ -45,18 +46,19 @@ final class IgnoreOutputTests: XCTestCase {
         XCTAssertEqual(tracking.history, [])
 
         ignoreOutputPublisher.subscribe(tracking)
-        XCTAssertEqual(tracking.history, [.subscription("IgnoreOutput")])
+        XCTAssertEqual(tracking.history, [.subscription("CustomSubscription")])
 
         XCTAssertEqual(upstreamPublisher.send(666), .none)
-        XCTAssertEqual(tracking.history, [.subscription("IgnoreOutput")])
+        XCTAssertEqual(tracking.history, [.subscription("CustomSubscription")])
 
         upstreamPublisher.send(completion: .finished)
-        XCTAssertEqual(tracking.history, [.subscription("IgnoreOutput"),
+        XCTAssertEqual(tracking.history, [.subscription("CustomSubscription"),
                                           .completion(.finished)])
 
         upstreamPublisher.send(completion: .failure(.oops))
-        XCTAssertEqual(tracking.history, [.subscription("IgnoreOutput"),
-                                          .completion(.finished)])
+        XCTAssertEqual(tracking.history, [.subscription("CustomSubscription"),
+                                          .completion(.finished),
+                                          .completion(.failure(.oops))])
     }
 
     func testCompletionWithError() {
@@ -70,17 +72,19 @@ final class IgnoreOutputTests: XCTestCase {
         XCTAssertEqual(tracking.history, [])
 
         ignoreOutputPublisher.subscribe(tracking)
-        XCTAssertEqual(tracking.history, [.subscription("IgnoreOutput")])
+        XCTAssertEqual(tracking.history, [.subscription("CustomSubscription")])
 
         XCTAssertEqual(publisher.send(666), .none)
-        XCTAssertEqual(tracking.history, [.subscription("IgnoreOutput")])
+        XCTAssertEqual(tracking.history, [.subscription("CustomSubscription")])
 
         publisher.send(completion: .failure(.oops))
         publisher.send(completion: .failure(.oops))
         publisher.send(completion: .finished)
 
-        XCTAssertEqual(tracking.history, [.subscription("IgnoreOutput"),
-                                          .completion(.failure(.oops))])
+        XCTAssertEqual(tracking.history, [.subscription("CustomSubscription"),
+                                          .completion(.failure(.oops)),
+                                          .completion(.failure(.oops)),
+                                          .completion(.finished)])
     }
 
     func testDemand() throws {
@@ -91,26 +95,41 @@ final class IgnoreOutputTests: XCTestCase {
                                         receiveValueDemand: .max(1),
                                         createSut: { $0.ignoreOutput() })
 
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(42)),
+                                                     .requested(.unlimited)])
 
         XCTAssertEqual(helper.publisher.send(0), .none)
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(42)),
+                                                     .requested(.unlimited)])
 
         XCTAssertEqual(helper.publisher.send(2), .none)
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(42)),
+                                                     .requested(.unlimited)])
 
         try XCTUnwrap(helper.downstreamSubscription).request(.max(95))
         try XCTUnwrap(helper.downstreamSubscription).request(.max(5))
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(42)),
+                                                     .requested(.unlimited),
+                                                     .requested(.max(95)),
+                                                     .requested(.max(5))])
 
         try XCTUnwrap(helper.downstreamSubscription).cancel()
         try XCTUnwrap(helper.downstreamSubscription).cancel()
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(42)),
+                                                     .requested(.unlimited),
+                                                     .requested(.max(95)),
+                                                     .requested(.max(5)),
+                                                     .cancelled,
                                                      .cancelled])
 
         try XCTUnwrap(helper.downstreamSubscription).request(.max(50))
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
-                                                     .cancelled])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(42)),
+                                                     .requested(.unlimited),
+                                                     .requested(.max(95)),
+                                                     .requested(.max(5)),
+                                                     .cancelled,
+                                                     .cancelled,
+                                                     .requested(.max(50))])
     }
 
     func testSendsSubscriptionDownstreamBeforeDemandUpstream() {
@@ -148,18 +167,18 @@ final class IgnoreOutputTests: XCTestCase {
         try XCTUnwrap(helper.publisher.subscriber)
             .receive(subscription: secondSubscription)
 
-        XCTAssertEqual(secondSubscription.history, [.cancelled])
+        XCTAssertEqual(secondSubscription.history, [.requested(.unlimited)])
 
         try XCTUnwrap(helper.publisher.subscriber)
             .receive(subscription: helper.subscription)
 
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
-                                                     .cancelled])
+                                                     .requested(.unlimited)])
 
         try XCTUnwrap(helper.downstreamSubscription).cancel()
 
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
-                                                     .cancelled,
+                                                     .requested(.unlimited),
                                                      .cancelled])
 
         let thirdSubscription = CustomSubscription()
@@ -167,7 +186,7 @@ final class IgnoreOutputTests: XCTestCase {
         try XCTUnwrap(helper.publisher.subscriber)
             .receive(subscription: thirdSubscription)
 
-        XCTAssertEqual(thirdSubscription.history, [.cancelled])
+        XCTAssertEqual(thirdSubscription.history, [.requested(.unlimited)])
     }
 
     func testIgnoreOutputReceiveValueBeforeSubscription() {
@@ -179,26 +198,14 @@ final class IgnoreOutputTests: XCTestCase {
     func testIgnoreOutputReceiveCompletionBeforeSubscription() {
         testReceiveCompletionBeforeSubscription(
             inputType: Int.self,
-            expected: .history([]),
+            expected: .history([.completion(.finished)]),
             { $0.ignoreOutput() }
         )
     }
 
-    func testIgnoreOutputRequestBeforeSubscription() {
-        testRequestBeforeSubscription(inputType: Int.self,
-                                      shouldCrash: false,
-                                      { $0.ignoreOutput() })
-    }
-
-    func testIgnoreOutputCancelBeforeSubscription() {
-        testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
-                                     { $0.ignoreOutput() })
-    }
-
     func testIgnoreOutputLifecycle() throws {
         try testLifecycle(sendValue: 31,
-                          cancellingSubscriptionReleasesSubscriber: false,
+                          cancellingSubscriptionReleasesSubscriber: true,
                           { $0.ignoreOutput() })
     }
 
@@ -206,11 +213,9 @@ final class IgnoreOutputTests: XCTestCase {
         try testReflection(parentInput: Int.self,
                            parentFailure: TestingError.self,
                            description: "IgnoreOutput",
-                           customMirror: expectedChildren(
-                               ("downstream", .contains("TrackingSubscriberBase")),
-                               ("status", .anything)
-                           ),
+                           customMirror: childrenIsEmpty,
                            playgroundDescription: "IgnoreOutput",
+                           subscriberIsAlsoSubscription: false,
                            { $0.ignoreOutput() })
     }
 }

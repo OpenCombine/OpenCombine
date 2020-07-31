@@ -41,44 +41,27 @@ extension Publishers {
 }
 
 extension Publishers.IgnoreOutput {
-    private final class Inner<Downstream: Subscriber>
+    private struct Inner<Downstream: Subscriber>
         : Subscriber,
-          Subscription,
           CustomStringConvertible,
           CustomReflectable,
           CustomPlaygroundDisplayConvertible
         where Downstream.Input == Never, Downstream.Failure == Upstream.Failure
     {
-        // NOTE: This class has been audited for thread safety
-
         typealias Input = Upstream.Output
 
         typealias Failure = Upstream.Failure
 
         private let downstream: Downstream
 
-        private var status = SubscriptionStatus.awaitingSubscription
-
-        private let lock = UnfairLock.allocate()
+        let combineIdentifier = CombineIdentifier()
 
         fileprivate init(downstream: Downstream) {
             self.downstream = downstream
         }
 
-        deinit {
-            lock.deallocate()
-        }
-
         func receive(subscription: Subscription) {
-            lock.lock()
-            guard case .awaitingSubscription = status else {
-                lock.unlock()
-                subscription.cancel()
-                return
-            }
-            status = .subscribed(subscription)
-            lock.unlock()
-            downstream.receive(subscription: self)
+            downstream.receive(subscription: subscription)
             subscription.request(.unlimited)
         }
 
@@ -87,42 +70,13 @@ extension Publishers.IgnoreOutput {
         }
 
         func receive(completion: Subscribers.Completion<Failure>) {
-            lock.lock()
-            guard case .subscribed = status else {
-                lock.unlock()
-                return
-            }
-            status = .terminal
-            lock.unlock()
             downstream.receive(completion: completion)
-        }
-
-        func request(_ demand: Subscribers.Demand) {
-            // ignore and requests from downstream since we'll never send
-            // any values
-        }
-
-        func cancel() {
-            lock.lock()
-            guard case let .subscribed(subscription) = status else {
-                lock.unlock()
-                return
-            }
-            status = .terminal
-            lock.unlock()
-            subscription.cancel()
         }
 
         var description: String { return "IgnoreOutput" }
 
         var customMirror: Mirror {
-            lock.lock()
-            defer { lock.unlock() }
-            let children: [Mirror.Child] = [
-                ("downstream", downstream),
-                ("status", status)
-            ]
-            return Mirror(self, children: children)
+            return Mirror(self, children: EmptyCollection())
         }
 
         var playgroundDescription: Any { return description }
