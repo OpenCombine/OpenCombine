@@ -29,13 +29,13 @@ extension Publishers {
             where Failure == Downstream.Failure,
                   Elements.Element == Downstream.Input
         {
-            var iterator = sequence.makeIterator()
-            if iterator.next() != nil {
-                let inner = Inner(downstream: subscriber, sequence: sequence)
-                subscriber.receive(subscription: inner)
-            } else {
+            let inner = Inner(downstream: subscriber, sequence: sequence)
+            if inner.isExhausted {
                 subscriber.receive(subscription: Subscriptions.empty)
                 subscriber.receive(completion: .finished)
+                inner.cancel()
+            } else {
+                subscriber.receive(subscription: inner)
             }
         }
     }
@@ -51,7 +51,6 @@ extension Publishers.Sequence {
         where Downstream.Input == Elements.Element,
               Downstream.Failure == Failure
     {
-        // NOTE: This class has been audited for thread-safety
 
         typealias Iterator = Elements.Iterator
         typealias Element = Elements.Element
@@ -73,6 +72,10 @@ extension Publishers.Sequence {
 
         deinit {
             lock.deallocate()
+        }
+
+        fileprivate var isExhausted: Bool {
+            return next == nil
         }
 
         var description: String {

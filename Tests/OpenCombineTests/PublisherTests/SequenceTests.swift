@@ -56,7 +56,7 @@ final class SequenceTests: XCTestCase {
                 ▿ Counter #0
                   ▿ sequence: Counter #1
                     - upperBound: 10
-                    - state: 2
+                    - state: 1
 
                 """)
             }
@@ -69,37 +69,38 @@ final class SequenceTests: XCTestCase {
         subscriber.subscriptions.first?.request(.max(3))
 
         XCTAssertEqual(subscriber.history, [.subscription("Counter"),
+                                            .value(0),
                                             .value(1),
-                                            .value(2),
-                                            .value(3)])
+                                            .value(2)])
 
         subscriber.subscriptions.first?.request(.max(5))
 
         XCTAssertEqual(subscriber.history, [.subscription("Counter"),
+                                            .value(0),
                                             .value(1),
                                             .value(2),
                                             .value(3),
                                             .value(4),
                                             .value(5),
                                             .value(6),
-                                            .value(7),
-                                            .value(8)])
+                                            .value(7)])
 
         subscriber.subscriptions.first?.request(.none)
 
         XCTAssertEqual(subscriber.history, [.subscription("Counter"),
+                                            .value(0),
                                             .value(1),
                                             .value(2),
                                             .value(3),
                                             .value(4),
                                             .value(5),
                                             .value(6),
-                                            .value(7),
-                                            .value(8)])
+                                            .value(7)])
 
-        subscriber.subscriptions.first?.request(.max(1))
+        subscriber.subscriptions.first?.request(.max(2))
 
         XCTAssertEqual(subscriber.history, [.subscription("Sequence"),
+                                            .value(0),
                                             .value(1),
                                             .value(2),
                                             .value(3),
@@ -127,26 +128,26 @@ final class SequenceTests: XCTestCase {
         let subscriber = TrackingSubscriberBase<Int, Never>(
             receiveSubscription: { $0.request(.max(1)) },
             receiveValue: {
-                $0 > 4 || $0 == 1 ? .none : .max(2)
+                $0 > 3 || $0 == 0 ? .none : .max(2)
             }
         )
 
         publisher.subscribe(subscriber)
 
         XCTAssertEqual(subscriber.history, [.subscription("Counter"),
-                                            .value(1)])
+                                            .value(0)])
 
         subscriber.subscriptions.first?.request(.max(1))
 
         XCTAssertEqual(subscriber.history, [.subscription("Counter"),
+                                            .value(0),
                                             .value(1),
                                             .value(2),
                                             .value(3),
                                             .value(4),
                                             .value(5),
                                             .value(6),
-                                            .value(7),
-                                            .value(8)])
+                                            .value(7)])
     }
 
     func testCancelOnSubscription() {
@@ -158,12 +159,12 @@ final class SequenceTests: XCTestCase {
         publisher.subscribe(subscriber)
 
         XCTAssertEqual(subscriber.history, [.subscription("Sequence"),
-                                            .value(1)])
+                                            .value(0)])
 
         subscriber.subscriptions.first?.request(.max(1))
 
         XCTAssertEqual(subscriber.history, [.subscription("Sequence"),
-                                            .value(1)])
+                                            .value(0)])
     }
 
     func testCancelOnValue() {
@@ -183,12 +184,12 @@ final class SequenceTests: XCTestCase {
         publisher.subscribe(subscriber)
 
         XCTAssertEqual(subscriber.history, [.subscription("Sequence"),
-                                            .value(1)])
+                                            .value(0)])
 
         subscriber.subscriptions.first?.request(.max(1))
 
         XCTAssertEqual(subscriber.history, [.subscription("Sequence"),
-                                            .value(1)])
+                                            .value(0)])
     }
 
     func testPublishesCorrectValues() {
@@ -254,6 +255,7 @@ final class SequenceTests: XCTestCase {
 
             subscriber.subscriptions.first?.request(.max(3))
             XCTAssertEqual(subscriber.history, [.subscription("Sequence"),
+                                                .value(0),
                                                 .value(1),
                                                 .value(2),
                                                 .completion(.finished)])
