@@ -13,10 +13,10 @@ extension Subscribers {
                                             CustomReflectable,
                                             CustomPlaygroundDisplayConvertible
     {
-        // NOTE: this class has been audited for thread safety.
-        // Combine doesn't use any locking here.
 
         public typealias Failure = Never
+
+        private let lock = UnfairLock.allocate()
 
         public private(set) var object: Root?
 
@@ -42,37 +42,60 @@ extension Subscribers {
             self.keyPath = keyPath
         }
 
+        deinit {
+            lock.deallocate()
+        }
+
         public func receive(subscription: Subscription) {
+            lock.lock()
             switch status {
             case .subscribed, .terminal:
+                lock.unlock()
                 subscription.cancel()
             case .awaitingSubscription:
                 status = .subscribed(subscription)
+                lock.unlock()
                 subscription.request(.unlimited)
             }
         }
 
         public func receive(_ value: Input) -> Subscribers.Demand {
-            switch status {
-            case .subscribed:
-                object?[keyPath: keyPath] = value
-            case .awaitingSubscription, .terminal:
-                break
+            lock.lock()
+            guard case .subscribed = status, let object = self.object else {
+                lock.unlock()
+                return .none
             }
+            lock.unlock()
+            object[keyPath: keyPath] = value
             return .none
         }
 
         public func receive(completion: Subscribers.Completion<Never>) {
-            cancel()
+            lock.lock()
+            guard case .subscribed = status else {
+                lock.unlock()
+                return
+            }
+            terminateAndConsumeLock()
         }
 
         public func cancel() {
+            lock.lock()
             guard case let .subscribed(subscription) = status else {
+                lock.unlock()
                 return
             }
+            terminateAndConsumeLock()
             subscription.cancel()
+        }
+
+        private func terminateAndConsumeLock() {
+#if DEBUG
+            lock.assertOwner()
+#endif
             status = .terminal
             object = nil
+            lock.unlock()
         }
     }
 }
