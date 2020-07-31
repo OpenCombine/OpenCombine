@@ -45,6 +45,6 @@ final class CombineIdentifierTests: XCTestCase {
     func testUsesUInt64UnderTheHood() {
         let mirror = Mirror(reflecting: CombineIdentifier())
         XCTAssertEqual(mirror.children.count, 1)
-        XCTAssertNotNil(mirror.descendant("value") as? UInt64)
+        XCTAssertNotNil(mirror.descendant("rawValue") as? UInt64)
     }
 }

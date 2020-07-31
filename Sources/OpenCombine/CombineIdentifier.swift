@@ -11,17 +11,17 @@ import COpenCombineHelpers
 
 public struct CombineIdentifier: Hashable, CustomStringConvertible {
 
-    private let value: UInt64
+    private let rawValue: UInt64
 
     public init() {
-        value = __nextCombineIdentifier()
+        rawValue = __nextCombineIdentifier()
     }
 
     public init(_ obj: AnyObject) {
-        value = UInt64(UInt(bitPattern: ObjectIdentifier(obj)))
+        rawValue = UInt64(UInt(bitPattern: ObjectIdentifier(obj)))
     }
 
     public var description: String {
-        return "0x\(String(value, radix: 16))"
+        return "0x\(String(rawValue, radix: 16))"
     }
 }
