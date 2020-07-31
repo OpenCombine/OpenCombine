@@ -15,16 +15,16 @@ extension Subscribers {
           CustomReflectable,
           CustomPlaygroundDisplayConvertible
     {
-        // NOTE: this class has been audited for thread safety.
-        // Combine doesn't use any locking here.
 
         /// The closure to execute on receipt of a value.
-        public let receiveValue: (Input) -> Void
+        public var receiveValue: (Input) -> Void
 
         /// The closure to execute on completion.
-        public let receiveCompletion: (Subscribers.Completion<Failure>) -> Void
+        public var receiveCompletion: (Subscribers.Completion<Failure>) -> Void
 
         private var status = SubscriptionStatus.awaitingSubscription
+
+        private let lock = UnfairLock.allocate()
 
         public var description: String { return "Sink" }
 
@@ -47,32 +47,56 @@ extension Subscribers {
             self.receiveValue = receiveValue
         }
 
+        deinit {
+            lock.deallocate()
+        }
+
         public func receive(subscription: Subscription) {
+            lock.lock()
             switch status {
-            case .subscribed, .terminal:
-                subscription.cancel()
             case .awaitingSubscription:
                 status = .subscribed(subscription)
+                lock.unlock()
                 subscription.request(.unlimited)
+            case .subscribed, .terminal:
+                lock.unlock()
+                subscription.cancel()
             }
         }
 
         public func receive(_ value: Input) -> Subscribers.Demand {
+            lock.lock()
+            let receiveValue = self.receiveValue
+            lock.unlock()
             receiveValue(value)
             return .none
         }
 
         public func receive(completion: Subscribers.Completion<Failure>) {
+            lock.lock()
+            let receiveCompletion = self.receiveCompletion
+            terminateAndConsumeLock()
             receiveCompletion(completion)
-            status = .terminal
         }
 
         public func cancel() {
+            lock.lock()
             guard case let .subscribed(subscription) = status else {
+                lock.unlock()
                 return
             }
+            terminateAndConsumeLock()
             subscription.cancel()
+        }
+
+        private func terminateAndConsumeLock() {
+#if DEBUG
+            lock.assertOwner()
+#endif
             status = .terminal
+            receiveValue = { _ in }
+            receiveCompletion = { _ in }
+            lock.unlock()
         }
     }
 }
