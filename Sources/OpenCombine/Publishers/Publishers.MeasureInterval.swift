@@ -51,7 +51,7 @@ extension Publishers {
             where Upstream.Failure == Downstream.Failure,
                   Downstream.Input == Context.SchedulerTimeType.Stride
         {
-            upstream.subscribe(Inner(self, downstream: subscriber))
+            upstream.subscribe(Inner(scheduler: scheduler, downstream: subscriber))
         }
     }
 }
@@ -66,27 +66,22 @@ extension Publishers.MeasureInterval {
         where Downstream.Input == Context.SchedulerTimeType.Stride,
               Downstream.Failure == Upstream.Failure
     {
-        // NOTE: This class has been audited for thread safety
-
         typealias Input = Upstream.Output
         typealias Failure = Upstream.Failure
 
-        typealias MeasureInterval = Publishers.MeasureInterval<Upstream, Context>
-
-        private enum State {
-            case ready(MeasureInterval, Downstream)
-            case subscribed(MeasureInterval, Downstream, Subscription)
-            case terminal
-        }
-
         private let lock = UnfairLock.allocate()
 
-        private var state: State
+        private let downstream: Downstream
+
+        private let scheduler: Context
+
+        private var state = SubscriptionStatus.awaitingSubscription
 
         private var last: Context.SchedulerTimeType?
 
-        init(_ measureInterval: MeasureInterval, downstream: Downstream) {
-            state = .ready(measureInterval, downstream)
+        init(scheduler: Context, downstream: Downstream) {
+            self.downstream = downstream
+            self.scheduler = scheduler
         }
 
         deinit {
@@ -95,25 +90,26 @@ extension Publishers.MeasureInterval {
 
         func receive(subscription: Subscription) {
             lock.lock()
-            guard case let .ready(measureInterval, downstream) = state else {
+            guard case .awaitingSubscription = state else {
                 lock.unlock()
                 subscription.cancel()
                 return
             }
-            state = .subscribed(measureInterval, downstream, subscription)
-            last = measureInterval.scheduler.now
+            state = .subscribed(subscription)
+            last = scheduler.now
             lock.unlock()
             downstream.receive(subscription: self)
         }
 
         func receive(_: Input) -> Subscribers.Demand {
             lock.lock()
-            guard case let .subscribed(measureInterval, downstream, subscription) = state,
-                  let previousTime = last else {
+            guard case let .subscribed(subscription) = state,
+                  let previousTime = last else
+            {
                 lock.unlock()
                 return .none
             }
-            let now = measureInterval.scheduler.now
+            let now = scheduler.now
             last = now
             lock.unlock()
             let newDemand = downstream.receive(previousTime.distance(to: now))
@@ -125,7 +121,7 @@ extension Publishers.MeasureInterval {
 
         func receive(completion: Subscribers.Completion<Failure>) {
             lock.lock()
-            guard case let .subscribed(_, downstream, _) = state else {
+            guard case .subscribed = state else {
                 lock.unlock()
                 return
             }
@@ -137,7 +133,7 @@ extension Publishers.MeasureInterval {
 
         func request(_ demand: Subscribers.Demand) {
             lock.lock()
-            guard case let .subscribed(_, _, subscription) = state else {
+            guard case let .subscribed(subscription) = state else {
                 lock.unlock()
                 return
             }
@@ -147,7 +143,7 @@ extension Publishers.MeasureInterval {
 
         func cancel() {
             lock.lock()
-            guard case let .subscribed(_, _, subscription) = state else {
+            guard case let .subscribed(subscription) = state else {
                 lock.unlock()
                 return
             }
