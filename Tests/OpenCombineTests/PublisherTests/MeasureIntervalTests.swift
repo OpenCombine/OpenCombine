@@ -158,7 +158,7 @@ final class MeasureIntervalTests: XCTestCase {
 
     func testMeasureIntervalLifecycle() throws {
         try testLifecycle(sendValue: 31,
-                          cancellingSubscriptionReleasesSubscriber: true,
+                          cancellingSubscriptionReleasesSubscriber: false,
                           { $0.measureInterval(using: ImmediateScheduler.shared) })
     }
 }
