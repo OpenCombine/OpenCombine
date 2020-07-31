@@ -164,9 +164,7 @@ final class BreakpointTests: XCTestCase {
         try testReflection(parentInput: Int.self,
                            parentFailure: Error.self,
                            description: "Breakpoint",
-                           customMirror: expectedChildren(
-                               ("upstream", .contains("CustomConnectablePublisherBase"))
-                           ),
+                           customMirror: childrenIsEmpty,
                            playgroundDescription: "Breakpoint",
                            subscriberIsAlsoSubscription: false,
                            { $0.breakpointOnError() })
