@@ -176,12 +176,9 @@ extension RunLoop {
                 0,
                 { _ in action() }
             )
-            // A bug in Combine. The schedule(after:tolerance:options:_:) methods
-            // always executes the action on the current runloop.
-            // (FB7493579 if Apple folks are watching)
-            let theWrongRunLoop = CFRunLoopGetCurrent()
-            CFRunLoopAddTimer(theWrongRunLoop, timer, defaultRunLoopMode)
-            CFRunLoopWakeUp(theWrongRunLoop)
+            let cfRunLoop = runLoop.getCFRunLoop()
+            CFRunLoopAddTimer(cfRunLoop, timer, defaultRunLoopMode)
+            CFRunLoopWakeUp(cfRunLoop)
         }
 
         public func schedule(after date: SchedulerTimeType,
