@@ -81,15 +81,15 @@ final class SinkTests: XCTestCase {
         XCTAssertNotNil(completion)
 
         XCTAssertEqual(sink.receive(100), .none)
-        XCTAssertEqual(value, 100)
+        XCTAssertEqual(value, 42)
 
         publisher.subscribe(sink)
         publisher.send(1000000)
-        XCTAssertEqual(value, 100)
+        XCTAssertEqual(value, 42)
 
         sink.cancel()
         publisher.send(-1)
-        XCTAssertEqual(value, 100)
+        XCTAssertEqual(value, 42)
     }
 
     func testReceiveValueWithoutSubscription() {
@@ -113,12 +113,120 @@ final class SinkTests: XCTestCase {
         sink.receive(completion: .finished)
         sink.receive(completion: .failure(.oops))
 
-        XCTAssertEqual(valueCounter, 2)
-        XCTAssertEqual(completionCounter, 3)
+        XCTAssertEqual(valueCounter, 1)
+        XCTAssertEqual(completionCounter, 1)
 
         sink.cancel()
 
-        XCTAssertEqual(completionCounter, 3)
+        XCTAssertEqual(valueCounter, 1)
+        XCTAssertEqual(completionCounter, 1)
+    }
+
+    private enum ClosureLifecycleTestTermination {
+        case cancel
+        case finish
+        case fail(TestingError)
+    }
+
+    private func testClosuresLifecycle(receiveSubscription: Bool,
+                                       termination: ClosureLifecycleTestTermination,
+                                       releasesClosures: Bool) {
+        let sink: Subscribers.Sink<Void, TestingError>
+        var receiveValueClosureDestroyed = false
+        var receiveCompletionClosureDestroyed = false
+        do {
+
+            typealias Cleanup = CleaningUpSubscriber<Void, TestingError>
+
+            let receiveValueClosureCleanup = Cleanup {
+                receiveValueClosureDestroyed = true
+            }
+
+            let receiveCompletionClosureCleanup = Cleanup {
+                receiveCompletionClosureDestroyed = true
+            }
+
+            sink = .init(
+                receiveCompletion: receiveCompletionClosureCleanup.receive(completion:),
+                receiveValue: { _ = receiveValueClosureCleanup.receive() }
+            )
+        }
+
+        if receiveSubscription {
+            sink.receive(subscription: CustomSubscription())
+        }
+
+        XCTAssertFalse(receiveValueClosureDestroyed)
+        XCTAssertFalse(receiveCompletionClosureDestroyed)
+
+        switch termination {
+        case .cancel:
+            sink.cancel()
+        case .finish:
+            sink.receive(completion: .finished)
+        case .fail(let error):
+            sink.receive(completion: .failure(error))
+        }
+
+        withExtendedLifetime(sink) {
+            XCTAssert(receiveValueClosureDestroyed == releasesClosures)
+            XCTAssert(receiveCompletionClosureDestroyed == releasesClosures)
+        }
+    }
+
+    func testDoesNotReleaseClosuresAfterCancellationNoSubscription() {
+        testClosuresLifecycle(receiveSubscription: false,
+                              termination: .cancel,
+                              releasesClosures: false)
+    }
+
+    func testReleasesClosuresAfterCancellationWithSubscription() {
+        testClosuresLifecycle(receiveSubscription: true,
+                              termination: .cancel,
+                              releasesClosures: true)
+    }
+
+    func testReleasesClosuresAfterFinishingNoSubscription() {
+        testClosuresLifecycle(receiveSubscription: false,
+                              termination: .finish,
+                              releasesClosures: true)
+    }
+
+    func testReleasesClosuresAfterFinishingWithSubscription() {
+        testClosuresLifecycle(receiveSubscription: true,
+                              termination: .finish,
+                              releasesClosures: true)
+    }
+
+    func testReleasesClosuresAfterFailingNoSubscription() {
+        testClosuresLifecycle(receiveSubscription: false,
+                              termination: .fail(.oops),
+                              releasesClosures: true)
+    }
+
+    func testReleasesClosuresAfterFailingWithSubscription() {
+        testClosuresLifecycle(receiveSubscription: true,
+                              termination: .fail(.oops),
+                              releasesClosures: true)
+    }
+
+    func testRecursiveCompletion() {
+        var recursionCounter = 10
+        var delayedSink: Sut?
+        let sink = Sut(
+            receiveCompletion: {
+                if recursionCounter == 0 { return }
+                recursionCounter -= 1
+                delayedSink?.receive(completion: $0)
+            },
+            receiveValue: { _ in }
+        )
+        delayedSink = sink
+
+        sink.receive(subscription: CustomSubscription())
+        sink.receive(completion: .finished)
+
+        XCTAssertEqual(recursionCounter, 9)
     }
 
     func testPublisherOperator() {
