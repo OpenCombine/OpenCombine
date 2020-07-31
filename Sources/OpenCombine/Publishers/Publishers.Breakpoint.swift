@@ -172,10 +172,7 @@ extension Publishers.Breakpoint {
         var description: String { return "Breakpoint" }
 
         var customMirror: Mirror {
-            let children = CollectionOfOne<Mirror.Child>(
-                ("upstream", breakpoint.upstream)
-            )
-            return Mirror(self, children: children)
+            return Mirror(self, children: EmptyCollection())
         }
 
         var playgroundDescription: Any { return description }
