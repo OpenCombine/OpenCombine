@@ -74,7 +74,7 @@ final class AssignTests: XCTestCase {
 
         subscription1.cancelled = false
         assign.receive(completion: .finished)
-        XCTAssertTrue(subscription1.cancelled)
+        XCTAssertFalse(subscription1.cancelled)
 
         let subscription3 = CustomSubscription()
         assign.receive(subscription: subscription3)
@@ -103,6 +103,8 @@ final class AssignTests: XCTestCase {
         publisher.send(completion: .finished)
         XCTAssertEqual(object.value, 42)
 
+        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
+
         XCTAssertEqual(assign.receive(100), .none)
         XCTAssertEqual(object.value, 42)
 
@@ -111,7 +113,6 @@ final class AssignTests: XCTestCase {
         XCTAssertEqual(object.value, 42)
 
         XCTAssertEqual(subscription.history, [.requested(.unlimited),
-                                              .cancelled,
                                               .cancelled])
     }
 
