@@ -232,7 +232,7 @@ final class SubscribeOnTests: XCTestCase {
         try XCTUnwrap(helper.downstreamSubscription).cancel()
     }
 
-    func testWeakCaptureWhenSchedulingRequest() throws {
+    func testStrongCaptureWhenSchedulingRequest() throws {
         let scheduler = VirtualTimeScheduler()
         var subscriberReleased = false
         let subscription = CustomSubscription()
@@ -253,12 +253,12 @@ final class SubscribeOnTests: XCTestCase {
             publisher.cancel()
             tracking.cancel()
         }
-        XCTAssertTrue(subscriberReleased)
+        XCTAssertFalse(subscriberReleased)
         scheduler.executeScheduledActions()
-        XCTAssertEqual(subscription.history, [])
+        XCTAssertEqual(subscription.history, [.requested(.max(1)), .cancelled])
     }
 
-    func testWeakCaptureWhenSchedulingCancel() throws {
+    func testStrongCaptureWhenSchedulingCancel() throws {
         let scheduler = VirtualTimeScheduler()
         var subscriberReleased = false
         let subscription = CustomSubscription()
@@ -279,9 +279,9 @@ final class SubscribeOnTests: XCTestCase {
             publisher.cancel()
             tracking.cancel()
         }
-        XCTAssertTrue(subscriberReleased)
+        XCTAssertFalse(subscriberReleased)
         scheduler.executeScheduledActions()
-        XCTAssertEqual(subscription.history, [])
+        XCTAssertEqual(subscription.history, [.cancelled])
     }
 
     func testSubscribeOnReceiveSubscriptionTwice() throws {
@@ -326,7 +326,8 @@ final class SubscribeOnTests: XCTestCase {
     }
 
     func testSubscribeOnLifecycle() throws {
-        try testLifecycle(sendValue: 31, cancellingSubscriptionReleasesSubscriber: true) {
+        try testLifecycle(sendValue: 31,
+                          cancellingSubscriptionReleasesSubscriber: false) {
             $0.subscribe(on: ImmediateScheduler.shared)
         }
     }
