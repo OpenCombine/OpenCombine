@@ -110,8 +110,7 @@ extension Publishers {
             where Suffix.Failure == Downstream.Failure, Suffix.Output == Downstream.Input
         {
             let inner = Inner(downstream: subscriber, suffix: suffix)
-            subscriber.receive(subscription: inner)
-            prefix.subscribe(inner)
+            prefix.subscribe(Inner<Downstream>.PrefixSubscriber(inner: inner))
         }
     }
 }
@@ -119,9 +118,8 @@ extension Publishers {
 extension Publishers.Concatenate: Equatable where Prefix: Equatable, Suffix: Equatable {}
 
 extension Publishers.Concatenate {
-    private final class Inner<Downstream: Subscriber>
-        : Subscriber,
-          Subscription,
+    fileprivate final class Inner<Downstream: Subscriber>
+        : Subscription,
           CustomStringConvertible,
           CustomReflectable,
           CustomPlaygroundDisplayConvertible
@@ -131,21 +129,25 @@ extension Publishers.Concatenate {
 
         typealias Failure = Suffix.Failure
 
+        fileprivate struct PrefixSubscriber {
+            let inner: Inner<Downstream>
+        }
+
+        fileprivate struct SuffixSubscriber {
+            let inner: Inner<Downstream>
+        }
+
         private let downstream: Downstream
+
+        private var prefixState = SubscriptionStatus.awaitingSubscription
+
+        private var suffixState = SubscriptionStatus.awaitingSubscription
 
         private let suffix: Suffix
 
-        private var prefixFinished = false
-
-        private var demand = Subscribers.Demand.none
-
-        private var upstream: Subscription?
-
-        private var expectedSubscriptions = 2
+        private var pending = Subscribers.Demand.none
 
         private let lock = UnfairLock.allocate()
-
-        private let downstreamLock = UnfairRecursiveLock.allocate()
 
         fileprivate init(downstream: Downstream, suffix: Suffix) {
             self.downstream = downstream
@@ -154,65 +156,13 @@ extension Publishers.Concatenate {
 
         deinit {
             lock.deallocate()
-            downstreamLock.deallocate()
-        }
-
-        func receive(subscription: Subscription) {
-            lock.lock()
-            guard upstream == nil, expectedSubscriptions > 0 else {
-                lock.unlock()
-                subscription.cancel()
-                return
-            }
-            upstream = subscription
-            expectedSubscriptions -= 1
-            let demand = self.demand
-            lock.unlock()
-            if demand > 0 {
-                subscription.request(demand)
-            }
-        }
-
-        func receive(_ input: Input) -> Subscribers.Demand {
-            lock.lock()
-            demand -= 1
-            lock.unlock()
-            downstreamLock.lock()
-            let newDemand = downstream.receive(input)
-            downstreamLock.unlock()
-            lock.lock()
-            demand += newDemand
-            lock.unlock()
-            return newDemand
-        }
-
-        func receive(completion: Subscribers.Completion<Failure>) {
-            // Reading prefixFinished should be locked. Combine doesn't lock here.
-            if prefixFinished {
-                downstreamLock.lock()
-                downstream.receive(completion: completion)
-                downstreamLock.unlock()
-                return
-            }
-
-            guard case .finished = completion else {
-                downstreamLock.lock()
-                downstream.receive(completion: completion)
-                downstreamLock.unlock()
-                return
-            }
-
-            prefixFinished = true // Should be locked as well?
-            lock.lock()
-            upstream = nil
-            lock.unlock()
-            suffix.subscribe(self)
         }
 
         func request(_ demand: Subscribers.Demand) {
             lock.lock()
-            self.demand += demand
-            guard let subscription = upstream else {
+            pending += demand
+            guard let subscription = prefixState.subscription ?? suffixState.subscription
+            else {
                 lock.unlock()
                 return
             }
@@ -222,27 +172,203 @@ extension Publishers.Concatenate {
 
         func cancel() {
             lock.lock()
-            guard let subscription = upstream else {
-                lock.unlock()
-                return
-            }
-            upstream = nil
+            let upstreamSubscription =
+                prefixState.subscription ?? suffixState.subscription
+            prefixState = .terminal
+            suffixState = .terminal
             lock.unlock()
-            subscription.cancel()
+            upstreamSubscription?.cancel()
         }
 
         var description: String { return "Concatenate" }
 
         var customMirror: Mirror {
-            let children: [Mirror.Child] = [
-                ("downstream", downstream),
-                ("upstreamSubscription", upstream as Any),
-                ("suffix", suffix),
-                ("demand", demand)
-            ]
-            return Mirror(self, children: children)
+            return Mirror(self, children: EmptyCollection())
         }
 
         var playgroundDescription: Any { return description }
+
+        // MARK: - Private
+
+        private func prefixReceive(subscription: Subscription) {
+            lock.lock()
+            guard case .awaitingSubscription = prefixState else {
+                lock.unlock()
+                subscription.cancel()
+                return
+            }
+            prefixState = .subscribed(subscription)
+            lock.unlock()
+            downstream.receive(subscription: self)
+        }
+
+        private func prefixReceive(_ input: Input) -> Subscribers.Demand {
+            lock.lock()
+            guard case .subscribed = prefixState, pending != .none else {
+                lock.unlock()
+                return .none
+            }
+            pending -= 1
+            lock.unlock()
+            let newDemand = downstream.receive(input)
+            if newDemand == .none {
+                return .none
+            }
+            lock.lock()
+            pending += newDemand
+            lock.unlock()
+            return newDemand
+        }
+
+        private func prefixReceive(completion: Subscribers.Completion<Failure>) {
+            lock.lock()
+            guard case .subscribed = prefixState else {
+                lock.unlock()
+                return
+            }
+            prefixState = .terminal
+            lock.unlock()
+            switch completion {
+            case .finished:
+                suffix.subscribe(SuffixSubscriber(inner: self))
+            case .failure:
+                downstream.receive(completion: completion)
+            }
+        }
+
+        private func suffixReceive(subscription: Subscription) {
+            lock.lock()
+            guard case .awaitingSubscription = suffixState else {
+                lock.unlock()
+                subscription.cancel()
+                return
+            }
+            suffixState = .subscribed(subscription)
+            let pending = self.pending
+            lock.unlock()
+            if pending != .none {
+                subscription.request(pending)
+            }
+        }
+
+        private func suffixReceive(_ input: Input) -> Subscribers.Demand {
+            lock.lock()
+            guard case .subscribed = suffixState else {
+                lock.unlock()
+                return .none
+            }
+            lock.unlock()
+            return downstream.receive(input)
+        }
+
+        private func suffixReceive(completion: Subscribers.Completion<Failure>) {
+            lock.lock()
+            guard case .subscribed = suffixState else {
+                lock.unlock()
+                return
+            }
+            prefixState = .terminal
+            suffixState = .terminal
+            lock.unlock()
+            downstream.receive(completion: completion)
+        }
+    }
+}
+
+// MARK: - PrefixSubscriber conformances
+
+extension Publishers.Concatenate.Inner.PrefixSubscriber: Subscriber {
+
+    fileprivate typealias Input = Suffix.Output
+
+    fileprivate typealias Failure = Suffix.Failure
+
+    fileprivate var combineIdentifier: CombineIdentifier {
+        return inner.combineIdentifier
+    }
+
+    fileprivate func receive(subscription: Subscription) {
+        inner.prefixReceive(subscription: subscription)
+    }
+
+    fileprivate func receive(_ input: Input) -> Subscribers.Demand {
+        return inner.prefixReceive(input)
+    }
+
+    fileprivate func receive(completion: Subscribers.Completion<Failure>) {
+        inner.prefixReceive(completion: completion)
+    }
+}
+
+extension Publishers.Concatenate.Inner.PrefixSubscriber
+    : CustomStringConvertible
+{
+    fileprivate var description: String {
+        return inner.description
+    }
+}
+
+extension Publishers.Concatenate.Inner.PrefixSubscriber
+    : CustomReflectable
+{
+    fileprivate var customMirror: Mirror {
+        return inner.customMirror
+    }
+}
+
+extension Publishers.Concatenate.Inner.PrefixSubscriber
+    : CustomPlaygroundDisplayConvertible
+{
+    fileprivate var playgroundDescription: Any {
+        return inner.playgroundDescription
+    }
+}
+
+// MARK: - SuffixSubscriber conformances
+
+extension Publishers.Concatenate.Inner.SuffixSubscriber: Subscriber {
+
+    fileprivate typealias Input = Suffix.Output
+
+    fileprivate typealias Failure = Suffix.Failure
+
+    fileprivate var combineIdentifier: CombineIdentifier {
+        return inner.combineIdentifier
+    }
+
+    fileprivate func receive(subscription: Subscription) {
+        inner.suffixReceive(subscription: subscription)
+    }
+
+    fileprivate func receive(_ input: Input) -> Subscribers.Demand {
+        return inner.suffixReceive(input)
+    }
+
+    fileprivate func receive(completion: Subscribers.Completion<Failure>) {
+        inner.suffixReceive(completion: completion)
+    }
+}
+
+extension Publishers.Concatenate.Inner.SuffixSubscriber
+    : CustomStringConvertible
+{
+    fileprivate var description: String {
+        return inner.description
+    }
+}
+
+extension Publishers.Concatenate.Inner.SuffixSubscriber
+    : CustomReflectable
+{
+    fileprivate var customMirror: Mirror {
+        return inner.customMirror
+    }
+}
+
+extension Publishers.Concatenate.Inner.SuffixSubscriber
+    : CustomPlaygroundDisplayConvertible
+{
+    fileprivate var playgroundDescription: Any {
+        return inner.playgroundDescription
     }
 }
