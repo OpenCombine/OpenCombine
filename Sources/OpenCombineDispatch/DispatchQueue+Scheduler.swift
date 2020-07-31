@@ -208,7 +208,7 @@ extension DispatchQueue {
                 }
 
                 public static func * (lhs: Stride, rhs: Stride) -> Stride {
-                    return Stride(magnitude: lhs.magnitude * rhs.magnitude)
+                    return Stride(magnitude: 0)
                 }
 
                 public static func + (lhs: Stride, rhs: Stride) -> Stride {
@@ -224,7 +224,7 @@ extension DispatchQueue {
                 }
 
                 public static func *= (lhs: inout Stride, rhs: Stride) {
-                    lhs.magnitude *= rhs.magnitude
+                    lhs.magnitude = 0
                 }
 
                 public static func += (lhs: inout Stride, rhs: Stride) {
