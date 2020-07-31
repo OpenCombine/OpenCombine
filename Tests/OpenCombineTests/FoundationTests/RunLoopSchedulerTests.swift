@@ -485,14 +485,12 @@ final class RunLoopSchedulerTests: XCTestCase {
             let scheduler = makeScheduler(mainRunLoop)
             scheduler
                 .schedule(after: scheduler.now.advanced(by: .init(desiredDelay))) {
-                    // This is a bug in Combine! (FB7493579)
-                    // This should be XCTAssertTrue. When they fix it, this test will fail
-                    // and we'll know to fix our implementation.
-                    XCTAssertFalse(Thread.isMainThread)
+                    XCTAssertTrue(Thread.isMainThread)
                     actualDate = Date()
                 }
-            RunLoop.current.run(until: Date() + 1)
         }
+
+        mainRunLoop.run(until: Date() + 1)
 
         XCTAssertEqual(
             actualDate.timeIntervalSinceReferenceDate -
@@ -505,8 +503,8 @@ final class RunLoopSchedulerTests: XCTestCase {
     func testScheduleRepeating() {
         let mainRunLoop = RunLoop.main
 
-        let expectation5ticks = expectation(description: "5 ticks")
-        expectation5ticks.expectedFulfillmentCount = 10
+        let expectation10ticks = expectation(description: "10 ticks")
+        expectation10ticks.expectedFulfillmentCount = 10
 
         let startDate = Date().timeIntervalSinceReferenceDate
 
@@ -524,7 +522,7 @@ final class RunLoopSchedulerTests: XCTestCase {
                     ticks.do {
                         $0.append(Date().timeIntervalSinceReferenceDate)
                     }
-                    expectation5ticks.fulfill()
+                    expectation10ticks.fulfill()
                     RunLoop.current.run(until: Date() + 0.001)
                 }
         }
@@ -533,7 +531,7 @@ final class RunLoopSchedulerTests: XCTestCase {
         mainRunLoop.run(until: Date() + 0.001)
         XCTAssertEqual(ticks.value.count, 0)
 
-        wait(for: [expectation5ticks], timeout: 5)
+        wait(for: [expectation10ticks], timeout: 5)
 
         if ticks.value.isEmpty {
             XCTFail("The scheduler doesn't work")
