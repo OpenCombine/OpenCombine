@@ -28,9 +28,9 @@ enum ExpectedMirrorChildValue: ExpressibleByStringLiteral {
 }
 
 @discardableResult
-func expectedChildren(_ expectedChildren: (String?, ExpectedMirrorChildValue)...,
-                      file: StaticString = #file,
-                      line: UInt = #line) -> (Mirror) -> Bool {
+func expectedChildren(
+    _ expectedChildren: (String?, ExpectedMirrorChildValue)...
+) -> (Mirror) -> Bool {
     return { mirror in
 
         let actualChildren = mirror
@@ -39,45 +39,36 @@ func expectedChildren(_ expectedChildren: (String?, ExpectedMirrorChildValue)...
 
         XCTAssertEqual(actualChildren.count,
                        expectedChildren.count,
-                       "The children collections are of different sizes",
-                       file: file,
-                       line: line)
+                       "The children collections are of different sizes")
 
         for (actualChild, expectedChild) in zip(actualChildren, expectedChildren) {
-            XCTAssertEqual(actualChild.0, expectedChild.0, file: file, line: line)
+            XCTAssertEqual(actualChild.0, expectedChild.0)
             switch (actualChild.1, expectedChild.1) {
             case (_, .anything):
                 continue
             case let (lhs, .matches(rhs)):
-                XCTAssertEqual(lhs, rhs(), file: file, line: line)
+                XCTAssertEqual(lhs, rhs())
             case let (lhs, .contains(rhs)):
                 let evaluatedRHS = rhs()
                 XCTAssert(lhs.contains(evaluatedRHS),
-                          "\"\(lhs)\" doesn't contain substring \"\(evaluatedRHS)\"",
-                          file: file,
-                          line: line)
+                          "\"\(lhs)\" doesn't contain substring \"\(evaluatedRHS)\"")
             }
         }
         return true
     }
 }
 
-func reduceLikeOperatorMirror(file: StaticString = #file,
-                              line: UInt = #line) -> (Mirror) -> Bool {
+func reduceLikeOperatorMirror() -> (Mirror) -> Bool {
     return expectedChildren(
         ("downstream", .contains("TrackingSubscriberBase")),
         ("result", .anything),
         ("initial", .anything),
-        ("status", .anything),
-        file: file,
-        line: line
+        ("status", .anything)
     )
 }
 
 @available(macOS 10.15, iOS 13.0, *)
 internal func testReflection<Output, Failure: Error, Operator: Publisher>(
-    file: StaticString = #file,
-    line: UInt = #line,
     parentInput: Output.Type,
     parentFailure: Failure.Type,
     description expectedDescription: String?,
@@ -92,38 +83,28 @@ internal func testReflection<Output, Failure: Error, Operator: Publisher>(
     operatorPublisher.subscribe(tracking)
 
     let erasedSubscriber =
-        try XCTUnwrap(publisher.erasedSubscriber, file: file, line: line)
+        try XCTUnwrap(publisher.erasedSubscriber)
 
     XCTAssertEqual((erasedSubscriber as? CustomStringConvertible)?.description,
-                   expectedDescription,
-                   file: file,
-                   line: line)
+                   expectedDescription)
 
     if let customMirrorPredicate = customMirrorPredicate {
         let customMirror =
-            try XCTUnwrap((erasedSubscriber as? CustomReflectable)?.customMirror,
-                          file: file,
-                          line: line)
+            try XCTUnwrap((erasedSubscriber as? CustomReflectable)?.customMirror)
         XCTAssert(customMirrorPredicate(customMirror),
-                  "customMirror doesn't satisfy the predicate",
-                  file: file,
-                  line: line)
+                  "customMirror doesn't satisfy the predicate")
     } else {
         XCTAssertFalse(erasedSubscriber is CustomReflectable,
                        "subscriber shouldn't conform to CustomReflectable")
     }
 
     XCTAssertFalse(erasedSubscriber is CustomDebugStringConvertible,
-                   "subscriber shouldn't conform to CustomDebugStringConvertible",
-                   file: file,
-                   line: line)
+                   "subscriber shouldn't conform to CustomDebugStringConvertible")
 
     XCTAssertEqual(
         ((erasedSubscriber as? CustomPlaygroundDisplayConvertible)?
             .playgroundDescription as? String),
-        playgroundDescription,
-        file: file,
-        line: line
+        playgroundDescription
     )
 
     if subscriberIsAlsoSubscription {
@@ -131,43 +112,31 @@ internal func testReflection<Output, Failure: Error, Operator: Publisher>(
         let subscription = try XCTUnwrap(tracking.subscriptions.first?.underlying)
 
         XCTAssertEqual((subscription as? CustomStringConvertible)?.description,
-                       expectedDescription,
-                       file: file,
-                       line: line)
+                       expectedDescription)
 
         if let customMirrorPredicate = customMirrorPredicate {
             let customMirror =
-                try XCTUnwrap((subscription as? CustomReflectable)?.customMirror,
-                              file: file,
-                              line: line)
+                try XCTUnwrap((subscription as? CustomReflectable)?.customMirror)
             XCTAssert(customMirrorPredicate(customMirror),
-                      "customMirror doesn't satisfy the predicate",
-                      file: file,
-                      line: line)
+                      "customMirror doesn't satisfy the predicate")
         } else {
             XCTAssertFalse(subscription is CustomReflectable,
                            "subscription shouldn't conform to CustomReflectable")
         }
 
         XCTAssertFalse(subscription is CustomDebugStringConvertible,
-                       "subscription shouldn't conform to CustomDebugStringConvertible",
-                       file: file,
-                       line: line)
+                       "subscription shouldn't conform to CustomDebugStringConvertible")
 
         XCTAssertEqual(
             ((subscription as? CustomPlaygroundDisplayConvertible)?
                 .playgroundDescription as? String),
-            playgroundDescription,
-            file: file,
-            line: line
+            playgroundDescription
         )
     }
 }
 
 @available(macOS 10.15, iOS 13.0, *)
 internal func testSubscriptionReflection<Sut: Publisher>(
-    file: StaticString = #file,
-    line: UInt = #line,
     description expectedDescription: String,
     customMirror customMirrorPredicate: ((Mirror) -> Bool)?,
     playgroundDescription: String,
@@ -179,37 +148,25 @@ internal func testSubscriptionReflection<Sut: Publisher>(
     let subscription = try XCTUnwrap(tracking.subscriptions.first?.underlying)
 
     XCTAssertEqual((subscription as? CustomStringConvertible)?.description,
-                   expectedDescription,
-                   file: file,
-                   line: line)
+                   expectedDescription)
 
     if let customMirrorPredicate = customMirrorPredicate {
         let customMirror =
         try XCTUnwrap((subscription as? CustomReflectable)?.customMirror,
-                      "Subscription doesn't conform to CustomReflectable",
-                      file: file,
-                      line: line)
-        XCTAssert(customMirrorPredicate(customMirror),
-                  file: file,
-                  line: line)
+                      "Subscription doesn't conform to CustomReflectable")
+        XCTAssert(customMirrorPredicate(customMirror))
     } else {
         XCTAssertFalse(subscription is CustomReflectable,
-                       "Subscription shouldn't conform to CustomReflectable",
-                       file: file,
-                       line: line)
+                       "Subscription shouldn't conform to CustomReflectable")
     }
 
     XCTAssertFalse(subscription is CustomDebugStringConvertible,
-                   "Subscription shouldn't conform to CustomDebugStringConvertible",
-                   file: file,
-                   line: line)
+                   "Subscription shouldn't conform to CustomDebugStringConvertible")
 
     XCTAssertEqual(
         ((subscription as? CustomPlaygroundDisplayConvertible)?
             .playgroundDescription as? String),
-        playgroundDescription,
-        file: file,
-        line: line
+        playgroundDescription
     )
 }
 

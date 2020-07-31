@@ -416,8 +416,6 @@ final class MapTests: XCTestCase {
     // MARK: - Generic tests (for supporting Publishers.MapKeyPath)
 
     static func testEmpty<Map: Publisher>(
-        file: StaticString = #file,
-        line: UInt = #line,
         valueComparator: (Map.Output, Map.Output) -> Bool,
         _ map: (TrackingSubject<Int>) -> Map
     ) where Map.Failure == TestingError {
@@ -429,14 +427,10 @@ final class MapTests: XCTestCase {
         map(publisher).subscribe(tracking)
 
         tracking.assertHistoryEqual([.subscription("PassthroughSubject")],
-                                    valueComparator: valueComparator,
-                                    file: file,
-                                    line: line)
+                                    valueComparator: valueComparator)
     }
 
     static func testError<Map: Publisher>(
-        file: StaticString = #file,
-        line: UInt = #line,
         valueComparator: (Map.Output, Map.Output) -> Bool,
         _ map: (CustomPublisher) -> Map
     ) where Map.Failure == TestingError {
@@ -453,14 +447,10 @@ final class MapTests: XCTestCase {
         tracking.assertHistoryEqual([.subscription("CustomSubscription"),
                                      .completion(.failure(expectedError)),
                                      .completion(.failure(expectedError))],
-                                    valueComparator: valueComparator,
-                                    file: file,
-                                    line: line)
+                                    valueComparator: valueComparator)
     }
 
     static func testRange<Map: Publisher>(
-        file: StaticString = #file,
-        line: UInt = #line,
         valueComparator: (Map.Output, Map.Output) -> Bool,
         mapping: (Int) -> Map.Output,
         _ map: (PassthroughSubject<Int, TestingError>) -> Map
@@ -482,14 +472,10 @@ final class MapTests: XCTestCase {
                                      .value(mapping(2)),
                                      .value(mapping(3)),
                                      .completion(.finished)],
-                                    valueComparator: valueComparator,
-                                    file: file,
-                                    line: line)
+                                    valueComparator: valueComparator)
     }
 
     static func testNoDemand<Map: Publisher>(
-        file: StaticString = #file,
-        line: UInt = #line,
         _ map: (CustomPublisher) -> Map
     ) where Map.Failure == TestingError {
         let subscription = CustomSubscription()
@@ -499,12 +485,10 @@ final class MapTests: XCTestCase {
 
         map.subscribe(tracking)
 
-        XCTAssertTrue(subscription.history.isEmpty, file: file, line: line)
+        XCTAssertTrue(subscription.history.isEmpty)
     }
 
     static func testRequestDemandOnSubscribe<Map: Publisher>(
-        file: StaticString = #file,
-        line: UInt = #line,
         _ map: (CustomPublisher) -> Map
     ) where Map.Failure == TestingError {
         let expectedSubscribeDemand = 42
@@ -518,14 +502,10 @@ final class MapTests: XCTestCase {
         map.subscribe(tracking)
 
         XCTAssertEqual(subscription.history,
-                       [.requested(.max(expectedSubscribeDemand))],
-                       file: file,
-                       line: line)
+                       [.requested(.max(expectedSubscribeDemand))])
     }
 
     static func testDemandOnReceive<Map: Publisher>(
-        file: StaticString = #file,
-        line: UInt = #line,
         _ map: (CustomPublisher) -> Map
     ) where Map.Failure == TestingError {
         var expectedReceiveValueDemand = 4
@@ -539,21 +519,17 @@ final class MapTests: XCTestCase {
 
         map.subscribe(tracking)
 
-        XCTAssertEqual(publisher.send(0), .max(4), file: file, line: line)
+        XCTAssertEqual(publisher.send(0), .max(4))
 
         expectedReceiveValueDemand = 120
 
-        XCTAssertEqual(publisher.send(0), .max(120), file: file, line: line)
+        XCTAssertEqual(publisher.send(0), .max(120))
 
         XCTAssertEqual(subscription.history,
-                       [.requested(.unlimited)],
-                       file: file,
-                       line: line)
+                       [.requested(.unlimited)])
     }
 
     static func testCompletion<Map: Publisher>(
-        file: StaticString = #file,
-        line: UInt = #line,
         valueComparator: (Map.Output, Map.Output) -> Bool,
         _ map: (CustomPublisher) -> Map
     ) where Map.Failure == TestingError {
@@ -568,20 +544,14 @@ final class MapTests: XCTestCase {
         publisher.send(completion: .finished)
 
         XCTAssertEqual(subscription.history,
-                       [.requested(.unlimited)],
-                       file: file,
-                       line: line)
+                       [.requested(.unlimited)])
 
         tracking.assertHistoryEqual([.subscription("CustomSubscription"),
                                      .completion(.finished)],
-                                    valueComparator: valueComparator,
-                                    file: file,
-                                    line: line)
+                                    valueComparator: valueComparator)
     }
 
     static func testCancel<Map: Publisher>(
-        file: StaticString = #file,
-        line: UInt = #line,
         _ map: (CustomPublisher) -> Map
     ) throws where Map.Failure == TestingError {
         let subscription = CustomSubscription()
@@ -597,15 +567,13 @@ final class MapTests: XCTestCase {
         )
 
         map.subscribe(tracking)
-        try XCTUnwrap(downstreamSubscription, file: file, line: line).cancel()
-        XCTAssertEqual(publisher.send(1), .max(111), file: file, line: line)
+        try XCTUnwrap(downstreamSubscription).cancel()
+        XCTAssertEqual(publisher.send(1), .max(111))
 
         publisher.send(completion: .finished)
 
         XCTAssertEqual(subscription.history,
-                       [.requested(.unlimited), .cancelled],
-                       file: file,
-                       line: line)
+                       [.requested(.unlimited), .cancelled])
     }
 
     static func testCancelAlreadyCancelled<Map: Publisher>(
@@ -625,16 +593,14 @@ final class MapTests: XCTestCase {
         )
 
         map.subscribe(tracking)
-        try XCTUnwrap(downstreamSubscription, file: file, line: line).cancel()
+        try XCTUnwrap(downstreamSubscription).cancel()
         downstreamSubscription?.request(.unlimited)
-        try XCTUnwrap(downstreamSubscription, file: file, line: line).cancel()
+        try XCTUnwrap(downstreamSubscription).cancel()
 
         XCTAssertEqual(subscription.history,
                        [.requested(.unlimited),
                         .cancelled,
                         .requested(.unlimited),
-                        .cancelled],
-                       file: file,
-                       line: line)
+                        .cancelled])
     }
 }
