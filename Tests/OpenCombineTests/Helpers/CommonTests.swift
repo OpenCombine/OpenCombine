@@ -24,8 +24,6 @@ extension XCTest {
     }
 
     func testReceiveValueBeforeSubscription<Value, Operator: Publisher>(
-        file: StaticString = #file,
-        line: UInt = #line,
         value: Value,
         expected: ValueBeforeSubscriptionBehavior<Operator.Output, Operator.Failure>,
         _ makeOperator: (CustomConnectablePublisherBase<Value, Never>) -> Operator
@@ -42,11 +40,8 @@ extension XCTest {
                 _ = publisher.send(value)
             }
         case let .history(history, demand, comparator):
-            XCTAssertEqual(publisher.send(value), demand, file: file, line: line)
-            tracking.assertHistoryEqual(history,
-                                        valueComparator: comparator,
-                                        file: file,
-                                        line: line)
+            XCTAssertEqual(publisher.send(value), demand)
+            tracking.assertHistoryEqual(history, valueComparator: comparator)
         }
     }
 
@@ -57,8 +52,6 @@ extension XCTest {
     }
 
     func testReceiveCompletionBeforeSubscription<Value, Operator: Publisher>(
-        file: StaticString = #file,
-        line: UInt = #line,
         inputType: Value.Type,
         expected: CompletionBeforeSubscriptionBehavior<Operator.Output, Operator.Failure>,
         _ makeOperator: (CustomConnectablePublisherBase<Value, Never>) -> Operator
@@ -76,16 +69,11 @@ extension XCTest {
             }
         case let .history(history, comparator: comparator):
             publisher.send(completion: .finished)
-            tracking.assertHistoryEqual(history,
-                                        valueComparator: comparator,
-                                        file: file,
-                                        line: line)
+            tracking.assertHistoryEqual(history, valueComparator: comparator)
         }
     }
 
     func testRequestBeforeSubscription<Value, Operator: Publisher>(
-        file: StaticString = #file,
-        line: UInt = #line,
         inputType: Value.Type,
         shouldCrash: Bool,
         _ makeOperator: (CustomConnectablePublisherBase<Value, Never>) -> Operator
@@ -97,7 +85,7 @@ extension XCTest {
         operatorPublisher.subscribe(tracking)
 
         guard let subscription = publisher.erasedSubscriber as? Subscription else {
-            XCTFail("The subscriber must also be a subscription", file: file, line: line)
+            XCTFail("The subscriber must also be a subscription")
             return
         }
 
@@ -111,8 +99,6 @@ extension XCTest {
     }
 
     func testCancelBeforeSubscription<Value, Operator: Publisher>(
-        file: StaticString = #file,
-        line: UInt = #line,
         inputType: Value.Type,
         shouldCrash: Bool,
         _ makeOperator: (CustomConnectablePublisherBase<Value, Never>) -> Operator
@@ -124,7 +110,7 @@ extension XCTest {
         operatorPublisher.subscribe(tracking)
 
         guard let subscription = publisher.erasedSubscriber as? Subscription else {
-            XCTFail("The subscriber must also be a subscription", file: file, line: line)
+            XCTFail("The subscriber must also be a subscription")
             return
         }
 
@@ -188,30 +174,23 @@ extension XCTestCase.CompletionBeforeSubscriptionBehavior where Value: Equatable
 
 // swiftlint:disable generic_type_name
 
-func shouldNotBeCalled<S, T>(
-    file: StaticString = #file,
-    line: UInt = #line
-) -> (S, T) -> S {
+func shouldNotBeCalled<S, T>() -> (S, T) -> S {
     return { s, _ in
-        XCTFail("should not be called", file: file, line: line)
+        XCTFail("should not be called")
         return s
     }
 }
 
-func shouldNotBeCalled<T>(
-    file: StaticString = #file, line: UInt = #line
-) -> (T, T) -> Bool {
+func shouldNotBeCalled<T>() -> (T, T) -> Bool {
     return { _, _ in
-        XCTFail("Should not be called", file: file, line: line)
+        XCTFail("Should not be called")
         return true
     }
 }
 
-func shouldNotBeCalled<T>(
-    file: StaticString = #file, line: UInt = #line
-) -> (T) -> Bool {
+func shouldNotBeCalled<T>() -> (T) -> Bool {
     return { _ in
-        XCTFail("Should not be called", file: file, line: line)
+        XCTFail("Should not be called")
         return true
     }
 }

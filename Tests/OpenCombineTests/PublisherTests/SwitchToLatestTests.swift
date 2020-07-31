@@ -764,38 +764,24 @@ final class SwitchToLatestTests: XCTestCase {
         XCTAssertEqual(downstreamSubscription.combineIdentifier, outerCombineID)
 
         func testReflections(_ subject: Any,
-                             hasChildren: Bool,
-                             file: StaticString = #file,
-                             line: UInt = #line) {
+                             hasChildren: Bool) {
             XCTAssertEqual((subject as? CustomStringConvertible)?.description,
-                           "SwitchToLatest",
-                           file: file,
-                           line: line)
-            XCTAssertFalse(subject is CustomDebugStringConvertible,
-                           file: file,
-                           line: line)
+                           "SwitchToLatest")
+            XCTAssertFalse(subject is CustomDebugStringConvertible)
             XCTAssertEqual(
                 (subject as? CustomPlaygroundDisplayConvertible)?
                     .playgroundDescription as? String,
-                "SwitchToLatest",
-                file: file,
-                line: line
+                "SwitchToLatest"
             )
             if let mirror = (subject as? CustomReflectable)?.customMirror {
                 if hasChildren {
                     XCTAssert(expectedChildren(
                                   ("parentSubscription",
-                                   .matches(String(describing: outerCombineID))),
-                                  file: file,
-                                  line: line
-                              )(mirror),
-                              file: file,
-                              line: line)
+                                   .matches(String(describing: outerCombineID)))
+                              )(mirror))
                 }
             } else {
-                XCTFail("subject should conform to CustomReflectable",
-                        file: file,
-                        line: line)
+                XCTFail("subject should conform to CustomReflectable")
             }
         }
 

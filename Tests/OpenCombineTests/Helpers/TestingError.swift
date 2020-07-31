@@ -56,14 +56,12 @@ extension NSError: EquatableError {}
 
 func assertThrowsError<Result>(_ expression: @autoclosure () throws -> Result,
                                _ expected: TestingError,
-                               _ message: @autoclosure () -> String = "",
-                               file: StaticString = #file,
-                               line: UInt = #line) {
-    XCTAssertThrowsError(try expression(), message(), file: file, line: line) { error in
+                               _ message: @autoclosure () -> String = "") {
+    XCTAssertThrowsError(try expression(), message()) { error in
         if let error = error as? TestingError {
             XCTAssertEqual(error, expected)
         } else {
-            XCTFail(message(), file: file, line: line)
+            XCTFail(message())
         }
     }
 }

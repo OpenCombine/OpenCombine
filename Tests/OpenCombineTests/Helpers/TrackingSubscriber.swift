@@ -160,18 +160,13 @@ final class TrackingSubscriberBase<Value, Failure: Error>
     }
 
     func assertHistoryEqual(_ expected: [Event],
-                            valueComparator: (Value, Value) -> Bool,
-                            file: StaticString = #file,
-                            line: UInt = #line) {
+                            valueComparator: (Value, Value) -> Bool) {
 
         let equals = history.count == expected.count &&
             zip(history, expected)
                 .allSatisfy { $0.isEqual(to: $1, valueComparator: valueComparator) }
 
-        XCTAssert(equals,
-                  "\(history) is not equal to \(expected)",
-                  file: file,
-                  line: line)
+        XCTAssert(equals, "\(history) is not equal to \(expected)")
     }
 
     func cancel() {
@@ -193,22 +188,15 @@ final class TrackingSubscriberBase<Value, Failure: Error>
 
 @available(macOS 10.15, iOS 13.0, *)
 extension TrackingSubscriberBase where Value: Equatable {
-    func assertHistoryEqual(_ expected: [Event],
-                            file: StaticString = #file,
-                            line: UInt = #line) {
-        assertHistoryEqual(expected, valueComparator: ==, file: file, line: line)
+    func assertHistoryEqual(_ expected: [Event]) {
+        assertHistoryEqual(expected, valueComparator: ==)
     }
 }
 
 @available(macOS 10.15, iOS 13.0, *)
 extension TrackingSubscriberBase where Value == Void {
-    func assertHistoryEqual(_ expected: [Event],
-                            file: StaticString = #file,
-                            line: UInt = #line) {
-        assertHistoryEqual(expected,
-                           valueComparator: { _, _ in true },
-                           file: file,
-                           line: line)
+    func assertHistoryEqual(_ expected: [Event]) {
+        assertHistoryEqual(expected, valueComparator: { _, _ in true })
     }
 }
 

@@ -15,8 +15,6 @@ import OpenCombine
 
 @available(macOS 10.15, iOS 13.0, *)
 func testLifecycle<UpstreamOutput, Operator: Publisher>(
-    file: StaticString = #file,
-    line: UInt = #line,
     sendValue valueToBeSent: UpstreamOutput,
     cancellingSubscriptionReleasesSubscriber: Bool,
     finishingIsPassedThrough: Bool = true,
@@ -33,9 +31,7 @@ func testLifecycle<UpstreamOutput, Operator: Publisher>(
         let emptySubscriber =
             TrackingSubscriberBase<Operator.Output, Operator.Failure>(onDeinit: onDeinit)
         XCTAssertTrue(emptySubscriber.history.isEmpty,
-                      "Lifecycle test #1: the subscriber's history should be empty",
-                      file: file,
-                      line: line)
+                      "Lifecycle test #1: the subscriber's history should be empty")
         operatorPublisher.subscribe(emptySubscriber)
         passthrough.send(valueToBeSent)
         passthrough.send(completion: .failure("failure"))
@@ -47,17 +43,13 @@ func testLifecycle<UpstreamOutput, Operator: Publisher>(
                        """
                        Lifecycle test #1: deinit should be called, because \
                        the subscription has completed
-                       """,
-                       file: file,
-                       line: line)
+                       """)
     } else {
         XCTAssertEqual(deinitCounter,
                        0,
                        """
                        Lifecycle test #1: deinit should not be called
-                       """,
-                       file: file,
-                       line: line)
+                       """)
     }
 
     // Lifecycle test #2
@@ -74,9 +66,7 @@ func testLifecycle<UpstreamOutput, Operator: Publisher>(
                    """
                    Lifecycle test #2: deinit should not be called, \
                    because the subscription is never cancelled
-                   """,
-                   file: file,
-                   line: line)
+                   """)
 
     // Lifecycle test #3
 
@@ -98,14 +88,10 @@ func testLifecycle<UpstreamOutput, Operator: Publisher>(
                    """
                    Lifecycle test #3: deinit should not be called, \
                    because the subscription is not cancelled yet
-                   """,
-                   file: file,
-                   line: line)
+                   """)
 
     try XCTUnwrap(subscription,
-                  "Lifecycle test #3: subscription should be saved",
-                  file: file,
-                  line: line)
+                  "Lifecycle test #3: subscription should be saved")
         .cancel()
 
     if cancellingSubscriptionReleasesSubscriber {
@@ -114,15 +100,11 @@ func testLifecycle<UpstreamOutput, Operator: Publisher>(
                        """
                        Lifecycle test #3: deinit should be called, because
                        the subscription has been cancelled
-                       """,
-                       file: file,
-                       line: line)
+                       """)
     } else {
         XCTAssertEqual(deinitCounter,
                        0,
-                       "Lifecycle test #3: deinit should not be called",
-                       file: file,
-                       line: line)
+                       "Lifecycle test #3: deinit should not be called")
     }
 
     // Lifecycle test #4
@@ -141,13 +123,9 @@ func testLifecycle<UpstreamOutput, Operator: Publisher>(
 
     if finishingIsPassedThrough {
         XCTAssertTrue(subscriberDestroyed,
-                      "Lifecycle test #4: deinit should be called",
-                      file: file,
-                      line: line)
+                      "Lifecycle test #4: deinit should be called")
     } else {
         XCTAssertFalse(subscriberDestroyed,
-                       "Lifecycle test #4: deinit should not be called",
-                       file: file,
-                       line: line)
+                       "Lifecycle test #4: deinit should not be called")
     }
 }

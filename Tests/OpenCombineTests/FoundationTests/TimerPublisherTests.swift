@@ -191,10 +191,8 @@ final class TimerPublisherTests: XCTestCase {
 
     private func assertCorrectIntervals(ticks: [TimeInterval],
                                         expectedNumberOfTicks: Int,
-                                        desiredInterval: TimeInterval,
-                                        file: StaticString = #file,
-                                        line: UInt = #line) {
-        XCTAssertEqual(ticks.count, expectedNumberOfTicks, file: file, line: line)
+                                        desiredInterval: TimeInterval) {
+        XCTAssertEqual(ticks.count, expectedNumberOfTicks)
 
         if ticks.isEmpty { return }
 
@@ -210,9 +208,7 @@ final class TimerPublisherTests: XCTestCase {
                        desired interval (\(desiredInterval)) too much.
 
                        Actual intervals: \(actualIntervals)
-                       """,
-                       file: file,
-                       line: line)
+                       """)
     }
 }
 
