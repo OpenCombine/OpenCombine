@@ -110,6 +110,8 @@ extension Publishers.Timeout {
 
         private var timer: AnyCancellable?
 
+        private var initialDemand = false
+
         init(downstream: Downstream,
              interval: Context.SchedulerTimeType.Stride,
              scheduler: Context,
@@ -140,10 +142,9 @@ extension Publishers.Timeout {
             downstreamLock.lock()
             downstream.receive(subscription: self)
             downstreamLock.unlock()
-            subscription.request(.unlimited)
         }
 
-        func receive(_ input: Upstream.Output) -> Subscribers.Demand {
+        func receive(_ input: Input) -> Subscribers.Demand {
             lock.lock()
             guard !didTimeout, case .subscribed = state else {
                 lock.unlock()
@@ -154,22 +155,21 @@ extension Publishers.Timeout {
             timer = timeoutClock()
             lock.unlock()
             scheduler.schedule(options: options) {
-                self.downstreamLock.lock()
-                _ = self.downstream.receive(input)
-                self.downstreamLock.unlock()
+                self.scheduledReceive(input)
             }
-            return .unlimited
+            return .none
         }
 
-        func receive(completion: Subscribers.Completion<Upstream.Failure>) {
+        func receive(completion: Subscribers.Completion<Failure>) {
             lock.lock()
+            guard case .subscribed = state else {
+                lock.unlock()
+                return
+            }
             timer?.cancel()
-            state = .terminal
             lock.unlock()
             scheduler.schedule(options: options) {
-                self.downstreamLock.lock()
-                self.downstream.receive(completion: completion)
-                self.downstreamLock.unlock()
+                self.scheduledReceive(completion: completion)
             }
         }
 
@@ -178,6 +178,10 @@ extension Publishers.Timeout {
             guard case let .subscribed(subscription) = state else {
                 lock.unlock()
                 return
+            }
+            if !initialDemand {
+                timer = timeoutClock()
+                initialDemand = true
             }
             lock.unlock()
             subscription.request(demand)
@@ -191,6 +195,7 @@ extension Publishers.Timeout {
             }
             state = .terminal
             lock.unlock()
+            timer?.cancel()
             subscription.cancel()
         }
 
@@ -222,8 +227,36 @@ extension Publishers.Timeout {
                           interval: interval,
                           tolerance: scheduler.minimumTolerance,
                           options: options,
-                          { [weak self] in self?.timedOut() })
-            return AnyCancellable { cancellable.cancel() }
+                          timedOut)
+            return AnyCancellable(cancellable.cancel)
+        }
+
+        private func scheduledReceive(_ input: Input) {
+            lock.lock()
+            guard !didTimeout, case let .subscribed(subscription) = state else {
+                lock.unlock()
+                return
+            }
+            lock.unlock()
+            downstreamLock.lock()
+            let newDemand = downstream.receive(input)
+            downstreamLock.unlock()
+            if newDemand != .none {
+                subscription.request(newDemand)
+            }
+        }
+
+        private func scheduledReceive(completion: Subscribers.Completion<Failure>) {
+            lock.lock()
+            guard case .subscribed = state else {
+                lock.unlock()
+                return
+            }
+            state = .terminal
+            lock.unlock()
+            downstreamLock.lock()
+            downstream.receive(completion: completion)
+            downstreamLock.unlock()
         }
     }
 }
