@@ -53,15 +53,14 @@ extension Subscribers {
 
         public func receive(subscription: Subscription) {
             lock.lock()
-            switch status {
-            case .awaitingSubscription:
-                status = .subscribed(subscription)
-                lock.unlock()
-                subscription.request(.unlimited)
-            case .subscribed, .terminal:
+            guard case .awaitingSubscription = status else {
                 lock.unlock()
                 subscription.cancel()
+                return
             }
+            status = .subscribed(subscription)
+            lock.unlock()
+            subscription.request(.unlimited)
         }
 
         public func receive(_ value: Input) -> Subscribers.Demand {

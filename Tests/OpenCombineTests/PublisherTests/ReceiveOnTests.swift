@@ -161,6 +161,40 @@ final class ReceiveOnTests: XCTestCase {
         XCTAssertEqual(scheduler.history, [])
     }
 
+    func testCancelWhileReceivingInput() throws {
+        let scheduler = VirtualTimeScheduler()
+        let subscription = CustomSubscription()
+        let publisher = CustomPublisher(subscription: subscription)
+        var downstreamSubscription: Subscription?
+        let tracking = TrackingSubscriber(
+            receiveSubscription: { downstreamSubscription = $0 },
+            receiveValue: { _ in
+                XCTAssertNotNil(downstreamSubscription)
+                downstreamSubscription?.cancel()
+                return .max(42)
+            }
+        )
+
+        let receiveOn = publisher.receive(on: scheduler)
+        receiveOn.subscribe(tracking)
+
+        XCTAssertEqual(tracking.history, [.subscription("ReceiveOn")])
+        XCTAssertEqual(subscription.history, [])
+        XCTAssertEqual(scheduler.history, [])
+
+        XCTAssertEqual(publisher.send(1), .none)
+
+        XCTAssertEqual(tracking.history, [.subscription("ReceiveOn")])
+        XCTAssertEqual(subscription.history, [])
+        XCTAssertEqual(scheduler.history, [.schedule(options: nil)])
+
+        scheduler.executeScheduledActions()
+
+        XCTAssertEqual(tracking.history, [.subscription("ReceiveOn"), .value(1)])
+        XCTAssertEqual(subscription.history, [.cancelled])
+        XCTAssertEqual(scheduler.history, [.schedule(options: nil)])
+    }
+
     func testReceiveCompletionImmediatelyAfterSubscription() {
         let scheduler = VirtualTimeScheduler()
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
@@ -210,6 +244,7 @@ final class ReceiveOnTests: XCTestCase {
                                                  .value(1000),
                                                  .completion(.finished)])
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
+                                                     .requested(.max(418)),
                                                      .requested(.max(418))])
     }
 
@@ -276,7 +311,7 @@ final class ReceiveOnTests: XCTestCase {
         }
         XCTAssertFalse(subscriberReleased)
         scheduler.executeScheduledActions()
-        XCTAssertEqual(value, 42)
+        XCTAssertNil(value)
         XCTAssertTrue(subscriberReleased)
     }
 
@@ -346,7 +381,8 @@ final class ReceiveOnTests: XCTestCase {
     }
 
     func testReceiveOnLifecycle() throws {
-        try testLifecycle(sendValue: 31, cancellingSubscriptionReleasesSubscriber: true) {
+        try testLifecycle(sendValue: 31,
+                          cancellingSubscriptionReleasesSubscriber: false) {
             $0.receive(on: ImmediateScheduler.shared)
         }
     }

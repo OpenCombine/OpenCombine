@@ -69,7 +69,10 @@ extension Publishers {
             where Upstream.Failure == Downstream.Failure,
                   Upstream.Output == Downstream.Input
         {
-            upstream.subscribe(Inner(self, downstream: subscriber))
+            let inner = Inner(scheduler: scheduler,
+                              options: options,
+                              downstream: subscriber)
+            upstream.subscribe(inner)
         }
     }
 }
@@ -84,23 +87,21 @@ extension Publishers.ReceiveOn {
         where Downstream.Input == Upstream.Output, Downstream.Failure == Upstream.Failure
     {
         typealias Input = Upstream.Output
-
         typealias Failure = Upstream.Failure
 
-        typealias ReceiveOn = Publishers.ReceiveOn<Upstream, Context>
-
-        private enum State {
-            case ready(ReceiveOn, Downstream)
-            case subscribed(ReceiveOn, Downstream, Subscription)
-            case terminal
-        }
-
         private let lock = UnfairLock.allocate()
-        private var state: State
+        private let downstream: Downstream
+        private let scheduler: Context
+        private let options: Context.SchedulerOptions?
+        private var state = SubscriptionStatus.awaitingSubscription
         private let downstreamLock = UnfairRecursiveLock.allocate()
 
-        init(_ receiveOn: ReceiveOn, downstream: Downstream) {
-            state = .ready(receiveOn, downstream)
+        init(scheduler: Context,
+             options: Context.SchedulerOptions?,
+             downstream: Downstream) {
+            self.downstream = downstream
+            self.scheduler = scheduler
+            self.options = options
         }
 
         deinit {
@@ -110,62 +111,65 @@ extension Publishers.ReceiveOn {
 
         func receive(subscription: Subscription) {
             lock.lock()
-            guard case let .ready(receiveOn, downstream) = state else {
+            guard case .awaitingSubscription = state else {
                 lock.unlock()
                 subscription.cancel()
                 return
             }
-            state = .subscribed(receiveOn, downstream, subscription)
+            state = .subscribed(subscription)
             lock.unlock()
             downstreamLock.lock()
             downstream.receive(subscription: self)
             downstreamLock.unlock()
         }
 
-        func receive(_ input: Upstream.Output) -> Subscribers.Demand {
+        func receive(_ input: Input) -> Subscribers.Demand {
             lock.lock()
-            guard case let .subscribed(receiveOn, downstream, _) = state else {
+            guard case .subscribed = state else {
                 lock.unlock()
                 return .none
             }
             lock.unlock()
-            receiveOn.scheduler.schedule(options: receiveOn.options) {
-                self.scheduledReceive(input, downstream: downstream)
+            scheduler.schedule(options: options) {
+                self.scheduledReceive(input)
             }
             return .none
         }
 
-        private func scheduledReceive(_ input: Upstream.Output, downstream: Downstream) {
+        private func scheduledReceive(_ input: Input) {
+            lock.lock()
+            guard state.subscription != nil else {
+                lock.unlock()
+                return
+            }
+            lock.unlock()
             downstreamLock.lock()
             let newDemand = downstream.receive(input)
             downstreamLock.unlock()
-            guard newDemand > 0 else {
-                return
-            }
+            if newDemand == .none { return }
             lock.lock()
-            guard case let .subscribed(_, _, subscription) = state else {
-                lock.unlock()
-                return
-            }
+            let subscription = state.subscription
             lock.unlock()
-            subscription.request(newDemand)
+            subscription?.request(newDemand)
         }
 
-        func receive(completion: Subscribers.Completion<Upstream.Failure>) {
+        func receive(completion: Subscribers.Completion<Failure>) {
             lock.lock()
-            guard case let .subscribed(receiveOn, downstream, _) = state else {
+            guard case let .subscribed(subscription) = state else {
                 lock.unlock()
                 return
             }
+            state = .pendingTerminal(subscription)
+            lock.unlock()
+            scheduler.schedule(options: options) {
+                self.scheduledReceive(completion: completion)
+            }
+        }
+
+        private func scheduledReceive(completion: Subscribers.Completion<Failure>) {
+            lock.lock()
             state = .terminal
             lock.unlock()
-            receiveOn.scheduler.schedule(options: receiveOn.options) {
-                self.scheduledReceive(completion: completion, downstream: downstream)
-            }
-        }
-
-        private func scheduledReceive(completion: Subscribers.Completion<Failure>,
-                                      downstream: Downstream) {
             downstreamLock.lock()
             downstream.receive(completion: completion)
             downstreamLock.unlock()
@@ -173,7 +177,7 @@ extension Publishers.ReceiveOn {
 
         func request(_ demand: Subscribers.Demand) {
             lock.lock()
-            guard case let .subscribed(_, _, subscription) = state else {
+            guard case let .subscribed(subscription) = state else {
                 lock.unlock()
                 return
             }
@@ -183,7 +187,7 @@ extension Publishers.ReceiveOn {
 
         func cancel() {
             lock.lock()
-            guard case let .subscribed(_, _, subscription) = state else {
+            guard case let .subscribed(subscription) = state else {
                 lock.unlock()
                 return
             }
