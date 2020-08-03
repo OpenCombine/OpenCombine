@@ -218,13 +218,7 @@ extension Publishers.TryMap {
                 return try downstream.receive(map(input))
             } catch {
                 lock.lock()
-                let subscription: Subscription?
-                switch status {
-                case let .subscribed(upstreamSubscription):
-                    subscription = upstreamSubscription
-                case .awaitingSubscription, .terminal:
-                    subscription = nil
-                }
+                let subscription = status.subscription
                 status = .terminal
                 lock.unlock()
                 subscription?.cancel()
