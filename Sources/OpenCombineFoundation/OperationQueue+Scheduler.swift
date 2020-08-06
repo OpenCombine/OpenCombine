@@ -159,53 +159,135 @@ extension OperationQueue {
 
         private final class DelayReadyOperation: Operation, Cancellable {
 
+            fileprivate final class CancellationContext: Cancellable {
+                let lock = UnfairLock.allocate()
+                weak var operation: DelayReadyOperation?
+
+                deinit {
+                    lock.deallocate()
+                }
+
+                func cancel() {
+                    lock.lock()
+                    guard let operation = self.operation else {
+                        lock.unlock()
+                        return
+                    }
+                    lock.unlock()
+                    operation.action = nil
+                    operation.queue = nil
+                    operation.context = nil
+                    operation.cancel()
+                }
+            }
+
             private static let readySchedulingQueue =
                 DispatchQueue(label: "DelayReadyOperation")
 
+            private let readyFromAfterLock = UnfairLock.allocate()
             private var action: (() -> Void)?
-
             private var readyFromAfter = false
-            private let lock = UnfairLock.allocate()
+            private var queue: OperationQueue?
+            private let interval: SchedulerTimeType.Stride
+            private var context: CancellationContext?
 
-            init(_ action: @escaping() -> Void, after: SchedulerTimeType) {
+            init(action: @escaping () -> Void,
+                 queue: OperationQueue?,
+                 interval: SchedulerTimeType.Stride,
+                 context: CancellationContext?) {
                 self.action = action
+                self.queue = queue
+                self.interval = interval
+                self.context = context
                 super.init()
-                let deadline = DispatchTime.now() + after.date.timeIntervalSinceNow
+            }
+
+            deinit {
+                readyFromAfterLock.deallocate()
+            }
+
+            static func once(action: @escaping () -> Void,
+                             after: SchedulerTimeType) -> DelayReadyOperation {
+                let operation = DelayReadyOperation(action: action,
+                                                    queue: nil,
+                                                    interval: 0,
+                                                    context: nil)
+                operation.becomeReady(after: after.date.timeIntervalSinceNow,
+                                      from: .now())
+                return operation
+            }
+
+            static func repeating(
+                action: @escaping () -> Void,
+                after: SchedulerTimeType,
+                queue: OperationQueue,
+                interval: SchedulerTimeType.Stride,
+                context: CancellationContext
+            ) -> DelayReadyOperation {
+                let operation = DelayReadyOperation(action: action,
+                                                    queue: queue,
+                                                    interval: interval,
+                                                    context: context)
+                operation.becomeReady(after: after.date.timeIntervalSinceNow,
+                                      from: .now())
+                return operation
+            }
+
+            override func main() {
+                guard let action = self.action else { return }
+                self.action = nil
+                action()
+
+                guard let queue = self.queue,
+                      let context = self.context
+                else {
+                    self.queue = nil
+                    self.context = nil
+                    return
+                }
+                self.queue = nil
+                self.context = nil
+
+                context.lock.lock()
+                if context.operation == nil {
+                    context.lock.unlock()
+                    return
+                }
+                let nextOperation = DelayReadyOperation(action: action,
+                                                        queue: queue,
+                                                        interval: interval,
+                                                        context: context)
+                context.operation = nextOperation
+                queue.addOperation(nextOperation)
+                context.lock.unlock()
+                nextOperation.becomeReady(after: interval.timeInterval, from: .now())
+            }
+
+            private func becomeReady(after: TimeInterval, from time: DispatchTime) {
                 DelayReadyOperation.readySchedulingQueue
-                    .asyncAfter(deadline: deadline) { [weak self] in
+                    .asyncAfter(deadline: time + after) { [weak self] in
                         self?.becomeReady()
                     }
             }
 
-            deinit {
-                lock.deallocate()
-            }
-
-            override func main() {
-                action!()
-                action = nil
-            }
-
             private func becomeReady() {
 // Smart key paths don't work with NSOperation in swift-corelibs-foundation prior to
-// Swift 5.1.
+// Swift 5.1 and on OS version prior to iOS 11.
+// The string key paths work fine everywhere on Darwin platforms.
 #if canImport(Darwin) || swift(<5.1)
-                // The smart key paths don't work with NSOperation on OS versions prior to
-                // iOS 11. The string key paths work fine everywhere.
-                // https://forums.swift.org/t/keypath-translation-for-kvo-notification-seems-to-not-work-properly-on-ios-10/15898
                 willChangeValue(forKey: "isReady")
 #else
                 willChangeValue(for: \.isReady)
 #endif
-                lock.lock()
+
+                readyFromAfterLock.lock()
                 readyFromAfter = true
-                lock.unlock()
-// Smart key paths don't work with NSOperation in swift-corelibs-foundation prior to 
-// Swift 5.1.
+                readyFromAfterLock.unlock()
+
+// Smart key paths don't work with NSOperation in swift-corelibs-foundation prior to
+// Swift 5.1 and on OS version prior to iOS 11.
+// The string key paths work fine everywhere on Darwin platforms.
 #if canImport(Darwin) || swift(<5.1)
-                // The smart key paths don't work with NSOperation on OS versions prior to
-                // iOS 11. The string key paths work fine everywhere.
-                // https://forums.swift.org/t/keypath-translation-for-kvo-notification-seems-to-not-work-properly-on-ios-10/15898
                 didChangeValue(forKey: "isReady")
 #else
                 didChangeValue(for: \.isReady)
@@ -214,8 +296,8 @@ extension OperationQueue {
 
             override var isReady: Bool {
                 guard super.isReady else { return false }
-                lock.lock()
-                defer { lock.unlock() }
+                readyFromAfterLock.lock()
+                defer { readyFromAfterLock.unlock() }
                 return readyFromAfter
             }
         }
@@ -230,7 +312,7 @@ extension OperationQueue {
                              tolerance: SchedulerTimeType.Stride,
                              options: SchedulerOptions?,
                              _ action: @escaping () -> Void) {
-            let op = DelayReadyOperation(action, after: date)
+            let op = DelayReadyOperation.once(action: action, after: date)
             queue.addOperation(op)
         }
 
@@ -239,9 +321,15 @@ extension OperationQueue {
                              tolerance: SchedulerTimeType.Stride,
                              options: SchedulerOptions?,
                              _ action: @escaping () -> Void) -> Cancellable {
-            let op = DelayReadyOperation(action, after: date.advanced(by: interval))
+            let context = DelayReadyOperation.CancellationContext()
+            let op = DelayReadyOperation.repeating(action: action,
+                                                   after: date,
+                                                   queue: queue,
+                                                   interval: interval,
+                                                   context: context)
+            context.operation = op
             queue.addOperation(op)
-            return AnyCancellable(op)
+            return AnyCancellable(context)
         }
 
         public var now: SchedulerTimeType {

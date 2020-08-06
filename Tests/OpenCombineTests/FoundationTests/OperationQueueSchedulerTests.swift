@@ -156,9 +156,8 @@ final class OperationQueueSchedulerTests: XCTestCase {
                        (now + desiredDelay).timeIntervalSinceReferenceDate,
                        accuracy: desiredDelay / 3)
 
-        assertCrashes {
-            op.main()
-        }
+        op.main()
+        XCTAssertEqual(counter.value, 1)
     }
 
     func testScheduleActionOnceLaterWithRealQueue() {
@@ -192,11 +191,15 @@ final class OperationQueueSchedulerTests: XCTestCase {
         let desiredDelay: TimeInterval = 0.7
         let desiredInterval: TimeInterval = 0.3
 
+        let expectation10ticks = expectation(description: "10 ticks")
+        expectation10ticks.expectedFulfillmentCount = 10
+
         let counter = Atomic(0)
         let cancellable = scheduler
             .schedule(after: scheduler.now.advanced(by: .init(desiredDelay)),
                       interval: .init(desiredInterval)) {
                 counter.do { $0 += 1 }
+                expectation10ticks.fulfill()
             }
 
         XCTAssertEqual(queue.history.count, 1)
@@ -205,6 +208,7 @@ final class OperationQueueSchedulerTests: XCTestCase {
             XCTFail("Unexpected history")
             return
         }
+
         XCTAssertFalse(op is BlockOperation)
         XCTAssertFalse(op.isReady)
         XCTAssertFalse(op.isFinished)
@@ -215,27 +219,27 @@ final class OperationQueueSchedulerTests: XCTestCase {
         XCTAssert(cancellable is AnyCancellable)
 
         XCTAssertEqual(counter.value, 0)
-        let now = Date()
-        queue.waitUntilAllOperationsAreFinished()
-        XCTAssertEqual(counter.value, 1)
-        let expectedDelay = desiredDelay + desiredInterval
-        XCTAssertEqual(Date().timeIntervalSinceReferenceDate,
-                       (now + expectedDelay).timeIntervalSinceReferenceDate,
-                       accuracy: expectedDelay / 3)
+        wait(for: [expectation10ticks], timeout: 5)
+        cancellable.cancel()
+        XCTAssertEqual(counter.value, 10)
+        XCTAssertEqual(queue.history.count, 11)
 
-        assertCrashes {
-            op.main()
-        }
+        op.main()
+        XCTAssertEqual(counter.value, 10)
     }
 
     func testScheduleRepeatingWithRealQueue() {
         let mainQueue = OperationQueue.main
-        let startDate = Date()
+
+        let expectation10ticks = expectation(description: "10 ticks")
+        expectation10ticks.expectedFulfillmentCount = 10
+
+        let startDate = Date().timeIntervalSinceReferenceDate
+
+        let ticks = Atomic([TimeInterval]())
 
         let desiredDelay: TimeInterval = 0.7
         let desiredInterval: TimeInterval = 0.3
-
-        let ticks = Atomic([TimeInterval]())
 
         let cancellable = executeOnBackgroundThread { () -> Cancellable in
             let scheduler = makeScheduler(mainQueue)
@@ -245,6 +249,8 @@ final class OperationQueueSchedulerTests: XCTestCase {
                     XCTAssertTrue(Thread.isMainThread)
                     ticks.do { $0.append(Date().timeIntervalSinceReferenceDate) }
                     XCTAssertNotNil(OperationQueue.current)
+                    expectation10ticks.fulfill()
+                    RunLoop.current.run(until: Date() + 0.001)
                 }
         }
 
@@ -254,23 +260,41 @@ final class OperationQueueSchedulerTests: XCTestCase {
         RunLoop.main.run(until: Date() + 0.001)
         XCTAssertEqual(ticks.value.count, 0)
 
-        // The OperationQueue scheduler doesn't repeat actions.
-        // Wait some extra time to make sure this is the case.
-        RunLoop.main.run(until: Date() + desiredDelay + desiredInterval * 5)
+        wait(for: [expectation10ticks], timeout: 5)
 
         if ticks.value.isEmpty {
             XCTFail("The scheduler doesn't work")
             return
         }
 
-        XCTAssertEqual(ticks.value.count, 1)
+        let actualDelay = ticks.value[0] - startDate
+        let actualIntervals = zip(ticks.value.dropFirst(), ticks.value.dropLast()).map(-)
+        let averageInterval = actualIntervals.reduce(0, +) / Double(actualIntervals.count)
 
-        let expectedDelay = desiredDelay + desiredInterval
-        XCTAssertEqual(
-            ticks.value[0],
-            (startDate + expectedDelay).timeIntervalSinceReferenceDate,
-            accuracy: expectedDelay / 3
-        )
+        XCTAssertEqual(actualDelay,
+                       desiredDelay,
+                       accuracy: desiredDelay / 3,
+                       """
+                       Actual delay (\(actualDelay)) deviates from desired delay \
+                       (\(desiredDelay)) too much
+                       """)
+
+        XCTAssertEqual(averageInterval,
+                       desiredInterval,
+                       accuracy: desiredInterval / 3,
+                       """
+                       Actual average interval (\(averageInterval)) deviates from \
+                       desired interval (\(desiredInterval)) too much.
+
+                       Actual intervals: \(actualIntervals)
+                       """)
+
+        cancellable.cancel()
+        let numberOfTicksRightAfterCancellation = ticks.value.count
+        RunLoop.main.run(until: Date() + 1)
+        let numberOfTicksOneSecondAfterCancellation = ticks.value.count
+        XCTAssertEqual(numberOfTicksRightAfterCancellation,
+                       numberOfTicksOneSecondAfterCancellation)
     }
 #endif // canImport(Darwin)
 
