@@ -51,6 +51,13 @@ pod 'OpenCombineDispatch', '~> 0.10'
 pod 'OpenCombineFoundation', '~> 0.10'
 ```
 
+##### Carthage
+For [Carthage](https://github.com/Carthage/Carthage), add the following to your `Cartfile`:
+
+```ogdl
+github "OpenCombine/OpenCombine" ~> 0.10
+```
+
 ### Contributing
 
 In order to work on this project you will need Xcode 10.2 and Swift 5.0 or later.
