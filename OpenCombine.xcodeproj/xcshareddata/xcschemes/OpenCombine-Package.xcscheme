@@ -14,20 +14,6 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "OpenCombine::OpenCombineDispatch"
-               BuildableName = "OpenCombineDispatch.framework"
-               BlueprintName = "OpenCombineDispatch"
-               ReferencedContainer = "container:OpenCombine.xcodeproj">
-            </BuildableReference>
-         </BuildActionEntry>
-         <BuildActionEntry
-            buildForTesting = "YES"
-            buildForRunning = "YES"
-            buildForProfiling = "YES"
-            buildForArchiving = "YES"
-            buildForAnalyzing = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
                BlueprintIdentifier = "OpenCombine::OpenCombine"
                BuildableName = "OpenCombine.framework"
                BlueprintName = "OpenCombine"
@@ -45,6 +31,20 @@
                BlueprintIdentifier = "OpenCombine::COpenCombineHelpers"
                BuildableName = "COpenCombineHelpers.framework"
                BlueprintName = "COpenCombineHelpers"
+               ReferencedContainer = "container:OpenCombine.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "OpenCombine::OpenCombineDispatch"
+               BuildableName = "OpenCombineDispatch.framework"
+               BlueprintName = "OpenCombineDispatch"
                ReferencedContainer = "container:OpenCombine.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>

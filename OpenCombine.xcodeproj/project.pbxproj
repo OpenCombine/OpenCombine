@@ -917,10 +917,10 @@
       "OBJ_226" = {
          isa = "PBXGroup";
          children = (
-            "OpenCombine::OpenCombineTests::Product",
-            "OpenCombine::OpenCombineFoundation::Product",
             "OpenCombine::OpenCombineDispatch::Product",
+            "OpenCombine::OpenCombineFoundation::Product",
             "OpenCombine::COpenCombineHelpers::Product",
+            "OpenCombine::OpenCombineTests::Product",
             "OpenCombine::OpenCombine::Product"
          );
          name = "Products";
