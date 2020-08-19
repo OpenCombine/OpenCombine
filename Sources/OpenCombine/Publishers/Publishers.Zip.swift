@@ -537,7 +537,6 @@ private class InnerBase<Downstream: Subscriber>: CustomStringConvertible {
             lock.lock()
             let shouldProcessQueue: Bool
             child.state = .finished
-            queuedWork.append(.receivedFinishedFromUpstream)
             if !queueIsBeingProcessed {
                 queueIsBeingProcessed = true
                 shouldProcessQueue = true
@@ -546,8 +545,13 @@ private class InnerBase<Downstream: Subscriber>: CustomStringConvertible {
             }
             lock.unlock()
 
+
             if shouldProcessQueue {
-                processQueue()
+                if processingValueForChild == nil && !areMoreValuesPossible {
+                    sendFinishDownstream()
+                } else {
+                    processQueue()
+                }
             }
         }
     }
@@ -573,15 +577,11 @@ private class InnerBase<Downstream: Subscriber>: CustomStringConvertible {
     private enum QueueAction {
         case stopProcessing
         case noAction
-        case sendFinishDownstream
         case sendValueDownstream(_ value: Downstream.Input)
-        case sendRequestUpstream(_ demand: Subscribers.Demand)
     }
 
     private enum QueuedWork {
         case receivedValueFromUpstream(value: Downstream.Input)
-        case receivedFinishedFromUpstream
-        case receivedRequestFromDownstream(demand: Subscribers.Demand)
     }
 
     private func lockedActionToTake() -> QueueAction {
@@ -597,11 +597,6 @@ private class InnerBase<Downstream: Subscriber>: CustomStringConvertible {
                 downstreamDemand -= 1
             }
             return .sendValueDownstream(value)
-        case .receivedFinishedFromUpstream:
-            return (processingValueForChild != nil || areMoreValuesPossible) ?
-                .noAction : .sendFinishDownstream
-        case .receivedRequestFromDownstream(let demand):
-            return .sendRequestUpstream(demand)
         }
     }
 
@@ -628,13 +623,6 @@ private class InnerBase<Downstream: Subscriber>: CustomStringConvertible {
                 return receiveValueDemandOverride
             case .noAction:
                 break
-            case .sendFinishDownstream:
-                downstream.receive(completion: .finished)
-                lock.lock()
-                let activeChildren = upstreamSubscriptions.filter { $0.state == .active }
-                lock.unlock()
-                activeChildren.forEach { $0.cancel() }
-                return receiveValueDemandOverride
             case .sendValueDownstream(let value):
                 let newDemand = downstream.receive(value)
                 if newDemand != .none {
@@ -643,14 +631,24 @@ private class InnerBase<Downstream: Subscriber>: CustomStringConvertible {
                         demandReceivedWhileProcessing = newDemand
                     lock.unlock()
                 }
-            case .sendRequestUpstream(let demand):
-                lock.lock()
-                let subscriptionsToRequest = upstreamSubscriptions
-                    .filter { $0.childIndex != processingValueForChild?.childIndex }
-                lock.unlock()
-                subscriptionsToRequest.forEach { $0.request(demand) }
             }
         }
+    }
+
+    private func sendRequestUpstream(demand: Subscribers.Demand) {
+        lock.lock()
+        let subscriptionsToRequest = upstreamSubscriptions
+            .filter { $0.childIndex != processingValueForChild?.childIndex }
+        lock.unlock()
+        subscriptionsToRequest.forEach { $0.request(demand) }
+    }
+
+    private func sendFinishDownstream() {
+        downstream.receive(completion: .finished)
+        lock.lock()
+        let activeChildren = upstreamSubscriptions.filter { $0.state == .active }
+        lock.unlock()
+        activeChildren.forEach { $0.cancel() }
     }
 }
 
@@ -661,8 +659,7 @@ extension InnerBase: Subscription {
         }
         lock.lock()
         let shouldProcessQueue: Bool
-        downstreamDemand += demand  // TODO: Move this to the action processing?
-        queuedWork.append(.receivedRequestFromDownstream(demand: demand))
+        downstreamDemand += demand
         if queueIsBeingProcessed {
             demandReceivedWhileProcessing = demand
             shouldProcessQueue = false
@@ -672,6 +669,7 @@ extension InnerBase: Subscription {
         }
         lock.unlock()
 
+        sendRequestUpstream(demand: demand)
         if shouldProcessQueue {
             processQueue()
         }
