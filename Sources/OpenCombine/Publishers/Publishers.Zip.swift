@@ -549,7 +549,6 @@ private class InnerBase<Downstream: Subscriber>: CustomStringConvertible {
             .allSatisfy { $0.state == .active || $0.hasValue }
     }
 
-
     @discardableResult
     private func processValue() -> Subscribers.Demand? {
         assert(valueIsBeingProcessed)

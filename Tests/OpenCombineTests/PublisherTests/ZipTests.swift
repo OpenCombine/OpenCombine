@@ -173,8 +173,9 @@ final class ZipTests: XCTestCase {
     // to send another value - regarless of what triggers that change in state.
 
     func testZipCompletesOnlyAfterAllChildrenComplete() {
-        let child1Publisher = PassthroughSubject<Int, Never>()
-        let child2Publisher = PassthroughSubject<Int, Never>()
+        let upstreamSubscription = CustomSubscription()
+        let child1Publisher = CustomPublisherBase<Int, Never>(subscription: upstreamSubscription)
+        let child2Publisher = CustomPublisherBase<Int, Never>(subscription: upstreamSubscription)
 
         let zip = child1Publisher.zip(child2Publisher) { $0 + $1 }
 
@@ -183,17 +184,17 @@ final class ZipTests: XCTestCase {
 
         zip.subscribe(downstreamSubscriber)
 
-        child1Publisher.send(100)
-        child1Publisher.send(200)
-        child1Publisher.send(300)
-        child2Publisher.send(1)
+        XCTAssertEqual(child1Publisher.send(100), .none)
+        XCTAssertEqual(child1Publisher.send(200), .none)
+        XCTAssertEqual(child1Publisher.send(300), .none)
+        XCTAssertEqual(child2Publisher.send(1), .none)
         child1Publisher.send(completion: .finished)
 
         XCTAssertEqual(downstreamSubscriber.history, [.subscription("Zip"),
                                                       .value(101)])
 
-        child2Publisher.send(2)
-        child2Publisher.send(3)
+        XCTAssertEqual(child2Publisher.send(2), .none)
+        XCTAssertEqual(child2Publisher.send(3), .none)
         // This is so bogus. So, even though no further values are possible, Apple delays
         // the completion. It seems to consider the fact that no more values are possible
         // ONLY after one child sends a .finished
@@ -209,6 +210,11 @@ final class ZipTests: XCTestCase {
                                                       .value(202),
                                                       .value(303),
                                                       .completion(.finished)])
+
+        XCTAssertEqual(
+            upstreamSubscription.history,
+            [.requested(.unlimited), .requested(.unlimited)]
+        )
     }
 
     func testUpstreamExceedsDemand() {
@@ -361,7 +367,8 @@ final class ZipTests: XCTestCase {
     }
 
     func testBCancelledAfterAFailed() {
-        let child1Publisher = PassthroughSubject<Int, TestingError>()
+        let child1Subscription = CustomSubscription()
+        let child1Publisher = CustomPublisher(subscription: child1Subscription)
 
         let child2Subscription = CustomSubscription()
         let child2Publisher = CustomPublisher(subscription: child2Subscription)
@@ -377,6 +384,9 @@ final class ZipTests: XCTestCase {
         child1Publisher.send(completion: .failure(.oops))
         XCTAssertEqual(downstreamSubscriber.history, [.subscription("Zip"),
                                                       .completion(.failure(.oops))])
+
+        XCTAssertEqual(child1Subscription.history, [.requested(.unlimited),
+                                                    .cancelled])
 
         XCTAssertEqual(child2Subscription.history, [.requested(.unlimited),
                                                     .cancelled])
@@ -687,6 +697,35 @@ final class ZipTests: XCTestCase {
 
             XCTAssertEqual(downstreamSubscriber.history, [.subscription("Zip"),
                                                           .value(arity)])
+        }
+    }
+
+    func testZipCurrentValueSubject() throws {
+        let subject = CurrentValueSubject<Void, Never>(())
+
+        let zip = [42].publisher.zip(subject)
+
+        let downstreamSubscriber = TrackingSubscriberBase<(Int, ()), Never>(
+            receiveSubscription: { $0.request(.unlimited) })
+
+        zip.subscribe(downstreamSubscriber)
+
+        let history = downstreamSubscriber.history
+        XCTAssertEqual(history.count, 2)
+
+        // tuples aren't Equatable, so matching the elements one by one
+        switch history[0] {
+        case .subscription("Zip"):
+          break
+        default:
+          XCTFail("Failed to match the first subscription event in \(#function)")
+        }
+
+        switch history[1] {
+        case .value((42, ())):
+          break
+        default:
+          XCTFail("Failed to match the value event in \(#function)")
         }
     }
 }
