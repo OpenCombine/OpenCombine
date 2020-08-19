@@ -435,17 +435,12 @@ extension Publishers.Zip4 {
 private class InnerBase<Downstream: Subscriber>: CustomStringConvertible {
     let description = "Zip"
 
-    /// Locking rules for this class.
-    ///  - All mutable state must only be accessed while `lock` is held.
-    ///  - In order to avoid any deadlock potential, it is absolutely forbidden to have
-    ///      any sort of call out from this class while the lock is held. This is why
-    ///      the draining of the work queue uses a relatively complex pattern.
     private let lock = UnfairRecursiveLock.allocate()
 
     private let downstream: Downstream
     private var downstreamDemand = Subscribers.Demand.none
-    private var queueIsBeingProcessed = false
-    private var queuedWork = ArraySlice<QueuedWork>()
+    private var valueIsBeingProcessed = false
+    private var value: Downstream.Input?
 
     // The following two pieces of state are a hacky implementation of subtle Apple
     // concurrency behaviors. Specifically, when Zip is processing an upstream child value
@@ -496,29 +491,17 @@ private class InnerBase<Downstream: Subscriber>: CustomStringConvertible {
         _ lockedStoreValue: () -> Void
     ) -> Subscribers.Demand {
         lock.lock()
-        let shouldProcessQueue: Bool
         lockedStoreValue()
+        defer { lock.unlock() }
         if let dequeuedValue = maybeDequeueValue() {
-            queuedWork.append(.receivedValueFromUpstream(value: dequeuedValue))
-            if !queueIsBeingProcessed {
-                assert(processingValueForChild == nil)
-                processingValueForChild = child
-                queueIsBeingProcessed = true
-                shouldProcessQueue = true
-            } else {
-                shouldProcessQueue = false
-            }
+            value = dequeuedValue
+            assert(processingValueForChild == nil)
+            processingValueForChild = child
+            valueIsBeingProcessed = true
+            return processValue() ?? .none
         } else {
-            shouldProcessQueue = false
+            return .none
         }
-        lock.unlock()
-
-        var demandOverride: Subscribers.Demand?
-        if shouldProcessQueue {
-            demandOverride = processQueue()
-        }
-
-        return demandOverride ?? .none
     }
 
     fileprivate final func receivedCompletion(
@@ -535,24 +518,16 @@ private class InnerBase<Downstream: Subscriber>: CustomStringConvertible {
             subscriptionsToCancel.forEach { $0.cancel() }
         case .finished:
             lock.lock()
-            let shouldProcessQueue: Bool
             child.state = .finished
-            if !queueIsBeingProcessed {
-                queueIsBeingProcessed = true
-                shouldProcessQueue = true
-            } else {
-                shouldProcessQueue = false
-            }
-            lock.unlock()
-
-
-            if shouldProcessQueue {
+            if !valueIsBeingProcessed {
+                valueIsBeingProcessed = true
                 if processingValueForChild == nil && !areMoreValuesPossible {
                     sendFinishDownstream()
                 } else {
-                    processQueue()
+                    processValue()
                 }
             }
+            lock.unlock()
         }
     }
 
@@ -574,65 +549,32 @@ private class InnerBase<Downstream: Subscriber>: CustomStringConvertible {
             .allSatisfy { $0.state == .active || $0.hasValue }
     }
 
-    private enum QueueAction {
-        case stopProcessing
-        case noAction
-        case sendValueDownstream(_ value: Downstream.Input)
-    }
 
-    private enum QueuedWork {
-        case receivedValueFromUpstream(value: Downstream.Input)
-    }
+    @discardableResult
+    private func processValue() -> Subscribers.Demand? {
+        assert(valueIsBeingProcessed)
 
-    private func lockedActionToTake() -> QueueAction {
-        guard let work = queuedWork.popFirst() else { return .stopProcessing }
-        switch work {
-        case .receivedValueFromUpstream(let value):
-            // TODO: Fix the implementation of Demand. I think it currently is too
-            // strict given that the documentation says:
-            //      any operation that would result in a negative value is
-            //      clamped to .max(0).
-            //It doesn't say anything about fatalErrors
+        lock.lock()
+        defer {
+            valueIsBeingProcessed = false
+            processingValueForChild = nil
+            demandReceivedWhileProcessing = nil
+            lock.unlock()
+        }
+
+        if let value = self.value {
             if downstreamDemand != .none {
                 downstreamDemand -= 1
             }
-            return .sendValueDownstream(value)
-        }
-    }
-
-    @discardableResult
-    private func processQueue() -> Subscribers.Demand? {
-        assert(queueIsBeingProcessed)
-
-        // We loop processing the queue in case somebody put stuff on the queue while we
-        // were sending values with the lock unlocked.
-        while true {
-            var receiveValueDemandOverride: Subscribers.Demand?
-            lock.lock()
-            let action = lockedActionToTake()
-            if case .stopProcessing = action {
-                queueIsBeingProcessed = false
-                processingValueForChild = nil
-                receiveValueDemandOverride = demandReceivedWhileProcessing
-                demandReceivedWhileProcessing = nil
+            let newDemand = downstream.receive(value)
+            if newDemand != .none {
+                downstreamDemand += newDemand
+                demandReceivedWhileProcessing = newDemand
             }
-            lock.unlock()
-
-            switch action {
-            case .stopProcessing:
-                return receiveValueDemandOverride
-            case .noAction:
-                break
-            case .sendValueDownstream(let value):
-                let newDemand = downstream.receive(value)
-                if newDemand != .none {
-                    lock.lock()
-                        downstreamDemand += newDemand
-                        demandReceivedWhileProcessing = newDemand
-                    lock.unlock()
-                }
-            }
+            self.value = nil
         }
+
+        return demandReceivedWhileProcessing
     }
 
     private func sendRequestUpstream(demand: Subscribers.Demand) {
@@ -658,21 +600,15 @@ extension InnerBase: Subscription {
             fatalError()
         }
         lock.lock()
-        let shouldProcessQueue: Bool
         downstreamDemand += demand
-        if queueIsBeingProcessed {
+        sendRequestUpstream(demand: demand)
+        if valueIsBeingProcessed {
             demandReceivedWhileProcessing = demand
-            shouldProcessQueue = false
         } else {
-            queueIsBeingProcessed = true
-            shouldProcessQueue = true
+            valueIsBeingProcessed = true
+            processValue()
         }
         lock.unlock()
-
-        sendRequestUpstream(demand: demand)
-        if shouldProcessQueue {
-            processQueue()
-        }
     }
 
     fileprivate final func cancel() {
