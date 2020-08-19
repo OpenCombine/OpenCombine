@@ -174,12 +174,12 @@ final class ZipTests: XCTestCase {
 
     func testZipCompletesOnlyAfterAllChildrenComplete() {
         let upstreamSubscription = CustomSubscription()
-        let child1Publisher = CustomPublisherBase<Int, Never>(subscription: upstreamSubscription)
-        let child2Publisher = CustomPublisherBase<Int, Never>(subscription: upstreamSubscription)
+        let child1Publisher = CustomPublisher(subscription: upstreamSubscription)
+        let child2Publisher = CustomPublisher(subscription: upstreamSubscription)
 
         let zip = child1Publisher.zip(child2Publisher) { $0 + $1 }
 
-        let downstreamSubscriber = TrackingSubscriberBase<Int, Never>(
+        let downstreamSubscriber = TrackingSubscriberBase<Int, TestingError>(
             receiveSubscription: { $0.request(.unlimited) })
 
         zip.subscribe(downstreamSubscriber)
@@ -722,6 +722,7 @@ final class ZipTests: XCTestCase {
         }
 
         switch history[1] {
+        // swiftlint:disable:next empty_enum_arguments
         case .value((42, ())):
           break
         default:
