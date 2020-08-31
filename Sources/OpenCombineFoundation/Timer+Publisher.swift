@@ -61,9 +61,9 @@ extension Timer {
             public let mode: RunLoop.Mode
             public let options: RunLoop.OCombine.SchedulerOptions?
 
-            private lazy var routingSubscription: RoutingSubscription = {
-                RoutingSubscription(parent: self)
-            }()
+            private var sides = [CombineIdentifier : Side]()
+
+            private let lock = UnfairLock.allocate()
 
             /// Creates a publisher that repeatedly emits the current date
             /// on the given interval.
@@ -89,147 +89,85 @@ extension Timer {
                 self.options = options
             }
 
-            /// Adapter subscription to allow `Timer` to multiplex to multiple subscribers
-            /// the values produced by a single `TimerPublisher.Inner`
-            private final class RoutingSubscription
-                : Subscription,
-                  CustomStringConvertible,
-                  CustomReflectable,
-                  CustomPlaygroundDisplayConvertible
-            {
-                typealias Input = Date
-                typealias Failure = Never
-
-                private typealias ErasedSubscriber = AnySubscriber<Output, Failure>
-
-                private let lock = UnfairLock.allocate()
-
-                // Inner is IUP due to init requirements
-                // swiftlint:disable:next implicitly_unwrapped_optional
-                private var inner: Inner!
-
-                private var subscribers: [ErasedSubscriber] = []
-
-                private var isConnected = false
-
-                init(parent: TimerPublisher) {
-                    inner = Inner(parent: parent, downstream: self)
-                }
-
-                deinit {
-                    lock.deallocate()
-                }
-
-                func addSubscriber<Downstream: Subscriber>(_ downstream: Downstream)
-                    where Downstream.Failure == Failure, Downstream.Input == Output
-                {
-                    lock.lock()
-                    subscribers.append(AnySubscriber(downstream))
-                    lock.unlock()
-
-                    downstream.receive(subscription: self)
-                }
-
-                func receive(_ value: Input) -> Subscribers.Demand {
-                    var resultingDemand = Subscribers.Demand.none
-                    lock.lock()
-                    let subscribers = self.subscribers
-                    let isConnected = self.isConnected
-                    lock.unlock()
-
-                    guard isConnected else {
-                        // This branch is only reachable in case of a race condition.
-                        return .none
-                    }
-
-                    for subscriber in subscribers {
-                        resultingDemand += subscriber.receive(value)
-                    }
-                    return resultingDemand
-                }
-
-                func request(_ demand: Subscribers.Demand) {
-                    lock.lock()
-                    let inner = self.inner!
-                    lock.unlock()
-
-                    inner.request(demand)
-                }
-
-                func cancel() {
-                    lock.lock()
-                    let inner = self.inner!
-                    isConnected = false
-                    subscribers = []
-                    lock.unlock()
-
-                    inner.cancel()
-                }
-
-                var description: String { return "Timer" }
-
-                var customMirror: Mirror { return inner.customMirror }
-
-                var playgroundDescription: Any { return description }
-
-                var combineIdentifier: CombineIdentifier {
-                    return inner.combineIdentifier
-                }
-
-                func startPublishing() {
-                    lock.lock()
-                    let isConnected = self.isConnected
-                    self.isConnected = true
-                    let inner = self.inner!
-                    lock.unlock()
-                    if isConnected { return }
-                    inner.startPublishing()
-                }
+            deinit {
+                lock.deallocate()
             }
 
             public func receive<Downstream: Subscriber>(subscriber: Downstream)
                 where Failure == Downstream.Failure, Output == Downstream.Input
             {
-                routingSubscription.addSubscriber(subscriber)
+                let inner = Inner(parent: self, downstream: subscriber)
+                lock.lock()
+                sides[inner.combineIdentifier] = Side(inner)
+                lock.unlock()
+                subscriber.receive(subscription: inner)
             }
 
             public func connect() -> Cancellable {
-                routingSubscription.startPublishing()
-                return routingSubscription
+                let timer = TimerWrapper(timeInterval: interval,
+                                         repeats: true,
+                                         block: fire)
+                timer.tolerance = tolerance ?? 0
+                runLoop.add(timer, forMode: mode)
+                return CancellableTimer(timer: timer, publisher: self)
             }
 
-            private typealias Parent = TimerPublisher
+            // MARK: Private
 
-            private final class Inner
-                : NSObject,
-                  Subscription,
-                  CustomReflectable,
-                  CustomPlaygroundDisplayConvertible
+            private func fire(_ timer: TimerWrapper) {
+                lock.lock()
+                let sides = self.sides
+                lock.unlock()
+                let now = Date()
+                for side in sides.values {
+                    side.send(now)
+                }
+            }
+
+            private func disconnectAll() {
+                lock.lock()
+                sides = [:]
+                lock.unlock()
+            }
+
+            private func disconnect(_ innerID: CombineIdentifier) {
+                lock.lock()
+                sides[innerID] = nil
+                lock.unlock()
+            }
+
+            private struct Side {
+                let send: (Date) -> Void
+
+                init<Downstream: Subscriber>(_ inner: Inner<Downstream>)
+                    where Downstream.Input == Date, Downstream.Failure == Never
+                {
+                    send = inner.send
+                }
+            }
+
+            private struct CancellableTimer: Cancellable {
+                let timer: TimerWrapper
+                let publisher: TimerPublisher
+
+                func cancel() {
+                    publisher.disconnectAll()
+                    timer.invalidate()
+                }
+            }
+
+            private final class Inner<Downstream: Subscriber>: Subscription
+                where Downstream.Input == Date, Downstream.Failure == Never
             {
-                private lazy var timer: CFRunLoopTimer? = {
-                    let timer = CFRunLoopTimerCreateWithHandler(
-                        nil,
-                        Date().timeIntervalSinceReferenceDate,
-                        parent?.interval ?? 0,
-                        0,
-                        0,
-                        { [weak self] _ in self?.timerFired() }
-                    )!
-                    CFRunLoopTimerSetTolerance(timer, parent?.tolerance ?? 0)
-                    return timer
-                }()
+                private var downstream: Downstream?
+
+                private var pending = Subscribers.Demand.none
+
+                private weak var parent: TimerPublisher?
 
                 private let lock = UnfairLock.allocate()
 
-                private var downstream: RoutingSubscription?
-
-                private var parent: Parent?
-
-                private var started = false
-
-                private var demand = Subscribers.Demand.none
-
-                init(parent: Parent, downstream: RoutingSubscription) {
+                init(parent: TimerPublisher, downstream: Downstream) {
                     self.parent = parent
                     self.downstream = downstream
                 }
@@ -238,85 +176,42 @@ extension Timer {
                     lock.deallocate()
                 }
 
-                func startPublishing() {
+                func send(_ date: Date) {
                     lock.lock()
-                    guard let timer = self.timer,
-                          let parent = self.parent,
-                          !started else {
+                    guard let downstream = self.downstream, pending != .none else {
                         lock.unlock()
                         return
                     }
-
-                    started = true
+                    pending -= 1
                     lock.unlock()
-
-                    CFRunLoopAddTimer(parent.runLoop.getCFRunLoop(),
-                                      timer,
-                                      parent.mode.asCFRunLoopMode())
-                }
-
-                func cancel() {
-                    lock.lock()
-                    guard let timer = self.timer else {
-                        lock.unlock()
+                    let newDemand = downstream.receive(date)
+                    if newDemand == .none {
                         return
                     }
-
-                    downstream = nil
-                    parent = nil
-                    started = false
-                    demand = .none
-                    self.timer = nil
+                    lock.lock()
+                    pending += newDemand
                     lock.unlock()
-
-                    CFRunLoopTimerInvalidate(timer)
                 }
 
                 func request(_ demand: Subscribers.Demand) {
                     lock.lock()
-                    defer { lock.unlock() }
-                    guard parent != nil else {
-                        return
-                    }
-                    self.demand += demand
-                }
-
-                override var description: String { return "Timer" }
-
-                var customMirror: Mirror {
-                    lock.lock()
-                    defer { lock.unlock() }
-                    let children: [Mirror.Child] = [
-                        ("downstream", downstream as Any),
-                        ("interval", parent?.interval as Any),
-                        ("tolerance", parent?.tolerance as Any),
-                    ]
-                    return Mirror(self, children: children)
-                }
-
-                var playgroundDescription: Any { return description }
-
-                private func timerFired() {
-                    lock.lock()
-                    guard let downstream = self.downstream,
-                          parent != nil,
-                          demand > 0
-                    else {
+                    if downstream == nil {
                         lock.unlock()
                         return
                     }
-
-                    demand -= 1
+                    pending += demand
                     lock.unlock()
+                }
 
-                    let newDemand = downstream.receive(Date())
-                    guard newDemand > 0 else {
+                func cancel() {
+                    lock.lock()
+                    if downstream == nil {
+                        lock.unlock()
                         return
                     }
-
-                    lock.lock()
-                    demand += newDemand
+                    downstream = nil
                     lock.unlock()
+                    parent?.disconnect(combineIdentifier)
                 }
             }
         }
@@ -330,6 +225,8 @@ extension Timer {
     public typealias TimerPublisher = OCombine.TimerPublisher
 }
 #endif
+
+// MARK: - Portability
 
 extension RunLoop.Mode {
     fileprivate func asCFRunLoopMode() -> CFRunLoopMode {
@@ -349,6 +246,90 @@ extension RunLoop.Mode {
               encoding
           )
         }
+#endif
+    }
+}
+
+/// Use CoreFoundation on Darwin for `TimerPublisher` implementation, since pure
+/// Foundation APIs are only available since macOS 10.12/iOS 10.0.
+///
+/// We don't have this problem on non-Darwin platforms, since swift-corelibs-foundation
+/// is shipped with the toolchain, so we can always use the newest APIs.
+///
+/// We could use CoreFoundation everywhere, but the `RunLoop.getCFRunloop()` method
+/// is marked deprecated on the swift-corelibs-foundation main branch.
+///
+/// So we use this wrapper that has the same API as Foundation's Timer, but uses CF
+/// on Darwin and Foundation on other platforms.
+private struct TimerWrapper {
+
+#if canImport(Darwin)
+    fileprivate typealias UnderlyingTimer = CFRunLoopTimer?
+#else
+    fileprivate typealias UnderlyingTimer = Timer
+#endif
+
+    fileprivate let underlyingTimer: UnderlyingTimer
+
+    private init(underlyingTimer: UnderlyingTimer) {
+        self.underlyingTimer = underlyingTimer
+    }
+
+    fileprivate init(
+        timeInterval: TimeInterval,
+        repeats: Bool,
+        block: @escaping (TimerWrapper) -> Void
+    ) {
+#if canImport(Darwin)
+        underlyingTimer = CFRunLoopTimerCreateWithHandler(
+            nil,
+            Date().timeIntervalSinceReferenceDate,
+            timeInterval,
+            0,
+            0,
+            { block(TimerWrapper(underlyingTimer: $0)) }
+        )
+#else
+        underlyingTimer = Timer(
+            timeInterval: timeInterval,
+            repeats: repeats,
+            block: { block(TimerWrapper(underlyingTimer: $0)) }
+        )
+#endif
+    }
+
+    fileprivate var tolerance: TimeInterval {
+        get {
+#if canImport(Darwin)
+            return CFRunLoopTimerGetTolerance(underlyingTimer)
+#else
+            return underlyingTimer.tolerance
+#endif
+        }
+        nonmutating set {
+#if canImport(Darwin)
+            CFRunLoopTimerSetTolerance(underlyingTimer, newValue)
+#else
+            underlyingTimer.tolerance = newValue
+#endif
+        }
+    }
+
+    fileprivate func invalidate() {
+#if canImport(Darwin)
+            CFRunLoopTimerInvalidate(underlyingTimer)
+#else
+            underlyingTimer.invalidate()
+#endif
+    }
+}
+
+extension RunLoop {
+    fileprivate func add(_ timer: TimerWrapper, forMode mode: RunLoop.Mode) {
+#if canImport(Darwin)
+        CFRunLoopAddTimer(getCFRunLoop(), timer.underlyingTimer, mode.asCFRunLoopMode())
+#else
+        add(timer.underlyingTimer, forMode: mode)
 #endif
     }
 }
