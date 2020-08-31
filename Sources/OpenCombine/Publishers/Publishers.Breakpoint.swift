@@ -49,14 +49,14 @@ extension Publisher {
     ///
     /// - Returns: A publisher that raises a debugger signal upon receiving a failure.
     public func breakpointOnError() -> Publishers.Breakpoint<Self> {
-        return breakpoint { completion in
+        return breakpoint(receiveCompletion: { completion in
             switch completion {
             case .finished:
                 return false
             case .failure:
                 return true
             }
-        }
+        })
     }
 }
 
