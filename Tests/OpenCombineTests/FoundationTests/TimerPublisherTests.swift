@@ -18,6 +18,22 @@ import OpenCombineFoundation
 @available(macOS 10.15, iOS 13.0, *)
 final class TimerPublisherTests: XCTestCase {
 
+    private lazy var timerSubscription: StringSubscription = {
+        let publisher: TimerPublisher = Timer
+            .publish(every: 0.1, on: .main, in: .default)
+        let tracking = TrackingSubscriberBase<Date, Never>()
+        publisher.subscribe(tracking)
+        let subscription = tracking.subscriptions.first
+        return subscription.map(StringSubscription.init) ?? "No subscription"
+    }()
+
+    private func historyFromTicks(
+        _ ticks: [TimeInterval]
+    ) -> [TrackingSubscriberBase<Date, Never>.Event] {
+        return [.subscription(timerSubscription)] +
+            ticks.map { .value(Date(timeIntervalSinceReferenceDate: $0)) }
+    }
+
     func testPublishMethod() {
         let publisher: TimerPublisher = Timer
             .publish(every: 0.25,
@@ -35,29 +51,41 @@ final class TimerPublisherTests: XCTestCase {
 
     func testConnectAndPublish() {
         let desiredInterval: TimeInterval = 0.5
-        var ticks = [TimeInterval]()
 
+        var ticks1 = [TimeInterval]()
+        var ticks2 = [TimeInterval]()
+        var ticks3 = [TimeInterval]()
+
+        // The total demand of tracking1 is 5
         let tracking1 = TrackingSubscriberBase<Date, Never>(
             receiveSubscription: {
                 $0.request(.max(3))
             },
             receiveValue: {
-                ticks.append($0.timeIntervalSinceReferenceDate)
-                return ticks.count < 3 ? .max(1) : .none
+                ticks1.append($0.timeIntervalSinceReferenceDate)
+                return ticks1.count < 3 ? .max(1) : .none
             }
         )
 
+        // The total demand of tracking2 is 2
         let tracking2 = TrackingSubscriberBase<Date, Never>(
             receiveSubscription: {
                 $0.request(.max(2))
+            },
+            receiveValue: {
+                ticks2.append($0.timeIntervalSinceReferenceDate)
+                return .none
             }
         )
+
+        // The total demand of tracking1 is 3
         let tracking3 = TrackingSubscriberBase<Date, Never>(
             receiveSubscription: {
                 $0.request(.max(1))
             },
-            receiveValue: { _ in
-                ticks.count < 3 ? .max(1) : .none
+            receiveValue: {
+                ticks3.append($0.timeIntervalSinceReferenceDate)
+                return ticks3.count < 3 ? .max(1) : .none
             }
         )
 
@@ -68,37 +96,43 @@ final class TimerPublisherTests: XCTestCase {
         publisher.subscribe(tracking2)
         publisher.subscribe(tracking3)
 
-        XCTAssertEqual(tracking1.history, [.subscription("Timer")])
+        XCTAssertEqual(tracking1.history, [.subscription(timerSubscription)])
 
         RunLoop.main.run(until: Date() + 1)
 
         // Test that no output is produced until we connect
-        XCTAssertEqual(tracking1.history, [.subscription("Timer")])
+        XCTAssertEqual(tracking1.history, [.subscription(timerSubscription)])
 
         let connection = publisher.connect()
 
         RunLoop.main.run(until: Date() + 10)
 
-        assertCorrectIntervals(ticks: ticks,
-                               expectedNumberOfTicks: 10,
+        assertCorrectIntervals(ticks: ticks1,
+                               expectedNumberOfTicks: 5,
+                               desiredInterval: desiredInterval)
+        assertCorrectIntervals(ticks: ticks2,
+                               expectedNumberOfTicks: 2,
+                               desiredInterval: desiredInterval)
+        assertCorrectIntervals(ticks: ticks3,
+                               expectedNumberOfTicks: 3,
                                desiredInterval: desiredInterval)
 
-        let fullHistory =
-            [TrackingSubscriberBase<Date, Never>.Event.subscription("Timer")] +
-                ticks.map { .value(Date(timeIntervalSinceReferenceDate: $0)) }
+        // The first dates should be exactly the same!
+        XCTAssert(Array(ticks1.prefix(2)) == ticks2)
+        XCTAssert(Array(ticks1.prefix(3)) == ticks3)
 
         connection.cancel()
-        XCTAssert(connection is Subscription)
+        XCTAssertFalse(connection is Subscription)
 
         RunLoop.main.run(until: Date() + 1)
 
-        XCTAssertEqual(tracking1.history, fullHistory)
-        XCTAssertEqual(tracking2.history, fullHistory)
-        XCTAssertEqual(tracking3.history, fullHistory)
+        XCTAssertEqual(tracking1.history, historyFromTicks(ticks1))
+        XCTAssertEqual(tracking2.history, historyFromTicks(ticks2))
+        XCTAssertEqual(tracking3.history, historyFromTicks(ticks3))
     }
 
-    func testConnectAndCancelMultipleTimes() throws {
-        let publisher = TimerPublisher(interval: 0.25,
+    func testConnectMultipleTimes() throws {
+        let publisher = TimerPublisher(interval: 0.5,
                                        runLoop: .main,
                                        mode: .default)
 
@@ -108,17 +142,20 @@ final class TimerPublisherTests: XCTestCase {
 
         let connection1 = publisher.connect()
         let connection2 = publisher.connect()
-        XCTAssert((connection1 as AnyObject) === (connection2 as AnyObject))
 
+        // Two connections should correspond to two different timers.
+
+        RunLoop.main.run(until: Date() + 5)
+        let numberOfTicks = tracking.history.count
+        XCTAssertNotEqual(numberOfTicks, 10)
+
+        // Cancelling one connection prevents publishing even if another connection
+        // is still active.
         connection1.cancel()
-        connection1.cancel()
+        RunLoop.main.run(until: Date() + 2)
+        XCTAssertEqual(tracking.history.count, numberOfTicks)
 
-        let connection3 = try XCTUnwrap(publisher.connect() as? Subscription)
-        connection3.request(.max(1))
-
-        RunLoop.main.run(until: Date() + 0.3)
-
-        XCTAssertEqual(tracking.history, [.subscription("Timer")])
+        connection2.cancel()
     }
 
     func testConnectionReflection() throws {
@@ -131,62 +168,21 @@ final class TimerPublisherTests: XCTestCase {
         let connection = publisher.connect()
         defer { connection.cancel() }
 
-        XCTAssertEqual(
-            (connection as? CustomStringConvertible)?.description,
-            "Timer"
-        )
-        XCTAssertEqual(
-            (connection as? CustomPlaygroundDisplayConvertible)?
-                .playgroundDescription as? String,
-            "Timer"
-        )
+        XCTAssertFalse(connection is CustomStringConvertible)
+        XCTAssertFalse(connection is CustomPlaygroundDisplayConvertible)
+        XCTAssertFalse(connection is CustomReflectable)
         XCTAssertFalse(connection is CustomDebugStringConvertible)
 
-        let connectionCombineID =
-            try XCTUnwrap(connection as? CustomCombineIdentifierConvertible)
-                .combineIdentifier
+        let tracking = TrackingSubscriberBase<Date, Never>()
+        publisher.subscribe(tracking)
 
-        guard let inner = Mirror(reflecting: connection).descendant("some")
-        else {
-            XCTFail("Unexpected representation")
-            return
-        }
+        let subscription = try XCTUnwrap(tracking.subscriptions.first?.underlying)
 
-        expectedChildren(
-            ("downstream", "Optional(Timer)"),
-            ("interval", "Optional(0.25)"),
-            ("tolerance", "Optional(0.4)")
-        )(Mirror(reflecting: inner))
-
-        connection.cancel()
-
-        expectedChildren(
-            ("downstream", "nil"),
-            ("interval", "nil"),
-            ("tolerance", "nil")
-        )(Mirror(reflecting: inner))
-
-        XCTAssert(inner is NSObject)
-
-        XCTAssertEqual(
-            (inner as? CustomStringConvertible)?.description,
-            "Timer"
-        )
-        XCTAssertEqual(
-            (inner as? CustomPlaygroundDisplayConvertible)?
-                .playgroundDescription as? String,
-            "Timer"
-        )
-        XCTAssertEqual(
-            (inner as? CustomDebugStringConvertible)?.debugDescription,
-            "Timer"
-        )
-
-        let innerCombineID =
-            try XCTUnwrap(inner as? CustomCombineIdentifierConvertible)
-                .combineIdentifier
-
-        XCTAssertEqual(connectionCombineID, innerCombineID)
+        XCTAssertFalse(subscription is NSObject)
+        XCTAssertFalse(subscription is CustomStringConvertible)
+        XCTAssertFalse(subscription is CustomPlaygroundDisplayConvertible)
+        XCTAssertFalse(subscription is CustomReflectable)
+        XCTAssertFalse(subscription is CustomDebugStringConvertible)
     }
 
     private func assertCorrectIntervals(ticks: [TimeInterval],
