@@ -91,7 +91,6 @@ extension Publishers {
                   Upstream.Output == Downstream.Input
         {
             let inner = Inner(self, downstream: subscriber)
-            subscriber.receive(subscription: inner)
             upstream.subscribe(inner)
         }
     }
@@ -110,13 +109,21 @@ extension Publishers.HandleEvents {
         typealias Failure = Upstream.Failure
 
         private var status = SubscriptionStatus.awaitingSubscription
-        private var pendingDemand = Subscribers.Demand.none
         private let lock = UnfairLock.allocate()
-        private var events: Publishers.HandleEvents<Upstream>?
+        public var receiveSubscription: ((Subscription) -> Void)?
+        public var receiveOutput: ((Upstream.Output) -> Void)?
+        public var receiveCompletion:
+            ((Subscribers.Completion<Upstream.Failure>) -> Void)?
+        public var receiveCancel: (() -> Void)?
+        public var receiveRequest: ((Subscribers.Demand) -> Void)?
         private let downstream: Downstream
 
         init(_ events: Publishers.HandleEvents<Upstream>, downstream: Downstream) {
-            self.events = events
+            self.receiveSubscription = events.receiveSubscription
+            self.receiveOutput = events.receiveOutput
+            self.receiveCompletion = events.receiveCompletion
+            self.receiveCancel = events.receiveCancel
+            self.receiveRequest = events.receiveRequest
             self.downstream = downstream
         }
 
@@ -125,61 +132,83 @@ extension Publishers.HandleEvents {
         }
 
         func receive(subscription: Subscription) {
-            events?.receiveSubscription?(subscription)
             lock.lock()
+            if let receiveSubscription = self.receiveSubscription {
+                lock.unlock()
+                receiveSubscription(subscription)
+                lock.lock()
+            }
             guard case .awaitingSubscription = status else {
                 lock.unlock()
                 subscription.cancel()
                 return
             }
             status = .subscribed(subscription)
-            let pendingDemand = self.pendingDemand
-            self.pendingDemand = .none
             lock.unlock()
-            if pendingDemand > 0 {
-                subscription.request(pendingDemand)
-            }
+            downstream.receive(subscription: self)
         }
 
-        func receive(_ input: Upstream.Output) -> Subscribers.Demand {
-            events?.receiveOutput?(input)
+        func receive(_ input: Input) -> Subscribers.Demand {
+            lock.lock()
+            if let receiveOutput = self.receiveOutput {
+                lock.unlock()
+                receiveOutput(input)
+            } else {
+                lock.unlock()
+            }
             let newDemand = downstream.receive(input)
-            if newDemand > 0 {
-                events?.receiveRequest?(newDemand)
+            if newDemand == .none {
+                return newDemand
+            }
+            lock.lock()
+            if let receiveRequest = self.receiveRequest {
+                lock.unlock()
+                receiveRequest(newDemand)
+            } else {
+                lock.unlock()
             }
             return newDemand
         }
 
-        func receive(completion: Subscribers.Completion<Upstream.Failure>) {
-            events?.receiveCompletion?(completion)
+        func receive(completion: Subscribers.Completion<Failure>) {
             lock.lock()
-            events = nil
-            status = .terminal
+            if let receiveCompletion = self.receiveCompletion {
+                lock.unlock()
+                receiveCompletion(completion)
+                lock.lock()
+            }
+            lockedTerminate()
             lock.unlock()
             downstream.receive(completion: completion)
         }
 
         func request(_ demand: Subscribers.Demand) {
-            events?.receiveRequest?(demand)
             lock.lock()
-            if case let .subscribed(subscription) = status {
+            if let receiveRequest = self.receiveRequest {
                 lock.unlock()
-                subscription.request(demand)
-                return
+                receiveRequest(demand)
+                lock.lock()
             }
-            pendingDemand += demand
-            lock.unlock()
-        }
-
-        func cancel() {
-            events?.receiveCancel?()
-            lock.lock()
             guard case let .subscribed(subscription) = status else {
                 lock.unlock()
                 return
             }
-            events = nil
-            status = .terminal
+            lock.unlock()
+            subscription.request(demand)
+        }
+
+        func cancel() {
+            lock.lock()
+            if let receiveCancel = self.receiveCancel {
+                lock.unlock()
+                receiveCancel()
+                lock.lock()
+            }
+            guard case let .subscribed(subscription) = status else {
+                lock.unlock()
+                return
+            }
+            lockedTerminate()
             lock.unlock()
             subscription.cancel()
         }
@@ -189,5 +218,14 @@ extension Publishers.HandleEvents {
         var customMirror: Mirror { return Mirror(self, children: EmptyCollection()) }
 
         var playgroundDescription: Any { return description }
+
+        private func lockedTerminate() {
+            receiveSubscription = nil
+            receiveOutput       = nil
+            receiveCompletion   = nil
+            receiveCancel       = nil
+            receiveRequest      = nil
+            status = .terminal
+        }
     }
 }

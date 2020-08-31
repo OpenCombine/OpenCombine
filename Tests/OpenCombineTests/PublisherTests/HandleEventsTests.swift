@@ -24,7 +24,7 @@ final class HandleEventsTests: XCTestCase {
         var downstreamSubscription: Subscription?
         let tracking = TrackingSubscriber(
             receiveSubscription: {
-                XCTAssertNil(publisher.subscriber)
+                XCTAssertNotNil(publisher.subscriber)
                 downstreamSubscription = $0
             },
             receiveValue: { .max($0) }
@@ -119,24 +119,28 @@ final class HandleEventsTests: XCTestCase {
         var downstreamSubscription: Subscription?
         let tracking = TrackingSubscriber(
             receiveSubscription: {
-                XCTAssertNil(publisher.subscriber)
-                XCTAssertEqual(history, [])
+                XCTAssertNotNil(publisher.subscriber)
+                XCTAssertEqual(history, [.receiveSubscription("CustomSubscription")])
                 XCTAssertEqual(subscription.history, [])
                 $0.request(.max(45))
                 $0.request(.none)
                 $0.request(.max(13))
-                XCTAssertEqual(subscription.history, [])
+                XCTAssertEqual(subscription.history, [.requested(.max(45)),
+                                                      .requested(.none),
+                                                      .requested(.max(13))])
                 downstreamSubscription = $0
             },
             receiveValue: { .max($0) }
         )
         handleEvents.subscribe(tracking)
         XCTAssertEqual(tracking.history, [.subscription("HandleEvents")])
-        XCTAssertEqual(subscription.history, [.requested(.max(58))])
-        XCTAssertEqual(history, [.receiveRequest(.max(45)),
+        XCTAssertEqual(subscription.history, [.requested(.max(45)),
+                                              .requested(.none),
+                                              .requested(.max(13))])
+        XCTAssertEqual(history, [.receiveSubscription("CustomSubscription"),
+                                 .receiveRequest(.max(45)),
                                  .receiveRequest(.none),
-                                 .receiveRequest(.max(13)),
-                                 .receiveSubscription("CustomSubscription")])
+                                 .receiveRequest(.max(13))])
         XCTAssertNotNil(downstreamSubscription)
     }
 
@@ -150,8 +154,8 @@ final class HandleEventsTests: XCTestCase {
 
         XCTAssertEqual(helper.tracking.history, [.subscription("HandleEvents")])
         XCTAssertEqual(helper.subscription.history, [.requested(.max(2))])
-        XCTAssertEqual(history, [.receiveRequest(.max(2)),
-                                 .receiveSubscription("CustomSubscription")])
+        XCTAssertEqual(history, [.receiveSubscription("CustomSubscription"),
+                                 .receiveRequest(.max(2))])
 
         try XCTUnwrap(helper.downstreamSubscription).cancel()
         try XCTUnwrap(helper.downstreamSubscription).request(.max(1))
@@ -167,8 +171,8 @@ final class HandleEventsTests: XCTestCase {
                                                  .completion(.failure(.oops))])
         XCTAssertEqual(helper.subscription.history, [.requested(.max(2)),
                                                      .cancelled])
-        XCTAssertEqual(history, [.receiveRequest(.max(2)),
-                                 .receiveSubscription("CustomSubscription"),
+        XCTAssertEqual(history, [.receiveSubscription("CustomSubscription"),
+                                 .receiveRequest(.max(2)),
                                  .receiveCancel])
     }
 
@@ -185,8 +189,7 @@ final class HandleEventsTests: XCTestCase {
         var history = [Event<Never>]()
         testReceiveValueBeforeSubscription(
             value: 144,
-            expected: .history([.subscription("HandleEvents"),
-                                .value(144)],
+            expected: .history([.value(144)],
                                demand: .max(42)),
             { $0.handleAllEvents { history.append($0) } }
         )
@@ -198,7 +201,7 @@ final class HandleEventsTests: XCTestCase {
         var history = [Event<Never>]()
         testReceiveCompletionBeforeSubscription(
             inputType: Int.self,
-            expected: .history([.subscription("HandleEvents"), .completion(.finished)]),
+            expected: .history([.completion(.finished)]),
             { $0.handleAllEvents { history.append($0) } }
         )
         XCTAssertEqual(history, [.receiveCompletion(.finished)])
