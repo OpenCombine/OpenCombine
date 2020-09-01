@@ -74,7 +74,12 @@ extension Publishers {
             where Upstream.Failure == Downstream.Failure,
                   Upstream.Output == Downstream.Input
         {
-            upstream.subscribe(Inner(self, downstream: subscriber))
+            let inner = Inner(downstream: subscriber,
+                              interval: interval,
+                              tolerance: tolerance,
+                              scheduler: scheduler,
+                              options: options)
+            upstream.subscribe(inner)
         }
     }
 }
@@ -85,25 +90,28 @@ extension Publishers.Delay {
           Subscription
         where Downstream.Input == Upstream.Output, Downstream.Failure == Upstream.Failure
     {
-        // NOTE: This class has been audited for thread safety
-
         typealias Input = Upstream.Output
         typealias Failure = Upstream.Failure
 
-        fileprivate typealias Delay = Publishers.Delay<Upstream, Context>
-
-        private enum State {
-            case ready(Delay, Downstream)
-            case subscribed(Delay, Downstream, Subscription)
-            case terminal
-        }
-
         private let lock = UnfairLock.allocate()
-        private var state: State
+        private let downstream: Downstream
+        private let interval: Context.SchedulerTimeType.Stride
+        private let tolerance: Context.SchedulerTimeType.Stride
+        private let scheduler: Context
+        private let options: Context.SchedulerOptions?
+        private var state = SubscriptionStatus.awaitingSubscription
         private let downstreamLock = UnfairRecursiveLock.allocate()
 
-        fileprivate init(_ publisher: Delay, downstream: Downstream) {
-            state = .ready(publisher, downstream)
+        fileprivate init(downstream: Downstream,
+                         interval: Context.SchedulerTimeType.Stride,
+                         tolerance: Context.SchedulerTimeType.Stride,
+                         scheduler: Context,
+                         options: Context.SchedulerOptions?) {
+            self.downstream = downstream
+            self.interval = interval
+            self.tolerance = tolerance
+            self.scheduler = scheduler
+            self.options = options
         }
 
         deinit {
@@ -111,73 +119,82 @@ extension Publishers.Delay {
             downstreamLock.deallocate()
         }
 
-        private func schedule(_ delay: Delay, work: @escaping () -> Void) {
-            delay
-                .scheduler
-                .schedule(after: delay.scheduler.now.advanced(by: delay.interval),
-                          tolerance: delay.tolerance,
-                          options: delay.options,
+        private func schedule(_ work: @escaping () -> Void) {
+            scheduler
+                .schedule(after: scheduler.now.advanced(by: interval),
+                          tolerance: tolerance,
+                          options: options,
                           work)
         }
 
         func receive(subscription: Subscription) {
             lock.lock()
-            guard case let .ready(delay, downstream) = state else {
+            guard case .awaitingSubscription = state else {
                 lock.unlock()
                 subscription.cancel()
                 return
             }
-            state = .subscribed(delay, downstream, subscription)
+            state = .subscribed(subscription)
             lock.unlock()
             downstreamLock.lock()
             downstream.receive(subscription: self)
             downstreamLock.unlock()
         }
 
-        func receive(_ input: Upstream.Output) -> Subscribers.Demand {
+        func receive(_ input: Input) -> Subscribers.Demand {
             lock.lock()
-            guard case let .subscribed(delay, downstream, _) = state else {
+            guard case .subscribed = state else {
                 lock.unlock()
                 return .none
             }
             lock.unlock()
-            schedule(delay) {
-                self.scheduledReceive(input, downstream: downstream)
+            schedule {
+                self.scheduledReceive(input)
             }
             return .none
         }
 
-        private func scheduledReceive(_ input: Upstream.Output, downstream: Downstream) {
-            downstreamLock.lock()
-            let newDemand = downstream.receive(input)
-            downstreamLock.unlock()
-            guard newDemand > 0 else {
-                return
-            }
+        private func scheduledReceive(_ input: Input) {
             lock.lock()
-            guard case let .subscribed(_, _, subscription) = state else {
+            guard state.subscription != nil else {
                 lock.unlock()
                 return
             }
             lock.unlock()
-            subscription.request(newDemand)
+            downstreamLock.lock()
+            let newDemand = downstream.receive(input)
+            downstreamLock.unlock()
+            if newDemand == .none { return }
+            lock.lock()
+            let subscription = state.subscription
+            lock.unlock()
+            subscription?.request(newDemand)
         }
 
         func receive(completion: Subscribers.Completion<Failure>) {
             lock.lock()
-            guard case let .subscribed(delay, downstream, _) = state else {
+            guard case let .subscribed(subscription) = state else {
+                lock.unlock()
+                return
+            }
+            state = .pendingTerminal(subscription)
+            lock.unlock()
+            schedule {
+                self.scheduledReceive(completion: completion)
+            }
+        }
+
+        private func scheduledReceive(completion: Subscribers.Completion<Failure>) {
+            lock.lock()
+            guard case .pendingTerminal = state else {
+                assertionFailure(
+                    "This branch should not be reachable! Please report a bug."
+                )
                 lock.unlock()
                 return
             }
             state = .terminal
             lock.unlock()
-            schedule(delay) {
-                self.scheduledReceive(completion: completion, downstream: downstream)
-            }
-        }
-
-        private func scheduledReceive(completion: Subscribers.Completion<Failure>,
-                                      downstream: Downstream) {
             downstreamLock.lock()
             downstream.receive(completion: completion)
             downstreamLock.unlock()
@@ -185,7 +202,7 @@ extension Publishers.Delay {
 
         func request(_ demand: Subscribers.Demand) {
             lock.lock()
-            guard case let .subscribed(_, _, subscription) = state else {
+            guard case let .subscribed(subscription) = state else {
                 lock.unlock()
                 return
             }
@@ -195,7 +212,7 @@ extension Publishers.Delay {
 
         func cancel() {
             lock.lock()
-            guard case let .subscribed(_, _, subscription) = state else {
+            guard case let .subscribed(subscription) = state else {
                 lock.unlock()
                 return
             }

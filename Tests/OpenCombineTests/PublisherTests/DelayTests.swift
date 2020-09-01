@@ -307,6 +307,7 @@ final class DelayTests: XCTestCase {
                                                  .value(1000),
                                                  .completion(.finished)])
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
+                                                     .requested(.max(418)),
                                                      .requested(.max(418))])
     }
 
@@ -379,7 +380,7 @@ final class DelayTests: XCTestCase {
         }
         XCTAssertFalse(subscriberReleased)
         scheduler.executeScheduledActions()
-        XCTAssertEqual(value, 42)
+        XCTAssertNil(value)
         XCTAssertTrue(subscriberReleased)
     }
 
@@ -457,7 +458,7 @@ final class DelayTests: XCTestCase {
 
     func testDelayLifecycle() throws {
         try testLifecycle(sendValue: 31,
-                          cancellingSubscriptionReleasesSubscriber: true) {
+                          cancellingSubscriptionReleasesSubscriber: false) {
             $0.delay(for: 42, scheduler: ImmediateScheduler.shared)
         }
     }
