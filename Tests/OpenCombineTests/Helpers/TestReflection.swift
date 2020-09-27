@@ -169,24 +169,3 @@ internal func testSubscriptionReflection<Sut: Publisher>(
         playgroundDescription
     )
 }
-
-/// Prior to iOS 14 there was a bug in PassthroughSubject and
-/// CurrentValueSubject when after cancelling the subscription we couldn't
-/// reflect the subscription.
-@available(macOS, deprecated: 10.16, message: """
-If macOS 10.16/11.0 has already been released, this property should be removed
-""")
-@available(iOS, deprecated: 14, message: """
-If iOS 14  has already been released, this property should be removed
-""")
-var hasCustomMirrorUseAfterFreeBug: Bool { // swiftlint:disable:this let_var_whitespace
-#if OPENCOMBINE_COMPATIBILITY_TEST
-    if #available(macOS 10.16, iOS 14.0, *) {
-        return false
-    } else {
-        return true
-    }
-#else
-    return false
-#endif
-}

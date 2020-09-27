@@ -477,14 +477,12 @@ final class CurrentValueSubjectTests: XCTestCase {
 
         passthrough.send(completion: .finished)
 
-        if !hasCustomMirrorUseAfterFreeBug {
-            expectedChildren(
-                ("parent", "nil"),
-                ("downstream", "nil"),
-                ("demand", "max(10)"),
-                ("subject", "nil")
-            )(Mirror(reflecting: try XCTUnwrap(downstreamSubscription)))
-        }
+        expectedChildren(
+            ("parent", "nil"),
+            ("downstream", "nil"),
+            ("demand", "max(10)"),
+            ("subject", "nil")
+        )(Mirror(reflecting: try XCTUnwrap(downstreamSubscription)))
 
         XCTAssertEqual(tracking.history, [.subscription("CurrentValueSubject"),
                                           .value(42),
@@ -495,14 +493,12 @@ final class CurrentValueSubjectTests: XCTestCase {
         try XCTUnwrap(downstreamSubscription).cancel()
         try XCTUnwrap(downstreamSubscription).request(.max(3))
 
-        if !hasCustomMirrorUseAfterFreeBug {
-            expectedChildren(
-                ("parent", "nil"),
-                ("downstream", "nil"),
-                ("demand", "max(10)"),
-                ("subject", "nil")
-            )(Mirror(reflecting: try XCTUnwrap(downstreamSubscription)))
-        }
+        expectedChildren(
+            ("parent", "nil"),
+            ("downstream", "nil"),
+            ("demand", "max(10)"),
+            ("subject", "nil")
+        )(Mirror(reflecting: try XCTUnwrap(downstreamSubscription)))
 
         XCTAssertEqual(tracking.history, [.subscription("CurrentValueSubject"),
                                           .value(42),
@@ -535,14 +531,12 @@ final class CurrentValueSubjectTests: XCTestCase {
         try XCTUnwrap(downstreamSubscription).request(.max(3))
         try XCTUnwrap(downstreamSubscription).request(.max(4))
 
-        if !hasCustomMirrorUseAfterFreeBug {
-            expectedChildren(
-                ("parent", "nil"),
-                ("downstream", "nil"),
-                ("demand", "max(10)"),
-                ("subject", "nil")
-            )(Mirror(reflecting: try XCTUnwrap(downstreamSubscription)))
-        }
+        expectedChildren(
+            ("parent", "nil"),
+            ("downstream", "nil"),
+            ("demand", "max(10)"),
+            ("subject", "nil")
+        )(Mirror(reflecting: try XCTUnwrap(downstreamSubscription)))
 
         XCTAssertEqual(tracking.history, [.subscription("CurrentValueSubject"),
                                           .value(42),

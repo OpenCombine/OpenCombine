@@ -986,7 +986,7 @@ final class FlatMapTests: XCTestCase {
 
     func testFlatMapReceiveSubscriptionTwice() throws {
         let helper = OperatorTestHelper(
-            publisherType: CustomPublisher.self,
+            publisherType: CustomPublisherBase<Int, Never>.self,
             initialDemand: nil,
             receiveValueDemand: .none,
             createSut: { $0.flatMap(ResultPublisher.init) }

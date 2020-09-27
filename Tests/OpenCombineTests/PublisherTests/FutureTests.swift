@@ -127,9 +127,6 @@ final class FutureTests: XCTestCase {
     }
 
     func testSubscribeAfterFailure() {
-        // TODO: Remove this `if` as soon as iOS 14 is released.
-        if hasMissingFailureAfterLateSubscriptionBug { return }
-
         var promise: Sut.Promise?
 
         let future = Sut { promise = $0 }
@@ -299,11 +296,7 @@ final class FutureTests: XCTestCase {
                 }
 
                 XCTAssertNil(weakSubscriber, "Subscriber leaked - \(reason)")
-                if !leaksSubscription {
-                    // This leak has been fixed in the betas.
-                    // TODO: Remove this `if` as soon as iOS 14 is released.
-                    XCTAssertNil(weakSubscription, "Subscription leaked - \(reason)")
-                }
+                XCTAssertNil(weakSubscription, "Subscription leaked - \(reason)")
             }
 
             XCTAssertNil(weakFuture, "Future leaked - \(reason)")
@@ -323,41 +316,4 @@ final class FutureTests: XCTestCase {
             sut: Sut { _ in }
         )
     }
-}
-
-@available(macOS, deprecated: 10.16, message: """
-If macOS 10.16/11.0 has already been released, this property should be removed
-""")
-@available(iOS, deprecated: 14, message: """
-If iOS 14  has already been released, this property should be removed
-""")
-private var leaksSubscription: Bool { // swiftlint:disable:this let_var_whitespace
-#if OPENCOMBINE_COMPATIBILITY_TEST
-    if #available(macOS 10.16, iOS 14.0, *) {
-        return false
-    } else {
-        return true
-    }
-#else
-    return false
-#endif
-}
-
-@available(macOS, deprecated: 10.16, message: """
-If macOS 10.16/11.0 has already been released, this property should be removed
-""")
-@available(iOS, deprecated: 14, message: """
-If iOS 14  has already been released, this property should be removed
-""")
-private var hasMissingFailureAfterLateSubscriptionBug: Bool {
-// swiftlint:disable:previous let_var_whitespace
-#if OPENCOMBINE_COMPATIBILITY_TEST
-    if #available(macOS 10.16, iOS 14.0, *) {
-        return false
-    } else {
-        return true
-    }
-#else
-    return false
-#endif
 }
