@@ -174,11 +174,11 @@ final class DropUntilOutputTests: XCTestCase {
             }
         )
 
-        otherPublisher.willSubscribe = { _ in
+        otherPublisher.willSubscribe = { _, _ in
             XCTAssertNil(publisher.subscriber)
         }
 
-        publisher.willSubscribe = { _ in
+        publisher.willSubscribe = { _, _ in
             XCTAssertNotNil(otherPublisher.subscriber)
         }
 

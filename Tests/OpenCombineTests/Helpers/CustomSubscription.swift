@@ -78,3 +78,10 @@ final class CustomSubscription: Subscription, CustomStringConvertible {
 
     var description: String { return "CustomSubscription" }
 }
+
+@available(macOS 10.15, iOS 13.0, *)
+extension CustomSubscription: Equatable {
+    static func == (lhs: CustomSubscription, rhs: CustomSubscription) -> Bool {
+        return lhs === rhs
+    }
+}
