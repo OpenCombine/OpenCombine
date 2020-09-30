@@ -207,7 +207,7 @@ final class ConcatenateTests: XCTestCase {
 
         var didSubscribe = false
 
-        publisher.didSubscribe = { _ in
+        publisher.didSubscribe = { _, _ in
             XCTAssertEqual(tracking.history, [.subscription("Concatenate")])
             didSubscribe = true
         }
@@ -234,7 +234,7 @@ final class ConcatenateTests: XCTestCase {
             receiveCompletion: { _ in }
         )
 
-        publisher2.willSubscribe = { _ in
+        publisher2.willSubscribe = { _, _ in
             downstreamSubscription?.request(.max(7))
             XCTAssertEqual(subscription1.history, [.requested(.max(10)),
                                                    .requested(.none)])

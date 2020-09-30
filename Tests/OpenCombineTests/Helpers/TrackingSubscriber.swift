@@ -187,6 +187,14 @@ final class TrackingSubscriberBase<Value, Failure: Error>
 }
 
 @available(macOS 10.15, iOS 13.0, *)
+extension TrackingSubscriberBase: Equatable {
+    static func == (lhs: TrackingSubscriberBase<Value, Failure>,
+                    rhs: TrackingSubscriberBase<Value, Failure>) -> Bool {
+        return lhs === rhs
+    }
+}
+
+@available(macOS 10.15, iOS 13.0, *)
 extension TrackingSubscriberBase where Value: Equatable {
     func assertHistoryEqual(_ expected: [Event]) {
         assertHistoryEqual(expected, valueComparator: ==)

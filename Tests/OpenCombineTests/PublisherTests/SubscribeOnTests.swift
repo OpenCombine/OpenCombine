@@ -26,7 +26,7 @@ final class SubscribeOnTests: XCTestCase {
             receiveValue: { _ in .max(12) }
         )
 
-        publisher.didSubscribe = { _ in
+        publisher.didSubscribe = { _, _ in
             XCTAssertEqual(tracking.history,
                            [.subscription("SubscribeOn")],
                            "Subscription object should be sent synchronously")

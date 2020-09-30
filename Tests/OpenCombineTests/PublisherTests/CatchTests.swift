@@ -443,7 +443,7 @@ final class CatchTests: XCTestCase {
             createSut: { makeCatch($0) { _ in handlerPublisher } }
         )
 
-        handlerPublisher.willSubscribe = { _ in
+        handlerPublisher.willSubscribe = { _, _ in
             guard let downstreamSubscription = helper.downstreamSubscription else {
                 XCTFail("missing downstream subscription")
                 return
@@ -477,7 +477,7 @@ final class CatchTests: XCTestCase {
             createSut: { makeCatch($0) { _ in handlerPublisher } }
         )
 
-        handlerPublisher.willSubscribe = { _ in
+        handlerPublisher.willSubscribe = { _, _ in
             guard let downstreamSubscription = helper.downstreamSubscription else {
                 XCTFail("missing downstream subscription")
                 return

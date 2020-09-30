@@ -40,9 +40,9 @@ class CustomPublisherBase<Output, Failure: Error>: Publisher, Cancellable {
     private(set) var erasedSubscriber: Any?
     private let subscription: Subscription?
 
-    var willSubscribe: ((AnySubscriber<Output, Failure>) -> Void)?
+    var willSubscribe: ((AnySubscriber<Output, Failure>, Any) -> Void)?
 
-    var didSubscribe: ((AnySubscriber<Output, Failure>) -> Void)?
+    var didSubscribe: ((AnySubscriber<Output, Failure>, Any) -> Void)?
 
     var onDeinit: (() -> Void)?
 
@@ -59,10 +59,10 @@ class CustomPublisherBase<Output, Failure: Error>: Publisher, Cancellable {
     {
         let anySubscriber = AnySubscriber(subscriber)
         self.subscriber = anySubscriber
-        willSubscribe?(anySubscriber)
+        willSubscribe?(anySubscriber, subscriber)
         erasedSubscriber = subscriber
         subscription.map(subscriber.receive(subscription:))
-        didSubscribe?(anySubscriber)
+        didSubscribe?(anySubscriber, subscriber)
     }
 
     func send(subscription: CustomSubscription) {
@@ -80,6 +80,14 @@ class CustomPublisherBase<Output, Failure: Error>: Publisher, Cancellable {
     func cancel() {
         subscriber = nil
         erasedSubscriber = nil
+    }
+}
+
+@available(macOS 10.15, iOS 13.0, *)
+extension CustomPublisherBase: Equatable {
+    static func == (lhs: CustomPublisherBase<Output, Failure>,
+                    rhs: CustomPublisherBase<Output, Failure>) -> Bool {
+        return lhs === rhs
     }
 }
 
