@@ -736,6 +736,32 @@ final class SwitchToLatestTests: XCTestCase {
         XCTAssertEqual(nestedSubscription.history, [.requested(.max(1))])
     }
 
+    func testOverloadWhenUpstreamNeverFailsButChildrenCanFail() {
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisherBase<CustomPublisher, Never>.self,
+            initialDemand: .max(1),
+            receiveValueDemand: .max(100),
+            createSut: { $0.switchToLatest() }
+        )
+
+        XCTAssertEqual(helper.sut.upstream.upstream, helper.publisher)
+    }
+
+    func testOverloadWhenUpstreamCanFailButChildrenNeverFail() {
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisherBase<CustomPublisherBase<Int, Never>,
+                                               TestingError>.self,
+            initialDemand: .max(1),
+            receiveValueDemand: .max(100),
+            createSut: { $0.switchToLatest() }
+        )
+
+        XCTAssertEqual(helper.sut.upstream.upstream, helper.publisher)
+
+        let child = CustomPublisherBase<Int, Never>(subscription: nil)
+        XCTAssertEqual(helper.sut.upstream.transform(child).upstream, child)
+    }
+
     func testSwitchToLatestLifecycle() throws {
         try testLifecycle(sendValue: CustomPublisher(subscription: CustomSubscription()),
                           cancellingSubscriptionReleasesSubscriber: false,
