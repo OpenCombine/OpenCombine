@@ -222,17 +222,24 @@ struct StringOrPublisher: CustomStringConvertible,
     private enum Storage {
         case string(String)
         case publisher(Any)
+        case anything
     }
 
     private var storage: Storage
 
+    private init(_ storage: Storage) {
+        self.storage = storage
+    }
+
     init<Pub: Publisher>(_ publisher: Pub) {
-        storage = .publisher(publisher)
+        self.init(.publisher(publisher))
     }
 
     init(stringLiteral value: String) {
-        storage = .string(value)
+        self.init(.string(value))
     }
+
+    static let anything = StringOrPublisher(.anything)
 
     var description: String {
         switch storage {
@@ -240,12 +247,14 @@ struct StringOrPublisher: CustomStringConvertible,
             return string
         case .publisher(let publisher):
             return String(describing: publisher)
+        case .anything:
+            return "<anything>"
         }
     }
 
     var underlying: Any? {
         switch storage {
-        case .string:
+        case .string, .anything:
             return nil
         case .publisher(let publisher):
             return publisher
@@ -256,7 +265,12 @@ struct StringOrPublisher: CustomStringConvertible,
 @available(macOS 10.15, iOS 13.0, *)
 extension StringOrPublisher: Equatable {
     static func == (lhs: StringOrPublisher, rhs: StringOrPublisher) -> Bool {
-        return lhs.description == rhs.description
+        switch (lhs.storage, rhs.storage) {
+        case (.anything, _), (_, .anything):
+            return true
+        default:
+            return lhs.description == rhs.description
+        }
     }
 }
 

@@ -76,7 +76,12 @@ public struct AnyPublisher<Output, Failure: Error>
     public init<PublisherType: Publisher>(_ publisher: PublisherType)
         where Output == PublisherType.Output, Failure == PublisherType.Failure
     {
-        box = PublisherBox(base: publisher)
+        // If this has already been boxed, avoid boxing again
+        if let erased = publisher as? AnyPublisher<Output, Failure> {
+            box = erased.box
+        } else {
+            box = PublisherBox(base: publisher)
+        }
     }
 
     public var description: String {
@@ -101,7 +106,7 @@ extension AnyPublisher: Publisher {
     public func receive<Downstream: Subscriber>(subscriber: Downstream)
         where Output == Downstream.Input, Failure == Downstream.Failure
     {
-        box.subscribe(subscriber)
+        box.receive(subscriber: subscriber)
     }
 }
 
@@ -138,6 +143,6 @@ internal final class PublisherBox<PublisherType: Publisher>
     override internal func receive<Downstream: Subscriber>(subscriber: Downstream)
         where Failure == Downstream.Failure, Output == Downstream.Input
     {
-        base.subscribe(subscriber)
+        base.receive(subscriber: subscriber)
     }
 }
