@@ -23,14 +23,22 @@ public protocol Subject: AnyObject, Publisher {
     ///   has finished normally or failed with an error.
     func send(completion: Subscribers.Completion<Failure>)
 
-    /// Provides this Subject an opportunity to establish demand for any new upstream
-    /// subscriptions (say, via `Publisher.subscribe<S: Subject>(_: Subject)`)
+    /// Sends a subscription to the subscriber.
+    ///
+    /// This call provides the `Subject` an opportunity to establish demand for any new
+    /// upstream subscriptions.
+    ///
+    /// - Parameter subscription: The subscription instance through which the subscriber
+    ///   can request elements.
     func send(subscription: Subscription)
 }
 
 extension Subject where Output == Void {
 
-    /// Signals subscribers.
+    /// Sends a void value to the subscriber.
+    ///
+    /// Use `Void` inputs and outputs when you want to signal that an event has occurred,
+    /// but don’t need to send the event itself.
     public func send() {
         send(())
     }

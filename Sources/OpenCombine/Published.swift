@@ -6,25 +6,66 @@
 //
 
 #if swift(>=5.1)
-/// Adds a `Publisher` to a property.
+/// A type that publishes a property marked with an attribute.
 ///
-/// Properties annotated with `@Published` contain both the stored value
-/// and a publisher which sends any new values after the property value
-/// has been sent. New subscribers will receive the current value
-/// of the property first.
-/// Note that the `@Published` property is class-constrained.
-/// Use it with properties of classes, not with non-class types like structures.
+/// Publishing a property with the `@Published` attribute creates a publisher of this
+/// type. You access the publisher with the `$` operator, as shown here:
+///
+///     class Weather {
+///         @Published var temperature: Double
+///         init(temperature: Double) {
+///             self.temperature = temperature
+///         }
+///     }
+///
+///     let weather = Weather(temperature: 20)
+///     cancellable = weather.$temperature
+///         .sink() {
+///             print ("Temperature now: \($0)")
+///         }
+///     weather.temperature = 25
+///
+///     // Prints:
+///     // Temperature now: 20.0
+///     // Temperature now: 25.0
+///
+/// When the property changes, publishing occurs in the property's `willSet` block,
+/// meaning subscribers receive the new value before it's actually set on the property.
+/// In the above example, the second time the sink executes its closure, it receives
+/// the parameter value `25`. However, if the closure evaluated `weather.temperature`,
+/// the value returned would be `20`.
+///
+/// > Important: The `@Published` attribute is class constrained. Use it with properties
+/// of classes, not with non-class types like structures.
+///
+/// ### See Also
+///
+/// - `Publisher.assign(to:)`
 @available(swift, introduced: 5.1)
 @propertyWrapper
 public struct Published<Value> {
 
+    /// Creates the published instance with an initial wrapped value.
+    ///
+    /// Don't use this initializer directly. Instead, create a property with
+    /// the `@Published` attribute, as shown here:
+    ///
+    ///     @Published var lastUpdated: Date = Date()
+    ///
+    /// - Parameter wrappedValue: The publisher's initial value.
     @inlinable // trivially forwarding
     public init(initialValue: Value) {
         self.init(wrappedValue: initialValue)
     }
 
-    /// Initialize the storage of the `Published` property as well as the corresponding
-    /// `Publisher`.
+    /// Creates the published instance with an initial value.
+    ///
+    /// Don't use this initializer directly. Instead, create a property with
+    /// the `@Published` attribute, as shown here:
+    ///
+    ///     @Published var lastUpdated: Date = Date()
+    ///
+    /// - Parameter initialValue: The publisher's initial value.
     public init(wrappedValue: Value) {
         value = wrappedValue
     }
@@ -55,8 +96,9 @@ public struct Published<Value> {
 
     internal var objectWillChange: ObservableObjectPublisher?
 
-    /// The property that can be accessed with the `$` syntax and allows access to
-    /// the `Publisher`
+    /// The property for which this instance exposes a publisher.
+    ///
+    /// The `projectedValue` is the property accessed with the `$` operator.
     public var projectedValue: Publisher {
         mutating get {
             if let publisher = publisher {

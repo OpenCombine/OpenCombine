@@ -9,6 +9,30 @@ extension Publisher {
 
     /// Transforms all elements from the upstream publisher with a provided closure.
     ///
+    /// OpenCombine’s `map(_:)` operator performs a function similar to that of `map(_:)`
+    /// in the Swift standard library: it uses a closure to transform each element it
+    /// receives from the upstream publisher. You use `map(_:)` to transform from one kind
+    /// of element to another.
+    ///
+    /// The following example uses an array of numbers as the source for a collection
+    /// based publisher. A `map(_:)` operator consumes each integer from the publisher and
+    /// uses a dictionary to transform it from its Arabic numeral to a Roman equivalent,
+    /// as a `String`.
+    /// If the `map(_:)`’s closure fails to look up a Roman numeral, it returns the string
+    /// `(unknown)`.
+    ///
+    ///     let numbers = [5, 4, 3, 2, 1, 0]
+    ///     let romanNumeralDict: [Int : String] =
+    ///        [1:"I", 2:"II", 3:"III", 4:"IV", 5:"V"]
+    ///     cancellable = numbers.publisher
+    ///         .map { romanNumeralDict[$0] ?? "(unknown)" }
+    ///         .sink { print("\($0)", terminator: " ") }
+    ///
+    ///     // Prints: "V IV III II I (unknown)"
+    ///
+    /// If your closure can throw an error, use OpenCombine’s `tryMap(_:)` operator
+    /// instead.
+    ///
     /// - Parameter transform: A closure that takes one element as its parameter and
     ///   returns a new element.
     /// - Returns: A publisher that uses the provided closure to map elements from
@@ -19,20 +43,77 @@ extension Publisher {
         return Publishers.Map(upstream: self, transform: transform)
     }
 
-    /// Transforms all elements from the upstream publisher with a provided
-    /// error-throwing closure.
+    /// Transforms all elements from the upstream publisher with a provided error-throwing
+    /// closure.
     ///
-    /// If the `transform` closure throws an error, the publisher fails with the thrown
-    /// error.
+    /// OpenCombine’s `tryMap(_:)` operator performs a function similar to that of
+    /// `map(_:)` in the Swift standard library: it uses a closure to transform each
+    /// element it receives from the upstream publisher. You use `tryMap(_:)` to transform
+    /// from one kind of element to another, and to terminate publishing when the map’s
+    /// closure throws an error.
+    ///
+    /// The following example uses an array of numbers as the source for a collection
+    /// based publisher. A `tryMap(_:)` operator consumes each integer from the publisher
+    /// and uses a dictionary to transform it from its Arabic numeral to a Roman
+    /// equivalent, as a `String`.
+    /// If the `tryMap(_:)`’s closure fails to look up a Roman numeral, it throws
+    /// an error. The `tryMap(_:)` operator catches this error and terminates publishing,
+    /// sending a `Subscribers.Completion.failure(_:)` that wraps the error.
+    ///
+    ///     struct ParseError: Error {}
+    ///     func romanNumeral(from:Int) throws -> String {
+    ///         let romanNumeralDict: [Int : String] =
+    ///             [1:"I", 2:"II", 3:"III", 4:"IV", 5:"V"]
+    ///         guard let numeral = romanNumeralDict[from] else {
+    ///             throw ParseError()
+    ///         }
+    ///         return numeral
+    ///     }
+    ///     let numbers = [5, 4, 3, 2, 1, 0]
+    ///     cancellable = numbers.publisher
+    ///         .tryMap { try romanNumeral(from: $0) }
+    ///         .sink(
+    ///             receiveCompletion: { print ("completion: \($0)") },
+    ///             receiveValue: { print ("\($0)", terminator: " ") }
+    ///          )
+    ///
+    ///     // Prints: "V IV III II I completion: failure(ParseError())"
+    ///
+    /// If your closure doesn’t throw, use `map(_:)` instead.
     ///
     /// - Parameter transform: A closure that takes one element as its parameter and
-    ///   returns a new element.
+    ///   returns a new element. If the closure throws an error, the publisher fails with
+    ///   the thrown error.
     /// - Returns: A publisher that uses the provided closure to map elements from
     ///   the upstream publisher to new elements that it then publishes.
     public func tryMap<Result>(
         _ transform: @escaping (Output) throws -> Result
     ) -> Publishers.TryMap<Self, Result> {
         return Publishers.TryMap(upstream: self, transform: transform)
+    }
+
+    /// Replaces `nil` elements in the stream with the provided element.
+    ///
+    /// The `replaceNil(with:)` operator enables replacement of `nil` values in a stream
+    /// with a substitute value. In the example below, a collection publisher contains
+    /// a `nil` value. The `replaceNil(with:)` operator replaces this with `0.0`.
+    ///
+    ///     let numbers: [Double?] = [1.0, 2.0, nil, 3.0]
+    ///     numbers.publisher
+    ///         .replaceNil(with: 0.0)
+    ///         .sink { print("\($0)", terminator: " ") }
+    ///
+    ///     // Prints: "Optional(1.0) Optional(2.0) Optional(0.0) Optional(3.0)"
+    ///
+    /// - Parameter output: The element to use when replacing `nil`.
+    /// - Returns: A publisher that replaces `nil` elements from the upstream publisher
+    ///   with the provided element.
+    public func replaceNil<ElementOfResult>(
+        with output: ElementOfResult
+    ) -> Publishers.Map<Self, ElementOfResult>
+        where Output == ElementOfResult?
+    {
+        return Publishers.Map(upstream: self) { $0 ?? output }
     }
 }
 

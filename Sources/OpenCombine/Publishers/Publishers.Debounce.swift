@@ -9,10 +9,57 @@ extension Publisher {
 
     /// Publishes elements only after a specified time interval elapses between events.
     ///
-    /// Use this operator when you want to wait for a pause in the delivery of events from
-    /// the upstream publisher. For example, call `debounce` on the publisher from a text
-    /// field to only receive elements when the user pauses or stops typing. When they
-    /// start typing again, the `debounce` holds event delivery until the next pause.
+    /// Use the `debounce(for:scheduler:options:)` operator to control the number of
+    /// values and time between delivery of values from the upstream publisher. This
+    /// operator is useful to process bursty or high-volume event streams where you need
+    /// to reduce the number of values delivered to the downstream to a rate you specify.
+    ///
+    /// In this example, a `PassthroughSubject` publishes elements on a schedule defined
+    /// by the `bounces` array. The array is composed of tuples representing a value sent
+    /// by the `PassthroughSubject`, and a `TimeInterval` ranging from one-quarter second
+    /// up to 2 seconds that drives a delivery timer. As the queue builds, elements
+    /// arriving faster than one-half second `debounceInterval` are discarded, while
+    /// elements arriving at a rate slower than `debounceInterval` are passed through to
+    /// the `sink(receiveValue:)` operator.
+    ///
+    ///     let bounces:[(Int,TimeInterval)] = [
+    ///         (0, 0),
+    ///         (1, 0.25),  // 0.25s interval since last index
+    ///         (2, 1),     // 0.75s interval since last index
+    ///         (3, 1.25),  // 0.25s interval since last index
+    ///         (4, 1.5),   // 0.25s interval since last index
+    ///         (5, 2)      // 0.5s interval since last index
+    ///     ]
+    ///
+    ///     let subject = PassthroughSubject<Int, Never>()
+    ///     cancellable = subject
+    ///         .debounce(for: .seconds(0.5), scheduler: RunLoop.main)
+    ///         .sink { index in
+    ///             print ("Received index \(index)")
+    ///         }
+    ///
+    ///     for bounce in bounces {
+    ///         DispatchQueue.main.asyncAfter(deadline: .now() + bounce.1) {
+    ///             subject.send(bounce.0)
+    ///         }
+    ///     }
+    ///
+    ///     // Prints:
+    ///     //  Received index 1
+    ///     //  Received index 4
+    ///     //  Received index 5
+    ///
+    ///     //  Here is the event flow shown from the perspective of time, showing value
+    ///     //  delivery through the `debounce()` operator:
+    ///
+    ///     //  Time 0: Send index 0.
+    ///     //  Time 0.25: Send index 1. Index 0 was waiting and is discarded.
+    ///     //  Time 0.75: Debounce period ends, publish index 1.
+    ///     //  Time 1: Send index 2.
+    ///     //  Time 1.25: Send index 3. Index 2 was waiting and is discarded.
+    ///     //  Time 1.5: Send index 4. Index 3 was waiting and is discarded.
+    ///     //  Time 2: Debounce period ends, publish index 4. Also, send index 5.
+    ///     //  Time 2.5: Debounce period ends, publish index 5.
     ///
     /// - Parameters:
     ///   - dueTime: The time the publisher should wait before publishing an element.

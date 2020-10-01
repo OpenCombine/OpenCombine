@@ -12,19 +12,30 @@ public struct Record<Output, Failure: Error>: Publisher {
     /// The recorded output and completion.
     public let recording: Recording
 
-    /// Interactively record a series of outputs and a completion.
+    /// Creates a publisher to interactively record a series of outputs and a completion.
+    ///
+    /// - Parameter record: A recording instance that can be retrieved after completion
+    ///   to create new record publishers to replay the recording.
     public init(record: (inout Recording) -> Void) {
         var recording = Recording()
         record(&recording)
         self.init(recording: recording)
     }
 
-    /// Initialize with a recording.
+    /// Creates a record publisher from an existing recording.
+    ///
+    /// - Parameter recording: A previously-recorded recording of published elements
+    ///   and a completion.
     public init(recording: Recording) {
         self.recording = recording
     }
 
-    /// Set up a complete recording with the specified output and completion.
+    /// Creates a record publisher to publish the provided elements, followed by
+    /// the provided completion value.
+    ///
+    /// - Parameters:
+    ///   - output: An array of output elements to publish.
+    ///   - completion: The completion value with which to end publishing.
     public init(output: [Output], completion: Subscribers.Completion<Failure>) {
         self.init(recording: Recording(output: output, completion: completion))
     }
@@ -43,7 +54,7 @@ public struct Record<Output, Failure: Error>: Publisher {
         }
     }
 
-    /// A recorded set of `Output` and a `Subscribers.Completion`.
+    /// A recorded sequence of outputs, followed by a completion value.
     public struct Recording {
 
         public typealias Input = Output

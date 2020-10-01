@@ -10,10 +10,22 @@ extension Publisher {
     /// Republishes elements while a predicate closure indicates publishing should
     /// continue.
     ///
-    /// The publisher finishes when the closure returns `false`.
+    /// Use `prefix(while:)` to emit values while elements from the upstream publishe
+    /// meet a condition you specify. The publisher finishes when the closure returns
+    /// `false`.
+    ///
+    /// In the example below, the `prefix(while:)` operator emits values while the element
+    /// it receives is less than five:
+    ///
+    ///     let numbers = (0...10)
+    ///     numbers.publisher
+    ///         .prefix { $0 < 5 }
+    ///         .sink { print("\($0)", terminator: " ") }
+    ///
+    ///     // Prints: "0 1 2 3 4"
     ///
     /// - Parameter predicate: A closure that takes an element as its parameter and
-    ///   returns a Boolean value indicating whether publishing should continue.
+    ///   returns a Boolean value that indicates whether publishing should continue.
     /// - Returns: A publisher that passes through elements until the predicate indicates
     ///   publishing should finish.
     public func prefix(
@@ -22,11 +34,28 @@ extension Publisher {
         return .init(upstream: self, predicate: predicate)
     }
 
-    /// Republishes elements while a error-throwing predicate closure indicates publishing
-    /// should continue.
+    /// Republishes elements while an error-throwing predicate closure indicates
+    /// publishing should continue.
     ///
-    /// The publisher finishes when the closure returns `false`. If the closure throws,
-    /// the publisher fails with the thrown error.
+    /// Use `tryPrefix(while:)` to emit values from the upstream publisher that meet
+    /// a condition you specify in an error-throwing closure.
+    /// The publisher finishes when the closure returns `false`. If the closure throws
+    /// an error, the publisher fails with that error.
+    ///
+    ///     struct OutOfRangeError: Error {}
+    ///
+    ///     let numbers = (0...10).reversed()
+    ///     cancellable = numbers.publisher
+    ///         .tryPrefix {
+    ///             guard $0 != 0 else { throw OutOfRangeError() }
+    ///             return $0 <= numbers.max()!
+    ///         }
+    ///         .sink(
+    ///             receiveCompletion: { print ("completion: \($0)", terminator: " ") },
+    ///             receiveValue: { print ("\($0)", terminator: " ") }
+    ///         )
+    ///
+    ///     // Prints: "10 9 8 7 6 5 4 3 2 1 completion: failure(OutOfRangeError()) "
     ///
     /// - Parameter predicate: A closure that takes an element as its parameter and
     ///   returns a Boolean value indicating whether publishing should continue.

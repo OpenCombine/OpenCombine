@@ -8,9 +8,20 @@
 extension Publisher {
 
     /// Buffers elements received from an upstream publisher.
-    /// - Parameter size: The maximum number of elements to store.
-    /// - Parameter prefetch: The strategy for initially populating the buffer.
-    /// - Parameter whenFull: The action to take when the buffer becomes full.
+    ///
+    /// Use `buffer(size:prefetch:whenFull:)` to collect a specific number of elements
+    /// from an upstream publisher before republishing them to the downstream subscriber
+    /// according to the `Publishers.BufferingStrategy` and `Publishers.PrefetchStrategy`
+    /// strategy you specify.
+    ///
+    /// If the publisher completes before reaching the `size` threshold, it buffers
+    /// the elements and publishes them downstream prior to completion.
+    ///
+    /// - Parameters:
+    ///   - size: The maximum number of elements to store.
+    ///   - prefetch: The strategy to initially populate the buffer.
+    ///   - whenFull: The action to take when the buffer becomes full.
+    /// - Returns: A publisher that buffers elements received from an upstream publisher.
     public func buffer(
         size: Int,
         prefetch: Publishers.PrefetchStrategy,
@@ -26,37 +37,33 @@ extension Publisher {
 extension Publishers {
 
     /// A strategy for filling a buffer.
-    ///
-    /// * keepFull: A strategy to fill the buffer at subscription time, and keep it full
-    ///   thereafter.
-    /// * byRequest: A strategy that avoids prefetching and instead performs requests
-    ///   on demand.
     public enum PrefetchStrategy {
 
         /// A strategy to fill the buffer at subscription time, and keep it full
         /// thereafter.
+        ///
+        /// This strategy starts by making a demand equal to the buffer’s size from
+        /// the upstream when the subscriber first connects. Afterwards, it continues
+        /// to demand elements from the upstream to try to keep the buffer full.
         case keepFull
 
-        /// A strategy that avoids prefetching and instead performs requests
-        /// on demand.
+        /// A strategy that avoids prefetching and instead performs requests on demand.
+        ///
+        /// This strategy just forwards the downstream’s requests to the upstream
+        /// publisher.
         case byRequest
     }
 
-    /// A strategy for handling exhaustion of a buffer’s capacity.
-    ///
-    /// * dropNewest: When full, discard the newly-received element without buffering it.
-    /// * dropOldest: When full, remove the least recently-received element from the
-    ///   buffer.
-    /// * customError: When full, execute the closure to provide a custom error.
+    /// A strategy that handles exhaustion of a buffer’s capacity.
     public enum BufferingStrategy<Failure: Error> {
 
-        /// When full, discard the newly-received element without buffering it.
+        /// When the buffer is full, discard the newly received element.
         case dropNewest
 
-        /// When full, remove the least recently-received element from the buffer.
+        /// When the buffer is full, discard the oldest element in the buffer.
         case dropOldest
 
-        /// When full, execute the closure to provide a custom error.
+        /// When the buffer is full, execute the closure to provide a custom error.
         case customError(() -> Failure)
     }
 

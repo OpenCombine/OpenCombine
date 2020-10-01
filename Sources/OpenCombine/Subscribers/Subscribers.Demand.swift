@@ -9,11 +9,8 @@
 
 extension Subscribers {
 
-    /// A requested number of items, sent to a publisher from a subscriber via
+    /// A requested number of items, sent to a publisher from a subscriber through
     /// the subscription.
-    ///
-    /// - `unlimited`: A request for an unlimited number of items.
-    /// - `max`: A request for a maximum number of items.
     public struct Demand: Equatable,
                           Comparable,
                           Hashable,
@@ -29,23 +26,27 @@ extension Subscribers {
             self.rawValue = min(UInt(Int.max) + 1, rawValue)
         }
 
-        /// Requests as many values as the `Publisher` can produce.
+        /// A request for as many values as the publisher can produce.
         @inline(__always)
         @inlinable
         public static var unlimited: Demand {
             return Demand(rawValue: .max)
         }
 
-        /// A demand for no items.
+        /// A request for no elements from the publisher.
         ///
         /// This is equivalent to `Demand.max(0)`.
         @inline(__always)
         @inlinable
         public static var none: Demand { return .max(0) }
 
-        /// Limits the maximum number of values.
-        /// The `Publisher` may send fewer than the requested number.
-        /// Negative values will result in a `fatalError`.
+        /// Creates a demand for the given maximum number of elements.
+        ///
+        /// The publisher is free to send fewer than the requested maximum number of
+        /// elements.
+        ///
+        /// - Parameter value: The maximum number of elements. Providing a negative value
+        /// for this parameter results in a fatal error.
         @inline(__always)
         @inlinable
         public static func max(_ value: Int) -> Demand {
@@ -437,7 +438,9 @@ extension Subscribers {
             return lhs.rawValue == rhs.rawValue
         }
 
-        /// The number of requested values, or nil if `.unlimited`.
+        /// The number of requested values.
+        ///
+        /// The value is `nil` if the demand is `Subscribers.Demand.unlimited`.
         @inlinable public var max: Int? {
             if self == .unlimited {
                 return nil
@@ -446,10 +449,17 @@ extension Subscribers {
             }
         }
 
+        /// Creates a demand instance from a decoder.
+        ///
+        /// - Parameter decoder: The decoder of a previously-encoded `Subscribers.Demand`
+        ///   instance.
         public init(from decoder: Decoder) throws {
             try self.init(rawValue: decoder.singleValueContainer().decode(UInt.self))
         }
 
+        /// Encodes the demand to the provided encoder.
+        ///
+        /// - Parameter encoder: An encoder instance.
         public func encode(to encoder: Encoder) throws {
             var container = encoder.singleValueContainer()
             try container.encode(rawValue)

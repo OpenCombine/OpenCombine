@@ -24,6 +24,7 @@ public struct Empty<Output, Failure: Error>: Publisher, Equatable {
     ///
     /// Use this initializer to connect the empty publisher to subscribers or other
     /// publishers that have specific output and failure types.
+    /// 
     /// - Parameters:
     ///   - completeImmediately: A Boolean value that indicates whether the publisher
     ///     should immediately finish.

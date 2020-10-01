@@ -11,13 +11,19 @@ extension ConnectablePublisher {
     /// publisher.
     ///
     /// Use `autoconnect()` to simplify working with `ConnectablePublisher` instances,
-    /// such as those created with `makeConnectable()`.
+    /// such as `TimerPublisher` in `OpenCombineFoundation`.
     ///
-    ///     let autoconnectedPublisher = somePublisher
-    ///         .makeConnectable()
+    /// In the following example, the `Timer.publish()` operator creates
+    /// a `TimerPublisher`, which is a `ConnectablePublisher`. As a result, subscribers
+    /// don’t receive any values until after a call to `connect()`.
+    /// For convenience when working with a single subscriber, the `.autoconnect()`
+    /// operator performs the `connect()` call when attached to by the subscriber.
+    ///
+    ///     cancellable = Timer.publish(every: 1, on: .main, in: .default)
     ///         .autoconnect()
-    ///         .subscribe(someSubscriber)
-    ///
+    ///         .sink { date in
+    ///             print ("Date now: \(date)")
+    ///         }
     /// - Returns: A publisher which automatically connects to its upstream connectable
     ///   publisher.
     public func autoconnect() -> Publishers.Autoconnect<Self> {
@@ -27,11 +33,11 @@ extension ConnectablePublisher {
 
 extension Publishers {
 
-    /// A publisher that automatically connects and disconnects from this connectable
-    /// publisher.
+    /// A publisher that automatically connects to an upstream connectable publisher.
+    ///
+    /// This publisher calls `connect()` on the upstream `ConnectablePublisher` when first
+    /// attached to by a subscriber.
     public class Autoconnect<Upstream: ConnectablePublisher>: Publisher {
-
-        // NOTE: This class has been audited for thread safety
 
         public typealias Output = Upstream.Output
 

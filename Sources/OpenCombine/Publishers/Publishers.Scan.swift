@@ -6,15 +6,20 @@
 
 extension Publisher {
 
-    /// Transforms elements from the upstream publisher by providing the current element
-    /// to a closure along with the last value returned by the closure.
+    /// Transforms elements from the upstream publisher by providing the current
+    /// element to a closure along with the last value returned by the closure.
     ///
-    ///     let pub = (0...5)
-    ///         .publisher
-    ///         .scan(0, { return $0 + $1 })
-    ///         .sink(receiveValue: { print ("\($0)", terminator: " ") })
-    ///      // Prints "0 1 3 6 10 15 ".
+    /// Use `scan(_:_:)` to accumulate all previously-published values into a single
+    /// value, which you then combine with each newly-published value.
     ///
+    /// The following example logs a running total of all values received
+    /// from the sequence publisher.
+    ///
+    ///     let range = (0...5)
+    ///     cancellable = range.publisher
+    ///         .scan(0) { return $0 + $1 }
+    ///         .sink { print ("\($0)", terminator: " ") }
+    ///      // Prints: "0 1 3 6 10 15 ".
     ///
     /// - Parameters:
     ///   - initialResult: The previous result returned by the `nextPartialResult`
@@ -37,7 +42,37 @@ extension Publisher {
     /// Transforms elements from the upstream publisher by providing the current element
     /// to an error-throwing closure along with the last value returned by the closure.
     ///
+    /// Use `tryScan(_:_:)` to accumulate all previously-published values into a single
+    /// value, which you then combine with each newly-published value.
+    /// If your accumulator closure throws an error, the publisher terminates with
+    /// the error.
+    ///
+    /// In the example below, `tryScan(_:_:)` calls a division function on elements of
+    /// a collection publisher. The `Publishers.TryScan` publisher publishes each result
+    /// until the function encounters a `DivisionByZeroError`, which terminates
+    /// the publisher.
+    ///
+    ///     struct DivisionByZeroError: Error {}
+    ///
+    ///     /// A function that throws a DivisionByZeroError if `current` provided by the
+    ///     /// TryScan publisher is zero.
+    ///     func myThrowingFunction(_ lastValue: Int, _ currentValue: Int) throws -> Int {
+    ///         guard currentValue != 0 else { throw DivisionByZeroError() }
+    ///         return (lastValue + currentValue) / currentValue
+    ///      }
+    ///
+    ///     let numbers = [1,2,3,4,5,0,6,7,8,9]
+    ///     cancellable = numbers.publisher
+    ///         .tryScan(10) { try myThrowingFunction($0, $1) }
+    ///         .sink(
+    ///             receiveCompletion: { print ("\($0)") },
+    ///             receiveValue: { print ("\($0)", terminator: " ") }
+    ///          )
+    ///
+    ///     // Prints: "11 6 3 1 1 -1 failure(DivisionByZeroError())".
+    ///
     /// If the closure throws an error, the publisher fails with the error.
+    ///
     /// - Parameters:
     ///   - initialResult: The previous result returned by the `nextPartialResult`
     ///     closure.

@@ -20,6 +20,7 @@ public struct Fail<Output, Failure: Error>: Publisher {
     ///
     /// Use this initializer to create a `Fail` publisher that can work with
     /// subscribers or publishers that expect a given output type.
+    /// 
     /// - Parameters:
     ///   - outputType: The output type exposed by this publisher.
     ///   - failure: The failure to send when terminating the publisher.

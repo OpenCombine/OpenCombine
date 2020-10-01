@@ -9,12 +9,33 @@ extension Publisher {
 
     /// Replaces an empty stream with the provided element.
     ///
-    /// If the upstream publisher finishes without producing any elements,
-    /// this publisher emits the provided element, then finishes normally.
-    /// - Parameter output: An element to emit when the upstream publisher
-    ///                     finishes without emitting any elements.
-    /// - Returns: A publisher that replaces an empty stream with
-    ///            the provided output element.
+    /// Use `replaceEmpty(with:)` to provide a replacement element if the upstream
+    /// publisher finishes without producing any elements.
+    ///
+    /// In the example below, the empty `Double` array publisher doesn’t produce any
+    /// elements, so `replaceEmpty(with:)` publishes `Double.nan` and finishes normally.
+    ///
+    ///     let numbers: [Double] = []
+    ///     cancellable = numbers.publisher
+    ///         .replaceEmpty(with: Double.nan)
+    ///         .sink { print("\($0)", terminator: " ") }
+    ///
+    ///     // Prints "(nan)".
+    ///
+    /// Conversely, providing a non-empty publisher publishes all elements and
+    /// the publisher then terminates normally:
+    ///
+    ///     let otherNumbers: [Double] = [1.0, 2.0, 3.0]
+    ///     cancellable2 = otherNumbers.publisher
+    ///         .replaceEmpty(with: Double.nan)
+    ///         .sink { print("\($0)", terminator: " ") }
+    ///
+    ///     // Prints: 1.0 2.0 3.0
+    ///
+    /// - Parameter output: An element to emit when the upstream publisher finishes
+    ///   without emitting any elements.
+    /// - Returns: A publisher that replaces an empty stream with the provided output
+    ///   element.
     public func replaceEmpty(with output: Output) -> Publishers.ReplaceEmpty<Self> {
         return .init(upstream: self, output: output)
     }

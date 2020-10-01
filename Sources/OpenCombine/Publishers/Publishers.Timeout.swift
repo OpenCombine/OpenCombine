@@ -10,6 +10,45 @@ extension Publisher {
     /// Terminates publishing if the upstream publisher exceeds the specified time
     /// interval without producing an element.
     ///
+    /// Use `timeout(_:scheduler:options:customError:)` to terminate a publisher if
+    /// an element isn’t delivered within a timeout interval you specify.
+    ///
+    /// In the example below, a `PassthroughSubject` publishes `String` elements and is
+    /// configured to time out if no new elements are received within its `TIME_OUT`
+    /// window of 5 seconds. A single value is published after the specified 2-second
+    /// `WAIT_TIME`, after which no more elements are available; the publisher then times
+    /// out and completes normally.
+    ///
+    ///     var WAIT_TIME : Int = 2
+    ///     var TIMEOUT_TIME : Int = 5
+    ///
+    ///     let subject = PassthroughSubject<String, Never>()
+    ///     let cancellable = subject
+    ///         .timeout(.seconds(TIMEOUT_TIME),
+    ///                  scheduler: DispatchQueue.main,
+    ///                  options: nil,
+    ///                  customError: nil)
+    ///         .sink(
+    ///               receiveCompletion: { print ("completion: \($0) at \(Date())") },
+    ///               receiveValue: { print ("value: \($0) at \(Date())") }
+    ///          )
+    ///
+    ///     DispatchQueue.main.asyncAfter(
+    ///         deadline: .now() + .seconds(WAIT_TIME),
+    ///         execute: {
+    ///             subject.send("Some data - sent after a delay of \(WAIT_TIME) seconds")
+    ///         }
+    ///     )
+    ///
+    ///     // Prints:
+    ///     //   value: Some data - sent after a delay of 2 seconds at
+    ///     //          2020-03-10 23:47:59 +0000
+    ///     //   completion: finished at 2020-03-10 23:48:04 +0000
+    ///
+    /// If `customError` is `nil`, the publisher completes normally; if you provide
+    /// a closure for the `customError` argument, the upstream publisher is instead
+    /// terminated upon timeout, and the error is delivered to the downstream.
+    ///
     /// - Parameters:
     ///   - interval: The maximum time interval the publisher can go without emitting
     ///     an element, expressed in the time system of the scheduler.
@@ -24,7 +63,7 @@ extension Publisher {
         _ interval: Context.SchedulerTimeType.Stride,
         scheduler: Context,
         options: Context.SchedulerOptions? = nil,
-        customError: (() -> Self.Failure)? = nil
+        customError: (() -> Failure)? = nil
     ) -> Publishers.Timeout<Self, Context> {
         return .init(upstream: self,
                      interval: interval,

@@ -7,6 +7,12 @@
 
 /// A subject that wraps a single value and publishes a new element whenever the value
 /// changes.
+///
+/// Unlike `PassthroughSubject`, `CurrentValueSubject` maintains a buffer of the most
+/// recently published element.
+///
+/// Calling `send(_:)` on a `CurrentValueSubject` also updates the current value, making
+/// it equivalent to updating the `value` directly.
 public final class CurrentValueSubject<Output, Failure: Error>: Subject {
 
     private let lock = UnfairLock.allocate()

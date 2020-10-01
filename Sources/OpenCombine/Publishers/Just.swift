@@ -7,10 +7,11 @@
 
 /// A publisher that emits an output to each subscriber just once, and then finishes.
 ///
-/// You can use a `Just` publisher to start a chain of publishers. A `Just` publisher
-/// is also useful when replacing a value with `Catch`.
+/// You can use a `Just` publisher to start a chain of publishers. A `Just` publisher is
+/// also useful when replacing a value with `Publishers.Catch`.
 ///
-/// In contrast with `Publishers.Once`, a `Just` publisher cannot fail with an error.
+/// In contrast with `Result.Publisher`, a `Just` publisher can’t fail with an error.
+/// And unlike `Optional.Publisher`, a `Just` publisher always produces a value.
 public struct Just<Output>: Publisher {
 
     public typealias Failure = Never

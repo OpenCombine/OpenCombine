@@ -5,10 +5,15 @@
 //  Created by Sergej Jaskiewicz on 11.06.2019.
 //
 
-/// A subject that passes along values and completion.
+/// A subject that broadcasts elements to downstream subscribers.
 ///
-/// Use a `PassthroughSubject` in unit tests when you want a publisher than can publish
-/// specific values on-demand during tests.
+/// As a concrete implementation of `Subject`, the `PassthroughSubject` provides
+/// a convenient way to adapt existing imperative code to the Combine model.
+///
+/// Unlike `CurrentValueSubject`, a `PassthroughSubject` doesn’t have an initial value or
+/// a buffer of the most recently-published element.
+/// A `PassthroughSubject` drops values if there are no subscribers, or its current demand
+/// is zero.
 public final class PassthroughSubject<Output, Failure: Error>: Subject {
 
     private let lock = UnfairLock.allocate()

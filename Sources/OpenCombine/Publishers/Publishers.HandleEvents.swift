@@ -9,6 +9,35 @@ extension Publisher {
 
     /// Performs the specified closures when publisher events occur.
     ///
+    /// Use `handleEvents` when you want to examine elements as they progress through
+    /// the stages of the publisher’s lifecycle.
+    ///
+    /// In the example below, a publisher of integers shows the effect of printing
+    /// debugging information at each stage of the element-processing lifecycle:
+    ///
+    ///     let integers = (0...2)
+    ///     cancellable = integers.publisher
+    ///         .handleEvents(receiveSubscription: { subs in
+    ///             print("Subscription: \(subs.combineIdentifier)")
+    ///         }, receiveOutput: { anInt in
+    ///             print("in output handler, received \(anInt)")
+    ///         }, receiveCompletion: { _ in
+    ///             print("in completion handler")
+    ///         }, receiveCancel: {
+    ///             print("received cancel")
+    ///         }, receiveRequest: { (demand) in
+    ///             print("received demand: \(demand.description)")
+    ///         })
+    ///         .sink { _ in return }
+    ///
+    ///     // Prints:
+    ///     //   received demand: unlimited
+    ///     //   Subscription: 0x7f81284734c0
+    ///     //   in output handler, received 0
+    ///     //   in output handler, received 1
+    ///     //   in output handler, received 2
+    ///     //   in completion handler
+    ///
     /// - Parameters:
     ///   - receiveSubscription: A closure that executes when the publisher receives
     ///     the subscription from the upstream publisher. Defaults to `nil`.
