@@ -45,6 +45,11 @@ public struct AnySubscriber<Input, Failure: Error>: Subscriber,
     public init<Subscriber: OpenCombine.Subscriber>(_ subscriber: Subscriber)
         where Input == Subscriber.Input, Failure == Subscriber.Failure
     {
+        if let erased = subscriber as? AnySubscriber<Input, Failure> {
+            self = erased
+            return
+        }
+
         combineIdentifier = subscriber.combineIdentifier
 
         box = AnySubscriberBox(subscriber)

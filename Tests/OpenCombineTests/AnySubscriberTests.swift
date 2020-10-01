@@ -162,6 +162,27 @@ final class AnySubscriberTests: XCTestCase {
         XCTAssertEqual(subject.history, [.subscription("Subject"),
                                          .completion(.finished)])
     }
+
+    @available(macOS 11.0, iOS 14.0, *)
+    func testErasingTwice() {
+        let introspection = TrackingIntrospection()
+        let subscriber = TrackingSubscriber()
+        let publisher = PassthroughSubject<Int, TestingError>()
+        let erasedTwice = Sut(Sut(subscriber))
+
+        introspection.temporarilyEnable {
+            publisher.subscribe(erasedTwice)
+        }
+
+        XCTAssertEqual(subscriber.history, [.subscription("PassthroughSubject")])
+        XCTAssertEqual(
+            introspection.history,
+            [.publisherWillReceiveSubscriber(.init(publisher), .init(subscriber)),
+             .subscriberWillReceiveSubscription(.init(subscriber), "PassthroughSubject"),
+             .subscriberDidReceiveSubscription(.init(subscriber), "PassthroughSubject"),
+             .publisherDidReceiveSubscriber(.init(publisher), .init(subscriber))]
+        )
+    }
 }
 
 @available(macOS 10.15, iOS 13.0, *)
