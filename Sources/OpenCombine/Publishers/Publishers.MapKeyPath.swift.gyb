@@ -12,6 +12,10 @@ from gyb_opencombine_support import (
     list_with_suffix_variadic
 )
 
+import random
+
+RNG = random.Random(0)
+
 instantiations = [(1, '', ''),
                   (2, 'two', 'second '),
                   (3, 'three', 'third ')]
@@ -41,18 +45,66 @@ extension Publisher {
 %
 %     publisher_name = make_publisher_name(arity)
 %
-%     doc_cardinal = 'a keyt path' if arity == 1 else cardinal + ' key paths'
-
-    /// Returns a publisher that publishes the values of ${doc_cardinal} as a tuple.
+%     doc_cardinal = 'a key path' if arity == 1 else cardinal + ' key paths'
+%
+%     doc_comment_suffix = 'value of the key path' \
+%         if arity == 1 else 'values of {} key paths as a tuple'.format(cardinal)
+%
+%     doc_output_values = 'the value of this `Int`' \
+%         if arity == 1 else 'these {} values (as an `({})` tuple)' \
+%             .format(cardinal, ', '.join(['Int'] * arity))
+%
+%     example_dice_roll_properties = ['die'] \
+%         if arity == 1 else ['die{}'.format(i + 1) for i in range(arity)]
+%     enumerated_example_dice_roll_properties = '`die` member' \
+%         if arity == 1 else ('`die1` and `die2`' if arity == 2 else \
+%             ''.join(['`{}`, '.format(s) for s in example_dice_roll_properties[:-1]]) + \
+%                 'and `{}`'.format(example_dice_roll_properties[-1])) + ' members'
+%
+%     dice_roll_init = ',\n    ///                                 ' \
+%         .join([s + ': Int.random(in: 1...6)' for s in example_dice_roll_properties])
+    /// Publishes the ${doc_comment_suffix}.
+    ///
+    /// In the following example, the `map(${'_:' * arity})` operator uses the Swift
+    /// key path syntax to access the ${enumerated_example_dice_roll_properties}
+    /// of the `DiceRoll` structure published by the `Just` publisher.
+    ///
+    /// The downstream sink subscriber receives only
+    /// ${doc_output_values},
+    /// not the entire `DiceRoll`.
+    ///
+    ///     struct DiceRoll {
+%     for prop in example_dice_roll_properties:
+    ///         let ${prop}: Int
+%     end
+    ///     }
+    ///
+    ///     cancellable = Just(DiceRoll(${dice_roll_init}))
+    ///         .map(${', '.join(['\.' + s for s in example_dice_roll_properties])})
+%     if arity == 1:
+    ///         .sink {
+    ///             print ("Rolled: \($0)")
+    ///         }
+%     else:
+%         closure_args = ['values.{}'.format(i) for i in range(arity)]
+    ///         .sink { values in
+    ///             print("""
+    ///             Rolled: ${', '.join(['\\({})'.format(s) for s in closure_args])} \
+    ///             (total \(${' + '.join(closure_args)}))
+    ///             """)
+    ///         }
+%     end
+%     random_numbers = [RNG.randint(1, 6) for _ in range(arity)]
+%     random_numbers_printed = ', '.join([str(i) for i in random_numbers]) + \
+%         (' (or some other random value)' if arity == 1 \
+%             else ' (total: {})" (or other random values)'.format(sum(random_numbers)))
+    ///     // Prints "Rolled: ${random_numbers_printed}.
     ///
     /// - Parameters:
 %     for i in range(arity):
-%         ordinal = 'another ' if i == 1 else 'a ' + instantiations[i][2]
-    ///    - ${key_path_var(i, arity)}: The key path of ${ordinal}property on `Output`
+%         ordinal = 'another ' if i == 1 and arity < 3 else 'a ' + instantiations[i][2]
+    ///    - ${key_path_var(i, arity)}: The key path of ${ordinal}property on `Output`.
 %     end
-%
-%   doc_comment_suffix = 'value of the key path' \
-%       if arity == 1 else 'values of {} key paths as a tuple'.format(cardinal)
     /// - Returns: A publisher that publishes the ${doc_comment_suffix}.
     public func map<${cs_result_types}>(
         ${method_args_joined}

@@ -7,8 +7,8 @@
 
 /// A type of object with a publisher that emits before the object has changed.
 ///
-/// By default an `ObservableObject` will synthesize an `objectWillChange`
-/// publisher that emits before any of its `@Published` properties changes:
+/// By default an `ObservableObject` synthesizes an `objectWillChange` publisher that
+/// emits the changed value before any of its `@Published` properties changes.
 ///
 ///     class Contact : ObservableObject {
 ///         @Published var name: String
@@ -25,11 +25,13 @@
 ///     }
 ///
 ///     let john = Contact(name: "John Appleseed", age: 24)
-///     john.objectWillChange.sink { _ in print("will change") }
-///     print(john.haveBirthday)
-///     // Prints "will change"
+///     cancellable = john.objectWillChange
+///         .sink { _ in
+///             print("\(john.age) will change")
+///         }
+///     print(john.haveBirthday())
+///     // Prints "24 will change"
 ///     // Prints "25"
-///
 public protocol ObservableObject: AnyObject {
 
     /// The type of publisher that emits before the object has changed.
@@ -60,7 +62,7 @@ extension ObservableObject where ObjectWillChangePublisher == ObservableObjectPu
     // swiftlint:enable let_var_whitespace
 }
 
-/// The default publisher of an `ObservableObject`.
+/// A publisher that publishes changes from observable objects.
 public final class ObservableObjectPublisher: Publisher {
 
     public typealias Output = Void
@@ -74,6 +76,7 @@ public final class ObservableObjectPublisher: Publisher {
     // TODO: Combine needs this for some reason
     private var identifier: ObjectIdentifier?
 
+    /// Creates an observable object publisher instance.
     public init() {}
 
     deinit {

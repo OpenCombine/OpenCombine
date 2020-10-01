@@ -7,7 +7,20 @@
 
 extension Publisher {
 
-    /// Prefixes a `Publisher`'s output with the specified sequence.
+    /// Prefixes a publisher’s output with the specified values.
+    ///
+    /// Use `prepend(_:)` when you need to prepend specific elements before the output
+    /// of a publisher.
+    ///
+    /// In the example below, the `prepend(_:)` operator publishes the provided elements
+    /// before republishing all elements from `dataElements`:
+    ///
+    ///     let dataElements = (0...10)
+    ///     cancellable = dataElements.publisher
+    ///         .prepend(0, 1, 255)
+    ///         .sink { print("\($0)", terminator: " ") }
+    ///
+    ///     // Prints: "0 1 255 0 1 2 3 4 5 6 7 8 9 10"
     ///
     /// - Parameter elements: The elements to publish before this publisher’s elements.
     /// - Returns: A publisher that prefixes the specified elements prior to this
@@ -18,7 +31,21 @@ extension Publisher {
         return prepend(elements)
     }
 
-    /// Prefixes a `Publisher`'s output with the specified sequence.
+    /// Prefixes a publisher’s output with the specified sequence.
+    ///
+    /// Use `prepend(_:)` to publish values from two publishers when you need to prepend
+    /// one publisher’s elements to another.
+    ///
+    /// In this example the `/prepend(_:)-v9sb` operator publishes the provided sequence
+    /// before republishing all elements from `dataElements`:
+    ///
+    ///     let prefixValues = [0, 1, 255]
+    ///     let dataElements = (0...10)
+    ///     cancellable = dataElements.publisher
+    ///         .prepend(prefixValues)
+    ///         .sink { print("\($0)", terminator: " ") }
+    ///
+    ///     // Prints: "0 1 255 0 1 2 3 4 5 6 7 8 9 10"
     ///
     /// - Parameter elements: A sequence of elements to publish before this publisher’s
     ///   elements.
@@ -32,10 +59,22 @@ extension Publisher {
         return prepend(.init(sequence: elements))
     }
 
-    /// Prefixes this publisher’s output with the elements emitted by the given publisher.
+    /// Prefixes the output of this publisher with the elements emitted by the given
+    /// publisher.
     ///
-    /// The resulting publisher doesn’t emit any elements until the prefixing publisher
-    /// finishes.
+    /// Use `prepend(_:)` to publish values from two publishers when you need to prepend
+    /// one publisher’s elements to another.
+    ///
+    /// In the example below, a publisher of `prefixValues` publishes its elements before
+    /// the `dataElements` publishes its elements:
+    ///
+    ///     let prefixValues = [0, 1, 255]
+    ///     let dataElements = (0...10)
+    ///     cancellable = dataElements.publisher
+    ///         .prepend(prefixValues.publisher)
+    ///         .sink { print("\($0)", terminator: " ") }
+    ///
+    ///     // Prints: "0 1 255 0 1 2 3 4 5 6 7 8 9 10"
     ///
     /// - Parameter publisher: The prefixing publisher.
     /// - Returns: A publisher that prefixes the prefixing publisher’s elements prior to
@@ -48,14 +87,51 @@ extension Publisher {
         return .init(prefix: publisher, suffix: self)
     }
 
-    /// Append a `Publisher`'s output with the specified sequence.
+    /// Appends a publisher’s output with the specified elements.
+    ///
+    /// Use `append(_:)` when you need to prepend specific elements after the output of
+    /// a publisher.
+    ///
+    /// In the example below, the `append(_:)` operator publishes the provided elements
+    /// after republishing all elements from `dataElements`:
+    ///
+    ///     let dataElements = (0...10)
+    ///     cancellable = dataElements.publisher
+    ///         .append(0, 1, 255)
+    ///         .sink { print("\($0)", terminator: " ") }
+    ///
+    ///     // Prints: "0 1 2 3 4 5 6 7 8 9 10 0 1 255"
+    ///
+    ///
+    /// - Parameter elements: Elements to publish after this publisher’s elements.
+    /// - Returns: A publisher that appends the specifiecd elements after this publisher’s
+    ///   elements.
     public func append(
         _ elements: Output...
     ) -> Publishers.Concatenate<Self, Publishers.Sequence<[Output], Failure>> {
         return append(elements)
     }
 
-    /// Appends a `Publisher`'s output with the specified sequence.
+    /// Appends a publisher’s output with the specified sequence.
+    ///
+    /// Use `append(_:)` to append a sequence to the end of
+    /// a publisher’s output.
+    ///
+    /// In the example below, the `append(_:)` publisher republishes all elements from
+    /// `groundTransport` until it finishes, then publishes the members of `airTransport`:
+    ///
+    ///     let groundTransport = ["car", "bus", "truck", "subway", "bicycle"]
+    ///     let airTransport = ["parasail", "jet", "helicopter", "rocket"]
+    ///     cancellable = groundTransport.publisher
+    ///         .append(airTransport)
+    ///         .sink { print("\($0)", terminator: " ") }
+    ///
+    ///     // Prints: "car bus truck subway bicycle parasail jet helicopter rocket"
+    ///
+    /// - Parameter elements: A sequence of elements to publish after this publisher’s
+    ///   elements.
+    /// - Returns: A publisher that appends the sequence of elements after this
+    ///   publisher’s elements.
     public func append<Elements: Sequence>(
         _ elements: Elements
     ) -> Publishers.Concatenate<Self, Publishers.Sequence<Elements, Failure>>
@@ -64,12 +140,26 @@ extension Publisher {
         return append(.init(sequence: elements))
     }
 
-    /// Appends this publisher’s output with the elements emitted by the given publisher.
+    /// Appends the output of this publisher with the elements emitted by the given
+    /// publisher.
     ///
-    /// This operator produces no elements until this publisher finishes. It then produces
-    /// this publisher’s elements, followed by the given publisher’s elements.
-    /// If this publisher fails with an error, the prefixing publisher does not publish
-    /// the provided publisher’s elements.
+    /// Use `append(_:)` to append the output of one publisher to another.
+    /// The `append(_:)` operator produces no elements until this publisher finishes.
+    /// It then produces this publisher’s elements, followed by the given publisher’s
+    /// elements. If this publisher fails with an error, the given publishers elements
+    /// aren’t published.
+    ///
+    /// In the example below, the `append` publisher republishes all elements from
+    /// the `numbers` publisher until it finishes, then publishes all elements from
+    /// the `otherNumbers` publisher:
+    ///
+    ///     let numbers = (0...10)
+    ///     let otherNumbers = (25...35)
+    ///     cancellable = numbers.publisher
+    ///         .append(otherNumbers.publisher)
+    ///         .sink { print("\($0)", terminator: " ") }
+    ///
+    ///     // Prints: "0 1 2 3 4 5 6 7 8 9 10 25 26 27 28 29 30 31 32 33 34 35 "
     ///
     /// - Parameter publisher: The appending publisher.
     /// - Returns: A publisher that appends the appending publisher’s elements after this

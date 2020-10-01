@@ -7,29 +7,79 @@
 
 extension Publisher {
 
-    /// Calls a closure with each received element and publishes any returned
-    /// optional that has a value.
+    /// Calls a closure with each received element and publishes any returned optional
+    /// that has a value.
     ///
-    /// - Parameter transform: A closure that receives a value and returns
-    ///   an optional value.
-    /// - Returns: A publisher that republishes all non-`nil` results of calling
-    ///   the transform closure.
+    /// OpenCombine’s `compactMap(_:)` operator performs a function similar to that of
+    /// `compactMap(_:)` in the Swift standard library: the `compactMap(_:)` operator in
+    /// OpenCombine removes `nil` elements in a publisher’s stream and republishes
+    /// non-`nil` elements to the downstream subscriber.
+    ///
+    /// The example below uses a range of numbers as the source for a collection based
+    /// publisher. The `compactMap(_:)` operator consumes each element from the `numbers`
+    /// publisher attempting to access the dictionary using the element as the key.
+    /// If the example’s dictionary returns a `nil`, due to a non-existent key,
+    /// `compactMap(_:)` filters out the `nil` (missing) elements.
+    ///
+    ///     let numbers = (0...5)
+    ///     let romanNumeralDict: [Int : String] =
+    ///         [1: "I", 2: "II", 3: "III", 5: "V"]
+    ///
+    ///     cancellable = numbers.publisher
+    ///         .compactMap { romanNumeralDict[$0] }
+    ///         .sink { print("\($0)", terminator: " ") }
+    ///
+    ///     // Prints: "I II III V"
+    ///
+    /// - Parameter transform: A closure that receives a value and returns an optional
+    ///   value.
+    /// - Returns: Any non-`nil` optional results of the calling the supplied closure.
     public func compactMap<ElementOfResult>(
         _ transform: @escaping (Output) -> ElementOfResult?
     ) -> Publishers.CompactMap<Self, ElementOfResult> {
         return .init(upstream: self, transform: transform)
     }
 
-    /// Calls an error-throwing closure with each received element and publishes
-    /// any returned optional that has a value.
+    /// Calls an error-throwing closure with each received element and publishes any
+    /// returned optional that has a value.
     ///
-    /// If the closure throws an error, the publisher cancels the upstream and sends
-    /// the thrown error to the downstream receiver as a `Failure`.
+    /// Use `tryCompactMap(_:)` to remove `nil` elements from a publisher’s stream based
+    /// on an error-throwing closure you provide. If the closure throws an error,
+    /// the publisher cancels the upstream publisher and sends the thrown error to
+    /// the downstream subscriber as a `Publisher.Failure`.
     ///
-    /// - Parameter transform: an error-throwing closure that receives a value
-    ///   and returns an optional value.
-    /// - Returns: A publisher that republishes all non-`nil` results of calling
-    ///   the `transform` closure.
+    /// The following example uses an array of numbers as the source for
+    /// a collection-based publisher. A `tryCompactMap(_:)` operator consumes each integer
+    /// from the publisher and uses a dictionary to transform the numbers from its Arabic
+    /// to Roman numerals, as an optional `String`.
+    ///
+    /// If the closure called by `tryCompactMap(_:)` fails to look up a Roman numeral,
+    /// it returns the optional String `(unknown)`.
+    ///
+    /// If the closure called by `tryCompactMap(_:)` determines the input is `0`, it
+    /// throws an error. The `tryCompactMap(_:)` operator catches this error and stops
+    /// publishing, sending a `Subscribers.Completion.failure(_:)` that wraps the error.
+    ///
+    ///     struct ParseError: Error {}
+    ///     func romanNumeral(from: Int) throws -> String? {
+    ///         let romanNumeralDict: [Int : String] =
+    ///             [1: "I", 2: "II", 3: "III", 4: "IV", 5: "V"]
+    ///         guard from != 0 else { throw ParseError() }
+    ///         return romanNumeralDict[from]
+    ///     }
+    ///     let numbers = [6, 5, 4, 3, 2, 1, 0]
+    ///     cancellable = numbers.publisher
+    ///         .tryCompactMap { try romanNumeral(from: $0) }
+    ///         .sink(
+    ///               receiveCompletion: { print ("\($0)") },
+    ///               receiveValue: { print ("\($0)", terminator: " ") }
+    ///          )
+    ///
+    ///     // Prints: "(Unknown) V IV III II I failure(ParseError())"
+    ///
+    /// - Parameter transform: An error-throwing closure that receives a value and returns
+    ///   an optional value.
+    /// - Returns: Any non-`nil` optional results of calling the supplied closure.
     public func tryCompactMap<ElementOfResult>(
         _ transform: @escaping (Output) throws -> ElementOfResult?
     ) -> Publishers.TryCompactMap<Self, ElementOfResult> {

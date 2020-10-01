@@ -10,8 +10,34 @@ extension Publisher {
     /// Raises a fatal error when its upstream publisher fails, and otherwise republishes
     /// all received input.
     ///
-    /// Use this function for internal sanity checks that are active during testing but
-    /// do not impact performance of shipping code.
+    /// Use `assertNoFailure()` for internal sanity checks that are active during testing.
+    /// However, it is important to note that, like its Swift counterpart
+    /// `fatalError(_:)`, the `assertNoFailure()` operator asserts a fatal exception when
+    /// triggered in both development/testing _and_ shipping versions of code.
+    ///
+    /// In the example below, a `CurrentValueSubject` publishes the initial and second
+    /// values successfully. The third value, containing a `genericSubjectError`, causes
+    /// the `assertNoFailure()` operator to assert a fatal exception stopping the process:
+    ///
+    ///     public enum SubjectError: Error {
+    ///         case genericSubjectError
+    ///     }
+    ///
+    ///     let subject = CurrentValueSubject<String, Error>("initial value")
+    ///     subject
+    ///         .assertNoFailure()
+    ///         .sink(receiveCompletion: { print ("completion: \($0)") },
+    ///               receiveValue: { print ("value: \($0).") }
+    ///         )
+    ///
+    ///     subject.send("second value")
+    ///     subject.send(completion: .failure(SubjectError.genericSubjectError))
+    ///
+    ///     // Prints:
+    ///     //  value: initial value.
+    ///     //  value: second value.
+    ///     // The process then terminates in the debugger as the assertNoFailure
+    ///     // operator catches the genericSubjectError.
     ///
     /// - Parameters:
     ///   - prefix: A string used at the beginning of the fatal error message.

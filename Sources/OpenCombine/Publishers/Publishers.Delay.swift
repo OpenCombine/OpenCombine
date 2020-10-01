@@ -7,8 +7,52 @@
 
 extension Publisher {
 
-    /// Delays delivery of all output to the downstream receiver by a specified amount
-    /// of time on a particular scheduler.
+    /// Delays delivery of all output to the downstream receiver by a specified amount of
+    /// time on a particular scheduler.
+    ///
+    /// Use `delay(for:tolerance:scheduler:options:)` when you need to delay the delivery
+    /// of elements to a downstream by a specified amount of time.
+    ///
+    /// In this example, a `Timer` publishes an event every second.
+    /// The `delay(for:tolerance:scheduler:options:)` operator holds the delivery of
+    /// the initial element for 3 seconds (±0.5 seconds), after which each element is
+    /// delivered to the downstream on the main run loop after the specified delay:
+    ///
+    ///     let df = DateFormatter()
+    ///     df.dateStyle = .none
+    ///     df.timeStyle = .long
+    ///     cancellable = Timer.publish(every: 1.0, on: .main, in: .default)
+    ///         .autoconnect()
+    ///         .handleEvents(receiveOutput: { date in
+    ///             print ("Sending Timestamp \'\(df.string(from: date))\' to delay()")
+    ///         })
+    ///         .delay(for: .seconds(3), scheduler: RunLoop.main, options: .none)
+    ///         .sink(
+    ///             receiveCompletion: { print ("completion: \($0)", terminator: "\n") },
+    ///             receiveValue: { value in
+    ///                 let now = Date()
+    ///                 print("""
+    ///                 At \(df.string(from: now)) received Timestamp \
+    ///                 \'\(df.string(from: value))\' \
+    ///                 sent: \(String(format: "%.2f", now.timeIntervalSince(value)))
+    ///                 secs ago
+    ///                 """)
+    ///             }
+    ///         )
+    ///
+    ///     // Prints:
+    ///     //    Sending Timestamp '5:02:33 PM PDT' to delay()
+    ///     //    Sending Timestamp '5:02:34 PM PDT' to delay()
+    ///     //    Sending Timestamp '5:02:35 PM PDT' to delay()
+    ///     //    Sending Timestamp '5:02:36 PM PDT' to delay()
+    ///     //    At 5:02:36 PM PDT received  Timestamp '5:02:33 PM PDT' sent: 3.00
+    ///     //    secs ago
+    ///     //    Sending Timestamp '5:02:37 PM PDT' to delay()
+    ///     //    At 5:02:37 PM PDT received  Timestamp '5:02:34 PM PDT' sent: 3.00
+    ///     //    secs ago
+    ///     //    Sending Timestamp '5:02:38 PM PDT' to delay()
+    ///     //    At 5:02:38 PM PDT received  Timestamp '5:02:35 PM PDT' sent: 3.00
+    ///     //    secs ago
     ///
     /// The delay affects the delivery of elements and completion, but not of the original
     /// subscription.
@@ -17,6 +61,7 @@ extension Publisher {
     ///   - interval: The amount of time to delay.
     ///   - tolerance: The allowed tolerance in firing delayed events.
     ///   - scheduler: The scheduler to deliver the delayed events.
+    ///   - options: Options relevant to the scheduler’s behavior.
     /// - Returns: A publisher that delays delivery of elements and completion to
     ///   the downstream receiver.
     public func delay<Context: Scheduler>(

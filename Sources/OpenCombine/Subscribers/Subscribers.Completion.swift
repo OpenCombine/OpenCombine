@@ -7,15 +7,14 @@
 
 extension Subscribers {
 
-    /// A signal that a publisher doesn’t produce additional elements, either due
-    /// to normal completion or an error.
-    ///
-    /// - `finished`: The publisher finished normally.
-    /// - `failure`: The publisher stopped publishing due to the indicated error.
+    /// A signal that a publisher doesn’t produce additional elements, either due to
+    /// normal completion or an error.
     public enum Completion<Failure: Error> {
 
+        /// The publisher finished normally.
         case finished
 
+        /// The publisher stopped publishing due to the indicated error.
         case failure(Failure)
     }
 }

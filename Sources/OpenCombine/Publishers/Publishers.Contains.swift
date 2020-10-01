@@ -9,10 +9,22 @@ extension Publisher where Output: Equatable {
 
     /// Publishes a Boolean value upon receiving an element equal to the argument.
     ///
-    /// The contains publisher consumes all received elements until the upstream publisher
-    /// produces a matching element. At that point, it emits `true` and finishes normally.
-    /// If the upstream finishes normally without producing a matching element,
-    /// this publisher emits `false`, then finishes.
+    /// Use `contains(_:)` to find the first element in an upstream that’s equal to
+    /// the supplied argument. The `Publishers.Contains` publisher consumes all received
+    /// elements until the upstream publisher produces a matching element. Upon finding
+    /// the first match, it emits `true` and finishes normally. If the upstream finishes
+    /// normally without producing a matching element, this publisher emits `false` and
+    /// finishes.
+    ///
+    /// In the example below, the `contains(_:)` operator emits `true` the first time it
+    /// receives the value `5` from the `numbers.publisher`, and then finishes normally.
+    ///
+    ///     let numbers = [-1, 5, 10, 5]
+    ///     numbers.publisher
+    ///         .contains(5)
+    ///         .sink { print("\($0)") }
+    ///
+    ///     // Prints: "true"
     ///
     /// - Parameter output: An element to match against.
     /// - Returns: A publisher that emits the Boolean value `true` when the upstream
@@ -27,12 +39,27 @@ extension Publisher {
     /// Publishes a Boolean value upon receiving an element that satisfies the predicate
     /// closure.
     ///
-    /// This operator consumes elements produced from the upstream publisher until
-    /// the upstream publisher produces a matching element.
+    /// Use `contains(where:)` to find the first element in an upstream that satisfies
+    /// the closure you provide. This operator consumes elements produced from
+    /// the upstream publisher until the upstream publisher produces a matching element.
+    ///
+    /// This operator is useful when the upstream publisher produces elements that don’t
+    /// conform to `Equatable`.
+    ///
+    /// In the example below, the `contains(where:)` operator tests elements against
+    /// the supplied closure and emits `true` for the first elements that’s greater than
+    /// `4`, and then finishes normally.
+    ///
+    ///     let numbers = [-1, 0, 10, 5]
+    ///     numbers.publisher
+    ///         .contains {$0 > 4}
+    ///         .sink { print("\($0)") }
+    ///
+    ///     // Prints: "true"
     ///
     /// - Parameter predicate: A closure that takes an element as its parameter and
-    ///   returns a Boolean value indicating whether the element satisfies the closure’s
-    ///   comparison logic.
+    ///   returns a Boolean value that indicates whether the element satisfies
+    ///   the closure’s comparison logic.
     /// - Returns: A publisher that emits the Boolean value `true` when the upstream
     ///   publisher emits a matching value.
     public func contains(
@@ -41,16 +68,47 @@ extension Publisher {
         return .init(upstream: self, predicate: predicate)
     }
 
-    /// Publishes a Boolean value upon receiving an element that satisfies
-    /// the throwing predicate closure.
+    /// Publishes a Boolean value upon receiving an element that satisfies the throwing
+    /// predicate closure.
+    ///
+    /// Use `tryContains(where:)` to find the first element in an upstream that satisfies
+    /// the error-throwing closure you provide.
     ///
     /// This operator consumes elements produced from the upstream publisher until
-    /// the upstream publisher produces a matching element. If the closure throws,
-    /// the stream fails with an error.
+    /// the upstream publisher either:
+    ///
+    /// - Produces a matching element, after which it emits `true` and the publisher
+    ///   finishes normally.
+    /// - Emits `false` if no matching element is found and the publisher finishes
+    ///   normally.
+    ///
+    /// If the predicate throws an error, the publisher fails, passing the error to its
+    /// downstream.
+    ///
+    /// In the example below, the `tryContains(where:)` operator tests values to find
+    /// an element less than `10`; when the closure finds an odd number, like `3`,
+    /// the publisher terminates with an `IllegalValueError`.
+    ///
+    ///     struct IllegalValueError: Error {}
+    ///
+    ///     let numbers = [3, 2, 10, 5, 0, 9]
+    ///     numbers.publisher
+    ///         .tryContains {
+    ///             if ($0 % 2 != 0) {
+    ///                 throw IllegalValueError()
+    ///             }
+    ///            return $0 < 10
+    ///         }
+    ///         .sink(
+    ///             receiveCompletion: { print ("completion: \($0)") },
+    ///             receiveValue: { print ("value: \($0)") }
+    ///         )
+    ///
+    ///     // Prints: "completion: failure(IllegalValueError())"
     ///
     /// - Parameter predicate: A closure that takes an element as its parameter and
-    ///   returns a Boolean value indicating whether the element satisfies the closure’s
-    ///   comparison logic.
+    ///   returns a Boolean value that indicates whether the element satisfies
+    ///   the closure’s comparison logic.
     /// - Returns: A publisher that emits the Boolean value `true` when the upstream
     ///   publisher emits a matching value.
     public func tryContains(

@@ -7,9 +7,10 @@
 
 /// A type-erasing subscriber.
 ///
-/// Use an `AnySubscriber` to wrap an existing subscriber whose details you don’t want
-/// to expose. You can also use `AnySubscriber` to create a custom subscriber by providing
-/// closures for `Subscriber`’s methods, rather than implementing `Subscriber` directly.
+/// Use an `AnySubscriber` to wrap an existing subscriber whose details you don’t want to
+/// expose. You can also use `AnySubscriber` to create a custom subscriber by providing
+/// closures for the methods defined in `Subscriber`, rather than implementing
+/// `Subscriber` directly.
 public struct AnySubscriber<Input, Failure: Error>: Subscriber,
                                                     CustomStringConvertible,
                                                     CustomReflectable,

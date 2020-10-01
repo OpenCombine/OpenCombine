@@ -5,11 +5,12 @@
 //  Created by Sergej Jaskiewicz on 26.06.2019.
 //
 
+/// A namespace for symbols related to subscriptions.
 public enum Subscriptions {}
 
 extension Subscriptions {
 
-    /// Returns the 'empty' subscription.
+    /// Returns the “empty” subscription.
     ///
     /// Use the empty subscription when you need a `Subscription` that ignores requests
     /// and cancellation.

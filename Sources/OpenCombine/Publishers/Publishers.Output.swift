@@ -9,6 +9,19 @@ extension Publisher {
 
     /// Republishes elements up to the specified maximum count.
     ///
+    /// Use `prefix(_:)` to limit the number of elements republished to the downstream
+    /// subscriber.
+    ///
+    /// In the example below, the `prefix(_:)` operator limits its output to the first
+    /// two elements before finishing normally:
+    ///
+    ///     let numbers = (0...10)
+    ///     cancellable = numbers.publisher
+    ///         .prefix(2)
+    ///         .sink { print("\($0)", terminator: " ") }
+    ///
+    ///     // Prints: "0 1"
+    ///
     /// - Parameter maxLength: The maximum number of elements to republish.
     /// - Returns: A publisher that publishes up to the specified number of elements
     ///   before completing.
@@ -22,8 +35,20 @@ extension Publisher {
     /// Publishes a specific element, indicated by its index in the sequence of published
     /// elements.
     ///
-    /// If the publisher completes normally or with an error before publishing
-    /// the specified element, then the publisher doesn’t produce any elements.
+    /// Use `output(at:)` when you need to republish a specific element specified by
+    /// its position in the stream. If the publisher completes normally or with an error
+    /// before publishing the specified element, then the publisher doesn’t produce any
+    /// elements.
+    ///
+    /// In the example below, the array publisher emits the fifth element in the sequence
+    /// of published elements:
+    ///
+    ///     let numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    ///     numbers.publisher
+    ///         .output(at: 5)
+    ///         .sink { print("\($0)") }
+    ///
+    ///     // Prints: "6"
     ///
     /// - Parameter index: The index that indicates the element to publish.
     /// - Returns: A publisher that publishes a specific indexed element.
@@ -33,9 +58,20 @@ extension Publisher {
 
     /// Publishes elements specified by their range in the sequence of published elements.
     ///
-    /// After all elements are published, the publisher finishes normally.
+    /// Use `output(in:)` to republish a range indices you specify in the published
+    /// stream. After publishing all elements, the publisher finishes normally.
     /// If the publisher completes normally or with an error before producing all
     /// the elements in the range, it doesn’t publish the remaining elements.
+    ///
+    /// In the example below, an array publisher emits the subset of elements at
+    /// the indices in the specified range:
+    ///
+    ///     let numbers = [1, 1, 2, 2, 2, 3, 4, 5, 6]
+    ///     numbers.publisher
+    ///         .output(in: (3...5))
+    ///         .sink { print("\($0)", terminator: " ") }
+    ///
+    ///     // Prints: "2 2 3"
     ///
     /// - Parameter range: A range that indicates which elements to publish.
     /// - Returns: A publisher that publishes elements specified by a range.

@@ -9,6 +9,20 @@ extension Publisher {
 
     /// Republishes all elements that match a provided closure.
     ///
+    /// OpenCombine’s `filter(_:)` operator performs an operation similar to that of
+    /// `filter(_:)` in the Swift Standard Library: it uses a closure to test each element
+    /// to determine whether to republish the element to the downstream subscriber.
+    ///
+    /// The following example, uses a filter operation that receives an `Int` and only
+    /// republishes a value if it’s even.
+    ///
+    ///     let numbers: [Int] = [1, 2, 3, 4, 5]
+    ///     cancellable = numbers.publisher
+    ///         .filter { $0 % 2 == 0 }
+    ///         .sink { print("\($0)", terminator: " ") }
+    ///
+    ///     // Prints: "2 4"
+    ///
     /// - Parameter isIncluded: A closure that takes one element and returns
     ///   a Boolean value indicating whether to republish the element.
     /// - Returns: A publisher that republishes all elements that satisfy the closure.
@@ -20,11 +34,34 @@ extension Publisher {
 
     /// Republishes all elements that match a provided error-throwing closure.
     ///
+    /// Use `tryFilter(_:)` to filter elements evaluated in an error-throwing closure.
     /// If the `isIncluded` closure throws an error, the publisher fails with that error.
     ///
-    /// - Parameter isIncluded:  A closure that takes one element and returns a
-    ///   Boolean value indicating whether to republish the element.
-    /// - Returns:  A publisher that republishes all elements that satisfy the closure.
+    /// In the example below, `tryFilter(_:)` checks to see if the divisor provided by
+    /// the publisher is zero, and throws a `DivisionByZeroError` and then terminates
+    /// the publisher with the thrown error:
+    ///
+    ///     struct DivisionByZeroError: Error {}
+    ///
+    ///     let numbers: [Int] = [1, 2, 3, 4, 0, 5]
+    ///     cancellable = numbers.publisher
+    ///         .tryFilter {
+    ///             if $0 == 0 {
+    ///                 throw DivisionByZeroError()
+    ///             } else {
+    ///                 return $0 % 2 == 0
+    ///             }
+    ///         }
+    ///         .sink(
+    ///             receiveCompletion: { print ("\($0)") },
+    ///             receiveValue: { print ("\($0)", terminator: " ") }
+    ///          )
+    ///
+    ///     // Prints: "2 4 failure(DivisionByZeroError())".
+    ///
+    /// - Parameter isIncluded: A closure that takes one element and returns a Boolean
+    ///   value that indicated whether to republish the element or throws an error.
+    /// - Returns: A publisher that republishes all elements that satisfy the closure.
     public func tryFilter(
         _ isIncluded: @escaping (Output) throws -> Bool
     ) -> Publishers.TryFilter<Self> {

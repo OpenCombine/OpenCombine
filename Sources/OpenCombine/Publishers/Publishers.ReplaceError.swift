@@ -6,13 +6,36 @@
 //
 
 extension Publisher {
+
     /// Replaces any errors in the stream with the provided element.
     ///
     /// If the upstream publisher fails with an error, this publisher emits the provided
     /// element, then finishes normally.
+    ///
+    /// In the example below, a publisher of strings fails with a `MyError` instance,
+    /// which sends a failure completion downstream. The `replaceError(with:)` operator
+    /// handles the failure by publishing the string `(replacement element)` and
+    /// completing normally.
+    ///
+    ///     struct MyError: Error {}
+    ///     let fail = Fail<String, MyError>(error: MyError())
+    ///     cancellable = fail
+    ///         .replaceError(with: "(replacement element)")
+    ///         .sink(
+    ///             receiveCompletion: { print ("\($0)") },
+    ///             receiveValue: { print ("\($0)", terminator: " ") }
+    ///         )
+    ///
+    ///     // Prints: "(replacement element) finished".
+    ///
+    /// This `replaceError(with:)` functionality is useful when you want to handle
+    /// an error by sending a single replacement element and end the stream.
+    /// Use `catch(_:)` to recover from an error and provide a replacement publisher
+    /// to continue providing elements to the downstream subscriber.
+    ///
     /// - Parameter output: An element to emit when the upstream publisher fails.
     /// - Returns: A publisher that replaces an error from the upstream publisher with
-    ///            the provided output element.
+    ///   the provided output element.
     public func replaceError(with output: Output) -> Publishers.ReplaceError<Self> {
         return .init(upstream: self, output: output)
     }

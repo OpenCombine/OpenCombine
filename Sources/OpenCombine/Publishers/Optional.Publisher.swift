@@ -28,28 +28,41 @@ extension Optional {
             self.optional = optional
         }
 
-        /// A publisher that publishes an optional value to each subscriber
-        /// exactly once, if the optional has a value.
+        /// The type of a Combine publisher that publishes the value of a Swift optional
+        /// instance to each subscriber exactly once, if the instance has any value at
+        /// all.
         ///
-        /// In contrast with `Just`, an `Optional` publisher may send
-        /// no value before completion.
+        /// In contrast with the `Just` publisher, which always produces a single value,
+        /// this publisher might not send any values and instead finish normally,
+        /// if `output` is `nil`.
         public struct Publisher: OpenCombine.Publisher {
 
+            /// The kind of value published by this publisher.
+            ///
+            /// This publisher produces the type wrapped by the optional.
             public typealias Output = Wrapped
 
+            /// The kind of error this publisher might publish.
+            ///
+            /// The optional publisher never produces errors.
             public typealias Failure = Never
 
-            /// The result to deliver to each subscriber.
+            /// The output to deliver to each subscriber.
             public let output: Wrapped?
 
-            /// Creates a publisher to emit the optional value of a successful result,
-            /// or fail with an error.
+            /// Creates a publisher to emit the value of the optional, or to finish
+            /// immediately if the optional doesn't have a value.
             ///
-            /// - Parameter result: The result to deliver to each subscriber.
+            /// - Parameter output: The result to deliver to each subscriber.
             public init(_ output: Output?) {
                 self.output = output
             }
 
+            /// Implements the Publisher protocol by accepting the subscriber and
+            /// immediately publishing the optional’s value if it has one, or finishing
+            /// normally if it doesn’t.
+            ///
+            /// - Parameter subscriber: The subscriber to add.
             public func receive<Downstream: Subscriber>(subscriber: Downstream)
                 where Output == Downstream.Input, Failure == Downstream.Failure
             {
@@ -65,11 +78,13 @@ extension Optional {
     }
 
 #if !canImport(Combine)
-    /// A publisher that publishes an optional value to each subscriber
-    /// exactly once, if the optional has a value.
+    /// The type of a Combine publisher that publishes the value of a Swift optional
+    /// instance to each subscriber exactly once, if the instance has any value at
+    /// all.
     ///
-    /// In contrast with `Just`, an `Optional` publisher may send
-    /// no value before completion.
+    /// In contrast with the `Just` publisher, which always produces a single value,
+    /// this publisher might not send any values and instead finish normally,
+    /// if `output` is `nil`.
     public typealias Publisher = OCombine.Publisher
 #endif
 }

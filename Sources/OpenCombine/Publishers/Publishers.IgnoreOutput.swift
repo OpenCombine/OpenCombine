@@ -6,10 +6,33 @@
 
 extension Publisher {
 
-    /// Ignores all upstream elements, but passes along a completion
-    /// state (finished or failed).
+    /// Ingores all upstream elements, but passes along a completion state (finished or
+    /// failed).
+    ///
+    /// Use the `ignoreOutput(`` operator to determine if a publisher is able to complete
+    /// successfully or would fail.
+    ///
+    /// In the example below, the array publisher (`numbers`) delivers the first five of
+    /// its elements successfully, as indicated by the `ignoreOutput()` operator.
+    /// The operator consumes, but doesn’t republish the elements downstream. However,
+    /// the sixth element, `0`, causes the error throwing closure to catch
+    /// a `NoZeroValuesAllowedError` that terminates the stream.
+    ///
+    ///     struct NoZeroValuesAllowedError: Error {}
+    ///     let numbers = [1, 2, 3, 4, 5, 0, 6, 7, 8, 9]
+    ///     cancellable = numbers.publisher
+    ///         .tryFilter({ anInt in
+    ///             guard anInt != 0 else { throw NoZeroValuesAllowedError() }
+    ///             return anInt < 20
+    ///         })
+    ///         .ignoreOutput()
+    ///         .sink(receiveCompletion: {print("completion: \($0)")},
+    ///               receiveValue: {print("value \($0)")})
+    ///
+    ///     // Prints: "completion: failure(NoZeroValuesAllowedError())"
     ///
     /// The output type of this publisher is `Never`.
+    ///
     /// - Returns: A publisher that ignores all upstream elements.
     public func ignoreOutput() -> Publishers.IgnoreOutput<Self> {
         return .init(upstream: self)

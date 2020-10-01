@@ -11,20 +11,27 @@ extension Publisher {
     /// operations.
     ///
     /// In contrast with `receive(on:options:)`, which affects downstream messages,
-    /// `subscribe(on:)` changes the execution context of upstream messages.
-    /// In the following example, requests to `jsonPublisher` are performed on
-    /// `backgroundQueue`, but elements received from it are performed on `RunLoop.main`.
+    /// `subscribe(on:options:)` changes the execution context of upstream messages.
+    ///
+    /// In the following example, the `subscribe(on:options:)` operator causes
+    /// `ioPerformingPublisher` to receive requests on `backgroundQueue`, while
+    /// the `receive(on:options:)` causes `uiUpdatingSubscriber` to receive elements and
+    /// completion on `RunLoop.main`.
     ///
     ///     let ioPerformingPublisher == // Some publisher.
     ///     let uiUpdatingSubscriber == // Some subscriber that updates the UI.
     ///
     ///     ioPerformingPublisher
     ///         .subscribe(on: backgroundQueue)
-    ///         .receiveOn(on: RunLoop.main)
+    ///         .receive(on: RunLoop.main)
     ///         .subscribe(uiUpdatingSubscriber)
     ///
+    ///
+    /// Using `subscribe(on:options:)` also causes the upstream publisher to perform
+    /// `cancel()` using the specfied scheduler.
+    ///
     /// - Parameters:
-    ///   - scheduler: The scheduler on which to receive upstream messages.
+    ///   - scheduler: The scheduler used to send messages to upstream publishers.
     ///   - options: Options that customize the delivery of elements.
     /// - Returns: A publisher which performs upstream operations on the specified
     ///   scheduler.

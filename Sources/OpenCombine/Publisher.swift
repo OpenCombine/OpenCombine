@@ -7,18 +7,40 @@
 
 /// Declares that a type can transmit a sequence of values over time.
 ///
-/// There are four kinds of messages:
-///     subscription - A connection between `Publisher` and `Subscriber`.
-///     value - An element in the sequence.
-///     error - The sequence ended with an error (`.failure(e)`).
-///     complete - The sequence ended successfully (`.finished`).
+/// A publisher delivers elements to one or more `Subscriber` instances.
+/// The subscriber’s `Input` and `Failure` associated types must match the `Output` and
+/// `Failure` types declared by the publisher.
+/// The publisher implements the `receive(subscriber:)`method to accept a subscriber.
 ///
-/// Both `.failure` and `.finished` are terminal messages.
+/// After this, the publisher can call the following methods on the subscriber:
+/// - `receive(subscription:)`: Acknowledges the subscribe request and returns
+///   a `Subscription` instance. The subscriber uses the subscription to demand elements
+///   from the publisher and can use it to cancel publishing.
+/// - `receive(_:)`: Delivers one element from the publisher to the subscriber.
+/// - `receive(completion:)`: Informs the subscriber that publishing has ended,
+///   either normally or with an error.
 ///
-/// You can summarize these possibilities with a regular expression:
-///   value*(error|finished)?
+/// Every `Publisher` must adhere to this contract for downstream subscribers to function
+/// correctly.
 ///
-/// Every `Publisher` must adhere to this contract.
+/// Extensions on `Publisher` define a wide variety of _operators_ that you compose to
+/// create sophisticated event-processing chains.
+/// Each operator returns a type that implements the `Publisher` protocol
+/// Most of these types exist as extensions on the `Publishers` enumeration.
+/// For example, the `map(_:)` operator returns an instance of `Publishers.Map`.
+///
+/// # Creating Your Own Publishers
+///
+/// Rather than implementing the `Publisher` protocol yourself, you can create your own
+/// publisher by using one of several types provided by the OpenCombine framework:
+///
+/// - Use a concrete subclass of `Subject`, such as `PassthroughSubject`, to publish
+///   values on-demand by calling its `send(_:)` method.
+/// - Use a `CurrentValueSubject` to publish whenever you update the subject’s underlying
+///   value.
+/// - Add the `@Published` annotation to a property of one of your own types. In doing so,
+///   the property gains a publisher that emits an event whenever the property’s value
+///   changes. See the `Published` type for an example of this approach.
 public protocol Publisher {
 
     /// The kind of values published by this publisher.
@@ -29,13 +51,15 @@ public protocol Publisher {
     /// Use `Never` if this `Publisher` does not publish errors.
     associatedtype Failure: Error
 
-    /// This function is called to attach the specified `Subscriber` to this `Publisher`
-    /// by `subscribe(_:)`
+    /// Attaches the specified subscriber to this publisher.
     ///
-    /// - SeeAlso: `subscribe(_:)`
-    /// - Parameters:
-    ///     - subscriber: The subscriber to attach to this `Publisher`.
-    ///                   once attached it can begin to receive values.
+    /// Always call this function instead of `receive(subscriber:)`.
+    /// Adopters of `Publisher` must implement `receive(subscriber:)`. The implementation
+    /// of `subscribe(_:)` provided by `Publisher` calls through to
+    /// `receive(subscriber:)`.
+    ///
+    /// - Parameter subscriber: The subscriber to attach to this publisher. After
+    ///   attaching, the subscriber can start to receive values.
     func receive<Subscriber: OpenCombine.Subscriber>(subscriber: Subscriber)
         where Failure == Subscriber.Failure, Output == Subscriber.Input
 }
@@ -73,6 +97,9 @@ extension Publisher {
         }
     }
 
+    /// Attaches the specified subject to this publisher.
+    ///
+    /// - Parameter subject: The subject to attach to this publisher.
     public func subscribe<Subject: OpenCombine.Subject>(
         _ subject: Subject
     ) -> AnyCancellable

@@ -17,7 +17,7 @@ public struct Deferred<DeferredPublisher: Publisher>: Publisher {
     /// Use `Never` if this `Publisher` does not publish errors.
     public typealias Failure = DeferredPublisher.Failure
 
-    /// The closure to execute when it receives a subscription.
+    /// The closure to execute when this deferred publisher receives a subscription.
     ///
     /// The publisher returned by this closure immediately
     /// receives the incoming subscription.
