@@ -1,6 +1,6 @@
 Pod::Spec.new do |spec|
   spec.name          = "OpenCombineDispatch"
-  spec.version       = "0.10.0"
+  spec.version       = "0.10.1"
   spec.summary       = "OpenCombine + Dispatch interoperability"
 
   spec.description   = <<-DESC
