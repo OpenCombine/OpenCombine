@@ -57,7 +57,7 @@ In order to work on this project you will need Xcode 10.2 and Swift 5.0 or later
 
 Please refer to the [issue #1](https://github.com/OpenCombine/OpenCombine/issues/1) for the list of operators that remain unimplemented, as well as the [RemainingCombineInterface.swift](https://github.com/OpenCombine/OpenCombine/blob/master/RemainingCombineInterface.swift) file. The latter contains the generated interface of Apple's Combine from the latest Xcode 11 version. When the functionality is implemented in OpenCombine, it should be removed from the RemainingCombineInterface.swift file.
 
-You can refer to [this gist](https://gist.github.com/broadwaylamb/c2c8550d76b3ff851c4c1dbf0a872e26) to observe Apple's Combine API changes between different Xcode (beta) versions, or to [this gist](https://gist.github.com/broadwaylamb/82dc2ce4ffbe06527c2c352b8f10910f) to see the relevant contents of the .swiftinterface file for Combine.
+You can refer to [this repo](https://github.com/OpenCombine/combine-interfaces) to observe Apple's Combine API and documentation changes between different Xcode (beta) versions.
 
 You can run compatibility tests against Apple's Combine. In order to do that you will need either macOS 10.14 with iOS 13 simulator installed (since the only way we can get Apple's Combine on macOS 10.14 is using the simulator), or macOS 10.15 (Apple's Combine is bundled with the OS). Execute the following command from the root of the package:
 
