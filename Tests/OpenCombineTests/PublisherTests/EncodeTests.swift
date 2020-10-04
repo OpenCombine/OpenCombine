@@ -302,8 +302,7 @@ final class EncodeTests: XCTestCase {
 
             XCTAssertEqual(helper.tracking.history, [.subscription(expectedSubscription)])
             XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
-                                                         .cancelled,
-                                                         .requested(.max(42))])
+                                                         .cancelled])
         }
 
         helper.tracking.onFailure = { error in
@@ -311,8 +310,7 @@ final class EncodeTests: XCTestCase {
                            [.subscription(expectedSubscription),
                             .completion(.failure(error))])
             XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
-                                                         .cancelled,
-                                                         .requested(.max(42))])
+                                                         .cancelled])
         }
 
         XCTAssertEqual(helper.publisher.send(1), .none)
@@ -322,8 +320,7 @@ final class EncodeTests: XCTestCase {
                        [.subscription(expectedSubscription),
                         .completion(.failure(TestingError.oops))])
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
-                                                     .cancelled,
-                                                     .requested(.max(42))])
+                                                     .cancelled])
     }
 
     private static func testDemand<Operator: Publisher>(
@@ -402,7 +399,7 @@ final class EncodeTests: XCTestCase {
 
         try XCTUnwrap(helper.downstreamSubscription).cancel()
 
-        XCTAssertEqual(recursionDepth, 5)
+        XCTAssertEqual(recursionDepth, 1)
     }
 
     private static func testCancellingSubscriptionPreventsDeliveringToDownstream<

@@ -172,9 +172,6 @@ extension Publishers.Encode {
           CustomPlaygroundDisplayConvertible
         where Downstream.Input == Output, Downstream.Failure == Error
     {
-        // NOTE: This class has been audited for thread safety.
-        // Combine doesn't use any locking here.
-
         typealias Input = Upstream.Output
 
         typealias Failure = Upstream.Failure
@@ -182,6 +179,8 @@ extension Publishers.Encode {
         private let downstream: Downstream
 
         private let encode: (Upstream.Output) throws -> Output
+
+        private let lock = UnfairLock.allocate()
 
         private var finished = false
 
@@ -195,44 +194,72 @@ extension Publishers.Encode {
             self.encode = encode
         }
 
+        deinit {
+            lock.deallocate()
+        }
+
         func receive(subscription: Subscription) {
+            lock.lock()
             if finished || self.subscription != nil {
+                lock.unlock()
                 subscription.cancel()
                 return
             }
             self.subscription = subscription
+            lock.unlock()
             downstream.receive(subscription: self)
         }
 
         func receive(_ input: Input) -> Subscribers.Demand {
-            if finished { return .none }
+            lock.lock()
+            if finished {
+                lock.unlock()
+                return .none
+            }
+            lock.unlock()
             do {
                 return try downstream.receive(encode(input))
             } catch {
+                lock.lock()
                 finished = true
+                let subscription = self.subscription
+                self.subscription = nil
+                lock.unlock()
                 subscription?.cancel()
-                subscription = nil
                 downstream.receive(completion: .failure(error))
                 return .none
             }
         }
 
         func receive(completion: Subscribers.Completion<Failure>) {
-            if finished { return }
+            lock.lock()
+            if finished {
+                lock.unlock()
+                return
+            }
             finished = true
             subscription = nil
+            lock.unlock()
             downstream.receive(completion: completion.eraseError())
         }
 
         func request(_ demand: Subscribers.Demand) {
+            lock.lock()
+            let subscription = self.subscription
+            lock.unlock()
             subscription?.request(demand)
         }
 
         func cancel() {
-            guard let subscription = self.subscription, !finished else { return }
-            subscription.cancel()
+            lock.lock()
+            guard !finished, let subscription = self.subscription else {
+                lock.unlock()
+                return
+            }
             self.subscription = nil
             finished = true
+            lock.unlock()
+            subscription.cancel()
         }
 
         var description: String { return "Encode" }
@@ -259,9 +286,6 @@ extension Publishers.Decode {
           CustomPlaygroundDisplayConvertible
         where Downstream.Input == Output, Downstream.Failure == Error
     {
-        // NOTE: This class has been audited for thread safety.
-        // Combine doesn't use any locking here.
-
         typealias Input = Upstream.Output
 
         typealias Failure = Upstream.Failure
@@ -269,6 +293,8 @@ extension Publishers.Decode {
         private let downstream: Downstream
 
         private let decode: (Upstream.Output) throws -> Output
+
+        private let lock = UnfairLock.allocate()
 
         private var finished = false
 
@@ -282,44 +308,72 @@ extension Publishers.Decode {
             self.decode = decode
         }
 
+        deinit {
+            lock.deallocate()
+        }
+
         func receive(subscription: Subscription) {
+            lock.lock()
             if finished || self.subscription != nil {
+                lock.unlock()
                 subscription.cancel()
                 return
             }
             self.subscription = subscription
+            lock.unlock()
             downstream.receive(subscription: self)
         }
 
         func receive(_ input: Input) -> Subscribers.Demand {
-            if finished { return .none }
+            lock.lock()
+            if finished {
+                lock.unlock()
+                return .none
+            }
+            lock.unlock()
             do {
                 return try downstream.receive(decode(input))
             } catch {
+                lock.lock()
                 finished = true
+                let subscription = self.subscription
+                self.subscription = nil
+                lock.unlock()
                 subscription?.cancel()
-                subscription = nil
                 downstream.receive(completion: .failure(error))
                 return .none
             }
         }
 
         func receive(completion: Subscribers.Completion<Failure>) {
-            if finished { return }
+            lock.lock()
+            if finished {
+                lock.unlock()
+                return
+            }
             finished = true
             subscription = nil
+            lock.unlock()
             downstream.receive(completion: completion.eraseError())
         }
 
         func request(_ demand: Subscribers.Demand) {
+            lock.lock()
+            let subscription = self.subscription
+            lock.unlock()
             subscription?.request(demand)
         }
 
         func cancel() {
-            guard let subscription = self.subscription, !finished else { return }
-            subscription.cancel()
+            lock.lock()
+            guard !finished, let subscription = self.subscription else {
+                lock.unlock()
+                return
+            }
             self.subscription = nil
             finished = true
+            lock.unlock()
+            subscription.cancel()
         }
 
         var description: String { return "Decode" }
