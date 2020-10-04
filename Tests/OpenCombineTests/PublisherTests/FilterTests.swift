@@ -20,37 +20,109 @@ final class FilterTests: XCTestCase {
 
     func testFilterBasicBehavior() {
         var counter = 0
-        FilterTests.testBasicBehavior(
-            input: [(1, expectedDemand: .max(1)),
-                    (2, expectedDemand: .max(4)),
-                    (3, expectedDemand: .max(1)),
-                    (4, expectedDemand: .max(4)),
-                    (5, expectedDemand: .max(1)),
-                    (6, expectedDemand: .max(4)),
-                    (7, expectedDemand: .max(1)),
-                    (8, expectedDemand: .max(4)),
-                    (9, expectedDemand: .max(1))],
-            expectedSubscription: "Filter",
-            expectedOutput: [2, 4, 6, 8],
-            { $0.filter { counter += 1; return $0.isMultiple(of: 2) } }
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisher.self,
+            initialDemand: .max(2),
+            receiveValueDemand: .max(4),
+            createSut: { $0.filter { counter += 1; return $0.isMultiple(of: 2) } }
         )
-        XCTAssertEqual(counter, 9)
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(2))])
+
+        XCTAssertEqual(helper.publisher.send(1), .max(1))
+        XCTAssertEqual(helper.publisher.send(2), .max(4))
+        XCTAssertEqual(helper.publisher.send(3), .max(1))
+        XCTAssertEqual(helper.publisher.send(4), .max(4))
+        XCTAssertEqual(helper.publisher.send(5), .max(1))
+
+        helper.publisher.send(completion: .finished)
+        helper.publisher.send(completion: .failure(.oops))
+        XCTAssertEqual(helper.publisher.send(6), .max(4))
+
+        XCTAssertEqual(helper.tracking.history, [.subscription("CustomSubscription"),
+                                                 .value(2),
+                                                 .value(4),
+                                                 .completion(.finished),
+                                                 .completion(.failure(.oops)),
+                                                 .value(6)])
+        XCTAssertEqual(counter, 6)
     }
 
     func testFilterUpstreamFinishesImmediately() {
-        FilterTests.testUpstreamFinishesImmediately(expectedSubscription: "Filter",
-                                                    { $0.filter(shouldNotBeCalled()) })
+        var counter = 0
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisher.self,
+            initialDemand: .max(3),
+            receiveValueDemand: .max(10),
+            createSut: { $0.filter { counter += 1; return $0.isMultiple(of: 2) } }
+        )
+
+        XCTAssertEqual(helper.tracking.history, [.subscription("CustomSubscription")])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(3))])
+
+        helper.publisher.send(completion: .finished)
+
+        XCTAssertEqual(helper.tracking.history, [.subscription("CustomSubscription"),
+                                                 .completion(.finished)])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(3))])
+
+        helper.publisher.send(completion: .failure(.oops))
+        XCTAssertEqual(helper.tracking.history, [.subscription("CustomSubscription"),
+                                                 .completion(.finished),
+                                                 .completion(.failure(.oops))])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(3))])
+
+        XCTAssertEqual(helper.publisher.send(72), .max(10))
+        XCTAssertEqual(helper.tracking.history, [.subscription("CustomSubscription"),
+                                                 .completion(.finished),
+                                                 .completion(.failure(.oops)),
+                                                 .value(72)])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(3))])
+        XCTAssertEqual(counter, 1)
     }
 
     func testFilterUpstreamFinishesWithError() {
-        FilterTests.testUpstreamFinishesWithError(expectedSubscription: "Filter",
-                                                  { $0.filter(shouldNotBeCalled()) })
+        var counter = 0
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisher.self,
+            initialDemand: .max(3),
+            receiveValueDemand: .max(10),
+            createSut: { $0.filter { counter += 1; return $0.isMultiple(of: 2) } }
+        )
+
+        XCTAssertEqual(helper.tracking.history, [.subscription("CustomSubscription")])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(3))])
+
+        helper.publisher.send(completion: .failure(TestingError.oops))
+        XCTAssertEqual(helper.tracking.history,
+                       [.subscription("CustomSubscription"),
+                        .completion(.failure(TestingError.oops))])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(3))])
+
+        helper.publisher.send(completion: .failure(TestingError.oops))
+        XCTAssertEqual(helper.tracking.history,
+                       [.subscription("CustomSubscription"),
+                        .completion(.failure(.oops)),
+                        .completion(.failure(.oops))])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(3))])
+
+        XCTAssertEqual(helper.publisher.send(74), .max(10))
+        helper.publisher.send(completion: .finished)
+        XCTAssertEqual(helper.tracking.history,
+                       [.subscription("CustomSubscription"),
+                        .completion(.failure(.oops)),
+                        .completion(.failure(.oops)),
+                        .value(74),
+                        .completion(.finished)])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(3))])
+        XCTAssertEqual(counter, 1)
     }
 
     func testFilterDemand() {
-        FilterTests.testDemand { publisher, filter in
-            publisher.filter { filter($0) != nil }
-        }
+        FilterTests
+            .testDemand(subscriberIsAlsoSubscription: false) { publisher, filter in
+                publisher.filter { filter($0) != nil }
+            }
     }
 
     func testFilterNoDemand() {
@@ -58,45 +130,63 @@ final class FilterTests: XCTestCase {
     }
 
     func testFilterCancelAlreadyCancelled() throws {
-        try FilterTests.testCancelAlreadyCancelled(
-            expectedSubscription: "Filter",
-            { $0.filter(shouldNotBeCalled()) }
+        var counter = 0
+
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisher.self,
+            initialDemand: .unlimited,
+            receiveValueDemand: .max(2),
+            createSut: { $0.filter { counter += 1; return $0.isMultiple(of: 2) } }
         )
+
+        try XCTUnwrap(helper.downstreamSubscription).cancel()
+        XCTAssertEqual(helper.publisher.send(42), .max(2))
+        helper.publisher.send(completion: .finished)
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
+                                                     .cancelled])
+
+        try XCTUnwrap(helper.downstreamSubscription).request(.unlimited)
+        try XCTUnwrap(helper.downstreamSubscription).cancel()
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
+                                                     .cancelled,
+                                                     .requested(.unlimited),
+                                                     .cancelled])
+
+        helper.publisher.send(completion: .failure(TestingError.oops))
+        helper.publisher.send(completion: .finished)
+
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
+                                                     .cancelled,
+                                                     .requested(.unlimited),
+                                                     .cancelled])
+        XCTAssertEqual(helper.tracking.history, [.subscription("CustomSubscription"),
+                                                 .value(42),
+                                                 .completion(.finished),
+                                                 .completion(.failure(.oops)),
+                                                 .completion(.finished)])
+        XCTAssertEqual(counter, 1)
     }
 
     func testFilterReceiveValueBeforeSubscription() {
-        testReceiveValueBeforeSubscription(value: 0,
-                                           expected: .crash,
-                                           { $0.filter(shouldNotBeCalled()) })
+        testReceiveValueBeforeSubscription(
+            value: 0,
+            expected: .history([.value(0)], demand: .max(42)),
+            { $0.filter { _ in true } }
+        )
     }
 
     func testFilterReceiveCompletionBeforeSubscription() {
         testReceiveCompletionBeforeSubscription(
             inputType: Int.self,
-            expected: .crash,
-            { $0.filter(shouldNotBeCalled()) }
+            expected: .history([.completion(.finished)]),
+            { $0.filter { _ in true } }
         )
-    }
-
-    func testFilterRequestBeforeSubscription() {
-        testRequestBeforeSubscription(inputType: Int.self,
-                                      shouldCrash: true,
-                                      { $0.filter(shouldNotBeCalled()) })
-    }
-
-    func testFilterCancelBeforeSubscription() {
-        testCancelBeforeSubscription(inputType: Int.self,
-                                     shouldCrash: false,
-                                     { $0.filter(shouldNotBeCalled()) })
-    }
-
-    func testFilterReceiveSubscriptionTwice() throws {
-        try testReceiveSubscriptionTwice { $0.filter(shouldNotBeCalled()) }
     }
 
     func testFilterLifecycle() throws {
         try testLifecycle(sendValue: 31,
-                          cancellingSubscriptionReleasesSubscriber: false,
+                          cancellingSubscriptionReleasesSubscriber: true,
                           { $0.filter { _ in true } })
     }
 
@@ -104,10 +194,9 @@ final class FilterTests: XCTestCase {
         try testReflection(parentInput: Int.self,
                            parentFailure: Error.self,
                            description: "Filter",
-                           customMirror: expectedChildren(
-                               ("downstream", .contains("TrackingSubscriberBase"))
-                           ),
+                           customMirror: childrenIsEmpty,
                            playgroundDescription: "Filter",
+                           subscriberIsAlsoSubscription: false,
                            { $0.filter(shouldNotBeCalled()) })
     }
 
@@ -272,7 +361,8 @@ final class FilterTests: XCTestCase {
         XCTAssertEqual(helper.publisher.send(9), .max(1))
         XCTAssertEqual(helper.publisher.send(10), .max(1))
 
-        XCTAssertEqual(helper.tracking.history, [.subscription("Filter"), .value(6)])
+        XCTAssertEqual(helper.tracking.history, [.subscription("CustomSubscription"),
+                                                 .value(6)])
         XCTAssertEqual(helper.subscription.history, [.requested(.max(10))])
         XCTAssertEqual(counter, 15)
         XCTAssert(helper.sut.isIncluded(12))
@@ -475,6 +565,7 @@ final class FilterTests: XCTestCase {
     }
 
     static func testDemand<Operator: Publisher>(
+        subscriberIsAlsoSubscription: Bool = true,
         _ makeOperator: (CustomPublisherBase<String, Error>,
                         _ filter: @escaping (String) -> Int?) -> Operator
     )
@@ -554,19 +645,45 @@ final class FilterTests: XCTestCase {
 
         downstreamSubscription?.cancel()
         downstreamSubscription?.cancel()
-        XCTAssertEqual(subscription.history, [.requested(.max(5)),
-                                              .requested(.max(15)),
-                                              .requested(.max(5)),
-                                              .requested(.max(121)),
-                                              .cancelled])
+        if subscriberIsAlsoSubscription {
+            XCTAssertEqual(subscription.history, [.requested(.max(5)),
+                                                  .requested(.max(15)),
+                                                  .requested(.max(5)),
+                                                  .requested(.max(121)),
+                                                  .cancelled])
+        } else {
+            XCTAssertEqual(subscription.history, [.requested(.max(5)),
+                                                  .requested(.max(15)),
+                                                  .requested(.max(5)),
+                                                  .requested(.max(121)),
+                                                  .cancelled,
+                                                  .cancelled])
+        }
+
         downstreamSubscription?.request(.max(3))
-        XCTAssertEqual(subscription.history, [.requested(.max(5)),
-                                              .requested(.max(15)),
-                                              .requested(.max(5)),
-                                              .requested(.max(121)),
-                                              .cancelled])
+        if subscriberIsAlsoSubscription {
+            XCTAssertEqual(subscription.history, [.requested(.max(5)),
+                                                  .requested(.max(15)),
+                                                  .requested(.max(5)),
+                                                  .requested(.max(121)),
+                                                  .cancelled])
+        } else {
+            XCTAssertEqual(subscription.history, [.requested(.max(5)),
+                                                  .requested(.max(15)),
+                                                  .requested(.max(5)),
+                                                  .requested(.max(121)),
+                                                  .cancelled,
+                                                  .cancelled,
+                                                  .requested(.max(3))])
+        }
+
         demandOnReceiveValue = .max(80)
-        XCTAssertEqual(publisher.send("8"), .none)
+
+        if subscriberIsAlsoSubscription {
+            XCTAssertEqual(publisher.send("8"), .none)
+        } else {
+            XCTAssertEqual(publisher.send("8"), .max(80))
+        }
     }
 
     static func testNoDemand<Operator: Publisher>(

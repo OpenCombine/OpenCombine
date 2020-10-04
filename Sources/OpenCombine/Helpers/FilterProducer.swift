@@ -24,8 +24,6 @@ internal class FilterProducer<Downstream: Subscriber,
       CustomReflectable
     where Downstream.Input == Output
 {
-    // NOTE: This class has been audited for thread safety
-
     // MARK: - State
 
     private enum State {
