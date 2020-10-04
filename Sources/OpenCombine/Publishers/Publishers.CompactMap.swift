@@ -172,23 +172,48 @@ extension Publishers {
 }
 
 extension Publishers.CompactMap {
-    private final class Inner<Downstream: Subscriber>
-        : FilterProducer<Downstream,
-                         Upstream.Output,
-                         Output,
-                         Upstream.Failure,
-                         (Upstream.Output) -> Output?>
-        where Downstream.Failure == Upstream.Failure, Downstream.Input == Output
+    private struct Inner<Downstream: Subscriber>
+        : Subscriber,
+          CustomStringConvertible,
+          CustomReflectable,
+          CustomPlaygroundDisplayConvertible
+        where Upstream.Failure == Downstream.Failure
     {
-        // NOTE: This class has been audited for thread safety
+        typealias Input = Upstream.Output
+        typealias Failure = Upstream.Failure
 
-        override func receive(
-            newValue: Upstream.Output
-        ) -> PartialCompletion<Output?, Downstream.Failure> {
-            return .continue(filter(newValue))
+        private let downstream: Downstream
+        private let filter: (Input) -> Downstream.Input?
+
+        let combineIdentifier = CombineIdentifier()
+
+        init(downstream: Downstream, filter: @escaping (Input) -> Downstream.Input?) {
+            self.downstream = downstream
+            self.filter = filter
         }
 
-        override var description: String { return "CompactMap" }
+        func receive(subscription: Subscription) {
+            downstream.receive(subscription: subscription)
+        }
+
+        func receive(_ input: Input) -> Subscribers.Demand {
+            if let output = filter(input) {
+                return downstream.receive(output)
+            }
+            return .max(1)
+        }
+
+        func receive(completion: Subscribers.Completion<Failure>) {
+            downstream.receive(completion: completion)
+        }
+
+        var description: String { return "CompactMap" }
+
+        var customMirror: Mirror {
+            return Mirror(self, children: EmptyCollection())
+        }
+
+        var playgroundDescription: Any { return description }
     }
 }
 
@@ -201,8 +226,6 @@ extension Publishers.TryCompactMap {
                          (Upstream.Output) throws -> Output?>
         where Downstream.Failure == Error, Downstream.Input == Output
     {
-        // NOTE: This class has been audited for thread safety
-
         override func receive(
             newValue: Upstream.Output
         ) -> PartialCompletion<Output?, Error> {
