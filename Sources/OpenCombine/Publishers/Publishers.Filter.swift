@@ -179,23 +179,48 @@ extension Publishers {
 }
 
 extension Publishers.Filter {
-    private final class Inner<Downstream: Subscriber>
-        : FilterProducer<Downstream,
-                         Upstream.Output,
-                         Upstream.Output,
-                         Upstream.Failure,
-                         (Upstream.Output) -> Bool>
+    private struct Inner<Downstream: Subscriber>
+        : Subscriber,
+          CustomStringConvertible,
+          CustomReflectable,
+          CustomPlaygroundDisplayConvertible
         where Upstream.Output == Downstream.Input, Upstream.Failure == Downstream.Failure
     {
-        // NOTE: This class has been audited for thread safety
+        typealias Input = Upstream.Output
+        typealias Failure = Upstream.Failure
 
-        override func receive(
-            newValue: Upstream.Output
-        ) -> PartialCompletion<Upstream.Output?, Downstream.Failure> {
-            return filter(newValue) ? .continue(newValue) : .continue(nil)
+        private let downstream: Downstream
+        private let filter: (Input) -> Bool
+
+        let combineIdentifier = CombineIdentifier()
+
+        init(downstream: Downstream, filter: @escaping (Input) -> Bool) {
+            self.downstream = downstream
+            self.filter = filter
         }
 
-        override var description: String { return "Filter" }
+        func receive(subscription: Subscription) {
+            downstream.receive(subscription: subscription)
+        }
+
+        func receive(_ input: Input) -> Subscribers.Demand {
+            if filter(input) {
+                return downstream.receive(input)
+            }
+            return .max(1)
+        }
+
+        func receive(completion: Subscribers.Completion<Failure>) {
+            downstream.receive(completion: completion)
+        }
+
+        var description: String { return "Filter" }
+
+        var customMirror: Mirror {
+            return Mirror(self, children: EmptyCollection())
+        }
+
+        var playgroundDescription: Any { return description }
     }
 }
 
@@ -208,8 +233,6 @@ extension Publishers.TryFilter {
                          (Upstream.Output) throws -> Bool>
         where Downstream.Input == Upstream.Output, Downstream.Failure == Error
     {
-        // NOTE: This class has been audited for thread safety
-
         override func receive(
             newValue: Upstream.Output
         ) -> PartialCompletion<Upstream.Output?, Error> {
