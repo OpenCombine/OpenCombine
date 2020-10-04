@@ -96,8 +96,6 @@ extension Publishers.ReplaceError {
           CustomPlaygroundDisplayConvertible
         where Upstream.Output == Downstream.Input
     {
-        // NOTE: this class has been audited for thread safety.
-
         typealias Input = Upstream.Output
         typealias Failure = Upstream.Failure
 
@@ -127,12 +125,12 @@ extension Publishers.ReplaceError {
             status = .subscribed(subscription)
             let pendingDemand = self.pendingDemand
             lock.unlock()
-            if pendingDemand > 0 {
+            if pendingDemand != .none {
                 subscription.request(pendingDemand)
             }
         }
 
-        func receive(_ input: Upstream.Output) -> Subscribers.Demand {
+        func receive(_ input: Input) -> Subscribers.Demand {
             lock.lock()
             guard case .subscribed = status else {
                 lock.unlock()
@@ -141,7 +139,7 @@ extension Publishers.ReplaceError {
             pendingDemand -= 1
             lock.unlock()
             let demand = downstream.receive(input)
-            guard demand > 0 else {
+            if demand == .none {
                 return .none
             }
             lock.lock()
@@ -150,20 +148,27 @@ extension Publishers.ReplaceError {
             return demand
         }
 
-        func receive(completion: Subscribers.Completion<Upstream.Failure>) {
+        func receive(completion: Subscribers.Completion<Failure>) {
+            lock.lock()
+            guard case .subscribed = status else {
+                lock.unlock()
+                return
+            }
             switch completion {
             case .finished:
+                status = .terminal
+                lock.unlock()
                 downstream.receive(completion: .finished)
             case .failure:
-                lock.lock()
                 // If there was no demand from downstream,
                 // ReplaceError does not forward the value that
                 // replaces the error until it is requested.
-                guard pendingDemand > 0 else {
+                if pendingDemand == .none {
                     terminated = true
                     lock.unlock()
                     return
                 }
+                status = .terminal
                 lock.unlock()
                 _ = downstream.receive(output)
                 downstream.receive(completion: .finished)
