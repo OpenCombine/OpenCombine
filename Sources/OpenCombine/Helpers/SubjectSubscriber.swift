@@ -5,7 +5,6 @@
 //  Created by Sergej Jaskiewicz on 16/09/2019.
 //
 
-// NOTE: This class has been audited for thread safety.
 internal final class SubjectSubscriber<Downstream: Subject>
     : Subscriber,
       CustomStringConvertible,
@@ -14,7 +13,7 @@ internal final class SubjectSubscriber<Downstream: Subject>
       Subscription
 {
     private let lock = UnfairLock.allocate()
-    private var downstreamSubject: Downstream?
+    private weak var downstreamSubject: Downstream?
     private var upstreamSubscription: Subscription?
 
     private var isCancelled: Bool { return downstreamSubject == nil }

@@ -146,6 +146,8 @@ final class MulticastTests: XCTestCase {
                                          .value(7),
                                          .completion(.finished),
                                          .subscriber])
+
+        connection.cancel()
     }
 
     func testSubscribeAfterCompletion() {
@@ -288,6 +290,19 @@ final class MulticastTests: XCTestCase {
         }
     }
 
+    func testDeallocateConnectedMulticastBeforeCancelling() {
+        // https://github.com/OpenCombine/OpenCombine/issues/186
+
+        let publisher = CustomPublisher(subscription: CustomSubscription())
+        var subjectDestroyed = false
+        var subject: TrackingSubject<Int>? = .init(onDeinit: { subjectDestroyed = true })
+
+        let connection = publisher.multicast(subject: subject!).connect()
+        subject = nil
+        XCTAssertTrue(subjectDestroyed)
+        connection.cancel() // Shouldn't recursively aquire a non-recursive lock here.
+    }
+
     func testLazySubjectCreation() {
         let publisher = PassthroughSubject<Int, TestingError>()
         var counter = 0
@@ -406,10 +421,12 @@ final class MulticastTests: XCTestCase {
         publisher.send(42)
         publisher.send(completion: .finished)
 
-        XCTAssertEqual(tracking.history, [.subscription("Multicast"),
-                                          .value(42),
-                                          .value(42),
-                                          .completion(.finished)])
+        withExtendedLifetime(multicast) {
+            XCTAssertEqual(tracking.history, [.subscription("Multicast"),
+                                              .value(42),
+                                              .value(42),
+                                              .completion(.finished)])
+        }
 
         connection1.cancel()
         connection2.cancel()
