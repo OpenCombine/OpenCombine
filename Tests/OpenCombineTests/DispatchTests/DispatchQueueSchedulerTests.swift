@@ -550,6 +550,8 @@ final class DispatchQueueSchedulerTests: XCTestCase {
         XCTAssertFalse(didExecuteAction, "action should be executed asynchronously")
 
         wait(for: [main], timeout: 3/*seconds*/)
+
+        token.cancel()
     }
 }
 
