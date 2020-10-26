@@ -1,3 +1,118 @@
+macOS_tests_steps: &macOS_tests_steps
+  steps:
+    - checkout
+    - run:
+        name: Building and running tests in debug mode with coverage
+        command: |
+          make test-debug \
+            SWIFT_BUILD_FLAGS="-Xswiftc -warnings-as-errors" \
+            SWIFT_TEST_FLAGS="--enable-code-coverage --build-path .build-test-debug"
+          xcrun llvm-cov show \
+            -instr-profile=.build-test-debug/debug/codecov/default.profdata \
+            .build-test-debug/debug/OpenCombinePackageTests.xctest/Contents/MacOS/OpenCombinePackageTests \
+            > coverage.txt
+    - run:
+        name: Building and running tests in debug mode with TSan
+        command: |
+          make test-debug-sanitize-thread \
+            SWIFT_BUILD_FLAGS="-Xswiftc -warnings-as-errors" \
+            SWIFT_TEST_FLAGS="--build-path .build-test-debug-sanitize-thread"
+    - run:
+        name: Building and running tests in release mode
+        command: |
+          make test-release \
+            SWIFT_BUILD_FLAGS="-Xswiftc -warnings-as-errors" \
+            SWIFT_TEST_FLAGS="--build-path .build-test-release"
+    - run:
+        name: Generating Xcode project
+        command: make generate-xcodeproj SWIFT_BUILD_FLAGS="-Xswiftc -warnings-as-errors"
+    - run:
+        name: Building for testing on macOS 10.15.0 with xcodebuild
+        command: |
+          set -o pipefail \
+            && xcodebuild build-for-testing \
+                  -scheme OpenCombine-Package \
+                  -sdk macosx10.15 \
+                  -derivedDataPath DerivedData \
+            | tee xcodebuild_build-for-testing.log \
+            | xcpretty
+    - store_artifacts:
+        path: xcodebuild_build-for-testing.log
+    - run:
+        name: Testing on macOS 10.15.0 with xcodebuild
+        command: |
+          set -o pipefail \
+            && xcodebuild test-without-building \
+                  -scheme OpenCombine-Package \
+                  -sdk macosx10.15 \
+                  -derivedDataPath DerivedData \
+            | tee xcodebuild_test-without-building.log \
+            | xcpretty --report junit -o build/reports/results.xml
+    - store_artifacts:
+        path: xcodebuild_test-without-building.log
+    - store_test_results:
+        path: build/reports
+    - run:
+        name: Uploading code coverage
+        command: |
+          bash <(curl -s https://codecov.io/bash) -D DerivedData
+
+ubuntu_tests_steps: &ubuntu_tests_steps
+  steps:
+    - checkout
+    - run:
+        name: Installing dependencies
+        command: |
+          apt update -y
+          apt upgrade -y
+          apt install -y curl
+    - run:
+        name: Building and running tests in debug mode with coverage
+        command: | # We need to run the test command twice because of https://bugs.swift.org/browse/SR-10783
+          make test-debug \
+            SWIFT_TEST_FLAGS="--enable-test-discovery \
+                              --enable-index-store \
+                              --enable-code-coverage \
+                              --build-path .build-test-debug" \
+            > /dev/null 2>&1 \
+            || true
+          make test-debug \
+            SWIFT_BUILD_FLAGS="-Xswiftc -warnings-as-errors" \
+            SWIFT_TEST_FLAGS="--enable-test-discovery \
+                              --enable-index-store \
+                              --enable-code-coverage \
+                              --build-path .build-test-debug"
+          llvm-cov show \
+            -instr-profile=.build-test-debug/debug/codecov/default.profdata \
+            .build-test-debug/debug/OpenCombinePackageTests.xctest \
+            > coverage.txt
+    - run:
+        name: Building and running tests in debug mode with TSan
+        command: | # We need to run the test command twice because of https://bugs.swift.org/browse/SR-10783
+          make test-debug-sanitize-thread \
+            SWIFT_BUILD_FLAGS="-Xswiftc -warnings-as-errors" \
+            SWIFT_TEST_FLAGS="--enable-test-discovery \
+                              --enable-index-store \
+                              --build-path .build-test-debug-sanitize-thread" \
+            > /dev/null 2>&1 \
+            || true
+          make test-debug-sanitize-thread \
+            SWIFT_TEST_FLAGS="--enable-test-discovery \
+                              --enable-index-store \
+                              --build-path .build-test-debug-sanitize-thread" \
+    - run:
+        name: Building and running tests in release mode
+        command: |
+          make test-release \
+            SWIFT_BUILD_FLAGS="-Xswiftc -warnings-as-errors" \
+            SWIFT_TEST_FLAGS="--enable-test-discovery \
+                              --enable-index-store \
+                              --build-path .build-test-release"
+    - run:
+        name: Uploading code coverage
+        command: |
+          bash <(curl -s https://codecov.io/bash)
+
 version: 2
 jobs:
   "Execute tests on macOS 10.15.0 (Xcode 11.3.0, Swift 5.1.3)":
@@ -5,67 +120,18 @@ jobs:
       xcode: "11.3.0"
     environment:
       SWIFT_VERSION: "5.1.3"
-    steps:
-      - checkout
-      - run:
-          name: Building and running tests in debug mode with coverage
-          command: |
-            make test-debug \
-              SWIFT_BUILD_FLAGS="-Xswiftc -warnings-as-errors" \
-              SWIFT_TEST_FLAGS="--enable-code-coverage --build-path .build-test-debug"
-            xcrun llvm-cov show \
-              -instr-profile=.build-test-debug/debug/codecov/default.profdata \
-              .build-test-debug/debug/OpenCombinePackageTests.xctest/Contents/MacOS/OpenCombinePackageTests \
-              > coverage.txt
-      - run:
-          name: Building and running tests in debug mode with TSan
-          command: |
-            make test-debug-sanitize-thread \
-              SWIFT_BUILD_FLAGS="-Xswiftc -warnings-as-errors" \
-              SWIFT_TEST_FLAGS="--build-path .build-test-debug-sanitize-thread"
-      - run:
-          name: Building and running tests in release mode
-          command: |
-            make test-release \
-              SWIFT_BUILD_FLAGS="-Xswiftc -warnings-as-errors" \
-              SWIFT_TEST_FLAGS="--build-path .build-test-release"
-      - run:
-          name: Generating Xcode project
-          command: make generate-xcodeproj SWIFT_BUILD_FLAGS="-Xswiftc -warnings-as-errors"
-      - run:
-          name: Building for testing on macOS 10.15.0 with xcodebuild
-          command: |
-            set -o pipefail \
-              && xcodebuild build-for-testing \
-                   -scheme OpenCombine-Package \
-                   -sdk macosx10.15 \
-                   -derivedDataPath DerivedData \
-              | tee xcodebuild_build-for-testing.log \
-              | xcpretty
-      - store_artifacts:
-          path: xcodebuild_build-for-testing.log
-      - run:
-          name: Testing on macOS 10.15.0 with xcodebuild
-          command: |
-            set -o pipefail \
-              && xcodebuild test-without-building \
-                   -scheme OpenCombine-Package \
-                   -sdk macosx10.15 \
-                   -derivedDataPath DerivedData \
-              | tee xcodebuild_test-without-building.log \
-              | xcpretty --report junit -o build/reports/results.xml
-      - store_artifacts:
-          path: xcodebuild_test-without-building.log
-      - store_test_results:
-          path: build/reports
-      - run:
-          name: Uploading code coverage
-          command: |
-            bash <(curl -s https://codecov.io/bash) -D DerivedData
-
-  "Execute compatibility tests on iOS 14.0 (Xcode 12.0.0, Swift 5.3.0)":
+    <<: *macOS_tests_steps
+  
+  "Execute tests on macOS 10.15.0 (Xcode 12.1.0, Swift 5.3.0)":
     macos:
-      xcode: "12.0.1"
+      xcode: "12.1.0"
+    environment:
+      SWIFT_VERSION: "5.3.0"
+    <<: *macOS_tests_steps
+
+  "Execute compatibility tests on iOS 14.1 (Xcode 12.1.0, Swift 5.3.0)":
+    macos:
+      xcode: "12.1.0"
     environment:
       SWIFT_VERSION: "5.3.0"
     steps:
@@ -74,24 +140,24 @@ jobs:
           name: Generating Xcode project
           command: make generate-compatibility-xcodeproj
       - run:
-          name: Building for testing on iOS 14.0 with xcodebuild
+          name: Building for testing on iOS 14.1 with xcodebuild
           command: |
             set -o pipefail \
               && xcodebuild build-for-testing \
                    -scheme OpenCombine-Package \
-                   -destination "platform=iOS Simulator,name=iPhone 11,OS=14.0" \
+                   -destination "platform=iOS Simulator,name=iPhone 11,OS=14.1" \
                    -derivedDataPath DerivedData \
               | tee xcodebuild_build-for-testing.log \
               | xcpretty
       - store_artifacts:
           path: xcodebuild_build-for-testing.log
       - run:
-          name: Testing against Combine on iOS 14.0 with xcodebuild
+          name: Testing against Combine on iOS 14.1 with xcodebuild
           command: |
             set -o pipefail \
               && xcodebuild test-without-building \
                    -scheme OpenCombine-Package \
-                   -destination "platform=iOS Simulator,name=iPhone 11,OS=14.0" \
+                   -destination "platform=iOS Simulator,name=iPhone 11,OS=14.1" \
                    -derivedDataPath DerivedData \
               | tee xcodebuild_test-without-building.log \
               | xcpretty --report junit -o build/reports/results.xml
@@ -161,65 +227,26 @@ jobs:
           command: |
             bash <(curl -s https://codecov.io/bash) -D DerivedData
 
+  "Execute tests on Ubuntu 18.04 (Swift 5.1)":
+    docker:
+      - image: swift:5.1-bionic
+    environment:
+      SWIFT_VERSION: "5.1"
+    <<: *ubuntu_tests_steps
+
   "Execute tests on Ubuntu 18.04 (Swift 5.2)":
     docker:
       - image: swift:5.2-bionic
     environment:
       SWIFT_VERSION: "5.2"
-    steps:
-      - checkout
-      - run:
-          name: Installing dependencies
-          command: |
-            apt update -y
-            apt upgrade -y
-            apt install -y curl
-      - run:
-          name: Building and running tests in debug mode with coverage
-          command: | # We need to run the test command twice because of https://bugs.swift.org/browse/SR-10783
-            make test-debug \
-              SWIFT_TEST_FLAGS="--enable-test-discovery \
-                                --enable-index-store \
-                                --enable-code-coverage \
-                                --build-path .build-test-debug" \
-              > /dev/null 2>&1 \
-              || true
-            make test-debug \
-              SWIFT_BUILD_FLAGS="-Xswiftc -warnings-as-errors" \
-              SWIFT_TEST_FLAGS="--enable-test-discovery \
-                                --enable-index-store \
-                                --enable-code-coverage \
-                                --build-path .build-test-debug"
-            llvm-cov show \
-              -instr-profile=.build-test-debug/debug/codecov/default.profdata \
-              .build-test-debug/debug/OpenCombinePackageTests.xctest \
-              > coverage.txt
-      - run:
-          name: Building and running tests in debug mode with TSan
-          command: | # We need to run the test command twice because of https://bugs.swift.org/browse/SR-10783
-            make test-debug-sanitize-thread \
-              SWIFT_BUILD_FLAGS="-Xswiftc -warnings-as-errors" \
-              SWIFT_TEST_FLAGS="--enable-test-discovery \
-                                --enable-index-store \
-                                --build-path .build-test-debug-sanitize-thread" \
-              > /dev/null 2>&1 \
-              || true
-            make test-debug-sanitize-thread \
-              SWIFT_TEST_FLAGS="--enable-test-discovery \
-                                --enable-index-store \
-                                --build-path .build-test-debug-sanitize-thread" \
-      - run:
-          name: Building and running tests in release mode
-          command: |
-            make test-release \
-              SWIFT_BUILD_FLAGS="-Xswiftc -warnings-as-errors" \
-              SWIFT_TEST_FLAGS="--enable-test-discovery \
-                                --enable-index-store \
-                                --build-path .build-test-release"
-      - run:
-          name: Uploading code coverage
-          command: |
-            bash <(curl -s https://codecov.io/bash)
+    <<: *ubuntu_tests_steps
+
+  "Execute tests on Ubuntu 18.04 (Swift 5.3)":
+    docker:
+      - image: swift:5.3-bionic
+    environment:
+      SWIFT_VERSION: "5.3"
+    <<: *ubuntu_tests_steps
 
   "Run SwiftLint and Danger":
     macos:
@@ -257,15 +284,18 @@ workflows:
   "OpenCombine: execute tests on macOS":
     jobs:
       - "Execute tests on macOS 10.15.0 (Xcode 11.3.0, Swift 5.1.3)"
+      - "Execute tests on macOS 10.15.0 (Xcode 12.1.0, Swift 5.3.0)"
   "OpenCombine: execute compatibility tests":
     jobs:
-      - "Execute compatibility tests on iOS 14.0 (Xcode 12.0.0, Swift 5.3.0)"
+      - "Execute compatibility tests on iOS 14.1 (Xcode 12.1.0, Swift 5.3.0)"
   "OpenCombine: execute tests on iOS":
     jobs:
       - "Execute tests on iOS 9.3 (Xcode 10.2.1, Swift 5.0.1)"
   "OpenCombine: execute tests on Linux":
     jobs:
+      - "Execute tests on Ubuntu 18.04 (Swift 5.1)"
       - "Execute tests on Ubuntu 18.04 (Swift 5.2)"
+      - "Execute tests on Ubuntu 18.04 (Swift 5.3)"
   "OpenCombine: run SwiftLint and Danger":
     jobs:
       - "Run SwiftLint and Danger"
