@@ -7,6 +7,7 @@
 
 import Dispatch
 import Foundation
+import XCTest
 
 func race(times: Int = 100, _ bodies: () -> Void...) {
     DispatchQueue.concurrentPerform(iterations: bodies.count) {
@@ -30,9 +31,75 @@ final class Atomic<Value> {
         return _value
     }
 
-    func `do`(_ body: (inout Value) -> Void) {
+    func set(_ newValue: Value) {
         lock.lock()
-        body(&_value)
-        lock.unlock()
+        defer { lock.unlock() }
+        _value = newValue
     }
+
+    func `do`(_ body: (inout Value) throws -> Void) rethrows {
+        lock.lock()
+        defer { lock.unlock() }
+        try body(&_value)
+    }
+}
+
+extension Atomic where Value: Equatable {
+    static func == (lhs: Atomic<Value>, rhs: Value) -> Bool {
+        return lhs.value == rhs
+    }
+
+    static func == (lhs: Value, rhs: Atomic<Value>) -> Bool {
+        return rhs == lhs
+    }
+}
+
+extension Atomic where Value: AdditiveArithmetic {
+
+    static func += (lhs: Atomic<Value>, rhs: Value) {
+        lhs.do { $0 += rhs }
+    }
+
+    static func -= (lhs: Atomic<Value>, rhs: Value) {
+        lhs.do { $0 -= rhs }
+    }
+}
+
+extension Atomic where Value: Collection {
+
+    var count: Int {
+        return value.count
+    }
+
+    var isEmpty: Bool {
+        return value.isEmpty
+    }
+
+    subscript(index: Value.Index) -> Value.Element {
+        return value[index]
+    }
+
+    func dropFirst(_ k: Int = 1) -> Value.SubSequence {
+        return value.dropFirst(k)
+    }
+
+    func dropLast(_ k: Int = 1) -> Value.SubSequence {
+        return value.dropLast(k)
+    }
+}
+
+extension Atomic where Value: RangeReplaceableCollection {
+    func append(_ element: Value.Element) {
+        self.do {
+            $0.append(element)
+        }
+    }
+}
+
+func XCTAssertEqual<Value: Equatable>(
+    _ expression1: @autoclosure () throws -> Atomic<Value>,
+    _ expression2: @autoclosure () throws -> Value,
+    _ message: @autoclosure () -> String = ""
+) {
+    XCTAssertEqual(try expression1().value, try expression2(), message())
 }

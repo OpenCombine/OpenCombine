@@ -519,27 +519,25 @@ final class RunLoopSchedulerTests: XCTestCase {
                 .schedule(after: scheduler.now.advanced(by: .init(desiredDelay)),
                           interval: .init(desiredInterval)) {
                     XCTAssertTrue(Thread.isMainThread)
-                    ticks.do {
-                        $0.append(Date().timeIntervalSinceReferenceDate)
-                    }
+                    ticks.append(Date().timeIntervalSinceReferenceDate)
                     expectation10ticks.fulfill()
                     RunLoop.current.run(until: Date() + 0.001)
                 }
         }
 
-        XCTAssertEqual(ticks.value.count, 0)
+        XCTAssertEqual(ticks.count, 0)
         mainRunLoop.run(until: Date() + 0.001)
-        XCTAssertEqual(ticks.value.count, 0)
+        XCTAssertEqual(ticks.count, 0)
 
         wait(for: [expectation10ticks], timeout: 5)
 
-        if ticks.value.isEmpty {
+        if ticks.isEmpty {
             XCTFail("The scheduler doesn't work")
             return
         }
 
-        let actualDelay = ticks.value[0] - startDate
-        let actualIntervals = zip(ticks.value.dropFirst(), ticks.value.dropLast()).map(-)
+        let actualDelay = ticks[0] - startDate
+        let actualIntervals = zip(ticks.dropFirst(), ticks.dropLast()).map(-)
         let averageInterval = actualIntervals.reduce(0, +) / Double(actualIntervals.count)
 
         XCTAssertEqual(actualDelay,
@@ -561,9 +559,9 @@ final class RunLoopSchedulerTests: XCTestCase {
                        """)
 
         cancellable.cancel()
-        let numberOfTicksRightAfterCancellation = ticks.value.count
+        let numberOfTicksRightAfterCancellation = ticks.count
         mainRunLoop.run(until: Date() + 1)
-        let numberOfTicksOneSecondAfterCancellation = ticks.value.count
+        let numberOfTicksOneSecondAfterCancellation = ticks.count
         XCTAssertEqual(numberOfTicksRightAfterCancellation,
                        numberOfTicksOneSecondAfterCancellation)
     }
