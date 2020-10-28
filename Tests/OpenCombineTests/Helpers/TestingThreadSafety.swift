@@ -6,6 +6,7 @@
 //
 
 import Dispatch
+import Foundation
 
 func race(times: Int = 100, _ bodies: () -> Void...) {
     DispatchQueue.concurrentPerform(iterations: bodies.count) {
@@ -16,8 +17,7 @@ func race(times: Int = 100, _ bodies: () -> Void...) {
 }
 
 final class Atomic<Value> {
-    private let _q = DispatchQueue(label: "Atomic", attributes: .concurrent)
-
+    let lock = NSLock()
     private var _value: Value
 
     init(_ initialValue: Value) {
@@ -25,12 +25,14 @@ final class Atomic<Value> {
     }
 
     var value: Value {
-        return _q.sync { _value }
+        lock.lock()
+        defer { lock.unlock() }
+        return _value
     }
 
     func `do`(_ body: (inout Value) -> Void) {
-        _q.sync(flags: .barrier) {
-            body(&_value)
-        }
+        lock.lock()
+        body(&_value)
+        lock.unlock()
     }
 }

@@ -15,6 +15,10 @@ import OpenCombine
 import OpenCombineFoundation
 #endif
 
+// PropertyListEncoder and PropertyListDecoder are unavailable in
+// swift-corelibs-foundation prior to Swift 5.1.
+#if canImport(Darwin) || swift(>=5.1) // TEST_DISCOVERY_CONDITION
+
 @available(macOS 10.15, iOS 13.0, *)
 final class PropertyListEncoderTests: XCTestCase {
 
@@ -79,3 +83,5 @@ final class PropertyListEncoderTests: XCTestCase {
         cancellable.cancel()
     }
 }
+
+#endif // canImport(Darwin) || swift(>=5.1)

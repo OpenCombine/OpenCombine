@@ -101,6 +101,6 @@ extension _Introspection {
     }
 
     public var isEnabled: Bool {
-        DebugHook.handlerIsEnabled(self)
+        return DebugHook.handlerIsEnabled(self)
     }
 }
