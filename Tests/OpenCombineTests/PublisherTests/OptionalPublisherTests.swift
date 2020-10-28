@@ -16,14 +16,10 @@ import OpenCombine
 @available(macOS 10.15, iOS 13.0, *)
 final class OptionalPublisherTests: XCTestCase {
 
-#if OPENCOMBINE_COMPATIBILITY_TEST || !canImport(Combine)
-    private typealias Sut<Output> = Optional<Output>.Publisher
-#else
-    private typealias Sut<Output> = Optional<Output>.OCombine.Publisher
-#endif
+    private typealias Sut<Output> = OptionalPublisher<Output>
 
     func testSuccessNoInitialDemand() {
-        let optional = Sut(42)
+        let optional = makePublisher(42)
         let tracking = TrackingSubscriberBase<Int, Never>()
         optional.subscribe(tracking)
 
@@ -38,7 +34,7 @@ final class OptionalPublisherTests: XCTestCase {
     }
 
     func testSuccessWithInitialDemand() {
-        let optional = Sut(42)
+        let optional = makePublisher(42)
         let tracking = TrackingSubscriberBase<Int, Never>(
             receiveSubscription: { $0.request(.unlimited) }
         )
@@ -50,7 +46,7 @@ final class OptionalPublisherTests: XCTestCase {
     }
 
     func testSuccessCancelOnSubscription() {
-        let success = Sut(42)
+        let success = makePublisher(42)
         let tracking = TrackingSubscriberBase<Int, Never>(
             receiveSubscription: { $0.request(.max(1)); $0.cancel() }
         )
@@ -71,7 +67,7 @@ final class OptionalPublisherTests: XCTestCase {
     }
 
     func testRecursion() {
-        let optional = Sut(42)
+        let optional = makePublisher(42)
         var subscription: Subscription?
         let tracking = TrackingSubscriberBase<Int, Never>(
             receiveSubscription: {
@@ -106,7 +102,7 @@ final class OptionalPublisherTests: XCTestCase {
     func testLifecycle() {
         var deinitCount = 0
         do {
-            let once = Sut(42)
+            let once = makePublisher(42)
             let tracking = TrackingSubscriberBase<Int, Never>(
                 onDeinit: { deinitCount += 1 }
             )
@@ -387,3 +383,19 @@ final class OptionalPublisherTests: XCTestCase {
         XCTAssertEqual(count, 2)
     }
 }
+
+#if OPENCOMBINE_COMPATIBILITY_TEST || !canImport(Combine)
+@available(macOS 10.15, iOS 13.0, *)
+typealias OptionalPublisher<Output> = Optional<Output>.Publisher
+
+@available(macOS 10.15, iOS 13.0, *)
+func makePublisher<Output>(_ optional: Output?) -> OptionalPublisher<Output> {
+    return optional.publisher
+}
+#else
+typealias OptionalPublisher<Output> = Optional<Output>.OCombine.Publisher
+
+func makePublisher<Output>(_ optional: Output?) -> OptionalPublisher<Output> {
+    return optional.ocombine.publisher
+}
+#endif
