@@ -105,7 +105,11 @@ extension Publishers {
         public func receive<Downstream: Subscriber>(subscriber: Downstream)
             where Downstream.Input == Output, Downstream.Failure == Failure
         {
-            upstream.subscribe(Inner(downstream: subscriber, buffer: self))
+            let inner = Inner(downstream: subscriber,
+                              size: size,
+                              prefetch: prefetch,
+                              whenFull: whenFull)
+            upstream.subscribe(inner)
         }
     }
 }
@@ -127,17 +131,19 @@ extension Publishers.Buffer {
 
         typealias Failure = Upstream.Failure
 
-        private enum State {
-            case ready(Publishers.Buffer<Upstream>, Downstream)
-            case subscribed(Publishers.Buffer<Upstream>, Downstream, Subscription)
-            case terminal
-        }
-
         private let lock = UnfairLock.allocate()
 
         private var recursion = false
 
-        private var state: State
+        private let size: Int
+
+        private let prefetch: Publishers.PrefetchStrategy // keepFull is 0x0
+
+        private let whenFull: Publishers.BufferingStrategy<Failure>
+
+        private let downstream: Downstream
+
+        private var state = SubscriptionStatus.awaitingSubscription
 
         private var downstreamDemand = Subscribers.Demand.none
 
@@ -149,8 +155,14 @@ extension Publishers.Buffer {
 
         private var terminal: Subscribers.Completion<Failure>?
 
-        init(downstream: Downstream, buffer: Publishers.Buffer<Upstream>) {
-            state = .ready(buffer, downstream)
+        init(downstream: Downstream,
+             size: Int,
+             prefetch: Publishers.PrefetchStrategy,
+             whenFull: Publishers.BufferingStrategy<Failure>) {
+            self.size = size
+            self.prefetch = prefetch
+            self.whenFull = whenFull
+            self.downstream = downstream
         }
 
         deinit {
@@ -159,18 +171,18 @@ extension Publishers.Buffer {
 
         func receive(subscription: Subscription) {
             lock.lock()
-            guard case let .ready(buffer, downstream) = state else {
+            guard case .awaitingSubscription = state else {
                 lock.unlock()
                 subscription.cancel()
                 return
             }
-            state = .subscribed(buffer, downstream, subscription)
+            state = .subscribed(subscription)
             lock.unlock()
 
             let upstreamDemand: Subscribers.Demand
-            switch buffer.prefetch {
+            switch prefetch {
             case .keepFull:
-                upstreamDemand = .max(buffer.size)
+                upstreamDemand = .max(size)
             case .byRequest:
                 upstreamDemand = .unlimited
             }
@@ -180,14 +192,14 @@ extension Publishers.Buffer {
 
         func receive(_ input: Input) -> Subscribers.Demand {
             lock.lock()
-            guard case let .subscribed(buffer, _, subscription) = state else {
+            guard case let .subscribed(subscription) = state else {
                 lock.unlock()
                 return .none
             }
             switch terminal {
             case nil, .finished?:
-                if values.count >= buffer.size {
-                    switch buffer.whenFull {
+                if values.count >= size {
+                    switch whenFull {
                     case .dropNewest:
                         lock.unlock()
                         return drain()
@@ -223,7 +235,7 @@ extension Publishers.Buffer {
 
         func request(_ demand: Subscribers.Demand) {
             lock.lock()
-            guard case let .subscribed(_, _, subscription) = state else {
+            guard case let .subscribed(subscription) = state else {
                 lock.unlock()
                 return
             }
@@ -234,13 +246,16 @@ extension Publishers.Buffer {
                 return
             }
 
-            // Request the number of items just enough to fill the buffer.
-            subscription.request(drain() + demand)
+            let more = drain()
+            if more != .none {
+                // Request the number of items just enough to fill the buffer.
+                subscription.request(more)
+            }
         }
 
         func cancel() {
             lock.lock()
-            guard case let .subscribed(_, _, subscription) = state else {
+            guard case let .subscribed(subscription) = state else {
                 lock.unlock()
                 return
             }
@@ -254,7 +269,7 @@ extension Publishers.Buffer {
             var upstreamDemand = Subscribers.Demand.none
             lock.lock()
             while true {
-                guard case let .subscribed(buffer, downstream, _) = state else {
+                guard case .subscribed = state else {
                     lock.unlock()
                     return upstreamDemand
                 }
@@ -303,7 +318,7 @@ extension Publishers.Buffer {
                     additionalUpstreamDemand += 1
                 }
 
-                if buffer.prefetch == .keepFull {
+                if prefetch == .keepFull {
                     upstreamDemand += additionalUpstreamDemand
                 }
 

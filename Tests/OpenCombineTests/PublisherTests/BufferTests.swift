@@ -443,15 +443,13 @@ final class BufferTests: XCTestCase {
                                                      .value(1),
                                                      .value(2),
                                                      .value(3)])
-            XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
-                                                         .requested(.max(3))])
+            XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
         case .dropOldest:
             XCTAssertEqual(helper.tracking.history, [.subscription("Buffer"),
                                                      .value(3),
                                                      .value(4),
                                                      .value(5)])
-            XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
-                                                         .requested(.max(3))])
+            XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
         case .customError:
             XCTAssertEqual(helper.tracking.history, [.subscription("Buffer"),
                                                      .value(1),
@@ -459,8 +457,7 @@ final class BufferTests: XCTestCase {
                                                      .value(3),
                                                      .completion(.failure(.oops))])
             XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
-                                                         .cancelled,
-                                                         .requested(.max(3))])
+                                                         .cancelled])
 #if OPENCOMBINE_COMPATIBILITY_TEST
         @unknown default:
             unreachable()
@@ -475,17 +472,13 @@ final class BufferTests: XCTestCase {
                                                      .value(1),
                                                      .value(2),
                                                      .value(3)])
-            XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
-                                                         .requested(.max(3)),
-                                                         .requested(.max(1))])
+            XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
         case .dropOldest:
             XCTAssertEqual(helper.tracking.history, [.subscription("Buffer"),
                                                      .value(3),
                                                      .value(4),
                                                      .value(5)])
-            XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
-                                                         .requested(.max(3)),
-                                                         .requested(.max(1))])
+            XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
         case .customError:
             XCTAssertEqual(helper.tracking.history, [.subscription("Buffer"),
                                                      .value(1),
@@ -493,8 +486,7 @@ final class BufferTests: XCTestCase {
                                                      .value(3),
                                                      .completion(.failure(.oops))])
             XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
-                                                         .cancelled,
-                                                         .requested(.max(3))])
+                                                         .cancelled])
 #if OPENCOMBINE_COMPATIBILITY_TEST
         @unknown default:
             unreachable()
@@ -549,11 +541,9 @@ final class BufferTests: XCTestCase {
 
         switch prefetch {
         case .byRequest:
-            XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
-                                                         .requested(.max(3))])
+            XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
         case .keepFull:
-            XCTAssertEqual(helper.subscription.history, [.requested(.max(5)),
-                                                         .requested(.max(3))])
+            XCTAssertEqual(helper.subscription.history, [.requested(.max(5))])
 #if OPENCOMBINE_COMPATIBILITY_TEST
         @unknown default:
             unreachable()
@@ -583,18 +573,14 @@ final class BufferTests: XCTestCase {
         switch (prefetch, whenFull) {
         case (.byRequest, .customError):
             XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
-                                                         .requested(.none),
                                                          .cancelled])
         case (.byRequest, _):
-            XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
-                                                         .requested(.none)])
+            XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
         case (.keepFull, .customError):
             XCTAssertEqual(helper.subscription.history, [.requested(.max(5)),
-                                                         .requested(.none),
                                                          .cancelled])
         case (.keepFull, _):
-            XCTAssertEqual(helper.subscription.history, [.requested(.max(5)),
-                                                         .requested(.none)])
+            XCTAssertEqual(helper.subscription.history, [.requested(.max(5))])
 #if OPENCOMBINE_COMPATIBILITY_TEST
         @unknown default:
             unreachable()
@@ -632,24 +618,17 @@ final class BufferTests: XCTestCase {
         switch (prefetch, whenFull) {
         case (.byRequest, .customError):
             XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
-                                                         .requested(.none),
-                                                         .cancelled,
-                                                         .requested(.max(3))])
+                                                         .cancelled])
         case (.byRequest, _):
-            XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
-                                                         .requested(.none),
-                                                         .requested(.max(3)),
-                                                         .requested(.max(1))])
+            XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
         case (.keepFull, .customError):
             XCTAssertEqual(helper.subscription.history, [.requested(.max(5)),
-                                                         .requested(.none),
                                                          .cancelled,
-                                                         .requested(.max(6))])
+                                                         .requested(.max(3))])
         case (.keepFull, _):
             XCTAssertEqual(helper.subscription.history, [.requested(.max(5)),
-                                                         .requested(.none),
-                                                         .requested(.max(6)),
-                                                         .requested(.max(2))])
+                                                         .requested(.max(3)),
+                                                         .requested(.max(1))])
 #if OPENCOMBINE_COMPATIBILITY_TEST
         @unknown default:
             unreachable()
@@ -697,11 +676,9 @@ final class BufferTests: XCTestCase {
 
         switch prefetch {
         case .byRequest:
-            XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
-                                                         .requested(.unlimited)])
+            XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
         case .keepFull:
-            XCTAssertEqual(helper.subscription.history, [.requested(.max(5)),
-                                                         .requested(.unlimited)])
+            XCTAssertEqual(helper.subscription.history, [.requested(.max(5))])
 #if OPENCOMBINE_COMPATIBILITY_TEST
         @unknown default:
             unreachable()
@@ -751,8 +728,7 @@ final class BufferTests: XCTestCase {
             XCTAssertEqual(helper.tracking.history, [.subscription("Buffer"),
                                                      .value(1),
                                                      .value(2)])
-            XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
-                                                         .requested(.max(2))])
+            XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
         case .failure:
             XCTAssertEqual(helper.tracking.history, [.subscription("Buffer"),
                                                      .completion(completion)])
@@ -767,9 +743,7 @@ final class BufferTests: XCTestCase {
                                                      .value(1),
                                                      .value(2),
                                                      .completion(completion)])
-            XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
-                                                         .requested(.max(2)),
-                                                         .requested(.max(1))])
+            XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
         case .failure:
             XCTAssertEqual(helper.tracking.history, [.subscription("Buffer"),
                                                      .completion(completion)])
@@ -796,7 +770,7 @@ final class BufferTests: XCTestCase {
             publisher.send(completion: .finished)
         }
 
-        XCTAssertEqual(deinitCounter, 2)
+        XCTAssertEqual(deinitCounter, 1)
 
         do {
             let publisher = CustomPublisher(subscription: CustomSubscription())
@@ -810,7 +784,7 @@ final class BufferTests: XCTestCase {
             publisher.send(completion: .failure(.oops))
         }
 
-        XCTAssertEqual(deinitCounter, 4)
+        XCTAssertEqual(deinitCounter, 2)
 
         var downstreamSubscription: Subscription?
 
@@ -826,9 +800,9 @@ final class BufferTests: XCTestCase {
             publisher.send(completion: .failure(.oops))
         }
 
-        XCTAssertEqual(deinitCounter, 6)
+        XCTAssertEqual(deinitCounter, 3)
         downstreamSubscription?.cancel()
-        XCTAssertEqual(deinitCounter, 6)
+        XCTAssertEqual(deinitCounter, 3)
 
         do {
             let publisher = CustomPublisher(subscription: CustomSubscription())
@@ -841,7 +815,7 @@ final class BufferTests: XCTestCase {
             buffer.subscribe(tracking)
         }
 
-        XCTAssertEqual(deinitCounter, 6)
+        XCTAssertEqual(deinitCounter, 4)
     }
 
     private func testBufferReceiveSubscriptionTwice(
