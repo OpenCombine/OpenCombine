@@ -15,6 +15,10 @@ import OpenCombine
 import OpenCombineFoundation
 #endif
 
+// OperationQueue has serious bugs in swift-corelibs-foundation prior to Swift 5.3.
+// (see https://github.com/apple/swift-corelibs-foundation/pull/2779)
+#if canImport(Darwin) || swift(>=5.3) // TEST_DISCOVERY_CONDITION
+
 @available(macOS 10.15, iOS 13.0, *)
 final class OperationQueueSchedulerTests: XCTestCase {
 
@@ -72,12 +76,6 @@ final class OperationQueueSchedulerTests: XCTestCase {
     }
 
     // MARK: - Scheduler
-
-#if canImport(Darwin)
-    // FIXME: These tests crash with swift-corelibs-foundation.
-    // The issue has been resolved in
-    // https://github.com/apple/swift-corelibs-foundation/pull/2779
-    // but it hasn't made it into an official release yet.
 
     func testScheduleActionOnceNowWithTestQueue() {
         let queue = TestOperationQueue()
@@ -145,7 +143,6 @@ final class OperationQueueSchedulerTests: XCTestCase {
         XCTAssertFalse(op.isFinished)
         XCTAssertFalse(op.isCancelled)
         XCTAssertFalse(op.isAsynchronous)
-        XCTAssertFalse(op.isConcurrent)
         XCTAssert(op is Cancellable)
 
         XCTAssertEqual(counter.value, 0)
@@ -214,7 +211,6 @@ final class OperationQueueSchedulerTests: XCTestCase {
         XCTAssertFalse(op.isFinished)
         XCTAssertFalse(op.isCancelled)
         XCTAssertFalse(op.isAsynchronous)
-        XCTAssertFalse(op.isConcurrent)
         XCTAssert(op is Cancellable)
         XCTAssert(cancellable is AnyCancellable)
 
@@ -296,7 +292,6 @@ final class OperationQueueSchedulerTests: XCTestCase {
         XCTAssertEqual(numberOfTicksRightAfterCancellation,
                        numberOfTicksOneSecondAfterCancellation)
     }
-#endif // canImport(Darwin)
 
     func testMinimumTolerance() {
         let scheduler = makeScheduler(.main)
@@ -475,3 +470,5 @@ private final class TestOperationQueue: OperationQueue {
     }
 #endif // canImport(Darwin)
 }
+
+#endif // canImport(Darwin) || swift(>=5.3)

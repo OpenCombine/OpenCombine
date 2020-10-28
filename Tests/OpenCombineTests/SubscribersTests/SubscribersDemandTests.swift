@@ -211,6 +211,9 @@ final class SubscribersDemandTests: XCTestCase {
     }
 
     func testEncodeDecodePlist() throws {
+// PropertyListEncoder and PropertyListDecoder are unavailable in
+// swift-corelibs-foundation prior to Swift 5.1.
+#if canImport(Darwin) || swift(>=5.1)
         let encoder = PropertyListEncoder()
         encoder.outputFormat = .xml
         try testEncodeDecode(
@@ -267,6 +270,7 @@ final class SubscribersDemandTests: XCTestCase {
             stringToDecoderInput: { Data($0.utf8) },
             encoderOutputToString: { String(decoding: $0, as: UTF8.self) }
         )
+#endif // canImport(Darwin) || swift(>=5.1)
     }
 
     private func testEncodeDecode<Encoder: TopLevelEncoder, Decoder: TopLevelDecoder>(

@@ -9,7 +9,7 @@ import CoreFoundation
 import Foundation
 import OpenCombine
 
-extension Timer {
+extension Foundation.Timer {
 
     /// Returns a publisher that repeatedly emits the current date on the given interval.
     ///
@@ -104,9 +104,7 @@ extension Timer {
             }
 
             public func connect() -> Cancellable {
-                let timer = TimerWrapper(timeInterval: interval,
-                                         repeats: true,
-                                         block: fire)
+                let timer = Timer(timeInterval: interval, repeats: true, block: fire)
                 timer.tolerance = tolerance ?? 0
                 runLoop.add(timer, forMode: mode)
                 return CancellableTimer(timer: timer, publisher: self)
@@ -114,7 +112,7 @@ extension Timer {
 
             // MARK: Private
 
-            private func fire(_ timer: TimerWrapper) {
+            private func fire(_ timer: Timer) {
                 lock.lock()
                 let sides = self.sides
                 lock.unlock()
@@ -147,7 +145,7 @@ extension Timer {
             }
 
             private struct CancellableTimer: Cancellable {
-                let timer: TimerWrapper
+                let timer: Timer
                 let publisher: TimerPublisher
 
                 func cancel() {
@@ -219,117 +217,9 @@ extension Timer {
 }
 
 #if !canImport(Combine)
-extension Timer {
+extension Foundation.Timer {
 
     /// A publisher that repeatedly emits the current date on a given interval.
     public typealias TimerPublisher = OCombine.TimerPublisher
 }
 #endif
-
-// MARK: - Portability
-
-extension RunLoop.Mode {
-    fileprivate func asCFRunLoopMode() -> CFRunLoopMode {
-#if canImport(Darwin)
-        return CFRunLoopMode(rawValue as CFString)
-#else
-        return rawValue.withCString {
-#if swift(>=5.3)
-          let encoding = CFStringBuiltInEncodings.UTF8.rawValue
-#else
-          let encoding = CFStringEncoding(kCFStringEncodingUTF8)
-#endif // swift(>=5.3)
-
-          return CFStringCreateWithCString(
-              nil,
-              $0,
-              encoding
-          )
-        }
-#endif
-    }
-}
-
-/// Use CoreFoundation on Darwin for `TimerPublisher` implementation, since pure
-/// Foundation APIs are only available since macOS 10.12/iOS 10.0.
-///
-/// We don't have this problem on non-Darwin platforms, since swift-corelibs-foundation
-/// is shipped with the toolchain, so we can always use the newest APIs.
-///
-/// We could use CoreFoundation everywhere, but the `RunLoop.getCFRunloop()` method
-/// is marked deprecated on the swift-corelibs-foundation main branch.
-///
-/// So we use this wrapper that has the same API as Foundation's Timer, but uses CF
-/// on Darwin and Foundation on other platforms.
-private struct TimerWrapper {
-
-#if canImport(Darwin)
-    fileprivate typealias UnderlyingTimer = CFRunLoopTimer?
-#else
-    fileprivate typealias UnderlyingTimer = Timer
-#endif
-
-    fileprivate let underlyingTimer: UnderlyingTimer
-
-    private init(underlyingTimer: UnderlyingTimer) {
-        self.underlyingTimer = underlyingTimer
-    }
-
-    fileprivate init(
-        timeInterval: TimeInterval,
-        repeats: Bool,
-        block: @escaping (TimerWrapper) -> Void
-    ) {
-#if canImport(Darwin)
-        underlyingTimer = CFRunLoopTimerCreateWithHandler(
-            nil,
-            Date().timeIntervalSinceReferenceDate,
-            timeInterval,
-            0,
-            0,
-            { block(TimerWrapper(underlyingTimer: $0)) }
-        )
-#else
-        underlyingTimer = Timer(
-            timeInterval: timeInterval,
-            repeats: repeats,
-            block: { block(TimerWrapper(underlyingTimer: $0)) }
-        )
-#endif
-    }
-
-    fileprivate var tolerance: TimeInterval {
-        get {
-#if canImport(Darwin)
-            return CFRunLoopTimerGetTolerance(underlyingTimer)
-#else
-            return underlyingTimer.tolerance
-#endif
-        }
-        nonmutating set {
-#if canImport(Darwin)
-            CFRunLoopTimerSetTolerance(underlyingTimer, newValue)
-#else
-            underlyingTimer.tolerance = newValue
-#endif
-        }
-    }
-
-    fileprivate func invalidate() {
-#if canImport(Darwin)
-            CFRunLoopTimerInvalidate(underlyingTimer)
-#else
-            underlyingTimer.invalidate()
-#endif
-    }
-}
-
-extension RunLoop {
-    fileprivate func add(_ timer: TimerWrapper, forMode mode: RunLoop.Mode) {
-#if canImport(Darwin)
-        CFRunLoopAddTimer(getCFRunLoop(), timer.underlyingTimer, mode.asCFRunLoopMode())
-#else
-        add(timer.underlyingTimer, forMode: mode)
-#endif
-    }
-}

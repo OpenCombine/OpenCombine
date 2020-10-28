@@ -212,6 +212,13 @@ jobs:
           command: |
             bash <(curl -s https://codecov.io/bash) -D DerivedData
 
+  "Execute tests on Ubuntu 18.04 (Swift 5.0)":
+    docker:
+      - image: swift:5.0-bionic
+    environment:
+      SWIFT_VERSION: "5.0"
+    <<: *ubuntu_tests_steps
+
   "Execute tests on Ubuntu 18.04 (Swift 5.1)":
     docker:
       - image: swift:5.1-bionic
@@ -278,6 +285,7 @@ workflows:
       - "Execute tests on iOS 9.3 (Xcode 10.2.1, Swift 5.0.1)"
   "OpenCombine: execute tests on Linux":
     jobs:
+      - "Execute tests on Ubuntu 18.04 (Swift 5.0)"
       - "Execute tests on Ubuntu 18.04 (Swift 5.1)"
       - "Execute tests on Ubuntu 18.04 (Swift 5.2)"
       - "Execute tests on Ubuntu 18.04 (Swift 5.3)"

@@ -623,3 +623,11 @@ extension TestNotificationCenter.Event: CustomStringConvertible {
         }
     }
 }
+
+#if !canImport(Darwin) && swift(<5.1)
+extension Notification.Name {
+    init(_ rawValue: String) {
+        self.init(rawValue: rawValue)
+    }
+}
+#endif

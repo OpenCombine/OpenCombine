@@ -21,7 +21,7 @@ import FoundationNetworking
 // into a release, we can enable these tests on non-Darwin platforms.
 //
 // The publisher itself though should work alright on those platforms.
-#if canImport(Darwin)
+#if canImport(Darwin) // TEST_DISCOVERY_CONDITION
 
 #if OPENCOMBINE_COMPATIBILITY_TEST
 import Combine
