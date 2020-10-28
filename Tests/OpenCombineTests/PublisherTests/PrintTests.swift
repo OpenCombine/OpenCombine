@@ -96,14 +96,14 @@ final class PrintTests: XCTestCase {
         let printer = publisher.print(to: stream)
 
         let counter = Atomic(0)
-        _ = printer.sink(receiveValue: { _ in counter.do { $0 += 1 } })
+        _ = printer.sink(receiveValue: { _ in counter += 1 })
 
         race(
             { _ = publisher.send(12) },
             { _ = publisher.send(34) }
         )
 
-        XCTAssertEqual(counter.value, 200)
+        XCTAssertEqual(counter, 200)
     }
 
     func testPrintReflection() throws {

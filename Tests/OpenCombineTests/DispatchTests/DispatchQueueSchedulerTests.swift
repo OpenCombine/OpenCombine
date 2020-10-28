@@ -496,7 +496,7 @@ final class DispatchQueueSchedulerTests: XCTestCase {
 
         backgroundScheduler
             .schedule(options: .init(qos: .userInteractive, group: group)) {
-                didExecuteBackgroundAction.do { $0 = true }
+                didExecuteBackgroundAction.set(true)
             }
 
         XCTAssertFalse(didExecuteMainAction, "action should be executed asynchronously")
