@@ -23,8 +23,7 @@ final class DropTests: XCTestCase {
                                         createSut: { $0.dropFirst(2) })
 
         XCTAssertEqual(helper.tracking.history, [.subscription("Drop")])
-        XCTAssertEqual(helper.subscription.history, [.requested(.max(2)),
-                                                     .requested(.max(42))])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(44))])
 
         XCTAssertEqual(helper.publisher.send(1), .none)
         XCTAssertEqual(helper.publisher.send(2), .none)
@@ -36,8 +35,7 @@ final class DropTests: XCTestCase {
                                                  .value(3),
                                                  .value(4),
                                                  .value(5)])
-        XCTAssertEqual(helper.subscription.history, [.requested(.max(2)),
-                                                     .requested(.max(42))])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(44))])
 
         helper.publisher.send(completion: .finished)
 
@@ -46,8 +44,7 @@ final class DropTests: XCTestCase {
                                                  .value(4),
                                                  .value(5),
                                                  .completion(.finished)])
-        XCTAssertEqual(helper.subscription.history, [.requested(.max(2)),
-                                                     .requested(.max(42))])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(44))])
 
         helper.publisher.send(completion: .finished)
         helper.publisher.send(completion: .failure(.oops))
@@ -61,8 +58,7 @@ final class DropTests: XCTestCase {
                                                  .completion(.finished),
                                                  .completion(.failure(.oops)),
                                                  .completion(.failure(.oops))])
-        XCTAssertEqual(helper.subscription.history, [.requested(.max(2)),
-                                                     .requested(.max(42))])
+        XCTAssertEqual(helper.subscription.history, [.requested(.max(44))])
     }
 
     func testDroppingNothing() throws {
@@ -123,8 +119,7 @@ final class DropTests: XCTestCase {
 
         drop.subscribe(tracking)
 
-        XCTAssertEqual(subscription1.history, [.requested(.max(1)),
-                                               .requested(.max(2))])
+        XCTAssertEqual(subscription1.history, [.requested(.max(3))])
 
         let subscription2 = CustomSubscription()
 
@@ -134,8 +129,7 @@ final class DropTests: XCTestCase {
 
         try XCTUnwrap(publisher.subscriber).receive(subscription: subscription1)
 
-        XCTAssertEqual(subscription1.history, [.requested(.max(1)),
-                                               .requested(.max(2)),
+        XCTAssertEqual(subscription1.history, [.requested(.max(3)),
                                                .cancelled])
     }
 
@@ -192,7 +186,7 @@ final class DropTests: XCTestCase {
         let drop = publisher.dropFirst()
         let tracking = TrackingSubscriber(
             receiveSubscription: { _ in
-                XCTAssertEqual(subscription.history, [.requested(.max(1))])
+                XCTAssertEqual(subscription.history, [])
                 didReceiveSubscription = true
             }
         )
