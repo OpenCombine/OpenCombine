@@ -52,8 +52,8 @@ extension Publishers {
                   Upstream.Output == Downstream.Input
         {
             let inner = Inner(downstream: subscriber, count: count)
-            upstream.subscribe(inner)
             subscriber.receive(subscription: inner)
+            upstream.subscribe(inner)
         }
     }
 }
@@ -70,8 +70,6 @@ extension Publishers.Drop {
         where Upstream.Output == Downstream.Input,
               Upstream.Failure == Downstream.Failure
     {
-        // NOTE: This class has been audited for thread safety.
-
         typealias Input = Upstream.Output
 
         typealias Failure = Upstream.Failure
@@ -106,7 +104,7 @@ extension Publishers.Drop {
             precondition(count >= 0, "count must not be negative")
             let demandToRequestFromUpstream = pendingDemand + count
             lock.unlock()
-            if demandToRequestFromUpstream > 0 {
+            if demandToRequestFromUpstream != .none {
                 subscription.request(demandToRequestFromUpstream)
             }
         }
@@ -121,8 +119,9 @@ extension Publishers.Drop {
         }
 
         func receive(completion: Subscribers.Completion<Upstream.Failure>) {
-            // Combine doesn't lock here!
+            lock.lock()
             subscription = nil
+            lock.unlock()
             downstream.receive(completion: completion)
         }
 
@@ -139,9 +138,11 @@ extension Publishers.Drop {
         }
 
         func cancel() {
-            // Combine doesn't lock here!
+            lock.lock()
+            let subscription = self.subscription
+            self.subscription = nil
+            lock.unlock()
             subscription?.cancel()
-            subscription = nil
         }
 
         var description: String { return "Drop" }
