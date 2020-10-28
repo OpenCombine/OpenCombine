@@ -1043,6 +1043,34 @@ final class FlatMapTests: XCTestCase {
         )
     }
 
+    func testOverloadWhenUpstreamNeverFailsButChildrenCanFail() {
+        let child = CustomPublisher(subscription: nil)
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisherBase<Int, Never>.self,
+            initialDemand: .max(1),
+            receiveValueDemand: .max(100),
+            createSut: { $0.flatMap { _ in child } }
+        )
+
+        XCTAssertEqual(helper.sut.upstream.upstream, helper.publisher)
+        XCTAssertEqual(helper.sut.transform(0), child)
+    }
+
+    func testOverloadWhenUpstreamCanFailButChildrenNeverFail() {
+        let child = CustomPublisherBase<Int, Never>(subscription: nil)
+
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisherBase<Int,
+                                               TestingError>.self,
+            initialDemand: .max(1),
+            receiveValueDemand: .max(100),
+            createSut: { $0.flatMap { _ in child } }
+        )
+
+        XCTAssertEqual(helper.sut.upstream, helper.publisher)
+        XCTAssertEqual(helper.sut.transform(0).upstream, child)
+    }
+
     func testFlatMapReflection() throws {
         try testReflection(parentInput: String.self,
                            parentFailure: Never.self,

@@ -56,7 +56,7 @@ extension Publisher {
     ///     subscriptions, or `Subscribers.Demand.unlimited` if unspecified.
     ///   - transform: A closure that takes an element as a parameter and returns
     ///     a publisher that produces elements of that type.
-    /// - Returns: A publisher that transforms elements from an upstream  publisher into
+    /// - Returns: A publisher that transforms elements from an upstream publisher into
     ///   a publisher of that element’s type.
     public func flatMap<Result, Child: Publisher>(
         maxPublishers: Subscribers.Demand = .unlimited,
@@ -66,6 +66,68 @@ extension Publisher {
             return .init(upstream: self,
                          maxPublishers: maxPublishers,
                          transform: transform)
+    }
+}
+
+extension Publisher where Failure == Never {
+
+    /// Transforms all elements from an upstream publisher into a new publisher up to
+    /// a maximum number of publishers you specify.
+    ///
+    /// - Parameters:
+    ///   - maxPublishers: Specifies the maximum number of concurrent publisher
+    ///     subscriptions, or `Subscribers.Demand.unlimited` if unspecified.
+    ///   - transform: A closure that takes an element as a parameter and returns
+    ///     a publisher that produces elements of that type.
+    /// - Returns: A publisher that transforms elements from an upstream publisher into
+    ///   a publisher of that element’s type.
+    public func flatMap<Child: Publisher>(
+        maxPublishers: Subscribers.Demand = .unlimited,
+        _ transform: @escaping (Output) -> Child
+    ) -> Publishers.FlatMap<Child, Publishers.SetFailureType<Self, Child.Failure>> {
+        return setFailureType(to: Child.Failure.self)
+            .flatMap(maxPublishers: maxPublishers, transform)
+    }
+
+    /// Transforms all elements from an upstream publisher into a new publisher up to
+    /// a maximum number of publishers you specify.
+    ///
+    /// - Parameters:
+    ///   - maxPublishers: Specifies the maximum number of concurrent publisher
+    ///     subscriptions, or `Subscribers.Demand.unlimited` if unspecified.
+    ///   - transform: A closure that takes an element as a parameter and returns
+    ///     a publisher that produces elements of that type.
+    /// - Returns: A publisher that transforms elements from an upstream publisher
+    ///   into a publisher of that element’s type.
+    public func flatMap<Child: Publisher>(
+        maxPublishers: Subscribers.Demand = .unlimited,
+        _ transform: @escaping (Output) -> Child
+    ) -> Publishers.FlatMap<Child, Self> where Child.Failure == Never {
+        return .init(upstream: self, maxPublishers: maxPublishers, transform: transform)
+    }
+}
+
+extension Publisher {
+
+    /// Transforms all elements from an upstream publisher into a new publisher up to
+    /// a maximum number of publishers you specify.
+    ///
+    /// - Parameters:
+    ///   - maxPublishers: Specifies the maximum number of concurrent publisher
+    ///     subscriptions, or `Subscribers.Demand.unlimited` if unspecified.
+    ///   - transform: A closure that takes an element as a parameter and returns
+    ///     a publisher that produces elements of that type.
+    /// - Returns: A publisher that transforms elements from an upstream publisher into
+    ///   a publisher of that element’s type.
+    public func flatMap<Child: Publisher>(
+        maxPublishers: Subscribers.Demand = .unlimited,
+        _ transform: @escaping (Output) -> Child
+    ) -> Publishers.FlatMap<Publishers.SetFailureType<Child, Failure>, Self>
+        where Child.Failure == Never
+    {
+        return flatMap(maxPublishers: maxPublishers) {
+            transform($0).setFailureType(to: Failure.self)
+        }
     }
 }
 
