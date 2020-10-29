@@ -1,6 +1,6 @@
 Pod::Spec.new do |spec|
     spec.name          = "OpenCombineFoundation"
-    spec.version       = "0.10.2"
+    spec.version       = "0.11.0"
     spec.summary       = "OpenCombine + OpenCombineFoundation interoperability"
   
     spec.description   = <<-DESC
@@ -21,5 +21,5 @@ Pod::Spec.new do |spec|
     spec.tvos.deployment_target    = "9.0"
   
     spec.source_files = "Sources/OpenCombineFoundation/**/*.swift"
-    spec.dependency     "OpenCombine", '>= 0.10.1'
+    spec.dependency     "OpenCombine", '>= 0.10.2'
   end
