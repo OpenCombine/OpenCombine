@@ -129,7 +129,7 @@ final class DebounceTests: XCTestCase {
                                                        tolerance: .nanoseconds(7),
                                                        options: .nontrivialOptions),
                         .schedule(options: nil)])
-        XCTAssertEqual(scheduler.cancellableTokenDeinitCount, 2)
+        XCTAssertEqual(scheduler.cancellableTokenDeinitCount, 3)
     }
 
     func testFinishBeforeDue() {
@@ -175,7 +175,7 @@ final class DebounceTests: XCTestCase {
                                                        tolerance: .nanoseconds(7),
                                                        options: .nontrivialOptions),
                         .schedule(options: nil)])
-        XCTAssertEqual(scheduler.cancellableTokenDeinitCount, 0)
+        XCTAssertEqual(scheduler.cancellableTokenDeinitCount, 1)
     }
 
     func testFailBeforeDue() {
@@ -221,7 +221,7 @@ final class DebounceTests: XCTestCase {
                                                        tolerance: .nanoseconds(7),
                                                        options: .nontrivialOptions),
                         .schedule(options: nil)])
-        XCTAssertEqual(scheduler.cancellableTokenDeinitCount, 0)
+        XCTAssertEqual(scheduler.cancellableTokenDeinitCount, 1)
     }
 
     func testCancelBeforeDue() throws {
@@ -262,7 +262,7 @@ final class DebounceTests: XCTestCase {
                                                        interval: .nanoseconds(13),
                                                        tolerance: .nanoseconds(7),
                                                        options: .nontrivialOptions)])
-        XCTAssertEqual(scheduler.cancellableTokenDeinitCount, 0)
+        XCTAssertEqual(scheduler.cancellableTokenDeinitCount, 1)
     }
 
     func testDemand() throws {
@@ -418,10 +418,10 @@ final class DebounceTests: XCTestCase {
                                                        interval: .nanoseconds(13),
                                                        tolerance: .nanoseconds(7),
                                                        options: .nontrivialOptions)])
-        XCTAssertEqual(scheduler.cancellableTokenDeinitCount, 4)
+        XCTAssertEqual(scheduler.cancellableTokenDeinitCount, 5)
     }
 
-    func testBadScheduler() {
+    func testBadScheduler() throws {
         // What if the scheduler returns a cancellable that does nothing at all?
 
         let scheduler = VirtualTimeScheduler(
@@ -450,8 +450,6 @@ final class DebounceTests: XCTestCase {
         scheduler.rewind(to: .nanoseconds(50))
 
         XCTAssertEqual(helper.tracking.history, [.subscription("Debounce"),
-                                                 .value(42),
-                                                 .value(42),
                                                  .value(42)])
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
         XCTAssertEqual(scheduler.history,
@@ -481,9 +479,20 @@ final class DebounceTests: XCTestCase {
                                                        options: .nontrivialOptions)])
 
         XCTAssertEqual(scheduler.cancellableTokenDeinitCount, 0)
+
+        // Cancel before due
+        XCTAssertEqual(helper.publisher.send(1), .none)
+        scheduler.rewind(to: .nanoseconds(54))
+        try XCTUnwrap(helper.downstreamSubscription).cancel()
+        scheduler.rewind(to: .nanoseconds(100))
+
+        XCTAssertEqual(helper.tracking.history, [.subscription("Debounce"),
+                                                 .value(42)])
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
+                                                     .cancelled])
     }
 
-    func testSetupTimerWeakCapture() {
+    func testSetupTimerStrongCapture() {
         let scheduler = VirtualTimeScheduler()
         var subscriptionDestroyed = false
         do {
@@ -501,10 +510,10 @@ final class DebounceTests: XCTestCase {
             XCTAssertEqual(helper.publisher.send(1), .none)
         }
 
-        XCTAssertTrue(subscriptionDestroyed)
+        XCTAssertFalse(subscriptionDestroyed)
     }
 
-    func testCrashesWithImmediateScheduler() {
+    func testDebounceWithImmediateScheduler() {
         let helper = OperatorTestHelper(
             publisherType: CustomPublisher.self,
             initialDemand: .max(2),
@@ -515,16 +524,17 @@ final class DebounceTests: XCTestCase {
             }
         )
 
-        assertCrashes {
-            _ = helper.publisher.send(1)
-        }
+        _ = helper.publisher.send(1)
+
+        XCTAssertEqual(helper.tracking.history, [.subscription("Debounce"), .value(1)])
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
     }
 
     func testTimeoutReceiveValueBeforeSubscription() {
         let scheduler = VirtualTimeScheduler()
         testReceiveValueBeforeSubscription(
             value: 42,
-            expected: .crash,
+            expected: .history([], demand: .none),
             { $0.debounce(for: .nanoseconds(13), scheduler: scheduler) }
         )
     }
@@ -533,7 +543,7 @@ final class DebounceTests: XCTestCase {
         let scheduler = VirtualTimeScheduler()
         testReceiveCompletionBeforeSubscription(
             inputType: Int.self,
-            expected: .crash,
+            expected: .history([]),
             { $0.debounce(for: .nanoseconds(13), scheduler: scheduler) }
         )
     }
@@ -542,7 +552,7 @@ final class DebounceTests: XCTestCase {
         let scheduler = VirtualTimeScheduler()
         testRequestBeforeSubscription(
             inputType: Int.self,
-            shouldCrash: true,
+            shouldCrash: false,
             { $0.debounce(for: .nanoseconds(13), scheduler: scheduler) }
         )
     }
@@ -590,41 +600,17 @@ final class DebounceTests: XCTestCase {
 
     func testDebounceReflection() throws {
         let scheduler = VirtualTimeScheduler()
-
-        let customMirror = hasUpdatedReflection
-            ? expectedChildren(
-                  ("downstream", .contains("TrackingSubscriberBase")),
-                  ("downstreamDemand", "max(0)"),
-                  ("currentValue", "nil")
-              )
-            : expectedChildren(
-                  ("upstream", .contains("CustomConnectablePublisherBase")),
-                  ("downstream", .contains("TrackingSubscriberBase")),
-                  ("upstreamSubscription", .anything),
-                  ("downstreamDemand", "max(0)"),
-                  ("currentValue", "nil")
-              )
-
         try testReflection(
             parentInput: Int.self,
             parentFailure: Error.self,
             description: "Debounce",
-            customMirror: customMirror,
+            customMirror: expectedChildren(
+                ("downstream", .contains("TrackingSubscriberBase")),
+                ("downstreamDemand", "max(0)"),
+                ("currentValue", "nil")
+            ),
             playgroundDescription: "Debounce",
             { $0.debounce(for: .nanoseconds(13), scheduler: scheduler) }
         )
     }
-}
-
-// FIXME: Remove this as soon as we switch our CI to the latest OS releases
-private var hasUpdatedReflection: Bool {
-#if OPENCOMBINE_COMPATIBILITY_TEST
-    if #available(macOS 10.16, iOS 14.0, *) {
-        return true
-    } else {
-        return false
-    }
-#else
-    return true
-#endif
 }

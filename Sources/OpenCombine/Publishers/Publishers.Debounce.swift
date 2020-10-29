@@ -139,6 +139,17 @@ extension Publishers.Debounce {
 
         private typealias Generation = UInt64
 
+        private enum CancellerState {
+            case pending
+            case active(Cancellable)
+
+            fileprivate func cancel() {
+                if case let .active(cancellable) = self {
+                    cancellable.cancel()
+                }
+            }
+        }
+
         private let lock = UnfairLock.allocate()
 
         private let downstreamLock = UnfairRecursiveLock.allocate()
@@ -153,7 +164,7 @@ extension Publishers.Debounce {
 
         private var state = SubscriptionStatus.awaitingSubscription
 
-        private var currentCanceller: Cancellable?
+        private var currentCancellers = [Generation : CancellerState]()
 
         private var currentValue: Output?
 
@@ -193,7 +204,6 @@ extension Publishers.Debounce {
 
         func receive(_ input: Input) -> Subscribers.Demand {
             lock.lock()
-            precondition(!state.isAwaitingSubscription)
             guard case .subscribed = state else {
                 lock.unlock()
                 return .none
@@ -202,32 +212,38 @@ extension Publishers.Debounce {
             let generation = currentGeneration
             currentValue = input
             let due = scheduler.now.advanced(by: dueTime)
+            let previousCancellers = self.currentCancellers
+            currentCancellers.removeAll()
+            currentCancellers[generation] = .pending
             lock.unlock()
             let newCanceller = scheduler.schedule(after: due,
                                                   interval: dueTime,
                                                   tolerance: scheduler.minimumTolerance,
-                                                  options: options) { [weak self] in
-                self?.due(generation: generation)
+                                                  options: options) {
+                self.due(generation: generation)
             }
             lock.lock()
-            let canceller = currentCanceller
-            currentCanceller = newCanceller
+            currentCancellers[generation] = .active(newCanceller)
             lock.unlock()
-            canceller?.cancel()
+            for canceller in previousCancellers.values {
+                canceller.cancel()
+            }
             return .none
         }
 
-        func receive(completion: Subscribers.Completion<Upstream.Failure>) {
+        func receive(completion: Subscribers.Completion<Failure>) {
             lock.lock()
-            precondition(!state.isAwaitingSubscription)
             guard case .subscribed = state else {
                 lock.unlock()
                 return
             }
             state = .terminal
-            let canceller = currentCanceller
+            let previousCancellers = currentCancellers
+            currentCancellers.removeAll()
             lock.unlock()
-            canceller?.cancel()
+            for canceller in previousCancellers.values {
+                canceller.cancel()
+            }
             scheduler.schedule {
                 self.downstreamLock.lock()
                 self.downstream.receive(completion: completion)
@@ -237,7 +253,6 @@ extension Publishers.Debounce {
 
         func request(_ demand: Subscribers.Demand) {
             lock.lock()
-            precondition(!state.isAwaitingSubscription)
             guard case .subscribed = state else {
                 lock.unlock()
                 return
@@ -253,7 +268,12 @@ extension Publishers.Debounce {
                 return
             }
             state = .terminal
+            let previousCancellers = currentCancellers
+            currentCancellers.removeAll()
             lock.unlock()
+            for canceller in previousCancellers.values {
+                canceller.cancel()
+            }
             subscription.cancel()
         }
 
@@ -280,18 +300,23 @@ extension Publishers.Debounce {
             // If this condition holds, it means that no values were received
             // in this time frame => we should propagate the current value downstream.
             guard generation == currentGeneration, let value = currentValue else {
-                let canceller = currentCanceller
+                let canceller = currentCancellers[generation]
                 lock.unlock()
                 canceller?.cancel()
                 return
             }
 
-            let hasAnyDemand = downstreamDemand > 0
+            guard let canceller = currentCancellers[generation] else {
+                lock.unlock()
+                return
+            }
+            currentCancellers[generation] = nil
+
+            let hasAnyDemand = downstreamDemand != .none
             if hasAnyDemand {
                 downstreamDemand -= 1
             }
 
-            let canceller = currentCanceller!
             lock.unlock()
             canceller.cancel()
 
