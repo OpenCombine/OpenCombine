@@ -10,8 +10,6 @@ Open-source implementation of Apple's [Combine](https://developer.apple.com/docu
 
 The main goal of this project is to provide a compatible, reliable and efficient implementation which can be used on Apple's operating systems before macOS 10.15 and iOS 13, as well as Linux and Windows.
 
-The project is in early development.
-
 ### Installation
 `OpenCombine` contains three public targets: `OpenCombine`, `OpenCombineFoundation` and `OpenCombineDispatch` (the fourth one, `COpenCombineHelpers`, is considered private. Don't import it in your projects).
 
