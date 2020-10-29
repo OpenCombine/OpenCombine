@@ -14,14 +14,11 @@ import XCTest
 import FoundationNetworking
 #endif
 
-// We can't test it on non-Darwin platforms because swift-corelibs-foundation
-// doesn't allow us to override some URLSession methods that we need.
+// Prior to Swift 5.3 there were incompatibilities between Darwin Foundation and
+// swift-corelibs-foundation that were making these tests impossible to build.
 //
-// As soon as https://github.com/apple/swift-corelibs-foundation/pull/2587 makes it
-// into a release, we can enable these tests on non-Darwin platforms.
-//
-// The publisher itself though should work alright on those platforms.
-#if canImport(Darwin) // TEST_DISCOVERY_CONDITION
+// Those were fixed in https://github.com/apple/swift-corelibs-foundation/pull/2587.
+#if canImport(Darwin) || swift(>=5.3) // TEST_DISCOVERY_CONDITION
 
 #if OPENCOMBINE_COMPATIBILITY_TEST
 import Combine
@@ -300,6 +297,9 @@ private class TestURLSession: URLSession {
     init(testDataTask: TestURLSessionDataTask) {
         self.testDataTask = testDataTask
         self.dataTaskCompletionHandlers = []
+#if !canImport(Darwin)
+        super.init(configuration: .default)
+#endif
     }
 
     // MARK: Testing
@@ -486,6 +486,7 @@ private class TestURLSession: URLSession {
         return super.downloadTask(withResumeData: resumeData)
     }
 
+#if canImport(Darwin)
     @available(macOS 10.11, iOS 9.0, *)
     override func streamTask(withHostName hostname: String,
                              port: Int) -> URLSessionStreamTask {
@@ -493,7 +494,7 @@ private class TestURLSession: URLSession {
         return super.streamTask(withHostName: hostname, port: port)
     }
 
-#if canImport(Darwin) && swift(>=5.1)
+#if swift(>=5.1)
     @available(macOS 10.11, iOS 9.0, *)
     override func streamTask(with service: NetService) -> URLSessionStreamTask {
         history.append(.streamTaskWithService(service))
@@ -518,7 +519,8 @@ private class TestURLSession: URLSession {
         history.append(.webSocketTaskWithRequest(request))
         return super.webSocketTask(with: request)
     }
-#endif // canImport(Darwin) && swift(>=5.1)
+#endif // swift(>=5.1)
+#endif // canImport(Darwin)
 }
 
 private final class TestURLSessionDataTask: URLSessionDataTask {
