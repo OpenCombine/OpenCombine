@@ -5,6 +5,8 @@
 //  Created by Sergej Jaskiewicz on 03.12.2019.
 //
 
+#if !os(WASI)
+
 import XCTest
 
 #if OPENCOMBINE_COMPATIBILITY_TEST
@@ -170,3 +172,5 @@ final class BreakpointTests: XCTestCase {
                            { $0.breakpointOnError() })
     }
 }
+
+#endif // !os(WASI)

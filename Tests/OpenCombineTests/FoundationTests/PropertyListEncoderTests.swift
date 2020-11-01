@@ -5,6 +5,8 @@
 //  Created by Sergej Jaskiewicz on 10.12.2019.
 //
 
+#if !os(WASI)
+
 import Foundation
 import XCTest
 
@@ -85,3 +87,5 @@ final class PropertyListEncoderTests: XCTestCase {
 }
 
 #endif // canImport(Darwin) || swift(>=5.1)
+
+#endif // !os(WASI)

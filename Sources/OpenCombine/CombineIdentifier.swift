@@ -9,6 +9,14 @@
 import COpenCombineHelpers
 #endif
 
+#if os(WASI)
+private var __identifier: UInt64 = 0
+func __nextCombineIdentifier() -> UInt64 {
+    __identifier += 1
+    return __identifier
+}
+#endif
+
 /// A unique identifier for identifying publisher streams.
 ///
 /// To conform to `CustomCombineIdentifierConvertible` in a

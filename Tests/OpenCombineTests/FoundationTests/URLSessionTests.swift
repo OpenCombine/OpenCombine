@@ -7,6 +7,8 @@
 
 // swiftlint:disable multiline_arguments
 
+#if !os(WASI)
+
 import Foundation
 import XCTest
 
@@ -724,3 +726,5 @@ private func makePublisher(
 #endif
 
 #endif // canImport(Darwin)
+
+#endif // !os(WASI)

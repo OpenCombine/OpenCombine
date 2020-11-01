@@ -5,6 +5,8 @@
 //  Created by Sergej Jaskiewicz on 14.06.2020.
 //
 
+#if !os(WASI)
+
 import Foundation
 import XCTest
 
@@ -472,3 +474,5 @@ private final class TestOperationQueue: OperationQueue {
 }
 
 #endif // canImport(Darwin) || swift(>=5.3)
+
+#endif // os(WASI)

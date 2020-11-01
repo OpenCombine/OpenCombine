@@ -5,6 +5,8 @@
 //  Created by Sergej Jaskiewicz on 17.06.2019.
 //
 
+#if !os(WASI)
+
 import XCTest
 
 #if OPENCOMBINE_COMPATIBILITY_TEST
@@ -405,7 +407,6 @@ final class PrintTests: XCTestCase {
 }
 
 private final class HistoryStream: TextOutputStream {
-
     let output = Atomic([String]())
 
     func write(_ string: String) {
@@ -427,3 +428,5 @@ private func stealingStdout(to stream: HistoryStream, _ body: () -> Void) {
     body()
     _playgroundPrintHook = oldValue
 }
+
+#endif // !os(WASI)

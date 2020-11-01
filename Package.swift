@@ -1,4 +1,4 @@
-// swift-tools-version:5.0
+// swift-tools-version:5.3
 
 import PackageDescription
 
@@ -11,15 +11,34 @@ let package = Package(
     ],
     targets: [
         .target(name: "COpenCombineHelpers"),
-        .target(name: "OpenCombine", dependencies: ["COpenCombineHelpers"]),
+        .target(
+          name: "OpenCombine", 
+          dependencies: [
+            .target(name: "COpenCombineHelpers", condition: .when(platforms: [.macOS, .linux]))
+          ],
+          exclude: [
+            "Publishers/Publishers.Encode.swift.gyb",
+            "Publishers/Publishers.MapKeyPath.swift.gyb",
+            "Publishers/Publishers.Catch.swift.gyb"
+          ]
+        ),
         .target(name: "OpenCombineDispatch", dependencies: ["OpenCombine"]),
-        .target(name: "OpenCombineFoundation", dependencies: ["OpenCombine",
-                                                              "COpenCombineHelpers"]),
-        .testTarget(name: "OpenCombineTests",
-                    dependencies: ["OpenCombine",
-                                   "OpenCombineDispatch",
-                                   "OpenCombineFoundation"],
-                    swiftSettings: [.unsafeFlags(["-enable-testing"])])
+        .target(
+          name: "OpenCombineFoundation", 
+          dependencies: [
+            "OpenCombine",
+            .target(name: "COpenCombineHelpers", condition: .when(platforms: [.macOS, .linux]))
+          ]
+        ),
+        .testTarget(
+          name: "OpenCombineTests",
+          dependencies: [
+            "OpenCombine",
+            .target(name: "OpenCombineDispatch", condition: .when(platforms: [.macOS, .linux])),
+            .target(name: "OpenCombineFoundation", condition: .when(platforms: [.macOS, .linux])),
+          ],
+          swiftSettings: [.unsafeFlags(["-enable-testing"])]
+        )
     ],
     cxxLanguageStandard: .cxx1z
 )

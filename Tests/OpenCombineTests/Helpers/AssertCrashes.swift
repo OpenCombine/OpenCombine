@@ -29,7 +29,7 @@ extension XCTest {
     // Taken from swift-corelibs-foundation and slightly modified for OpenCombine
     @available(macOS 10.13, iOS 8.0, *)
     func assertCrashes(within block: () throws -> Void) rethrows {
-#if !Xcode && !os(iOS) && !os(watchOS) && !os(tvOS)
+#if !Xcode && !os(iOS) && !os(watchOS) && !os(tvOS) && !os(WASI)
         let childProcessEnvVariable = "OPENCOMBINE_TEST_PERFORM_ASSERT_CRASHES_BLOCKS"
         let childProcessEnvVariableOnValue = "YES"
 
