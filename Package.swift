@@ -27,15 +27,15 @@ let package = Package(
           name: "OpenCombineFoundation", 
           dependencies: [
             "OpenCombine",
-            .target(name: "COpenCombineHelpers", condition: .when(platforms: [.macOS, .linux]))
+            .target(name: "COpenCombineHelpers", condition: .when(platforms: [.macOS, .iOS, .watchOS, .tvOS, .linux]))
           ]
         ),
         .testTarget(
           name: "OpenCombineTests",
           dependencies: [
             "OpenCombine",
-            .target(name: "OpenCombineDispatch", condition: .when(platforms: [.macOS, .linux])),
-            .target(name: "OpenCombineFoundation", condition: .when(platforms: [.macOS, .linux])),
+            .target(name: "OpenCombineDispatch", condition: .when(platforms: [.macOS, .iOS, .watchOS, .tvOS, .linux])),
+            .target(name: "OpenCombineFoundation", condition: .when(platforms: [.macOS, .iOS, .watchOS, .tvOS, .linux])),
           ],
           swiftSettings: [.unsafeFlags(["-enable-testing"])]
         )
