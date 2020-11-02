@@ -5,7 +5,7 @@
 //  Created by Sergej Jaskiewicz on 04.02.2020.
 //
 
-#if !os(WASI)
+#if !WASI
 
 #if canImport(Darwin)
 import Darwin
@@ -84,4 +84,4 @@ func executeOnBackgroundThread<ResultType>(
     }
 }
 
-#endif // !os(WASI)
+#endif // !WASI

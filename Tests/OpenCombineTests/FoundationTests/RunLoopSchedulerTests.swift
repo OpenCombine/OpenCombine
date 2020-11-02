@@ -5,7 +5,7 @@
 //  Created by Sergej Jaskiewicz on 14.12.2019.
 //
 
-#if !os(WASI)
+#if !WASI
 
 import Foundation
 import XCTest
@@ -630,4 +630,4 @@ extension RunLoopScheduler.SchedulerTimeType: DateBackedSchedulerTimeType {}
 
 extension RunLoopScheduler: RunLoopLikeScheduler {}
 
-#endif // !os(WASI)
+#endif // !WASI

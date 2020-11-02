@@ -20,7 +20,8 @@ let package = Package(
             "Publishers/Publishers.Encode.swift.gyb",
             "Publishers/Publishers.MapKeyPath.swift.gyb",
             "Publishers/Publishers.Catch.swift.gyb"
-          ]
+          ],
+          swiftSettings: [.define("WASI", .when(platforms: [.wasi]))]
         ),
         .target(name: "OpenCombineDispatch", dependencies: ["OpenCombine"]),
         .target(
@@ -37,7 +38,10 @@ let package = Package(
             .target(name: "OpenCombineDispatch", condition: .when(platforms: [.macOS, .iOS, .watchOS, .tvOS, .linux])),
             .target(name: "OpenCombineFoundation", condition: .when(platforms: [.macOS, .iOS, .watchOS, .tvOS, .linux])),
           ],
-          swiftSettings: [.unsafeFlags(["-enable-testing"])]
+          swiftSettings: [
+            .unsafeFlags(["-enable-testing"]), 
+            .define("WASI", .when(platforms: [.wasi]))
+          ]
         )
     ],
     cxxLanguageStandard: .cxx1z

@@ -9,9 +9,8 @@
 import COpenCombineHelpers
 #endif
 
-#if swift(>=5.3)
-#if os(WASI)
-internal struct __UnfairLock {
+#if WASI
+internal struct __UnfairLock { // swiftlint:disable:this type_name
     internal static func allocate() -> UnfairLock { return .init() }
     internal func lock() {}
     internal func unlock() {}
@@ -19,14 +18,13 @@ internal struct __UnfairLock {
     internal func deallocate() {}
 }
 
-internal struct __UnfairRecursiveLock {
+internal struct __UnfairRecursiveLock { // swiftlint:disable:this type_name
     internal static func allocate() -> UnfairRecursiveLock { return .init() }
     internal func lock() {}
     internal func unlock() {}
     internal func deallocate() {}
 }
-#endif // os(WASI)
-#endif // swift(>=5.3)
+#endif // WASI
 
 internal typealias UnfairLock = __UnfairLock
 internal typealias UnfairRecursiveLock = __UnfairRecursiveLock

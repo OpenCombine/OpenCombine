@@ -197,7 +197,7 @@ final class SubscribersDemandTests: XCTestCase {
         XCTAssertEqual(Subscribers.Demand.unlimited.description, "unlimited")
     }
 
-#if !os(WASI)
+#if !WASI
     func testEncodeDecodeJSON() throws {
         try testEncodeDecode(
             encoder: JSONEncoder(),
@@ -317,7 +317,7 @@ final class SubscribersDemandTests: XCTestCase {
         XCTAssertEqual(decodedIllFormedTooBig.value.description, "unlimited")
     }
 
-    #endif // !os(WASI)
+#endif // !WASI
 }
 
 @available(macOS 10.15, iOS 13.0, *)

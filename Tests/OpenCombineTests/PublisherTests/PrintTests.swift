@@ -5,7 +5,7 @@
 //  Created by Sergej Jaskiewicz on 17.06.2019.
 //
 
-#if !os(WASI)
+#if !WASI
 
 import XCTest
 
@@ -429,4 +429,4 @@ private func stealingStdout(to stream: HistoryStream, _ body: () -> Void) {
     _playgroundPrintHook = oldValue
 }
 
-#endif // !os(WASI)
+#endif // !WASI

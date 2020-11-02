@@ -5,7 +5,9 @@
 //  Created by Sergej Jaskiewicz on 14.06.2020.
 //
 
-#if !os(WASI)
+// OperationQueue has serious bugs in swift-corelibs-foundation prior to Swift 5.3.
+// (see https://github.com/apple/swift-corelibs-foundation/pull/2779)
+#if canImport(Darwin) || swift(>=5.3) && !WASI // TEST_DISCOVERY_CONDITION
 
 import Foundation
 import XCTest
@@ -16,10 +18,6 @@ import Combine
 import OpenCombine
 import OpenCombineFoundation
 #endif
-
-// OperationQueue has serious bugs in swift-corelibs-foundation prior to Swift 5.3.
-// (see https://github.com/apple/swift-corelibs-foundation/pull/2779)
-#if canImport(Darwin) || swift(>=5.3) // TEST_DISCOVERY_CONDITION
 
 @available(macOS 10.15, iOS 13.0, *)
 final class OperationQueueSchedulerTests: XCTestCase {
@@ -473,6 +471,4 @@ private final class TestOperationQueue: OperationQueue {
 #endif // canImport(Darwin)
 }
 
-#endif // canImport(Darwin) || swift(>=5.3)
-
-#endif // os(WASI)
+#endif // canImport(Darwin) || swift(>=5.3) && !WASI

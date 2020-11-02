@@ -5,7 +5,7 @@
 //  Created by Sergej Jaskiewicz on 03.12.2019.
 //
 
-#if !os(WASI)
+#if !WASI
 
 #if canImport(COpenCombineHelpers)
 import COpenCombineHelpers

@@ -5,7 +5,7 @@
 //  Created by Sergej Jaskiewicz on 23.06.2020.
 //
 
-#if !os(WASI)
+#if !WASI
 
 import Foundation
 import XCTest
@@ -217,4 +217,4 @@ private typealias TimerPublisher = Timer.TimerPublisher
 private typealias TimerPublisher = Timer.OCombine.TimerPublisher
 #endif
 
-#endif // !os(WASI)
+#endif // !WASI

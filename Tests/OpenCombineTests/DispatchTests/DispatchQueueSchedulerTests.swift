@@ -5,7 +5,7 @@
 //  Created by Sergej Jaskiewicz on 26.08.2019.
 //
 
-#if !os(WASI)
+#if !WASI
 
 import Dispatch
 import XCTest
@@ -581,4 +581,4 @@ private struct KeyedWrapper<Value: Codable & Equatable>: Codable, Equatable {
     let value: Value
 }
 
-#endif // !os(WASI)
+#endif // !WASI

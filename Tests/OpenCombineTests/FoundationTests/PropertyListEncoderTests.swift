@@ -5,7 +5,9 @@
 //  Created by Sergej Jaskiewicz on 10.12.2019.
 //
 
-#if !os(WASI)
+// PropertyListEncoder and PropertyListDecoder are unavailable in
+// swift-corelibs-foundation prior to Swift 5.1.
+#if canImport(Darwin) || swift(>=5.1) && !WASI // TEST_DISCOVERY_CONDITION
 
 import Foundation
 import XCTest
@@ -16,10 +18,6 @@ import Combine
 import OpenCombine
 import OpenCombineFoundation
 #endif
-
-// PropertyListEncoder and PropertyListDecoder are unavailable in
-// swift-corelibs-foundation prior to Swift 5.1.
-#if canImport(Darwin) || swift(>=5.1) // TEST_DISCOVERY_CONDITION
 
 @available(macOS 10.15, iOS 13.0, *)
 final class PropertyListEncoderTests: XCTestCase {
@@ -86,6 +84,4 @@ final class PropertyListEncoderTests: XCTestCase {
     }
 }
 
-#endif // canImport(Darwin) || swift(>=5.1)
-
-#endif // !os(WASI)
+#endif // canImport(Darwin) || swift(>=5.1) && !WASI

@@ -5,7 +5,7 @@
 //  Created by Sergej Jaskiewicz on 11.06.2019.
 //
 
-#if !os(WASI)
+#if !WASI
 
 import Dispatch
 import Foundation
@@ -106,4 +106,4 @@ func XCTAssertEqual<Value: Equatable>(
     XCTAssertEqual(try expression1().value, try expression2(), message())
 }
 
-#endif // !os(WASI)
+#endif // !WASI
