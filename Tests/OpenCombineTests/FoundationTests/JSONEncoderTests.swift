@@ -5,6 +5,8 @@
 //  Created by Sergej Jaskiewicz on 10.12.2019.
 //
 
+#if !WASI
+
 import Foundation
 import XCTest
 
@@ -65,3 +67,5 @@ final class JSONEncoderTests: XCTestCase {
         cancellable.cancel()
     }
 }
+
+#endif // !WASI

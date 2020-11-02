@@ -7,6 +7,8 @@
 
 // swiftlint:disable multiline_arguments
 
+#if !WASI
+
 import Foundation
 import XCTest
 
@@ -721,6 +723,8 @@ private func makePublisher(
 ) -> URLSession.OCombine.DataTaskPublisher {
     return session.ocombine.dataTaskPublisher(for: request)
 }
-#endif
+#endif // OPENCOMBINE_COMPATIBILITY_TEST || !canImport(Combine)
 
 #endif // canImport(Darwin)
+
+#endif // !WASI

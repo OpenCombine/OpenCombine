@@ -5,6 +5,8 @@
 //  Created by Sergej Jaskiewicz on 26.08.2019.
 //
 
+#if !WASI
+
 import Dispatch
 import XCTest
 
@@ -570,7 +572,7 @@ private typealias Scheduler = DispatchQueue.OCombine
 private let mainScheduler = DispatchQueue.main.ocombine
 private let backgroundScheduler = DispatchQueue.global(qos: .background).ocombine
 
-#endif
+#endif // OPENCOMBINE_COMPATIBILITY_TEST || !canImport(Combine)
 
 @available(macOS 10.15, iOS 13.0, *)
 private typealias Stride = Scheduler.SchedulerTimeType.Stride
@@ -578,3 +580,5 @@ private typealias Stride = Scheduler.SchedulerTimeType.Stride
 private struct KeyedWrapper<Value: Codable & Equatable>: Codable, Equatable {
     let value: Value
 }
+
+#endif // !WASI

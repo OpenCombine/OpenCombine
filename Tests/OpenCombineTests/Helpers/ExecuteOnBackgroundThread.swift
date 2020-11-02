@@ -5,6 +5,8 @@
 //  Created by Sergej Jaskiewicz on 04.02.2020.
 //
 
+#if !WASI
+
 #if canImport(Darwin)
 import Darwin
 #elseif canImport(Glibc)
@@ -81,3 +83,5 @@ func executeOnBackgroundThread<ResultType>(
         }
     }
 }
+
+#endif // !WASI

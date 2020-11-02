@@ -5,6 +5,8 @@
 //  Created by Sergej Jaskiewicz on 03.12.2019.
 //
 
+#if !WASI
+
 #if canImport(COpenCombineHelpers)
 import COpenCombineHelpers
 #endif
@@ -225,3 +227,5 @@ extension Publishers.Breakpoint {
         var playgroundDescription: Any { return description }
     }
 }
+
+#endif // !WASI

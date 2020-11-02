@@ -405,7 +405,6 @@ final class PrintTests: XCTestCase {
 }
 
 private final class HistoryStream: TextOutputStream {
-
     let output = Atomic([String]())
 
     func write(_ string: String) {
