@@ -5,8 +5,6 @@
 //  Created by Sergej Jaskiewicz on 17.06.2019.
 //
 
-#if !WASI
-
 import XCTest
 
 #if OPENCOMBINE_COMPATIBILITY_TEST
@@ -428,5 +426,3 @@ private func stealingStdout(to stream: HistoryStream, _ body: () -> Void) {
     body()
     _playgroundPrintHook = oldValue
 }
-
-#endif // !WASI

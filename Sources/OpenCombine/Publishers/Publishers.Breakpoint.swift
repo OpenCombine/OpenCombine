@@ -228,4 +228,4 @@ extension Publishers.Breakpoint {
     }
 }
 
-#endif
+#endif // !WASI
