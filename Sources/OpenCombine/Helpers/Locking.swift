@@ -9,22 +9,24 @@
 import COpenCombineHelpers
 #endif
 
+#if swift(>=5.3)
 #if os(WASI)
-struct UnfairLock {
-    public static func allocate() -> UnfairLock { return Self.init() }
-    public func lock() {}
-    public func unlock() {}
-    public func assertOwner() {}
-    public func deallocate() {}
+internal struct __UnfairLock {
+    internal static func allocate() -> UnfairLock { return .init() }
+    internal func lock() {}
+    internal func unlock() {}
+    internal func assertOwner() {}
+    internal func deallocate() {}
 }
 
-struct UnfairRecursiveLock {
-    public static func allocate() -> UnfairRecursiveLock { return Self.init() }
-    public func lock() {}
-    public func unlock() {}
-    public func deallocate() {}
+internal struct __UnfairRecursiveLock {
+    internal static func allocate() -> UnfairRecursiveLock { return .init() }
+    internal func lock() {}
+    internal func unlock() {}
+    internal func deallocate() {}
 }
-#else
+#endif // os(WASI)
+#endif // swift(>=5.3)
+
 internal typealias UnfairLock = __UnfairLock
 internal typealias UnfairRecursiveLock = __UnfairRecursiveLock
-#endif

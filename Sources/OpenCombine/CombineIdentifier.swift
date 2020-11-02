@@ -12,7 +12,7 @@ import COpenCombineHelpers
 #if os(WASI)
 private var __identifier: UInt64 = 0
 func __nextCombineIdentifier() -> UInt64 {
-    __identifier += 1
+    defer { __identifier += 1 }
     return __identifier
 }
 #endif

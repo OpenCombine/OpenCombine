@@ -14,7 +14,7 @@ let package = Package(
         .target(
           name: "OpenCombine", 
           dependencies: [
-            .target(name: "COpenCombineHelpers", condition: .when(platforms: [.macOS, .linux]))
+            .target(name: "COpenCombineHelpers", condition: .when(platforms: [.macOS, .iOS, .watchOS, .tvOS, .linux]))
           ],
           exclude: [
             "Publishers/Publishers.Encode.swift.gyb",
