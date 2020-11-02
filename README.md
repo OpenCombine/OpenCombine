@@ -2,13 +2,13 @@
 [![OpenCombine](https://circleci.com/gh/OpenCombine/OpenCombine.svg?style=svg)](https://circleci.com/gh/OpenCombine/OpenCombine)
 [![codecov](https://codecov.io/gh/OpenCombine/OpenCombine/branch/master/graph/badge.svg)](https://codecov.io/gh/OpenCombine/OpenCombine)
 ![Language](https://img.shields.io/badge/Swift-5.0-orange.svg)
-![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20iOS%20%7C%20watchOS%20%7C%20tvOS-lightgrey.svg)
+![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20iOS%20%7C%20watchOS%20%7C%20tvOS%20%7C%20Wasm-lightgrey.svg)
 ![Cocoapods](https://img.shields.io/cocoapods/v/OpenCombine?color=blue)
 [<img src="https://img.shields.io/badge/slack-OpenCombine-yellow.svg?logo=slack">](https://join.slack.com/t/opencombine/shared_invite/enQtNzE2MjE5NzkxODI0LTYxMjkzNDUxZWViZWI1Njc2YjBhODgxNjRjOTdkZTcxOGU2ZjJjZjYxMGI3NWZkN2RkNGFmZTUzNmU3MGE2ZWM)
 
 Open-source implementation of Apple's [Combine](https://developer.apple.com/documentation/combine) framework for processing values over time.
 
-The main goal of this project is to provide a compatible, reliable and efficient implementation which can be used on Apple's operating systems before macOS 10.15 and iOS 13, as well as Linux and Windows.
+The main goal of this project is to provide a compatible, reliable and efficient implementation which can be used on Apple's operating systems before macOS 10.15 and iOS 13, as well as Linux and WebAssembly.
 
 ### Installation
 `OpenCombine` contains three public targets: `OpenCombine`, `OpenCombineFoundation` and `OpenCombineDispatch` (the fourth one, `COpenCombineHelpers`, is considered private. Don't import it in your projects).
@@ -17,7 +17,7 @@ OpenCombine itself does not have any dependencies. Not even Foundation or Dispat
 
 ##### Swift Package Manager
 ###### Swift Package
-To add `OpenCombine` to your [SPM](https://swift.org/package-manager/) package, add the `OpenCombine` package to the list of package and target dependencies in your `Package.swift` file.
+To add `OpenCombine` to your [SwiftPM](https://swift.org/package-manager/) package, add the `OpenCombine` package to the list of package and target dependencies in your `Package.swift` file. `OpenCombineDispatch` and `OpenCombineFoundation` projects are currently not supported on WebAssembly. You should either omit them from the list of your dependencies if your project targets WebAssembly exclusively, or exclude them with [conditional target dependencies](https://github.com/apple/swift-evolution/blob/main/proposals/0273-swiftpm-conditional-target-dependencies.md).
 
 ```swift
 dependencies: [
@@ -31,7 +31,7 @@ targets: [
 ```
 
 ###### Xcode
-`OpenCombine` can also be added as a SPM dependency directly in your Xcode project *(requires Xcode 11 upwards)*.
+`OpenCombine` can also be added as a SwiftPM dependency directly in your Xcode project *(requires Xcode 11 upwards)*.
 
 To do so, open Xcode, use **File** → **Swift Packages** → **Add Package Dependency…**, enter the [repository URL](https://github.com/OpenCombine/OpenCombine.git), choose the latest available version, and activate the checkboxes:
 
