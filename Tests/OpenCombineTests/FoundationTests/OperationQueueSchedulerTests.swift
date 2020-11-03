@@ -225,7 +225,7 @@ final class OperationQueueSchedulerTests: XCTestCase {
     }
 
     func testScheduleRepeatingWithRealQueue() {
-        let mainQueue = OperationQueue.main
+        let mainQueueScheduler = makeScheduler(OperationQueue.main)
 
         let expectation10ticks = expectation(description: "10 ticks")
         expectation10ticks.expectedFulfillmentCount = 10
@@ -234,13 +234,12 @@ final class OperationQueueSchedulerTests: XCTestCase {
 
         let ticks = Atomic([TimeInterval]())
 
-        let desiredDelay: TimeInterval = 0.7
-        let desiredInterval: TimeInterval = 0.3
+        let desiredDelay: TimeInterval = 0.8
+        let desiredInterval: TimeInterval = 0.5
 
-        let cancellable = executeOnBackgroundThread { () -> Cancellable in
-            let scheduler = makeScheduler(mainQueue)
-            return scheduler
-                .schedule(after: scheduler.now.advanced(by: .init(desiredDelay)),
+        let cancellable = executeOnBackgroundThread {
+            mainQueueScheduler
+                .schedule(after: mainQueueScheduler.now.advanced(by: .init(desiredDelay)),
                           interval: .init(desiredInterval)) {
                     XCTAssertTrue(Thread.isMainThread)
                     ticks.append(Date().timeIntervalSinceReferenceDate)
@@ -256,7 +255,7 @@ final class OperationQueueSchedulerTests: XCTestCase {
         RunLoop.main.run(until: Date() + 0.001)
         XCTAssertEqual(ticks.count, 0)
 
-        wait(for: [expectation10ticks], timeout: 5)
+        wait(for: [expectation10ticks], timeout: 10)
 
         if ticks.isEmpty {
             XCTFail("The scheduler doesn't work")
