@@ -1043,6 +1043,7 @@ final class FlatMapTests: XCTestCase {
         )
     }
 
+    @available(macOS 11.0, iOS 14.0, *)
     func testOverloadWhenUpstreamNeverFailsButChildrenCanFail() {
         let child = CustomPublisher(subscription: nil)
         let helper = OperatorTestHelper(
@@ -1056,6 +1057,7 @@ final class FlatMapTests: XCTestCase {
         XCTAssertEqual(helper.sut.transform(0), child)
     }
 
+    @available(macOS 11.0, iOS 14.0, *)
     func testOverloadWhenUpstreamCanFailButChildrenNeverFail() {
         let child = CustomPublisherBase<Int, Never>(subscription: nil)
 
