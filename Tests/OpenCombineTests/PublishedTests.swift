@@ -110,6 +110,7 @@ final class PublishedTests: XCTestCase {
         tracking1.assertHistoryEqual([.subscription("ObservableObjectPublisher")])
     }
 
+    @available(macOS 11.0, iOS 14.0, *)
     func testAssignToPublished() throws {
         let subscription = CustomSubscription()
         let publisher = CustomPublisherBase<Int, Never>(subscription: subscription)
@@ -148,6 +149,7 @@ final class PublishedTests: XCTestCase {
                                               .cancelled])
     }
 
+    @available(macOS 11.0, iOS 14.0, *)
     func testAssignToPublishedFinish() {
         let subscription = CustomSubscription()
         let publisher = CustomPublisherBase<Int, Never>(subscription: subscription)
@@ -289,6 +291,7 @@ final class PublishedTests: XCTestCase {
         )
     }
 
+    @available(macOS 11.0, iOS 14.0, *)
     func testProjectedValueSetter() {
         let testObject1 = TestObject(1)
         let testObject2 = TestObject(2)
