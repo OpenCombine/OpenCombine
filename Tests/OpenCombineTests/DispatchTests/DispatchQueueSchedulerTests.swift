@@ -256,7 +256,7 @@ final class DispatchQueueSchedulerTests: XCTestCase {
         XCTAssertEqual((2 as Stride).magnitude, 2_000_000_000)
 
         XCTAssertNil(Stride(exactly: UInt64.max))
-        XCTAssertEqual(Stride(exactly: 871 as UInt64)?.magnitude, 871)
+        XCTAssertEqual(Stride(exactly: 2 as UInt64)?.magnitude, 2_000_000_000)
     }
 
     func testStrideFromTooMuchSecondsCrashes() {
