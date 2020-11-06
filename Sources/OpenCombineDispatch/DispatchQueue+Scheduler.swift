@@ -200,7 +200,7 @@ extension DispatchQueue {
                 /// - Parameter exactly: A binary integer representing a time interval.
                 public init?<Source: BinaryInteger>(exactly source: Source) {
                     guard let value = Int(exactly: source) else { return nil }
-                    self = .nanoseconds(value)
+                    self = .seconds(value)
                 }
 
                 public static func < (lhs: Stride, rhs: Stride) -> Bool {
