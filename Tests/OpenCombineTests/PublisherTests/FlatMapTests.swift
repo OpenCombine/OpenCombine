@@ -643,6 +643,31 @@ final class FlatMapTests: XCTestCase {
         XCTAssertEqual(childSubscription2.history, [.requested(.unlimited)])
     }
 
+    func testCrashesWhenUpstreamFailsDuringChildCancellation() {
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisherBase<CustomPublisher, TestingError>.self,
+            initialDemand: .unlimited,
+            receiveValueDemand: .none,
+            createSut: { $0.flatMap { $0 } }
+        )
+
+        let childSubscription = CustomSubscription()
+        let child = CustomPublisher(subscription: childSubscription)
+
+        var counter = 0
+        childSubscription.onCancel = {
+            if counter >= 5 { return }
+            counter += 1
+            helper.publisher.send(completion: .failure(.oops))
+        }
+
+        XCTAssertEqual(helper.publisher.send(child), .none)
+
+        assertCrashes {
+            helper.publisher.send(completion: .failure(.oops))
+        }
+    }
+
     func testDoesNotCompleteWithBufferedValues() {
         let upstreamPublisher = PassthroughSubject<Void, Never>()
 
