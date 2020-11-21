@@ -5,6 +5,8 @@
 //  Created by Stuart Austin on 14/11/2020.
 //
 
+#if !WASI
+
 import XCTest
 
 #if OPENCOMBINE_COMPATIBILITY_TEST
@@ -421,39 +423,29 @@ final class ThrottleTests: XCTestCase {
     }
     
     func testNoDemandReceivesNoValues() throws {
-        let noValueExpectation = expectation(description: "Expected no value to be emitted")
-        noValueExpectation.isInverted = true
-        
-        let scheduler = VirtualTimeScheduler()
         let subscription = CustomSubscription()
         let publisher = CustomPublisher(subscription: subscription)
+        
         let tracking = TrackingSubscriber(
             receiveValue: { _ in
-                noValueExpectation.fulfill()
+                XCTFail("Unexpected value received")
                 return .none
             }
         )
 
-        let throttle = publisher.throttle(for: .milliseconds(1), scheduler: scheduler, latest: true)
+        let throttle = publisher.throttle(for: .milliseconds(1), scheduler: ImmediateScheduler.shared, latest: true)
         throttle.subscribe(tracking)
 
         XCTAssertEqual(tracking.history, [.subscription("Throttle")])
         XCTAssertEqual(subscription.history, [.requested(.unlimited)])
-        XCTAssertEqual(scheduler.history, [.now, .now])
 
         XCTAssertEqual(publisher.send(1), .none)
 
         XCTAssertEqual(tracking.history, [.subscription("Throttle")])
         XCTAssertEqual(subscription.history, [.requested(.unlimited)])
-        XCTAssertEqual(scheduler.history, [.now, .now, .now])
-
-        scheduler.executeScheduledActions()
 
         XCTAssertEqual(tracking.history, [.subscription("Throttle")])
         XCTAssertEqual(subscription.history, [.requested(.unlimited)])
-        XCTAssertEqual(scheduler.history, [.now, .now, .now])
-        
-        wait(for: [noValueExpectation], timeout: 1)
     }
 
     func testCancelWhileReceivingInput() throws {
@@ -700,3 +692,5 @@ final class ThrottleTests: XCTestCase {
         }
     }
 }
+
+#endif // !WASI
