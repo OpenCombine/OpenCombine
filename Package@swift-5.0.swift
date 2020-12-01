@@ -8,6 +8,7 @@ let package = Package(
         .library(name: "OpenCombine", targets: ["OpenCombine"]),
         .library(name: "OpenCombineDispatch", targets: ["OpenCombineDispatch"]),
         .library(name: "OpenCombineFoundation", targets: ["OpenCombineFoundation"]),
+        .library(name: "CombineShim", targets: ["CombineShim"]),
     ],
     targets: [
         .target(name: "COpenCombineHelpers"),
@@ -15,6 +16,14 @@ let package = Package(
         .target(name: "OpenCombineDispatch", dependencies: ["OpenCombine"]),
         .target(name: "OpenCombineFoundation", dependencies: ["OpenCombine",
                                                               "COpenCombineHelpers"]),
+        .target(
+            name: "CombineShim",
+            dependencies: [
+                "OpenCombine",
+                "OpenCombineDispatch",
+                "OpenCombineFoundation",
+            ]
+        ),
         .testTarget(name: "OpenCombineTests",
                     dependencies: ["OpenCombine",
                                    "OpenCombineDispatch",
