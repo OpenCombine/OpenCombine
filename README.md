@@ -26,10 +26,8 @@ dependencies: [
 targets: [
     .target(name: "MyAwesomePackage",
     	    dependencies: ["OpenCombine",
-                           .product(name: "OpenCombineFoundation", 
-			   	    package: "OpenCombine"),
-                           .product(name: "OpenCombineDispatch",
-			   	    package: "OpenCombine")]),
+                           .product(name: "OpenCombineFoundation", package: "OpenCombine"),
+                           .product(name: "OpenCombineDispatch", package: "OpenCombine")]),
 ]
 ```
 
