@@ -24,9 +24,14 @@ dependencies: [
     .package(url: "https://github.com/OpenCombine/OpenCombine.git", from: "0.11.0")
 ],
 targets: [
-    .target(name: "MyAwesomePackage", dependencies: ["OpenCombine",
-                                                     "OpenCombineDispatch",
-                                                     "OpenCombineFoundation"])
+    .target(
+        name: "MyAwesomePackage",
+        dependencies: [
+            "OpenCombine",
+            .product(name: "OpenCombineFoundation", package: "OpenCombine"),
+            .product(name: "OpenCombineDispatch", package: "OpenCombine")
+        ]
+    ),
 ]
 ```
 
