@@ -84,4 +84,13 @@ extension XCTest {
         }
 #endif // !Xcode && !os(iOS) && !os(watchOS) && !os(tvOS) && !WASI
     }
+
+    @available(macOS 10.13, iOS 8.0, *)
+    func assertCrashesOnDarwin(within body: () -> Void) {
+#if canImport(Darwin) && OPENCOMBINE_COMPATIBILITY_TEST
+        assertCrashes(within: body)
+#else
+        body()
+#endif
+    }
 }
