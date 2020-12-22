@@ -110,6 +110,7 @@ public struct Published<Value> {
     @propertyWrapper
     private class Box {
         var wrappedValue: Storage
+
         init(wrappedValue: Storage) {
             self.wrappedValue = wrappedValue
         }
