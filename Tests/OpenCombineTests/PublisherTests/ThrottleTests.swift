@@ -36,31 +36,43 @@ final class ThrottleTests: XCTestCase {
 
         // Send an initial value to the subject. This should be scheduled immediately
         XCTAssertEqual(helper.publisher.send(1), .none)
-        
+
         XCTAssertEqual(scheduler.history, [.now,
                                            .now,
-                                           .now, // Checking the time when the Subscriber receives the input "1"
-                                           .schedule(options: nil)]) // Scheduling the output of the input immediately as we have not output any values
-        
-        // Send some more values to the subject. Since we haven't run the scheduled output above, these won't create any additional scheduled work
+                                           // Checking the time when the Subscriber
+                                           // receives the input "1"
+                                           .now,
+                                           // Scheduling the output
+                                           // of the input immediately as we have not
+                                           // output any values
+                                           .schedule(options: nil)
+        ])
+
+        // Send some more values to the subject. Since we haven't run the scheduled
+        // output above, these won't create any additional scheduled work
         XCTAssertEqual(helper.publisher.send(2), .none)
         XCTAssertEqual(helper.publisher.send(3), .none)
 
         XCTAssertEqual(helper.tracking.history, [.subscription("Throttle")])
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
         XCTAssertEqual(scheduler.scheduledDates, [.nanoseconds(0)])
-        
+
         XCTAssertEqual(scheduler.history, [.now,
                                            .now,
                                            .now,
                                            .schedule(options: nil),
-                                           .now, // Checking the time when the Subscriber receives the input "2"
-                                           .now]) // Checking the time when the Subscriber receives the input "3"
+                                           // Checking the time when the Subscriber
+                                           // receives the input "2"
+                                           .now,
+                                           // Checking the time when the Subscriber
+                                           // receives the input "3"
+                                           .now])
 
         scheduler.executeScheduledActions()
 
         XCTAssertEqual(helper.tracking.history, [.subscription("Throttle"),
-                                                 .value(3)]) // Expect only "3" to be output
+                                                 // Expect only "3" to be output
+                                                 .value(3)])
 
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
 
@@ -71,15 +83,15 @@ final class ThrottleTests: XCTestCase {
                                            .now,
                                            .now,
                                            .now]) // Log the time of the output
-        
+
         // Send another value to the subject. This should be scheduled after the interval
         XCTAssertEqual(helper.publisher.send(4), .none)
-        
+
         XCTAssertEqual(helper.tracking.history, [.subscription("Throttle"),
                                                  .value(3)])
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
         XCTAssertEqual(scheduler.scheduledDates, [.seconds(1337)])
-        
+
         XCTAssertEqual(scheduler.history, [.now,
                                            .now,
                                            .now,
@@ -87,10 +99,17 @@ final class ThrottleTests: XCTestCase {
                                            .now,
                                            .now,
                                            .now,
-                                           .now, // Checking the time when the Subscriber receives the input "4"
-                                           .minimumTolerance, // When scheduling the output, it uses the minimum tolerance
-                                           .scheduleAfterDate(.seconds(1337), tolerance: .nanoseconds(7), options: nil)]) // Scheduling of the output
-        
+                                           // Checking the time when the Subscriber
+                                           // receives the input "4"
+                                           .now,
+                                           // When scheduling the output, it uses
+                                           // the minimum tolerance
+                                           .minimumTolerance,
+                                           // Scheduling of the output
+                                           .scheduleAfterDate(.seconds(1337),
+                                                              tolerance: .nanoseconds(7),
+                                                              options: nil)])
+
         helper.publisher.send(completion: .failure(.oops))
         helper.publisher.send(completion: .finished)
         XCTAssertEqual(helper.publisher.send(5), .none)
@@ -108,7 +127,9 @@ final class ThrottleTests: XCTestCase {
                                            .now,
                                            .now,
                                            .minimumTolerance,
-                                           .scheduleAfterDate(.seconds(1337), tolerance: .nanoseconds(7), options: nil),
+                                           .scheduleAfterDate(.seconds(1337),
+                                                              tolerance: .nanoseconds(7),
+                                                              options: nil),
                                            .now])
         scheduler.executeScheduledActions()
         XCTAssertEqual(helper.tracking.history, [.subscription("Throttle"),
@@ -125,7 +146,9 @@ final class ThrottleTests: XCTestCase {
                                            .now,
                                            .now,
                                            .minimumTolerance,
-                                           .scheduleAfterDate(.seconds(1337), tolerance: .nanoseconds(7), options: nil),
+                                           .scheduleAfterDate(.seconds(1337),
+                                                              tolerance: .nanoseconds(7),
+                                                              options: nil),
                                            .now])
         XCTAssertEqual(scheduler.now, .seconds(1337))
     }
@@ -138,7 +161,7 @@ final class ThrottleTests: XCTestCase {
             $0.throttle(for: .seconds(1337), scheduler: scheduler, latest: false)
         }
         let helper = extractedExpr
-        
+
         XCTAssertEqual(helper.tracking.history, [.subscription("Throttle")])
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
         XCTAssertEqual(scheduler.history, [.now, // Subscriber created
@@ -146,37 +169,47 @@ final class ThrottleTests: XCTestCase {
 
         // Send an initial value to the subject. This should be scheduled immediately
         XCTAssertEqual(helper.publisher.send(1), .none)
-        
+
         XCTAssertEqual(scheduler.history, [.now,
                                            .now,
-                                           .now, // Checking the time when the Subscriber receives the input "1"
-                                           .schedule(options: nil)]) // Scheduling the output of the input immediately as we have not output any values
-        
-        // Send some more values to the subject. Since we haven't run the scheduled output above, these won't create any additional scheduled work
+                                           // Checking the time when the Subscriber
+                                           // receives the input "1"
+                                           .now,
+                                           // Scheduling the output of the input
+                                           // immediately as we have not output any values
+                                           .schedule(options: nil)])
+
+        // Send some more values to the subject.
+        // Since we haven't run the scheduled output above, these won't create
+        // any additional scheduled work
         XCTAssertEqual(helper.publisher.send(5), .none)
         XCTAssertEqual(helper.publisher.send(6), .none)
 
         XCTAssertEqual(helper.tracking.history, [.subscription("Throttle")])
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
         XCTAssertEqual(scheduler.scheduledDates, [.nanoseconds(0)])
-        
+
         XCTAssertEqual(scheduler.history, [.now,
                                            .now,
                                            .now,
                                            .schedule(options: nil),
-                                           .now, // Checking the time when the Subscriber receives the input "5"
-                                           .now]) // Checking the time when the Subscriber receives the input "6"
+                                           // Checking the time when the Subscriber
+                                           // receives the input "5"
+                                           .now,
+                                           // Checking the time when the Subscriber
+                                           // receives the input "6"
+                                           .now])
 
         scheduler.executeScheduledActions()
-        
+
         // Send a second value to the subject. This should be scheduled after the interval
         XCTAssertEqual(helper.publisher.send(2), .none)
-        
+
         XCTAssertEqual(helper.tracking.history, [.subscription("Throttle"),
                                                  .value(1)])
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
         XCTAssertEqual(scheduler.scheduledDates, [.seconds(1337)])
-        
+
         XCTAssertEqual(scheduler.history, [.now,
                                            .now,
                                            .now,
@@ -184,25 +217,33 @@ final class ThrottleTests: XCTestCase {
                                            .now,
                                            .now,
                                            .now,
-                                           .now, // Checking the time when the Subscriber receives the input "2"
-                                           .minimumTolerance, // When scheduling the output, it uses the minimum tolerance
-                                           .scheduleAfterDate(.seconds(1337), tolerance: .nanoseconds(7), options: nil)]) // Scheduling of the output
-     
+                                           // Checking the time when the Subscriber
+                                           // receives the input "2"
+                                           .now,
+                                           // When scheduling the output, it uses
+                                           // the minimum tolerance
+                                           .minimumTolerance,
+                                           // Scheduling of the output
+                                           .scheduleAfterDate(.seconds(1337),
+                                                              tolerance: .nanoseconds(7),
+                                                              options: nil)])
+
         scheduler.executeScheduledActions()
 
         XCTAssertEqual(helper.tracking.history, [.subscription("Throttle"),
                                                  .value(1),
                                                  .value(2)])
-        
-        // Send a third value to the subject. This should not be output at all due to the demand
+
+        // Send a third value to the subject.
+        // This should not be output at all due to the demand
         XCTAssertEqual(helper.publisher.send(3), .none)
-        
+
         XCTAssertEqual(helper.tracking.history, [.subscription("Throttle"),
                                                  .value(1),
                                                  .value(2)])
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
         XCTAssertEqual(scheduler.scheduledDates, [])
-        
+
         XCTAssertEqual(scheduler.history, [.now,
                                            .now,
                                            .now,
@@ -210,19 +251,26 @@ final class ThrottleTests: XCTestCase {
                                            .now,
                                            .now,
                                            .now,
-                                           .now, // Checking the time when the Subscriber receives the input "4"
-                                           .minimumTolerance, // When scheduling the output, it uses the minimum tolerance
-                                           .scheduleAfterDate(.seconds(1337), tolerance: .nanoseconds(7), options: nil), // Scheduling of the output
+                                           // Checking the time when the Subscriber
+                                           // receives the input "4"
+                                           .now,
+                                           // When scheduling the output, it uses
+                                           // the minimum tolerance
+                                           .minimumTolerance,
+                                           // Scheduling of the output
+                                           .scheduleAfterDate(.seconds(1337),
+                                                              tolerance: .nanoseconds(7),
+                                                              options: nil),
                                            .now,
                                            .now])
-     
+
         scheduler.executeScheduledActions()
 
         XCTAssertEqual(helper.tracking.history, [.subscription("Throttle"),
                                                  .value(1),
                                                  .value(2)])
     }
-    
+
     func testThrottleGap() {
         let scheduler = VirtualTimeScheduler()
         let extractedExpr = OperatorTestHelper(publisherType: CustomPublisher.self,
@@ -231,14 +279,14 @@ final class ThrottleTests: XCTestCase {
             $0.throttle(for: .seconds(60), scheduler: scheduler, latest: false)
         }
         let helper = extractedExpr
-        
+
         XCTAssertEqual(helper.tracking.history, [.subscription("Throttle")])
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
         XCTAssertEqual(scheduler.history, [.now,
                                            .now])
-        
+
         XCTAssertEqual(helper.publisher.send(0), .none)
-        
+
         XCTAssertEqual(scheduler.history, [.now,
                                            .now,
                                            .now,
@@ -247,7 +295,7 @@ final class ThrottleTests: XCTestCase {
         XCTAssertEqual(helper.tracking.history, [.subscription("Throttle")])
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
         XCTAssertEqual(scheduler.scheduledDates, [.nanoseconds(0)])
-        
+
         XCTAssertEqual(scheduler.history, [.now,
                                            .now,
                                            .now,
@@ -260,24 +308,25 @@ final class ThrottleTests: XCTestCase {
                                            .now,
                                            .schedule(options: nil),
                                            .now])
-        
+
         XCTAssertEqual(helper.tracking.history, [.subscription("Throttle"), .value(0)])
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
         XCTAssertEqual(scheduler.scheduledDates, [])
 
         var future = scheduler.now + .seconds(45)
-        
+
         XCTAssertEqual(scheduler.history, [.now,
                                            .now,
                                            .now,
                                            .schedule(options: nil),
                                            .now,
                                            .now])
-        
-        scheduler.rewind(to: future) // change the current time to be 45 seconds into the future
-        
+
+        // change the current time to be 45 seconds into the future
+        scheduler.rewind(to: future)
+
         XCTAssertEqual(helper.publisher.send(1), .none)
-        
+
         XCTAssertEqual(scheduler.history, [.now,
                                            .now,
                                            .now,
@@ -286,14 +335,17 @@ final class ThrottleTests: XCTestCase {
                                            .now,
                                            .now,
                                            .minimumTolerance,
-                                           .scheduleAfterDate(.seconds(60), tolerance: .nanoseconds(7), options: nil)])
-        
+                                           .scheduleAfterDate(.seconds(60),
+                                                              tolerance: .nanoseconds(7),
+                                                              options: nil)])
+
         XCTAssertEqual(helper.tracking.history, [.subscription("Throttle"), .value(0)])
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
-        XCTAssertEqual(scheduler.scheduledDates, [.seconds(60)]) // next value should be emitted 60 seconds from the start of time
-        
+        // next value should be emitted 60 seconds from the start of time
+        XCTAssertEqual(scheduler.scheduledDates, [.seconds(60)])
+
         scheduler.executeScheduledActions()
-        
+
         XCTAssertEqual(scheduler.history, [.now,
                                            .now,
                                            .now,
@@ -302,15 +354,19 @@ final class ThrottleTests: XCTestCase {
                                            .now,
                                            .now,
                                            .minimumTolerance,
-                                           .scheduleAfterDate(.seconds(60), tolerance: .nanoseconds(7), options: nil),
+                                           .scheduleAfterDate(.seconds(60),
+                                                              tolerance: .nanoseconds(7),
+                                                              options: nil),
                                            .now])
-        
-        XCTAssertEqual(helper.tracking.history, [.subscription("Throttle"), .value(0), .value(1)])
+
+        XCTAssertEqual(helper.tracking.history, [.subscription("Throttle"),
+                                                 .value(0),
+                                                 .value(1)])
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
         XCTAssertEqual(scheduler.scheduledDates, [])
-        
+
         future = scheduler.now + .seconds(61)
-        
+
         XCTAssertEqual(scheduler.history, [.now,
                                            .now,
                                            .now,
@@ -319,14 +375,17 @@ final class ThrottleTests: XCTestCase {
                                            .now,
                                            .now,
                                            .minimumTolerance,
-                                           .scheduleAfterDate(.seconds(60), tolerance: .nanoseconds(7), options: nil),
+                                           .scheduleAfterDate(.seconds(60),
+                                                              tolerance: .nanoseconds(7),
+                                                              options: nil),
                                            .now,
                                            .now])
-        
-        scheduler.rewind(to: future) // change the current time to be 61 seconds into the future
-        
+
+        // change the current time to be 61 seconds into the future
+        scheduler.rewind(to: future)
+
         XCTAssertEqual(helper.publisher.send(2), .none)
-        
+
         XCTAssertEqual(scheduler.history, [.now,
                                            .now,
                                            .now,
@@ -335,18 +394,25 @@ final class ThrottleTests: XCTestCase {
                                            .now,
                                            .now,
                                            .minimumTolerance,
-                                           .scheduleAfterDate(.seconds(60), tolerance: .nanoseconds(7), options: nil),
+                                           .scheduleAfterDate(.seconds(60),
+                                                              tolerance: .nanoseconds(7),
+                                                              options: nil),
                                            .now,
                                            .now,
                                            .now,
-                                           .schedule(options: nil)]) // next value should be scheduled immediately as the interval has passed
-        
-        XCTAssertEqual(helper.tracking.history, [.subscription("Throttle"), .value(0), .value(1)])
+                                           // next value should be scheduled immediately
+                                           // as the interval has passed
+                                           .schedule(options: nil)])
+
+        XCTAssertEqual(helper.tracking.history, [.subscription("Throttle"),
+                                                 .value(0),
+                                                 .value(1)])
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
-        XCTAssertEqual(scheduler.scheduledDates, [.seconds(121)]) // next value should be emitted 121 seconds from the start of time
-        
+        // next value should be emitted 121 seconds from the start of time
+        XCTAssertEqual(scheduler.scheduledDates, [.seconds(121)])
+
         scheduler.executeScheduledActions()
-        
+
         XCTAssertEqual(scheduler.history, [.now,
                                            .now,
                                            .now,
@@ -355,18 +421,23 @@ final class ThrottleTests: XCTestCase {
                                            .now,
                                            .now,
                                            .minimumTolerance,
-                                           .scheduleAfterDate(.seconds(60), tolerance: .nanoseconds(7), options: nil),
+                                           .scheduleAfterDate(.seconds(60),
+                                                              tolerance: .nanoseconds(7),
+                                                              options: nil),
                                            .now,
                                            .now,
                                            .now,
                                            .schedule(options: nil),
                                            .now])
-        
-        XCTAssertEqual(helper.tracking.history, [.subscription("Throttle"), .value(0), .value(1), .value(2)])
+
+        XCTAssertEqual(helper.tracking.history, [.subscription("Throttle"),
+                                                 .value(0),
+                                                 .value(1),
+                                                 .value(2)])
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
         XCTAssertEqual(scheduler.scheduledDates, [])
     }
-    
+
     func testRequest() throws {
         let scheduler = VirtualTimeScheduler()
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
@@ -421,11 +492,11 @@ final class ThrottleTests: XCTestCase {
         XCTAssertEqual(helper.tracking.history, [.subscription("Throttle")])
         XCTAssertEqual(scheduler.history, [.now, .now])
     }
-    
+
     func testNoDemandReceivesNoValues() throws {
         let subscription = CustomSubscription()
         let publisher = CustomPublisher(subscription: subscription)
-        
+
         let tracking = TrackingSubscriber(
             receiveValue: { _ in
                 XCTFail("Unexpected value received")
@@ -433,7 +504,9 @@ final class ThrottleTests: XCTestCase {
             }
         )
 
-        let throttle = publisher.throttle(for: .milliseconds(1), scheduler: ImmediateScheduler.shared, latest: true)
+        let throttle = publisher.throttle(for: .milliseconds(1),
+                                          scheduler: ImmediateScheduler.shared,
+                                          latest: true)
         throttle.subscribe(tracking)
 
         XCTAssertEqual(tracking.history, [.subscription("Throttle")])
@@ -465,7 +538,9 @@ final class ThrottleTests: XCTestCase {
             }
         )
 
-        let throttle = publisher.throttle(for: .seconds(60), scheduler: scheduler, latest: true)
+        let throttle = publisher.throttle(for: .seconds(60),
+                                          scheduler: scheduler,
+                                          latest: true)
         throttle.subscribe(tracking)
 
         XCTAssertEqual(tracking.history, [.subscription("Throttle")])
@@ -482,7 +557,11 @@ final class ThrottleTests: XCTestCase {
 
         XCTAssertEqual(tracking.history, [.subscription("Throttle"), .value(1)])
         XCTAssertEqual(subscription.history, [.requested(.unlimited), .cancelled])
-        XCTAssertEqual(scheduler.history, [.now, .now, .now, .schedule(options: nil), .now])
+        XCTAssertEqual(scheduler.history, [.now,
+                                           .now,
+                                           .now,
+                                           .schedule(options: nil),
+                                           .now])
     }
 
     func testReceiveCompletionImmediatelyAfterSubscription() {
@@ -529,7 +608,9 @@ final class ThrottleTests: XCTestCase {
                                            .now,
                                            .now,
                                            .minimumTolerance,
-                                           .scheduleAfterDate(.seconds(60), tolerance: .nanoseconds(7), options: nil),
+                                           .scheduleAfterDate(.seconds(60),
+                                                              tolerance: .nanoseconds(7),
+                                                              options: nil),
                                            .now])
 
         scheduler.executeScheduledActions()
@@ -545,7 +626,9 @@ final class ThrottleTests: XCTestCase {
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
                                         initialDemand: .unlimited,
                                         receiveValueDemand: .max(418)) {
-            $0.throttle(for: .seconds(60), scheduler: ImmediateScheduler.shared, latest: true)
+            $0.throttle(for: .seconds(60),
+                        scheduler: ImmediateScheduler.shared,
+                        latest: true)
         }
 
         var recursionCounter = 5
@@ -570,7 +653,9 @@ final class ThrottleTests: XCTestCase {
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
                                         initialDemand: .unlimited,
                                         receiveValueDemand: .max(418)) {
-            $0.throttle(for: .seconds(60), scheduler: ImmediateScheduler.shared, latest: true)
+            $0.throttle(for: .seconds(60),
+                        scheduler: ImmediateScheduler.shared,
+                        latest: true)
         }
         helper.tracking.onFinish = {
             helper.publisher.send(completion: .finished)
@@ -584,9 +669,13 @@ final class ThrottleTests: XCTestCase {
         var subscriberReleased = false
         do {
             let publisher = CustomPublisher(subscription: CustomSubscription())
-            let throttle = publisher.throttle(for: .seconds(60), scheduler: scheduler, latest: true)
-            let tracking = TrackingSubscriber(receiveSubscription: { $0.request(.unlimited) }, receiveValue: { value = $0; return .none },
-                                              onDeinit: { subscriberReleased = true })
+            let throttle = publisher.throttle(for: .seconds(60),
+                                              scheduler: scheduler,
+                                              latest: true)
+            let tracking =
+                TrackingSubscriber(receiveSubscription: { $0.request(.unlimited) },
+                                   receiveValue: { value = $0; return .none },
+                                   onDeinit: { subscriberReleased = true })
             throttle.subscribe(tracking)
             scheduler.executeScheduledActions()
             XCTAssertEqual(tracking.history, [.subscription("Throttle")])
@@ -606,7 +695,9 @@ final class ThrottleTests: XCTestCase {
         var subscriberReleased = false
         do {
             let publisher = CustomPublisher(subscription: CustomSubscription())
-            let throttle = publisher.throttle(for: .seconds(60), scheduler: scheduler, latest: true)
+            let throttle = publisher.throttle(for: .seconds(60),
+                                              scheduler: scheduler,
+                                              latest: true)
             let tracking = TrackingSubscriber(receiveCompletion: { completion = $0 },
                                               onDeinit: { subscriberReleased = true })
             throttle.subscribe(tracking)
@@ -628,7 +719,9 @@ final class ThrottleTests: XCTestCase {
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
                                         initialDemand: nil,
                                         receiveValueDemand: .none) {
-            $0.throttle(for: .seconds(60), scheduler: ImmediateScheduler.shared, latest: true)
+            $0.throttle(for: .seconds(60),
+                        scheduler: ImmediateScheduler.shared,
+                        latest: true)
         }
 
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
@@ -643,36 +736,48 @@ final class ThrottleTests: XCTestCase {
         try XCTUnwrap(helper.publisher.subscriber)
             .receive(subscription: helper.subscription)
 
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited), .cancelled])
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
+                                                     .cancelled])
 
         try XCTUnwrap(helper.downstreamSubscription).cancel()
 
-        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited), .cancelled, .cancelled])
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited),
+                                                     .cancelled,
+                                                     .cancelled])
     }
 
     func testThrottleReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 213,
                                            expected: .history([], demand: .none)) {
-            $0.throttle(for: .seconds(60), scheduler: ImmediateScheduler.shared, latest: true)
+            $0.throttle(for: .seconds(60),
+                        scheduler: ImmediateScheduler.shared,
+                        latest: true)
         }
     }
 
     func testThrottleReceiveCompletionBeforeSubscription()  {
         testReceiveCompletionBeforeSubscription(inputType: Int.self,
                                                 expected: .history([])) {
-            $0.throttle(for: .seconds(60), scheduler: ImmediateScheduler.shared, latest: true)
+            $0.throttle(for: .seconds(60),
+                        scheduler: ImmediateScheduler.shared,
+                        latest: true)
         }
     }
 
     func testThrottleRequestBeforeSubscription() {
         testRequestBeforeSubscription(inputType: Int.self, shouldCrash: false) {
-            $0.throttle(for: .seconds(60), scheduler: ImmediateScheduler.shared, latest: true)
+            $0.throttle(for: .seconds(60),
+                        scheduler: ImmediateScheduler.shared,
+                        latest: true)
         }
     }
 
     func testThrottleCancelBeforeSubscription() {
-        testCancelBeforeSubscription(inputType: Int.self, expected: .history([.cancelled])) {
-            $0.throttle(for: .seconds(60), scheduler: ImmediateScheduler.shared, latest: true)
+        testCancelBeforeSubscription(inputType: Int.self,
+                                     expected: .history([.cancelled])) {
+            $0.throttle(for: .seconds(60),
+                        scheduler: ImmediateScheduler.shared,
+                        latest: true)
         }
     }
 
@@ -682,13 +787,17 @@ final class ThrottleTests: XCTestCase {
                            description: "Throttle",
                            customMirror: childrenIsEmpty,
                            playgroundDescription: "Throttle",
-                           { $0.throttle(for: .seconds(60), scheduler: ImmediateScheduler.shared, latest: true) })
+                           { $0.throttle(for: .seconds(60),
+                                         scheduler: ImmediateScheduler.shared,
+                                         latest: true) })
     }
 
     func testThrottleLifecycle() throws {
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: true) {
-            $0.throttle(for: .seconds(60), scheduler: ImmediateScheduler.shared, latest: true)
+            $0.throttle(for: .seconds(60),
+                        scheduler: ImmediateScheduler.shared,
+                        latest: true)
         }
     }
 }
