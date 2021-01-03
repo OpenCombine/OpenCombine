@@ -140,12 +140,6 @@ extension Publishers.Throttle {
         typealias Input = Upstream.Output
         typealias Failure = Upstream.Failure
 
-        private enum PendingEmission {
-            case none
-            case input(Input)
-            case completion(Input?, Subscribers.Completion<Failure>)
-        }
-
         private enum State {
             case awaitingSubscription(Downstream)
             case subscribed(Subscription, Downstream)
@@ -161,7 +155,9 @@ extension Publishers.Throttle {
         private let downstreamLock = UnfairRecursiveLock.allocate()
 
         private var lastEmissionTime: Context.SchedulerTimeType?
-        private var pendingEmission: PendingEmission = .none
+
+        private var pendingInput: Input?
+        private var pendingCompletion: Subscribers.Completion<Failure>?
 
         private var demand: Subscribers.Demand = .none
 
@@ -218,11 +214,12 @@ extension Publishers.Throttle {
                 return .none
             }
 
-            switch pendingEmission {
-            case .input where latest:
-                pendingEmission = .input(input)
+            let hasScheduledOutput = (pendingInput != nil || pendingCompletion != nil)
+
+            if hasScheduledOutput && latest {
+                pendingInput = input
                 lock.unlock()
-            case .none:
+            } else if !hasScheduledOutput {
                 let minimumEmissionTime =
                     lastEmissionTime.map { $0.advanced(by: interval) }
 
@@ -231,7 +228,7 @@ extension Publishers.Throttle {
 
                 demand -= 1
 
-                pendingEmission = .input(input)
+                pendingInput = input
                 lock.unlock()
 
                 let action: () -> Void = { [weak self] in
@@ -243,7 +240,7 @@ extension Publishers.Throttle {
                 } else {
                     scheduler.schedule(after: emissionTime, action)
                 }
-            case .completion, .input:
+            } else {
                 lock.unlock()
             }
 
@@ -260,18 +257,19 @@ extension Publishers.Throttle {
             self.lastTime = lastTime
             state = .pendingTerminal(subscription, downstream)
 
-            switch pendingEmission {
-            case let .input(input):
-                pendingEmission = .completion(input, completion)
+            let hasScheduledOutput = (pendingInput != nil || pendingCompletion != nil)
+
+            if hasScheduledOutput && pendingCompletion == nil {
+                pendingCompletion = completion
                 lock.unlock()
-            case .none:
-                pendingEmission = .completion(nil, completion)
+            } else if !hasScheduledOutput {
+                pendingCompletion = completion
                 lock.unlock()
 
                 scheduler.schedule { [weak self] in
                     self?.scheduledEmission()
                 }
-            case .completion:
+            } else {
                 lock.unlock()
             }
         }
@@ -290,43 +288,32 @@ extension Publishers.Throttle {
                 downstream = foundDownstream
             }
 
-            switch self.pendingEmission {
-            case .input:
-                self.lastEmissionTime = self.scheduler.now
-            case .completion, .none:
-                break
+            if self.pendingInput != nil && self.pendingCompletion == nil {
+                lastEmissionTime = scheduler.now
             }
 
-            let input: Input?
-            let completion: Subscribers.Completion<Failure>?
+            let pendingInput = self.pendingInput
+            let pendingCompletion = self.pendingCompletion
 
-            switch pendingEmission {
-            case let .input(pendingInput):
-                input = pendingInput
-                completion = nil
-            case let .completion(pendingInput, pendingCompletion):
-                input = pendingInput
-                completion = pendingCompletion
+            self.pendingInput = nil
+            self.pendingCompletion = nil
 
+            if pendingCompletion != nil {
                 state = .terminal
-            case .none:
-                lock.unlock()
-                return
             }
 
-            pendingEmission = .none
             lock.unlock()
 
             downstreamLock.lock()
 
             let newDemand: Subscribers.Demand
-            if let input = input {
+            if let input = pendingInput {
                 newDemand = downstream.receive(input)
             } else {
                 newDemand = .none
             }
 
-            if let completion = completion {
+            if let completion = pendingCompletion {
                 downstream.receive(completion: completion)
             }
             downstreamLock.unlock()
