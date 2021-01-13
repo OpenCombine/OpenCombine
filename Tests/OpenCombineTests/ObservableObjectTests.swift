@@ -212,9 +212,6 @@ final class ObservableObjectTests: XCTestCase {
         XCTAssertEqual(observableObject.value2, false)
     }
 
-    // A bug in Combine (FB7471594). This has been fixed on iOS.
-    // But not deployed on other Darwin OS yet
-    #if !OPENCOMBINE_COMPATIBILITY_TEST || os(iOS)
     func testGenericSubclassOfResilientClass() {
         let observableObject = ResilientClassGenericSubclass("hello", true)
 
@@ -235,11 +232,7 @@ final class ObservableObjectTests: XCTestCase {
         XCTAssertEqual(counter, 2)
         XCTAssertEqual(observableObject.value2, false)
     }
-    #endif
 
-    // A bug in Combine (FB7471594). This has been fixed on iOS.
-    // But not deployed on other Darwin OS yet
-    #if !OPENCOMBINE_COMPATIBILITY_TEST || os(iOS)
     func testGenericSubclassOfResilientClass2() {
         let observableObject = ResilientClassGenericSubclass2("hello", true)
 
@@ -265,7 +258,6 @@ final class ObservableObjectTests: XCTestCase {
         XCTAssertEqual(counter, 3)
         XCTAssertEqual(observableObject.value3, true)
     }
-    #endif
 
     func testObservableDerivedWithNonObservableBase() {
         let observableObject = ObservedDerivedWithNonObservedBase()
