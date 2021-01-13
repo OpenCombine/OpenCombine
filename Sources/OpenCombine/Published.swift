@@ -128,7 +128,7 @@ public struct Published<Value> {
             }
         }
         nonmutating set {
-            projectedValue.subject.objectWillChange = newValue
+            getPublisher().subject.objectWillChange = newValue
         }
     }
 
@@ -160,15 +160,8 @@ public struct Published<Value> {
     ///
     /// The `projectedValue` is the property accessed with the `$` operator.
     public var projectedValue: Publisher {
-        get {
-            switch storage {
-            case .value(let value):
-                let publisher = Publisher(value)
-                storage = .publisher(publisher)
-                return publisher
-            case .publisher(let publisher):
-                return publisher
-            }
+        mutating get {
+            return getPublisher()
         }
         set { // swiftlint:disable:this unused_setter_value
             switch storage {
@@ -180,6 +173,17 @@ public struct Published<Value> {
         }
     }
 
+    /// Note: This method can mutate `storage`
+    internal func getPublisher() -> Publisher {
+        switch storage {
+        case .value(let value):
+            let publisher = Publisher(value)
+            storage = .publisher(publisher)
+            return publisher
+        case .publisher(let publisher):
+            return publisher
+        }
+    }
     // swiftlint:disable let_var_whitespace
     @available(*, unavailable, message: """
                @Published is only available on properties of classes
