@@ -212,58 +212,60 @@ final class ObservableObjectTests: XCTestCase {
         XCTAssertEqual(observableObject.value2, false)
     }
 
+    // A bug in Combine (FB7471594). This has been fixed on iOS.
+    // But not deployed on other Darwin OS yet
+    #if !OPENCOMBINE_COMPATIBILITY_TEST || os(iOS)
     func testGenericSubclassOfResilientClass() {
         let observableObject = ResilientClassGenericSubclass("hello", true)
 
         var counter = 0
 
-        // A bug in Combine (FB7471594). It should not crash. Why would it crash?
-        assertCrashesOnDarwin {
-            observableObject.objectWillChange.sink { counter += 1 }.store(in: &disposeBag)
-            XCTAssertEqual(counter, 0)
-            XCTAssertEqual(observableObject.value1, "hello")
-            XCTAssertEqual(observableObject.value2, true)
+        observableObject.objectWillChange.sink { counter += 1 }.store(in: &disposeBag)
+        XCTAssertEqual(counter, 0)
+        XCTAssertEqual(observableObject.value1, "hello")
+        XCTAssertEqual(observableObject.value2, true)
 
-            observableObject.value1 += "!"
+        observableObject.value1 += "!"
 
-            XCTAssertEqual(counter, 1)
-            XCTAssertEqual(observableObject.value1, "hello!")
+        XCTAssertEqual(counter, 1)
+        XCTAssertEqual(observableObject.value1, "hello!")
 
-            observableObject.value2.toggle()
+        observableObject.value2.toggle()
 
-            XCTAssertEqual(counter, 2)
-            XCTAssertEqual(observableObject.value2, false)
-        }
+        XCTAssertEqual(counter, 2)
+        XCTAssertEqual(observableObject.value2, false)
     }
+    #endif
 
+    // A bug in Combine (FB7471594). This has been fixed on iOS.
+    // But not deployed on other Darwin OS yet
+    #if !OPENCOMBINE_COMPATIBILITY_TEST || os(iOS)
     func testGenericSubclassOfResilientClass2() {
         let observableObject = ResilientClassGenericSubclass2("hello", true)
 
         var counter = 0
 
-        // A bug in Combine (FB7471594). It should not crash. Why would it crash?
-        assertCrashesOnDarwin {
-            observableObject.objectWillChange.sink { counter += 1 }.store(in: &disposeBag)
-            XCTAssertEqual(counter, 0)
-            XCTAssertEqual(observableObject.value1, "hello")
-            XCTAssertEqual(observableObject.value2, true)
+        observableObject.objectWillChange.sink { counter += 1 }.store(in: &disposeBag)
+        XCTAssertEqual(counter, 0)
+        XCTAssertEqual(observableObject.value1, "hello")
+        XCTAssertEqual(observableObject.value2, true)
 
-            observableObject.value1 += "!"
+        observableObject.value1 += "!"
 
-            XCTAssertEqual(counter, 1)
-            XCTAssertEqual(observableObject.value1, "hello!")
+        XCTAssertEqual(counter, 1)
+        XCTAssertEqual(observableObject.value1, "hello!")
 
-            observableObject.value2.toggle()
+        observableObject.value2.toggle()
 
-            XCTAssertEqual(counter, 2)
-            XCTAssertEqual(observableObject.value2, false)
+        XCTAssertEqual(counter, 2)
+        XCTAssertEqual(observableObject.value2, false)
 
-            observableObject.value3.toggle()
+        observableObject.value3.toggle()
 
-            XCTAssertEqual(counter, 3)
-            XCTAssertEqual(observableObject.value3, true)
-        }
+        XCTAssertEqual(counter, 3)
+        XCTAssertEqual(observableObject.value3, true)
     }
+    #endif
 
     func testObservableDerivedWithNonObservableBase() {
         let observableObject = ObservedDerivedWithNonObservedBase()
