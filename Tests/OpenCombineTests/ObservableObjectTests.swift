@@ -95,15 +95,22 @@ final class ObservableObjectTests: XCTestCase {
                                       .value(())])
     }
 
-    func testNoFields() {
-        let observableObject = NoFields()
-        _ = observableObject.objectWillChange
-    }
+    // TODO: `objectWillChange` should return the same `ObservableObjectPublisher`
+    // every time for Combine compatibility
+    //
+    // func testNoFields() {
+    //     let observableObject = NoFields()
+    //     let publisher1 = observableObject.objectWillChange
+    //     let publisher2 = observableObject.objectWillChange
+    //     XCTAssert(publisher1 === publisher2)
+    // }
 
-    func testNoPublishedFields() {
-        let observableObject = NoPublishedFields()
-        _ = observableObject.objectWillChange
-    }
+    // func testNoPublishedFields() {
+    //     let observableObject = NoPublishedFields()
+    //     let publisher1 = observableObject.objectWillChange
+    //     let publisher2 = observableObject.objectWillChange
+    //     XCTAssert(publisher1 === publisher2)
+    // }
 
     func testPublishedFieldIsConstant() {
         let observableObject = PublishedFieldIsConstant()
