@@ -108,7 +108,7 @@ public struct Published<Value> {
         case publisher(Publisher)
     }
     @propertyWrapper
-    private class Box {
+    private final class Box {
         var wrappedValue: Storage
 
         init(wrappedValue: Storage) {
