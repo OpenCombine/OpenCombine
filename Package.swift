@@ -22,6 +22,7 @@ let package = Package(
         .library(name: "OpenCombine", targets: ["OpenCombine"]),
         .library(name: "OpenCombineDispatch", targets: ["OpenCombineDispatch"]),
         .library(name: "OpenCombineFoundation", targets: ["OpenCombineFoundation"]),
+        .library(name: "OpenCombineShim", targets: ["OpenCombineShim"]),
     ],
     targets: [
         .target(name: "COpenCombineHelpers"),
@@ -44,6 +45,16 @@ let package = Package(
             dependencies: [
                 "OpenCombine",
                 .target(name: "COpenCombineHelpers",
+                        condition: .when(platforms: supportedPlatforms.except([.wasi])))
+            ]
+        ),
+        .target(
+            name: "OpenCombineShim",
+            dependencies: [
+                "OpenCombine",
+                .target(name: "OpenCombineDispatch",
+                        condition: .when(platforms: supportedPlatforms.except([.wasi]))),
+                .target(name: "OpenCombineFoundation",
                         condition: .when(platforms: supportedPlatforms.except([.wasi])))
             ]
         ),
