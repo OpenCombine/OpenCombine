@@ -42,25 +42,57 @@ public protocol ObservableObject: AnyObject {
     var objectWillChange: ObjectWillChangePublisher { get }
 }
 
-extension ObservableObject where ObjectWillChangePublisher == ObservableObjectPublisher {
-    // swiftlint:disable let_var_whitespace
-#if swift(>=5.1)
-    /// A publisher that emits before the object has changed.
-    @available(*, unavailable, message: """
-               The default implementation of objectWillChange is not available yet. \
-               It's being worked on in \
-               https://github.com/broadwaylamb/OpenCombine/pull/97
-               """)
-    public var objectWillChange: ObservableObjectPublisher {
-        fatalError("unimplemented")
-    }
-#else
-    public var objectWillChange: ObservableObjectPublisher {
-        return ObservableObjectPublisher()
-    }
-#endif
-    // swiftlint:enable let_var_whitespace
+private protocol _ObservableObjectProperty {
+    var objectWillChange: ObservableObjectPublisher? { get nonmutating set }
 }
+
+#if swift(>=5.1)
+extension Published: _ObservableObjectProperty {}
+
+extension ObservableObject where ObjectWillChangePublisher == ObservableObjectPublisher {
+
+    /// A publisher that emits before the object has changed.
+    public var objectWillChange: ObservableObjectPublisher {
+        var installedPublisher: ObservableObjectPublisher?
+        var reflection: Mirror? = Mirror(reflecting: self)
+        while let aClass = reflection {
+            for (_, property) in aClass.children {
+                guard let property = property as? _ObservableObjectProperty else {
+                    // Visit other fields until we meet a @Published field
+                    continue
+                }
+
+                // Now we know that the field is @Published.
+                if let alreadyInstalledPublisher = property.objectWillChange {
+                    installedPublisher = alreadyInstalledPublisher
+                    // Don't visit other fields, as all @Published fields
+                    // already have a publisher installed.
+                    break
+                }
+
+                // Okay, this field doesn't have a publisher installed.
+                // This means that other fields don't have it either
+                // (because we install it only once and fields can't be added at runtime).
+                var lazilyCreatedPublisher: ObjectWillChangePublisher {
+                    if let publisher = installedPublisher {
+                        return publisher
+                    }
+                    let publisher = ObservableObjectPublisher()
+                    installedPublisher = publisher
+                    return publisher
+                }
+
+                property.objectWillChange = lazilyCreatedPublisher
+
+                // Continue visiting other fields.
+            }
+            reflection = aClass.superclassMirror
+        }
+        return installedPublisher ?? ObservableObjectPublisher()
+    }
+}
+
+#endif
 
 /// A publisher that publishes changes from observable objects.
 public final class ObservableObjectPublisher: Publisher {

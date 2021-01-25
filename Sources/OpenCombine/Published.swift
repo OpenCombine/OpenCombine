@@ -107,8 +107,16 @@ public struct Published<Value> {
         case value(Value)
         case publisher(Publisher)
     }
+    @propertyWrapper
+    private final class Box {
+        var wrappedValue: Storage
 
-    private var storage: Storage
+        init(wrappedValue: Storage) {
+            self.wrappedValue = wrappedValue
+        }
+    }
+
+    @Box private var storage: Storage
 
     internal var objectWillChange: ObservableObjectPublisher? {
         get {
@@ -119,8 +127,8 @@ public struct Published<Value> {
                 return publisher.subject.objectWillChange
             }
         }
-        set {
-            projectedValue.subject.objectWillChange = newValue
+        nonmutating set {
+            getPublisher().subject.objectWillChange = newValue
         }
     }
 
@@ -145,7 +153,7 @@ public struct Published<Value> {
     ///
     /// - Parameter initialValue: The publisher's initial value.
     public init(wrappedValue: Value) {
-        storage = .value(wrappedValue)
+        _storage = Box(wrappedValue: .value(wrappedValue))
     }
 
     /// The property for which this instance exposes a publisher.
@@ -153,14 +161,7 @@ public struct Published<Value> {
     /// The `projectedValue` is the property accessed with the `$` operator.
     public var projectedValue: Publisher {
         mutating get {
-            switch storage {
-            case .value(let value):
-                let publisher = Publisher(value)
-                storage = .publisher(publisher)
-                return publisher
-            case .publisher(let publisher):
-                return publisher
-            }
+            return getPublisher()
         }
         set { // swiftlint:disable:this unused_setter_value
             switch storage {
@@ -172,6 +173,17 @@ public struct Published<Value> {
         }
     }
 
+    /// Note: This method can mutate `storage`
+    internal func getPublisher() -> Publisher {
+        switch storage {
+        case .value(let value):
+            let publisher = Publisher(value)
+            storage = .publisher(publisher)
+            return publisher
+        case .publisher(let publisher):
+            return publisher
+        }
+    }
     // swiftlint:disable let_var_whitespace
     @available(*, unavailable, message: """
                @Published is only available on properties of classes
