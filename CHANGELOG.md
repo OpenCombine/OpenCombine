@@ -4,8 +4,12 @@ This release adds a new `OpenCombineShim` product that will conditionally re-exp
 Combine on Apple platforms, or OpenCombine on other platforms. Additionally, `ObservableObject`
 protocol is now available and working on all platforms.
 
+A bug with `Timer(timeInterval:repeats:block:)` firing immediately not accounting for the passed
+`timeInterval` is fixed.
+
 **Merged pull requests:**
 
+- Fix `Timer(timeInterval:repeats:block:)` not accounting `timeInterval` ([#196](https://github.com/OpenCombine/OpenCombine/pull/196)) via [@grigorye](https://github.com/grigorye)
 - Add `OpenCombineShim` product for easier importing ([#197](https://github.com/OpenCombine/OpenCombine/pull/197)) via [@MaxDesiatov](https://github.com/MaxDesiatov)
 - Implementation for `ObservableObject` with `Mirror` ([#201](https://github.com/OpenCombine/OpenCombine/pull/201)) via [@kateinoigakukun](https://github.com/kateinoigakukun)
 
