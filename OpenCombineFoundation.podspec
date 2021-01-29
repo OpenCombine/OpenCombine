@@ -1,6 +1,6 @@
 Pod::Spec.new do |spec|
     spec.name          = "OpenCombineFoundation"
-    spec.version       = "0.11.0"
+    spec.version       = "0.12.0"
     spec.summary       = "OpenCombine + OpenCombineFoundation interoperability"
   
     spec.description   = <<-DESC
