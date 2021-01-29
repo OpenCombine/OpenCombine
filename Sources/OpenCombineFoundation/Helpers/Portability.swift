@@ -60,7 +60,12 @@ internal struct Timer {
         repeats: Bool,
         block: @escaping (Timer) -> Void
     ) {
-        self.init(fire: Date(), interval: timeInterval, repeats: repeats, block: block)
+        self.init(
+            fire: Date() + timeInterval,
+            interval: timeInterval,
+            repeats: repeats,
+            block: block
+        )
     }
 
     internal var tolerance: TimeInterval {
