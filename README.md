@@ -13,7 +13,12 @@ The main goal of this project is to provide a compatible, reliable and efficient
 ### Installation
 `OpenCombine` contains three public targets: `OpenCombine`, `OpenCombineFoundation` and `OpenCombineDispatch` (the fourth one, `COpenCombineHelpers`, is considered private. Don't import it in your projects).
 
-OpenCombine itself does not have any dependencies. Not even Foundation or Dispatch. If you want to use OpenCombine with Dispatch (for example for using `DispatchQueue` as `Scheduler` for operators like `debounce`, `receive(on:)` etc.), you will need to import both `OpenCombine` and `OpenCombineDispatch`. The same applies to Foundation: if you want to use, for instance, `NotificationCenter` or `URLSession` publishers, you'll need to also import `OpenCombineFoundation`
+OpenCombine itself does not have any dependencies. Not even Foundation or Dispatch. If you want to use OpenCombine with Dispatch (for example for using `DispatchQueue` as `Scheduler` for operators like `debounce`, `receive(on:)` etc.), you will need to import both `OpenCombine` and `OpenCombineDispatch`. The same applies to Foundation: if you want to use, for instance, `NotificationCenter` or `URLSession` publishers, you'll need to also import `OpenCombineFoundation`.
+
+If you develop code for multiple platforms, you may find it more convenient to import the
+`OpenCombineShim` module instead. It conditionally re-exports Combine on Apple platforms (if
+available), and all OpenCombine modules on other platforms. You can import `OpenCombineShim` only
+when using SwiftPM. It is not currently available for CocoaPods.
 
 ##### Swift Package Manager
 ###### Swift Package
@@ -21,7 +26,7 @@ To add `OpenCombine` to your [SwiftPM](https://swift.org/package-manager/) packa
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/OpenCombine/OpenCombine.git", from: "0.11.0")
+    .package(url: "https://github.com/OpenCombine/OpenCombine.git", from: "0.12.0")
 ],
 targets: [
     .target(
@@ -49,9 +54,9 @@ To do so, open Xcode, use **File** → **Swift Packages** → **Add Package Depe
 To add `OpenCombine` to a project using [CocoaPods](https://cocoapods.org/), add `OpenCombine` and `OpenCombineDispatch` to the list of target dependencies in your `Podfile`. 
 
 ```ruby
-pod 'OpenCombine', '~> 0.11.0'
-pod 'OpenCombineDispatch', '~> 0.11.0'
-pod 'OpenCombineFoundation', '~> 0.11.0'
+pod 'OpenCombine', '~> 0.12.0'
+pod 'OpenCombineDispatch', '~> 0.12.0'
+pod 'OpenCombineFoundation', '~> 0.12.0'
 ```
 
 ### Contributing
