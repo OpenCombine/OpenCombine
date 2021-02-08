@@ -9,7 +9,7 @@ extension Publisher {
 
     /// Wraps this publisher with a type eraser.
     ///
-    /// Use `eraseToAnyPublisher()` to expose an instance of `AnyPublishe`` to
+    /// Use `eraseToAnyPublisher()` to expose an instance of `AnyPublisher`` to
     /// the downstream subscriber, rather than this publisher’s actual type.
     /// This form of _type erasure_ preserves abstraction across API boundaries, such as
     /// different modules.
