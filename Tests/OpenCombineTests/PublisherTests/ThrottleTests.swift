@@ -5,8 +5,6 @@
 //  Created by Stuart Austin on 14/11/2020.
 //
 
-#if !WASI
-
 import XCTest
 
 #if OPENCOMBINE_COMPATIBILITY_TEST
@@ -844,5 +842,3 @@ final class ThrottleTests: XCTestCase {
         }
     }
 }
-
-#endif // !WASI
