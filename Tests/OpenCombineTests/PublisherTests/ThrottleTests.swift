@@ -564,6 +564,49 @@ final class ThrottleTests: XCTestCase {
                                            .now])
     }
 
+    func testCancelWhilstScheduledOutput() {
+        let scheduler = VirtualTimeScheduler()
+        let subscription = CustomSubscription()
+        let publisher = CustomPublisher(subscription: subscription)
+        var downstreamSubscription: Subscription?
+        let tracking = TrackingSubscriber(
+            receiveSubscription: {
+                downstreamSubscription = $0
+                $0.request(.unlimited)
+            },
+            receiveValue: { _ in
+                XCTAssertNotNil(downstreamSubscription)
+                return .max(42)
+            }
+        )
+
+        let throttle = publisher.throttle(for: .seconds(60),
+                                          scheduler: scheduler,
+                                          latest: true)
+        throttle.subscribe(tracking)
+
+        XCTAssertEqual(tracking.history, [.subscription("Throttle")])
+        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
+        XCTAssertEqual(scheduler.history, [.now, .now])
+
+        XCTAssertEqual(publisher.send(1), .none)
+
+        XCTAssertEqual(tracking.history, [.subscription("Throttle")])
+        XCTAssertEqual(subscription.history, [.requested(.unlimited)])
+        XCTAssertEqual(scheduler.history, [.now, .now, .now, .schedule(options: nil)])
+
+        tracking.cancel()
+
+        scheduler.executeScheduledActions()
+
+        XCTAssertEqual(tracking.history, [])
+        XCTAssertEqual(subscription.history, [.requested(.unlimited), .cancelled])
+        XCTAssertEqual(scheduler.history, [.now,
+                                           .now,
+                                           .now,
+                                           .schedule(options: nil)])
+    }
+
     func testReceiveCompletionImmediatelyAfterSubscription() {
         let scheduler = VirtualTimeScheduler()
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
