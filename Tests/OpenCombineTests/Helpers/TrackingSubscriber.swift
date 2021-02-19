@@ -352,6 +352,7 @@ enum StringSubscription: Subscription,
                          ExpressibleByStringLiteral {
 
     case string(String)
+    case contains(String)
     case subscription(Subscription)
 
     init(_ subscription: Subscription) {
@@ -364,7 +365,7 @@ enum StringSubscription: Subscription,
 
     var description: String {
         switch self {
-        case .string(let string):
+        case .string(let string), .contains(let string):
             return string
         case .subscription(let subscription):
             return String(describing: subscription)
@@ -379,7 +380,7 @@ enum StringSubscription: Subscription,
         switch self {
         case .subscription(let subscription):
             return subscription.combineIdentifier
-        case .string:
+        case .string, .contains:
             fatalError("String has no combineIdentifier")
         }
     }
@@ -390,7 +391,7 @@ enum StringSubscription: Subscription,
 
     var underlying: Subscription? {
         switch self {
-        case .string:
+        case .string, .contains:
             return nil
         case .subscription(let underlying):
             return underlying
@@ -401,6 +402,25 @@ enum StringSubscription: Subscription,
 @available(macOS 10.15, iOS 13.0, *)
 extension StringSubscription: Equatable {
     static func == (lhs: StringSubscription, rhs: StringSubscription) -> Bool {
-        return lhs.description == rhs.description
+        // swiftlint:disable pattern_matching_keywords
+        switch (lhs, rhs) {
+        case (.contains(let pattern), .subscription(let subscription)),
+             (.subscription(let subscription), .contains(let pattern)):
+            return String(describing: subscription).contains(pattern)
+        case (.contains(let pattern), .string(let string)),
+             (.string(let string), .contains(let pattern)):
+            return string.contains(pattern)
+        case let (.subscription(lhs), .subscription(rhs)):
+            return String(describing: lhs) == String(describing: rhs)
+        case (.string(let string), .subscription(let subscription)),
+             (.subscription(let subscription), .string(let string)):
+            return String(describing: subscription) == string
+        case let (.string(lhs), .string(rhs)):
+            return lhs == rhs
+        case let (.contains(lhs), .contains(rhs)):
+            return lhs.contains(rhs) || rhs.contains(lhs)
+        }
+
+        // swiftlint:enable pattern_matching_keywords
     }
 }
