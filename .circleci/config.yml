@@ -114,35 +114,35 @@ jobs:
       SWIFT_VERSION: "5.3.0"
     <<: *macOS_tests_steps
 
-  "Execute compatibility tests on iOS 14.2 (Xcode 12.2.0, Swift 5.3.1)":
+  "Execute compatibility tests on iOS 14.4 (Xcode 12.4.0, Swift 5.3.2)":
     macos:
-      xcode: "12.2.0"
+      xcode: "12.4.0"
     environment:
-      SWIFT_VERSION: "5.3.1"
+      SWIFT_VERSION: "5.3.2"
     steps:
       - checkout
       - run:
           name: Generating Xcode project
           command: make generate-compatibility-xcodeproj
       - run:
-          name: Building for testing on iOS 14.2 with xcodebuild
+          name: Building for testing on iOS 14.4 with xcodebuild
           command: |
             set -o pipefail \
               && xcodebuild build-for-testing \
                    -scheme OpenCombine-Package \
-                   -destination "platform=iOS Simulator,name=iPhone 11,OS=14.2" \
+                   -destination "platform=iOS Simulator,name=iPhone 11,OS=14.4" \
                    -derivedDataPath DerivedData \
               | tee xcodebuild_build-for-testing.log \
               | xcpretty
       - store_artifacts:
           path: xcodebuild_build-for-testing.log
       - run:
-          name: Testing against Combine on iOS 14.2 with xcodebuild
+          name: Testing against Combine on iOS 14.4 with xcodebuild
           command: |
             set -o pipefail \
               && xcodebuild test-without-building \
                    -scheme OpenCombine-Package \
-                   -destination "platform=iOS Simulator,name=iPhone 11,OS=14.2" \
+                   -destination "platform=iOS Simulator,name=iPhone 11,OS=14.4" \
                    -derivedDataPath DerivedData \
               | tee xcodebuild_test-without-building.log \
               | xcpretty --report junit -o build/reports/results.xml
@@ -279,7 +279,7 @@ workflows:
       - "Execute tests on macOS 10.15.0 (Xcode 12.1.0, Swift 5.3.0)"
   "OpenCombine: execute compatibility tests":
     jobs:
-      - "Execute compatibility tests on iOS 14.2 (Xcode 12.2.0, Swift 5.3.1)"
+      - "Execute compatibility tests on iOS 14.4 (Xcode 12.4.0, Swift 5.3.2)"
   "OpenCombine: execute tests on iOS":
     jobs:
       - "Execute tests on iOS 9.3 (Xcode 10.2.1, Swift 5.0.1)"
