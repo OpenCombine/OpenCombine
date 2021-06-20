@@ -589,7 +589,7 @@ final class FlatMapTests: XCTestCase {
             createSut: { $0.flatMap(maxPublishers: .max(1)) { $0 } }
         )
 
-        child.willSubscribe = { subscriber, _ in
+        child.willSubscribe = { _, _ in
             helper.publisher.send(completion: .finished)
         }
 

@@ -41,10 +41,17 @@ final class AllSatisfyTests: XCTestCase {
         )
     }
 
-    func testAllSatisfyUpstreamFinishesImmediately() {
-        ReduceTests.testUpstreamFinishesImmediately(
+    func testAllSatisfyUpstreamFinishesImmediatelyWithDemand() {
+        ReduceTests.testUpstreamFinishesImmediatelyWithDemand(
             expectedSubscription: "AllSatisfy",
             expectedResult: true,
+            { $0.allSatisfy(shouldNotBeCalled()) }
+        )
+    }
+
+    func testAllSatisfyUpstreamFinishesImmediatelyWithoutDemand() {
+        ReduceTests.testUpstreamFinishesImmediatelyWithoutDemand(
+            expectedSubscription: "AllSatisfy",
             { $0.allSatisfy(shouldNotBeCalled()) }
         )
     }
@@ -104,6 +111,7 @@ final class AllSatisfyTests: XCTestCase {
     func testAllSatisfyLifecycle() throws {
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,
+                          finishingIsPassedThrough: false,
                           { $0.allSatisfy { _ in true } })
     }
 
@@ -155,10 +163,17 @@ final class AllSatisfyTests: XCTestCase {
         )
     }
 
-    func testTryAllSatisfyUpstreamFinishesImmediately() {
-        ReduceTests.testUpstreamFinishesImmediately(
+    func testTryAllSatisfyUpstreamFinishesImmediatelyWithDemand() {
+        ReduceTests.testUpstreamFinishesImmediatelyWithDemand(
             expectedSubscription: "TryAllSatisfy",
             expectedResult: true,
+            { $0.tryAllSatisfy(shouldNotBeCalled()) }
+        )
+    }
+
+    func testTryAllSatisfyUpstreamFinishesImmediatelyWithoutDemand() {
+        ReduceTests.testUpstreamFinishesImmediatelyWithoutDemand(
+            expectedSubscription: "TryAllSatisfy",
             { $0.tryAllSatisfy(shouldNotBeCalled()) }
         )
     }
@@ -224,6 +239,7 @@ final class AllSatisfyTests: XCTestCase {
     func testTryAllSatisfyLifecycle() throws {
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,
+                          finishingIsPassedThrough: false,
                           { $0.tryAllSatisfy { _ in true } })
     }
 

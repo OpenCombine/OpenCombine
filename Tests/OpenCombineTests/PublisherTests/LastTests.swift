@@ -49,11 +49,19 @@ final class LastTests: XCTestCase {
         }
     }
 
-    func testLastFinishesImmediately() {
-        ReduceTests.testUpstreamFinishesImmediately(expectedSubscription: "Last",
-                                                    expectedResult: nil) {
-            $0.last()
-        }
+    func testLastFinishesImmediatelyWithDemand() {
+        ReduceTests.testUpstreamFinishesImmediatelyWithDemand(
+            expectedSubscription: "Last",
+            expectedResult: nil,
+            { $0.last() }
+        )
+    }
+
+    func testLastFinishesImmediatelyWithoutDemand() {
+        ReduceTests.testUpstreamFinishesImmediatelyWithoutDemand(
+            expectedSubscription: "Last",
+            { $0.last() }
+        )
     }
 
     func testLastRequestsUnlimitedThenSendsSubscription() {
@@ -97,6 +105,7 @@ final class LastTests: XCTestCase {
     func testLastLifecycle() throws {
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,
+                          finishingIsPassedThrough: false,
                           { $0.last() })
     }
 
@@ -195,11 +204,19 @@ final class LastTests: XCTestCase {
         }
     }
 
-    func testLastWhereFinishesImmediately() {
-        ReduceTests.testUpstreamFinishesImmediately(expectedSubscription: "LastWhere",
-                                                    expectedResult: nil) {
-            $0.last(where: { $0 > 2 })
-        }
+    func testLastWhereFinishesImmediatelyWithDemand() {
+        ReduceTests.testUpstreamFinishesImmediatelyWithDemand(
+            expectedSubscription: "LastWhere",
+            expectedResult: nil,
+            { $0.last(where: { $0 > 2 }) }
+        )
+    }
+
+    func testLastWhereFinishesImmediatelyWithoutDemand() {
+        ReduceTests.testUpstreamFinishesImmediatelyWithoutDemand(
+            expectedSubscription: "LastWhere",
+            { $0.last(where: { $0 > 2 }) }
+        )
     }
 
     func testLastWhereRequestsUnlimitedThenSendsSubscription() {
@@ -251,6 +268,7 @@ final class LastTests: XCTestCase {
     func testLastWhereLifecycle() throws {
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,
+                          finishingIsPassedThrough: false,
                           { $0.last { $0 > 1 } })
     }
 
@@ -350,12 +368,19 @@ final class LastTests: XCTestCase {
         }
     }
 
-    func testTryLastWhereFinishesImmediately() {
-        ReduceTests
-            .testUpstreamFinishesImmediately(expectedSubscription: "TryLastWhere",
-                                             expectedResult: nil) {
-                $0.tryLast(where: { $0 > 2 })
-            }
+    func testTryLastWhereFinishesImmediatelyWithDemand() {
+        ReduceTests.testUpstreamFinishesImmediatelyWithDemand(
+            expectedSubscription: "TryLastWhere",
+            expectedResult: nil,
+            { $0.tryLast(where: { $0 > 2 }) }
+        )
+    }
+
+    func testTryLastWhereFinishesImmediatelyWithoutDemand() {
+        ReduceTests.testUpstreamFinishesImmediatelyWithoutDemand(
+            expectedSubscription: "TryLastWhere",
+            { $0.tryLast(where: { $0 > 2 }) }
+        )
     }
 
     func testTryLastWhereRequestsUnlimitedThenSendsSubscription() {
@@ -427,6 +452,7 @@ final class LastTests: XCTestCase {
     func testTryLastWhereLifecycle() throws {
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,
+                          finishingIsPassedThrough: false,
                           { $0.tryLast { $0 > 1 } })
     }
 

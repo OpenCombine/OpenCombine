@@ -27,10 +27,19 @@ final class CountTests: XCTestCase {
                                                   { $0.count() })
     }
 
-    func testtestUpstreamFinishesImmediately() {
-        ReduceTests.testUpstreamFinishesImmediately(expectedSubscription: "Count",
-                                                    expectedResult: 0,
-                                                    { $0.count() })
+    func testUpstreamFinishesImmediatelyWithDemand() {
+        ReduceTests.testUpstreamFinishesImmediatelyWithDemand(
+            expectedSubscription: "Count",
+            expectedResult: 0,
+            { $0.count() }
+        )
+    }
+
+    func testUpstreamFinishesImmediatelyWithoutDemand() {
+        ReduceTests.testUpstreamFinishesImmediatelyWithoutDemand(
+            expectedSubscription: "Count",
+            { $0.count() }
+        )
     }
 
     func testCancelAlreadyCancelled() throws {
@@ -77,6 +86,7 @@ final class CountTests: XCTestCase {
     func testCountLifecycle() throws {
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,
+                          finishingIsPassedThrough: false,
                           { $0.count() })
     }
 

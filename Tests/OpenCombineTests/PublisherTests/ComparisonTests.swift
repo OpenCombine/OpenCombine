@@ -64,22 +64,52 @@ final class ComparisonTests: XCTestCase {
                                                   { $0.min(by: shouldNotBeCalled()) })
     }
 
-    func testComparisonUpstreamFinishesImmediately() {
-        ReduceTests.testUpstreamFinishesImmediately(expectedSubscription: "Comparison",
-                                                    expectedResult: nil,
-                                                    { $0.max() })
+    func testComparisonUpstreamFinishesImmediatelyWithDemand() {
+        ReduceTests.testUpstreamFinishesImmediatelyWithDemand(
+            expectedSubscription: "Comparison",
+            expectedResult: nil,
+            { $0.max() }
+        )
 
-        ReduceTests.testUpstreamFinishesImmediately(expectedSubscription: "Comparison",
-                                                    expectedResult: nil,
-                                                    { $0.min() })
+        ReduceTests.testUpstreamFinishesImmediatelyWithDemand(
+            expectedSubscription: "Comparison",
+            expectedResult: nil,
+            { $0.min() }
+        )
 
-        ReduceTests.testUpstreamFinishesImmediately(expectedSubscription: "Comparison",
-                                                    expectedResult: nil,
-                                                    { $0.max(by: shouldNotBeCalled()) })
+        ReduceTests.testUpstreamFinishesImmediatelyWithDemand(
+            expectedSubscription: "Comparison",
+            expectedResult: nil,
+            { $0.max(by: shouldNotBeCalled()) }
+        )
 
-        ReduceTests.testUpstreamFinishesImmediately(expectedSubscription: "Comparison",
-                                                    expectedResult: nil,
-                                                    { $0.min(by: shouldNotBeCalled()) })
+        ReduceTests.testUpstreamFinishesImmediatelyWithDemand(
+            expectedSubscription: "Comparison",
+            expectedResult: nil,
+            { $0.min(by: shouldNotBeCalled()) }
+        )
+    }
+
+    func testComparisonUpstreamFinishesImmediatelyWithoutDemand() {
+        ReduceTests.testUpstreamFinishesImmediatelyWithoutDemand(
+            expectedSubscription: "Comparison",
+            { $0.max() }
+        )
+
+        ReduceTests.testUpstreamFinishesImmediatelyWithoutDemand(
+            expectedSubscription: "Comparison",
+            { $0.min() }
+        )
+
+        ReduceTests.testUpstreamFinishesImmediatelyWithoutDemand(
+            expectedSubscription: "Comparison",
+            { $0.max(by: shouldNotBeCalled()) }
+        )
+
+        ReduceTests.testUpstreamFinishesImmediatelyWithoutDemand(
+            expectedSubscription: "Comparison",
+            { $0.min(by: shouldNotBeCalled()) }
+        )
     }
 
     func testComparisonCancelAlreadyCancelled() throws {
@@ -204,10 +234,12 @@ final class ComparisonTests: XCTestCase {
     func testComparisonLifecycle() throws {
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,
+                          finishingIsPassedThrough: false,
                           { $0.min(by: >) })
 
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,
+                          finishingIsPassedThrough: false,
                           { $0.max(by: >) })
     }
 
@@ -272,14 +304,30 @@ final class ComparisonTests: XCTestCase {
                                                   { $0.tryMin(by: >) })
     }
 
-    func testTryComparisonUpstreamFinishesImmediately() {
-        ReduceTests.testUpstreamFinishesImmediately(expectedSubscription: "TryComparison",
-                                                    expectedResult: nil,
-                                                    { $0.tryMax(by: >) })
+    func testTryComparisonUpstreamFinishesImmediatelyWithDemand() {
+        ReduceTests.testUpstreamFinishesImmediatelyWithDemand(
+            expectedSubscription: "TryComparison",
+            expectedResult: nil,
+            { $0.tryMax(by: >) }
+        )
 
-        ReduceTests.testUpstreamFinishesImmediately(expectedSubscription: "TryComparison",
-                                                    expectedResult: nil,
-                                                    { $0.tryMin(by: >) })
+        ReduceTests.testUpstreamFinishesImmediatelyWithDemand(
+            expectedSubscription: "TryComparison",
+            expectedResult: nil,
+            { $0.tryMin(by: >) }
+        )
+    }
+
+    func testTryComparisonUpstreamFinishesImmediatelyWithoutDemand() {
+        ReduceTests.testUpstreamFinishesImmediatelyWithoutDemand(
+            expectedSubscription: "TryComparison",
+            { $0.tryMax(by: >) }
+        )
+
+        ReduceTests.testUpstreamFinishesImmediatelyWithoutDemand(
+            expectedSubscription: "TryComparison",
+            { $0.tryMin(by: >) }
+        )
     }
 
     func testTryComparisonCancelAlreadyCancelled() throws {
@@ -358,10 +406,12 @@ final class ComparisonTests: XCTestCase {
     func testTryComparisonLifecycle() throws {
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,
+                          finishingIsPassedThrough: false,
                           { $0.tryMin(by: >) })
 
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,
+                          finishingIsPassedThrough: false,
                           { $0.tryMax(by: >) })
     }
 

@@ -338,8 +338,6 @@ final class OptionalPublisherTests: XCTestCase {
         XCTAssertEqual(Sut<Int>(12).output(in: ...0), Sut(12))
         XCTAssertEqual(Sut<Int>(12).output(in: ..<0), Sut(nil))
         XCTAssertEqual(Sut<Int>(12).output(in: ..<1), Sut(12))
-        XCTAssertEqual(Sut<Int>(12).output(in: Range(uncheckedBounds: (0, -1))), Sut(12))
-        XCTAssertEqual(Sut<Int>(12).output(in: Range(uncheckedBounds: (1, -1))), Sut(nil))
 
         let trackingRange = TrackingRangeExpression(0 ..< 10)
         _ = Sut<Int>(12).output(in: trackingRange)

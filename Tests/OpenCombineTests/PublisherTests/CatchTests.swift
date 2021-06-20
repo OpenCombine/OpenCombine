@@ -63,7 +63,7 @@ final class CatchTests: XCTestCase {
 
     func testCatchReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 1, expected: .crash) {
-            $0.catch { _ in Just(13) }
+            $0.catch(fromNever(Just<Int>.self))
         }
     }
 
@@ -71,7 +71,7 @@ final class CatchTests: XCTestCase {
         testReceiveCompletionBeforeSubscription(
             inputType: Int.self,
             expected: .history([]),
-            { $0.catch { _ in Just(13) } }
+            { $0.catch(fromNever(Just<Int>.self)) }
         )
     }
 
@@ -220,7 +220,7 @@ final class CatchTests: XCTestCase {
 
     func testTryCatchReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 1, expected: .crash) {
-            $0.tryCatch { _ in Just(13) }
+            $0.tryCatch(fromNever(Just<Int>.self))
         }
     }
 
@@ -228,7 +228,7 @@ final class CatchTests: XCTestCase {
         testReceiveCompletionBeforeSubscription(
             inputType: Int.self,
             expected: .history([]),
-            { $0.tryCatch { _ in Just(13) } }
+            { $0.tryCatch(fromNever(Just<Int>.self)) }
         )
     }
 

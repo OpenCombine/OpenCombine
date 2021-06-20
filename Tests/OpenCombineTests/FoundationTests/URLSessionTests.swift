@@ -53,13 +53,14 @@ final class URLSessionTests: XCTestCase {
     private let unknownError = URLError(.unknown)
 
     func testDataTaskPublisherFromURL() {
-        let publisher = makePublisher(TestURLSession(testDataTask: .init()), testURL)
+        let publisher = makePublisher(TestURLSession.withTestDataTask(.create()), testURL)
         let expectedRequest = URLRequest(url: testURL)
         XCTAssertEqual(publisher.request, expectedRequest)
     }
 
     func testDataTaskPublisherFromRequest() {
-        let publisher = makePublisher(TestURLSession(testDataTask: .init()), testRequest)
+        let publisher = makePublisher(TestURLSession.withTestDataTask(.create()),
+                                      testRequest)
         XCTAssertEqual(publisher.request, testRequest)
     }
 
@@ -126,8 +127,8 @@ final class URLSessionTests: XCTestCase {
     }
 
     func testRequesting() throws {
-        let dataTask = TestURLSessionDataTask()
-        let session = TestURLSession(testDataTask: dataTask)
+        let dataTask = TestURLSessionDataTask.create()
+        let session = TestURLSession.withTestDataTask(dataTask)
         let publisher = makePublisher(session, testRequest)
         var downstreamSubscription: Subscription?
         let tracking = TrackingSubscriber(
@@ -166,8 +167,8 @@ final class URLSessionTests: XCTestCase {
     }
 
     func testCancelAlreadyCancelled() throws {
-        let dataTask = TestURLSessionDataTask()
-        let session = TestURLSession(testDataTask: dataTask)
+        let dataTask = TestURLSessionDataTask.create()
+        let session = TestURLSession.withTestDataTask(dataTask)
         let publisher = makePublisher(session, testRequest)
         var downstreamSubscription: Subscription?
         let tracking = TrackingSubscriber(
@@ -192,8 +193,8 @@ final class URLSessionTests: XCTestCase {
     }
 
     func testCrashesOnZeroDemand() throws {
-        let dataTask = TestURLSessionDataTask()
-        let session = TestURLSession(testDataTask: dataTask)
+        let dataTask = TestURLSessionDataTask.create()
+        let session = TestURLSession.withTestDataTask(dataTask)
         let publisher = makePublisher(session, testURL)
         var downstreamSubscription: Subscription?
         let tracking = TrackingSubscriber(
@@ -207,8 +208,8 @@ final class URLSessionTests: XCTestCase {
     }
 
     func testURLSessionSubscriptionReflection() throws {
-        let dataTask = TestURLSessionDataTask()
-        let session = TestURLSession(testDataTask: dataTask)
+        let dataTask = TestURLSessionDataTask.create()
+        let session = TestURLSession.withTestDataTask(dataTask)
         let publisher = makePublisher(session, testURL)
         try testSubscriptionReflection(
             description: "DataTaskPublisher",
@@ -229,8 +230,8 @@ final class URLSessionTests: XCTestCase {
                                    _ response: URLResponse?,
                                    _ error: Error?,
                                    expected: [TrackingSubscriber.Event]) {
-        let dataTask = TestURLSessionDataTask()
-        let session = TestURLSession(testDataTask: dataTask)
+        let dataTask = TestURLSessionDataTask.create()
+        let session = TestURLSession.withTestDataTask(dataTask)
         let publisher = makePublisher(session, testRequest)
         let tracking = TrackingSubscriber(receiveSubscription: { $0.request(.max(1)) })
         publisher.subscribe(tracking)
@@ -292,16 +293,25 @@ private class TestURLSession: URLSession {
 
     private(set) var history = [Event]()
 
-    private(set) var dataTaskCompletionHandlers: [(Data?, URLResponse?, Error?) -> Void]
+    private(set) var dataTaskCompletionHandlers =
+        [(Data?, URLResponse?, Error?) -> Void]()
 
-    private let testDataTask: TestURLSessionDataTask
+    private var testDataTask: TestURLSessionDataTask?
 
-    init(testDataTask: TestURLSessionDataTask) {
-        self.testDataTask = testDataTask
-        self.dataTaskCompletionHandlers = []
-#if !canImport(Darwin)
-        super.init(configuration: .default)
+    static func withTestDataTask(
+        _ testDataTask: TestURLSessionDataTask
+    ) -> TestURLSession {
+        // This dance is to avoid the deprecation warning for the URLSession
+        // default initializer. Believe me, I've tried to make it less ugly with
+        // no success.
+#if canImport(Darwin)
+        let sessionClass = TestURLSession.self as NSObject.Type
+        let session = sessionClass.init() as! TestURLSession
+#else
+        let session = TestURLSession(configuration: .default)
 #endif
+        session.testDataTask = testDataTask
+        return session
     }
 
     // MARK: Testing
@@ -379,12 +389,12 @@ private class TestURLSession: URLSession {
 
     override func dataTask(with request: URLRequest) -> URLSessionDataTask {
         history.append(.dataTaskWithRequest(request))
-        return testDataTask
+        return testDataTask!
     }
 
     override func dataTask(with url: URL) -> URLSessionDataTask {
         history.append(.dataTaskWithURL(url))
-        return testDataTask
+        return testDataTask!
     }
 
     override func dataTask(
@@ -393,7 +403,7 @@ private class TestURLSession: URLSession {
     ) -> URLSessionDataTask {
         history.append(.dataTaskWithURLAndCompletion(url))
         dataTaskCompletionHandlers.append(completionHandler)
-        return testDataTask
+        return testDataTask!
     }
 
     override func dataTask(
@@ -402,7 +412,7 @@ private class TestURLSession: URLSession {
     ) -> URLSessionDataTask {
         history.append(.dataTaskWithRequestAndCompletion(request))
         dataTaskCompletionHandlers.append(completionHandler)
-        return testDataTask
+        return testDataTask!
     }
 
     override func uploadTask(with request: URLRequest,
@@ -556,7 +566,18 @@ private final class TestURLSessionDataTask: URLSessionDataTask {
 
     private(set) var history = [Event]()
 
-    override init() {}
+    static func create() -> TestURLSessionDataTask {
+        // This dance is to avoid the deprecation warning for the URLSessionDataTask
+        // default initializer. Believe me, I've tried to make it less ugly with
+        // no success.
+#if canImport(Darwin)
+        let dataTaskClass = TestURLSessionDataTask.self as NSObject.Type
+        let dataTask = dataTaskClass.init() as! TestURLSessionDataTask
+#else
+        let dataTask = TestURLSessionDataTask()
+#endif
+        return dataTask
+    }
 
     override var taskIdentifier: Int {
         history.append(.taskIdentifier)

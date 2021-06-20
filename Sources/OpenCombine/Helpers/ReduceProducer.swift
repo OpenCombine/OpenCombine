@@ -48,8 +48,6 @@ internal class ReduceProducer<Downstream: Subscriber,
 
     private var upstreamCompleted = false
 
-    private var empty = true
-
     internal init(downstream: Downstream, initial: Output?, reduce: Reducer) {
         self.downstream = downstream
         self.initial = initial
@@ -100,7 +98,9 @@ internal class ReduceProducer<Downstream: Subscriber,
             return
         }
         upstreamCompleted = true
-        self.completed = downstreamRequested || empty
+        if downstreamRequested {
+            self.completed = true
+        }
         let completed = self.completed
         let result = self.result
         lock.unlock()
@@ -157,7 +157,6 @@ extension ReduceProducer: Subscriber {
             lock.unlock()
             return .none
         }
-        empty = false
         lock.unlock()
 
         // Combine doesn't hold the lock when calling `receive(newValue:)`.

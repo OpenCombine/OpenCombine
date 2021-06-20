@@ -30,11 +30,19 @@ final class ReduceTests: XCTestCase {
         }
     }
 
-    func testReduceFinishesImmediately() {
-        ReduceTests.testUpstreamFinishesImmediately(expectedSubscription: "Reduce",
-                                                    expectedResult: 1) {
-            $0.reduce(1, *)
-        }
+    func testReduceFinishesImmediatelyWithDemand() {
+        ReduceTests.testUpstreamFinishesImmediatelyWithDemand(
+            expectedSubscription: "Reduce",
+            expectedResult: 1,
+            { $0.reduce(1, *) }
+        )
+    }
+
+    func testReduceFinishesImmediatelyWithoutDemand() {
+        ReduceTests.testUpstreamFinishesImmediatelyWithoutDemand(
+            expectedSubscription: "Reduce",
+            { $0.reduce(1, *) }
+        )
     }
 
     func testReduceRequestsUnlimitedThenSendsSubscription() {
@@ -78,6 +86,7 @@ final class ReduceTests: XCTestCase {
     func testReduceLifecycle() throws {
         try testLifecycle(sendValue: 42,
                           cancellingSubscriptionReleasesSubscriber: false,
+                          finishingIsPassedThrough: false,
                           { $0.reduce(0, +) })
     }
 
@@ -118,11 +127,19 @@ final class ReduceTests: XCTestCase {
         }
     }
 
-    func testTryReduceFinishesImmediately() {
-        ReduceTests.testUpstreamFinishesImmediately(expectedSubscription: "TryReduce",
-                                                    expectedResult: 1) {
-            $0.tryReduce(1, *)
-        }
+    func testTryReduceFinishesImmediatelyWithDemand() {
+        ReduceTests.testUpstreamFinishesImmediatelyWithDemand(
+            expectedSubscription: "TryReduce",
+            expectedResult: 1,
+            { $0.tryReduce(1, *) }
+        )
+    }
+
+    func testTryReduceFinishesImmediatelyWithoutDemand() {
+        ReduceTests.testUpstreamFinishesImmediatelyWithoutDemand(
+            expectedSubscription: "TryReduce",
+            { $0.tryReduce(1, *) }
+        )
     }
 
     func testTryReduceRequestsUnlimitedThenSendsSubscription() {
@@ -172,6 +189,7 @@ final class ReduceTests: XCTestCase {
     func testTryReduceLifecycle() throws {
         try testLifecycle(sendValue: 42,
                           cancellingSubscriptionReleasesSubscriber: false,
+                          finishingIsPassedThrough: false,
                           { $0.tryReduce(0, +) })
     }
 
@@ -306,7 +324,7 @@ final class ReduceTests: XCTestCase {
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
     }
 
-    static func testUpstreamFinishesImmediately<Operator: Publisher>(
+    static func testUpstreamFinishesImmediatelyWithDemand<Operator: Publisher>(
         expectedSubscription: StringSubscription,
         expectedResult: Operator.Output?,
         _ makeOperator: (CustomPublisherBase<Int, Error>) -> Operator
@@ -314,7 +332,7 @@ final class ReduceTests: XCTestCase {
 
         let helper = OperatorTestHelper(
             publisherType: CustomPublisherBase<Int, Error>.self,
-            initialDemand: nil, // Downstream should receive the result nonetheless
+            initialDemand: .max(1),
             receiveValueDemand: .none,
             createSut: makeOperator
         )
@@ -332,6 +350,38 @@ final class ReduceTests: XCTestCase {
         } else {
            expectedHistory = [.subscription(expectedSubscription), .completion(.finished)]
         }
+        XCTAssertEqual(helper.tracking.history, expectedHistory)
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+
+        helper.publisher.send(completion: .failure(TestingError.oops))
+        XCTAssertEqual(helper.tracking.history, expectedHistory)
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+
+        XCTAssertEqual(helper.publisher.send(73), .none)
+        XCTAssertEqual(helper.tracking.history, expectedHistory)
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+    }
+
+    static func testUpstreamFinishesImmediatelyWithoutDemand<Operator: Publisher>(
+        expectedSubscription: StringSubscription,
+        _ makeOperator: (CustomPublisherBase<Int, Error>) -> Operator
+    ) where Operator.Output: Equatable, Operator.Failure == Error {
+
+        let helper = OperatorTestHelper(
+            publisherType: CustomPublisherBase<Int, Error>.self,
+            initialDemand: nil,
+            receiveValueDemand: .none,
+            createSut: makeOperator
+        )
+
+        XCTAssertEqual(helper.tracking.history, [.subscription(expectedSubscription)])
+        XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
+
+        helper.publisher.send(completion: .finished)
+
+        let expectedHistory: [TrackingSubscriberBase<Operator.Output, Error>.Event] =
+            [.subscription(expectedSubscription)]
+
         XCTAssertEqual(helper.tracking.history, expectedHistory)
         XCTAssertEqual(helper.subscription.history, [.requested(.unlimited)])
 

@@ -256,7 +256,10 @@ final class JustTests: XCTestCase {
     }
 
     func testMapErrorOperatorSpecialization() {
-        XCTAssertEqual(try Sut(42).mapError { _ in TestingError.oops }.result.get(), 42)
+        XCTAssertEqual(
+            try Sut(42).mapError(fromNever(TestingError.self)).result.get(),
+            42
+        )
     }
 
     func testReplaceErrorOperatorSpecialization() {
