@@ -27,10 +27,19 @@ final class CollectTests: XCTestCase {
                                                   { $0.collect() })
     }
 
-    func testtestUpstreamFinishesImmediately() {
-        ReduceTests.testUpstreamFinishesImmediately(expectedSubscription: "Collect",
-                                                    expectedResult: [Int](),
-                                                    { $0.collect() })
+    func testUpstreamFinishesImmediatelyWithDemand() {
+        ReduceTests.testUpstreamFinishesImmediatelyWithDemand(
+            expectedSubscription: "Collect",
+            expectedResult: [Int](),
+            { $0.collect() }
+        )
+    }
+
+    func testUpstreamFinishesImmediatelyWithoutDemand() {
+        ReduceTests.testUpstreamFinishesImmediatelyWithoutDemand(
+            expectedSubscription: "Collect",
+            { $0.collect() }
+        )
     }
 
     func testCancelAlreadyCancelled() throws {
@@ -77,6 +86,7 @@ final class CollectTests: XCTestCase {
     func testCollectLifecycle() throws {
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,
+                          finishingIsPassedThrough: false,
                           { $0.collect() })
     }
 

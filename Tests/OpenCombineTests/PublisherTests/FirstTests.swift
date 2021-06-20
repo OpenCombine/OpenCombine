@@ -77,11 +77,19 @@ final class FirstTests: XCTestCase {
         }
     }
 
-    func testFirstFinishesImmediately() {
-        ReduceTests.testUpstreamFinishesImmediately(expectedSubscription: "First",
-                                                    expectedResult: nil) {
-            $0.first()
-        }
+    func testFirstFinishesImmediatelyWithDemand() {
+        ReduceTests.testUpstreamFinishesImmediatelyWithDemand(
+            expectedSubscription: "First",
+            expectedResult: nil,
+            { $0.first() }
+        )
+    }
+
+    func testFirstFinishesImmediatelyWithoutDemand() {
+        ReduceTests.testUpstreamFinishesImmediatelyWithoutDemand(
+            expectedSubscription: "First",
+            { $0.first() }
+        )
     }
 
     func testFirstRequestsUnlimitedThenSendsSubscription() {
@@ -125,6 +133,7 @@ final class FirstTests: XCTestCase {
     func testFirstLifecycle() throws {
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,
+                          finishingIsPassedThrough: false,
                           { $0.first() })
     }
 
@@ -222,11 +231,19 @@ final class FirstTests: XCTestCase {
         }
     }
 
-    func testFirstWhereFinishesImmediately() {
-        ReduceTests.testUpstreamFinishesImmediately(expectedSubscription: "TryFirst",
-                                                    expectedResult: nil) {
-            $0.first(where: { $0 > 2 })
-        }
+    func testFirstWhereFinishesImmediatelyWithDemand() {
+        ReduceTests.testUpstreamFinishesImmediatelyWithDemand(
+            expectedSubscription: "TryFirst",
+            expectedResult: nil,
+            { $0.first(where: { $0 > 2 }) }
+        )
+    }
+
+    func testFirstWhereFinishesImmediatelyWithoutDemand() {
+        ReduceTests.testUpstreamFinishesImmediatelyWithoutDemand(
+            expectedSubscription: "TryFirst",
+            { $0.first(where: { $0 > 2 }) }
+        )
     }
 
     func testFirstWhereRequestsUnlimitedThenSendsSubscription() {
@@ -278,6 +295,7 @@ final class FirstTests: XCTestCase {
     func testFirstWhereLifecycle() throws {
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,
+                          finishingIsPassedThrough: false,
                           { $0.first { $0 > 1 } })
     }
 
@@ -369,12 +387,19 @@ final class FirstTests: XCTestCase {
         }
     }
 
-    func testTryFirstWhereFinishesImmediately() {
-        ReduceTests
-            .testUpstreamFinishesImmediately(expectedSubscription: "TryFirstWhere",
-                                             expectedResult: nil) {
-                $0.tryFirst(where: { $0 > 2 })
-            }
+    func testTryFirstWhereFinishesImmediatelyWithDemand() {
+        ReduceTests.testUpstreamFinishesImmediatelyWithDemand(
+            expectedSubscription: "TryFirstWhere",
+            expectedResult: nil,
+            { $0.tryFirst(where: { $0 > 2 }) }
+        )
+    }
+
+    func testTryFirstWhereFinishesImmediatelyWithoutDemand() {
+        ReduceTests.testUpstreamFinishesImmediatelyWithoutDemand(
+            expectedSubscription: "TryFirstWhere",
+            { $0.tryFirst(where: { $0 > 2 }) }
+        )
     }
 
     func testTryFirstWhereRequestsUnlimitedThenSendsSubscription() {
@@ -446,6 +471,7 @@ final class FirstTests: XCTestCase {
     func testTryFirstWhereLifecycle() throws {
         try testLifecycle(sendValue: 31,
                           cancellingSubscriptionReleasesSubscriber: false,
+                          finishingIsPassedThrough: false,
                           { $0.tryFirst { $0 > 1 } })
     }
 
