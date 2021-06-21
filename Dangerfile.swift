@@ -66,10 +66,10 @@ do {
     }
 }
 
-SwiftLint.lint(inline: true,
+SwiftLint.lint(.all(directory: nil),
+               inline: true,
                configFile: ".swiftlint.yml",
-               strict: true,
-               lintAllFiles: true)
+               strict: true)
 
 if danger.warnings.isEmpty, danger.fails.isEmpty {
     markdown("LGTM")
