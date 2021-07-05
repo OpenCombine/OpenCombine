@@ -54,7 +54,6 @@ public struct ImmediateScheduler: Scheduler {
             public var magnitude: Int
 
             /// Creates an immediate scheduler time interval from the given time interval.
-            @inlinable
             public init(_ value: Int) {
                 magnitude = value
             }
