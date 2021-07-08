@@ -36,6 +36,14 @@ final class AutomaticallyFinish<Output, Failure: Error> {
     }
 }
 
+extension AutomaticallyFinish: Publisher {
+    func receive<Downstream: Subscriber>(subscriber: Downstream)
+        where Downstream.Failure == Failure, Downstream.Input == Output
+    {
+        publisher.subscribe(subscriber)
+    }
+}
+
 extension AutomaticallyFinish where Failure == Never {
     func assign<Root>(to keyPath: ReferenceWritableKeyPath<Root, Output>,
                       on object: Root) -> AnyCancellable {
