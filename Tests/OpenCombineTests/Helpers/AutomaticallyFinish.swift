@@ -35,3 +35,10 @@ final class AutomaticallyFinish<Output, Failure: Error> {
                             receiveValue: receiveValue)
     }
 }
+
+extension AutomaticallyFinish where Failure == Never {
+    func assign<Root>(to keyPath: ReferenceWritableKeyPath<Root, Output>,
+                      on object: Root) -> AnyCancellable {
+        return publisher.assign(to: keyPath, on: object)
+    }
+}
