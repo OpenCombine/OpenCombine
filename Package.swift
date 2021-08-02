@@ -11,8 +11,7 @@ let supportedPlatforms: [Platform] = [
     .tvOS,
     .linux,
     .android,
-    // Disable Windows because of https://bugs.swift.org/browse/SR-13817
-    // .windows,
+    .windows,
     .wasi,
 ]
 
