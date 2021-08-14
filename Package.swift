@@ -39,6 +39,7 @@ let package = Package(
             ],
             swiftSettings: [.define("WASI", .when(platforms: [.wasi]))]
         ),
+        .target(name: "OpenCombineBridge", dependencies: ["OpenCombine"]),
         .target(name: "OpenCombineDispatch", dependencies: ["OpenCombine"]),
         .target(
             name: "OpenCombineFoundation",
