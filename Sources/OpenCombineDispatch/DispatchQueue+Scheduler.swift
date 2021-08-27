@@ -104,8 +104,17 @@ extension DispatchQueue {
                 /// value of the conforming type.
                 public typealias Magnitude = Int
 
+                private var _nanoseconds: Int64
+
                 /// The value of this time interval in nanoseconds.
-                public var magnitude: Int
+                public var magnitude: Int {
+                    get {
+                        return Int(_nanoseconds)
+                    }
+                    set {
+                        _nanoseconds = Int64(newValue)
+                    }
+                }
 
                 /// A `DispatchTimeInterval` created with the value of this type
                 /// in nanoseconds.
@@ -113,8 +122,8 @@ extension DispatchQueue {
                     return .nanoseconds(magnitude)
                 }
 
-                private init(magnitude: Int) {
-                    self.magnitude = magnitude
+                private init(magnitude: Int64) {
+                    _nanoseconds = magnitude
                 }
 
                 /// Creates a dispatch queue time interval from the given
@@ -204,7 +213,7 @@ extension DispatchQueue {
                 }
 
                 public static func < (lhs: Stride, rhs: Stride) -> Bool {
-                    return lhs.magnitude < rhs.magnitude
+                    return lhs._nanoseconds < rhs._nanoseconds
                 }
 
                 public static func * (lhs: Stride, rhs: Stride) -> Stride {
@@ -212,43 +221,51 @@ extension DispatchQueue {
                 }
 
                 public static func + (lhs: Stride, rhs: Stride) -> Stride {
-                    return Stride(magnitude: lhs.magnitude + rhs.magnitude)
+                    return Stride(magnitude: lhs._nanoseconds + rhs._nanoseconds)
                 }
 
                 public static func - (lhs: Stride, rhs: Stride) -> Stride {
-                    return Stride(magnitude: lhs.magnitude - rhs.magnitude)
+                    return Stride(magnitude: lhs._nanoseconds - rhs._nanoseconds)
                 }
 
                 public static func -= (lhs: inout Stride, rhs: Stride) {
-                    lhs.magnitude -= rhs.magnitude
+                    lhs._nanoseconds -= rhs._nanoseconds
                 }
 
                 public static func *= (lhs: inout Stride, rhs: Stride) {
-                    lhs.magnitude = 0
+                    lhs._nanoseconds = 0
                 }
 
                 public static func += (lhs: inout Stride, rhs: Stride) {
-                    lhs.magnitude += rhs.magnitude
+                    lhs._nanoseconds += rhs._nanoseconds
                 }
 
                 public static func seconds(_ value: Double) -> Stride {
-                    return Stride(magnitude: Int(value * 1_000_000_000))
+                    let nanoseconds = value * 1_000_000_000
+                    if nanoseconds >= Double(Int64.max) {
+                        return Stride(magnitude: .max)
+                    }
+                    if nanoseconds <= Double(Int64.min) {
+                        return Stride(magnitude: .min)
+                    }
+                    return Stride(magnitude: Int64(nanoseconds))
                 }
 
                 public static func seconds(_ value: Int) -> Stride {
-                    return Stride(magnitude: clampedIntProduct(value, 1_000_000_000))
+                    return Stride(magnitude: clampedIntProduct(Int64(value),
+                                                               1_000_000_000))
                 }
 
                 public static func milliseconds(_ value: Int) -> Stride {
-                    return Stride(magnitude: clampedIntProduct(value, 1_000_000))
+                    return Stride(magnitude: clampedIntProduct(Int64(value), 1_000_000))
                 }
 
                 public static func microseconds(_ value: Int) -> Stride {
-                    return Stride(magnitude: clampedIntProduct(value, 1_000))
+                    return Stride(magnitude: clampedIntProduct(Int64(value), 1_000))
                 }
 
                 public static func nanoseconds(_ value: Int) -> Stride {
-                    return Stride(magnitude: value)
+                    return Stride(magnitude: Int64(value))
                 }
             }
         }
@@ -387,10 +404,10 @@ extension DispatchQueue: OpenCombine.Scheduler {
 // This function is taken from swift-corelibs-libdispatch:
 // https://github.com/apple/swift-corelibs-libdispatch/blob/c992dacf3ca114806e6ac9ffc9113b19255be9fe/src/swift/Time.swift#L134-L144
 //
-// Returns m1 * m2, clamped to the range [Int.min, Int.max].
+// Returns m1 * m2, clamped to the range [Int64.min, Int64.max].
 // Because of the way this function is used, we can always assume
 // that m2 > 0.
-private func clampedIntProduct(_ lhs: Int, _ rhs: Int) -> Int {
+private func clampedIntProduct(_ lhs: Int64, _ rhs: Int64) -> Int64 {
     assert(rhs > 0, "multiplier must be positive")
     let (result, overflow) = lhs.multipliedReportingOverflow(by: rhs)
     if overflow {

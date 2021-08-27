@@ -75,9 +75,7 @@ extension Publishers {
         public func receive<Downstream: Subscriber>(subscriber: Downstream)
             where Upstream.Output == Downstream.Input, Downstream.Failure == Failure
         {
-            let inner = Inner(downstream: subscriber, output: output)
-            upstream.subscribe(inner)
-            subscriber.receive(subscription: inner)
+            upstream.subscribe(Inner(downstream: subscriber, output: output))
         }
     }
 }
@@ -123,11 +121,8 @@ extension Publishers.ReplaceError {
                 return
             }
             status = .subscribed(subscription)
-            let pendingDemand = self.pendingDemand
             lock.unlock()
-            if pendingDemand != .none {
-                subscription.request(pendingDemand)
-            }
+            downstream.receive(subscription: self)
         }
 
         func receive(_ input: Input) -> Subscribers.Demand {
@@ -150,7 +145,7 @@ extension Publishers.ReplaceError {
 
         func receive(completion: Subscribers.Completion<Failure>) {
             lock.lock()
-            guard case .subscribed = status else {
+            guard case .subscribed = status, !terminated else {
                 lock.unlock()
                 return
             }
