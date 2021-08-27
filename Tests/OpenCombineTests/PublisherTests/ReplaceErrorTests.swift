@@ -68,7 +68,7 @@ final class ReplaceErrorTests: XCTestCase {
                                                  .completion(.finished)])
     }
 
-    func testSendingErrorWithNoDemandThenFinish() {
+    func testSendingErrorWithNoDemandThenFinish() throws {
         let helper = OperatorTestHelper(publisherType: CustomPublisher.self,
                                         initialDemand: nil,
                                         receiveValueDemand: .none,
@@ -77,7 +77,12 @@ final class ReplaceErrorTests: XCTestCase {
         helper.publisher.send(completion: .failure(.oops))
         helper.publisher.send(completion: .finished)
 
+        XCTAssertEqual(helper.tracking.history, [.subscription("ReplaceError")])
+
+        try XCTUnwrap(helper.downstreamSubscription).request(.max(1))
+
         XCTAssertEqual(helper.tracking.history, [.subscription("ReplaceError"),
+                                                 .value(42),
                                                  .completion(.finished)])
     }
 
@@ -164,7 +169,7 @@ final class ReplaceErrorTests: XCTestCase {
 
         replaceError.subscribe(tracking)
 
-        XCTAssertEqual(tracking.history, [.subscription("ReplaceError")])
+        XCTAssertEqual(tracking.history, [])
 
         let subscription = CustomSubscription()
         publisher.send(subscription: subscription)
@@ -225,7 +230,7 @@ final class ReplaceErrorTests: XCTestCase {
     func testReplaceErrorReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(
             value: 0,
-            expected: .history([.subscription("ReplaceError")], demand: .none),
+            expected: .history([], demand: .none),
             { $0.replaceError(with: 1) }
         )
     }
@@ -233,7 +238,7 @@ final class ReplaceErrorTests: XCTestCase {
     func testReplaceErrorCompletionBeforeSubscription() {
         testReceiveCompletionBeforeSubscription(
             inputType: Int.self,
-            expected: .history([.subscription("ReplaceError")]),
+            expected: .history([]),
             { $0.replaceError(with: 1) }
         )
     }
