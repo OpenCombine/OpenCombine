@@ -259,24 +259,22 @@ final class DispatchQueueSchedulerTests: XCTestCase {
         XCTAssertEqual(Stride(exactly: 2 as UInt64)?.magnitude, 2_000_000_000)
     }
 
-    func testStrideFromTooMuchSecondsCrashes() {
-        assertCrashes {
+    func testStrideFromTooMuchSeconds() {
 #if arch(x86_64) || arch(arm64) || arch(s390x) || arch(powerpc64) || arch(powerpc64le)
-            // 64-bit platforms
-            XCTAssertGreaterThan(
-                Stride.seconds(Double(Int.max) / 1_000_000_000).magnitude,
-                .max
-            )
+        // 64-bit platforms
+        XCTAssertEqual(
+            Stride.seconds(Double(Int.max) / 1_000_000_000).magnitude,
+            .max
+        )
 #elseif arch(i386) || arch(arm)
-            // 32-bit platforms
-            XCTAssertGreaterThan(
-                Stride.seconds(Double(Int.max) / 1_000_000_000 + 1).magnitude,
-                .max
-            )
+        // 32-bit platforms
+        XCTAssertEqual(
+            Stride.seconds(Double(Int.max) / 1_000_000_000).magnitude,
+            .max
+        )
 #else
 #error("This architecture isn't known. Add it to the 32-bit or 64-bit line.")
 #endif
-        }
     }
 
     func testStrideComparable() {
@@ -443,7 +441,7 @@ final class DispatchQueueSchedulerTests: XCTestCase {
             .encode(KeyedWrapper(value: stride))
         let encodedString = String(decoding: encodedData, as: UTF8.self)
 
-        XCTAssertEqual(encodedString, #"{"value":{"magnitude":419872}}"#)
+        XCTAssertEqual(encodedString, #"{"value":{"_nanoseconds":419872}}"#)
 
         let decodedStride = try decoder
             .decode(KeyedWrapper<Stride>.self, from: encodedData)
