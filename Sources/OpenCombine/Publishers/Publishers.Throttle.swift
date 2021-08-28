@@ -292,11 +292,8 @@ extension Publishers.Throttle {
                 lastEmissionTime = scheduler.now
             }
 
-            let pendingInput = self.pendingInput
-            let pendingCompletion = self.pendingCompletion
-
-            self.pendingInput = nil
-            self.pendingCompletion = nil
+            let pendingInput = self.pendingInput.take()
+            let pendingCompletion = self.pendingCompletion.take()
 
             if pendingCompletion != nil {
                 state = .terminal

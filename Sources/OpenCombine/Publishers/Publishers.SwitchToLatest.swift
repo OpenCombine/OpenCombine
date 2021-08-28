@@ -230,8 +230,7 @@ extension Publishers.SwitchToLatest {
                 return .none
             }
 
-            if let currentInnerSubscription = self.currentInnerSubscription  {
-                self.currentInnerSubscription = nil
+            if let currentInnerSubscription = self.currentInnerSubscription.take()  {
                 lock.unlock()
                 currentInnerSubscription.cancel()
                 lock.lock()
@@ -272,8 +271,7 @@ extension Publishers.SwitchToLatest {
                     lock.unlock()
                 }
             case .failure:
-                let currentInnerSubscription = self.currentInnerSubscription
-                self.currentInnerSubscription = nil
+                let currentInnerSubscription = self.currentInnerSubscription.take()
                 sentCompletion = true
                 lock.unlock()
                 currentInnerSubscription?.cancel()
@@ -298,10 +296,8 @@ extension Publishers.SwitchToLatest {
         func cancel() {
             lock.lock()
             cancelled = true
-            let currentInnerSubscription = self.currentInnerSubscription
-            self.currentInnerSubscription = nil
-            let outerSubscription = self.outerSubscription
-            self.outerSubscription = nil
+            let currentInnerSubscription = self.currentInnerSubscription.take()
+            let outerSubscription = self.outerSubscription.take()
             lock.unlock()
 
             currentInnerSubscription?.cancel()
@@ -386,8 +382,7 @@ extension Publishers.SwitchToLatest {
                     return
                 }
                 cancelled = true
-                let outerSubscription = self.outerSubscription
-                self.outerSubscription = nil
+                let outerSubscription = self.outerSubscription.take()
                 sentCompletion = true
                 lock.unlock()
                 outerSubscription?.cancel()

@@ -234,19 +234,16 @@ extension OperationQueue {
             }
 
             override func main() {
-                guard let action = self.action else { return }
-                self.action = nil
+                guard let action = self.action.take() else { return }
                 action()
 
-                guard let queue = self.queue,
-                      let context = self.context
+                guard let queue = self.queue.take(),
+                      let context = self.context.take()
                 else {
                     self.queue = nil
                     self.context = nil
                     return
                 }
-                self.queue = nil
-                self.context = nil
 
                 context.lock.lock()
                 if context.operation == nil {

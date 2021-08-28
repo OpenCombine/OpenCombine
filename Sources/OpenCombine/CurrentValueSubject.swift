@@ -108,8 +108,7 @@ public final class CurrentValueSubject<Output, Failure: Error>: Subject {
         }
         active = false
         self.completion = completion
-        let downstreams = self.downstreams
-        self.downstreams.removeAll()
+        let downstreams = self.downstreams.take()
         lock.unlock()
         downstreams.forEach { conduit in
             conduit.finish(completion: completion)
@@ -181,13 +180,11 @@ extension CurrentValueSubject {
 
         override func finish(completion: Subscribers.Completion<Failure>) {
             lock.lock()
-            guard let downstream = self.downstream else {
+            guard let downstream = self.downstream.take() else {
                 lock.unlock()
                 return
             }
-            self.downstream = nil
-            let parent = self.parent
-            self.parent = nil
+            let parent = self.parent.take()
             lock.unlock()
             parent?.disassociate(self)
             downstreamLock.lock()
@@ -227,13 +224,11 @@ extension CurrentValueSubject {
 
         override func cancel() {
             lock.lock()
-            if self.downstream == nil {
+            if downstream.take() == nil {
                 lock.unlock()
                 return
             }
-            self.downstream = nil
-            let parent = self.parent
-            self.parent = nil
+            let parent = self.parent.take()
             lock.unlock()
             parent?.disassociate(self)
         }

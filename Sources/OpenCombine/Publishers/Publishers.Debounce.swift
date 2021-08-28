@@ -212,8 +212,7 @@ extension Publishers.Debounce {
             let generation = currentGeneration
             currentValue = input
             let due = scheduler.now.advanced(by: dueTime)
-            let previousCancellers = self.currentCancellers
-            currentCancellers.removeAll()
+            let previousCancellers = self.currentCancellers.take()
             currentCancellers[generation] = .pending
             lock.unlock()
             let newCanceller = scheduler.schedule(after: due,
@@ -238,8 +237,7 @@ extension Publishers.Debounce {
                 return
             }
             state = .terminal
-            let previousCancellers = currentCancellers
-            currentCancellers.removeAll()
+            let previousCancellers = currentCancellers.take()
             lock.unlock()
             for canceller in previousCancellers.values {
                 canceller.cancel()
@@ -268,8 +266,7 @@ extension Publishers.Debounce {
                 return
             }
             state = .terminal
-            let previousCancellers = currentCancellers
-            currentCancellers.removeAll()
+            let previousCancellers = currentCancellers.take()
             lock.unlock()
             for canceller in previousCancellers.values {
                 canceller.cancel()
@@ -306,11 +303,10 @@ extension Publishers.Debounce {
                 return
             }
 
-            guard let canceller = currentCancellers[generation] else {
+            guard let canceller = currentCancellers[generation].take() else {
                 lock.unlock()
                 return
             }
-            currentCancellers[generation] = nil
 
             let hasAnyDemand = downstreamDemand != .none
             if hasAnyDemand {

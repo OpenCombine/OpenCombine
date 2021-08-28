@@ -136,8 +136,7 @@ extension Result.OCombine {
 
         func request(_ demand: Subscribers.Demand) {
             demand.assertNonZero()
-            guard let downstream = self.downstream else { return }
-            self.downstream = nil
+            guard let downstream = self.downstream.take() else { return }
             _ = downstream.receive(output)
             downstream.receive(completion: .finished)
         }

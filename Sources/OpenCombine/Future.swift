@@ -43,8 +43,7 @@ public final class Future<Output, Failure: Error>: Publisher {
             return
         }
         self.result = result
-        let downstreams = self.downstreams
-        self.downstreams.removeAll()
+        let downstreams = self.downstreams.take()
         lock.unlock()
         switch result {
         case .success(let output):
@@ -182,13 +181,11 @@ extension Future {
 
         override func cancel() {
             lock.lock()
-            if self.downstream == nil {
+            if downstream.take() == nil {
                 lock.unlock()
                 return
             }
-            self.downstream = nil
-            let parent = self.parent
-            self.parent = nil
+            let parent = self.parent.take()
             lock.unlock()
             parent?.disassociate(self)
         }

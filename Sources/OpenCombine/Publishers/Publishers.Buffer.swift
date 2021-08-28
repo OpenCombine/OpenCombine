@@ -331,9 +331,7 @@ extension Publishers.Buffer {
         private func lockedPop(_ demand: Subscribers.Demand) -> [Input] {
             assert(demand > 0)
             guard let max = demand.max else {
-                let poppedValues = self.values
-                self.values = []
-                return poppedValues
+                return values.take()
             }
 
             let poppedValues = Array(values.prefix(max))

@@ -304,8 +304,7 @@ extension Publishers.FlatMap {
             }
             if demand == .unlimited {
                 downstreamDemand = .unlimited
-                let buffer = self.buffer
-                self.buffer = []
+                let buffer = self.buffer.take()
                 let subscriptions = self.subscriptions
                 lock.unlock()
                 downstreamLock.lock()
@@ -361,10 +360,8 @@ extension Publishers.FlatMap {
                 return
             }
             cancelledOrCompleted = true
-            let subscriptions = self.subscriptions
-            self.subscriptions = [:]
-            let outerSubscription = self.outerSubscription
-            self.outerSubscription = nil
+            let subscriptions = self.subscriptions.take()
+            let outerSubscription = self.outerSubscription.take()
             lock.unlock()
             for (_, subscription) in subscriptions {
                 subscription.cancel()
@@ -450,8 +447,7 @@ extension Publishers.FlatMap {
                     return
                 }
                 cancelledOrCompleted = true
-                let subscriptions = self.subscriptions
-                self.subscriptions = [:]
+                let subscriptions = self.subscriptions.take()
                 lock.unlock()
                 for (i, subscription) in subscriptions where i != index {
                     subscription.cancel()

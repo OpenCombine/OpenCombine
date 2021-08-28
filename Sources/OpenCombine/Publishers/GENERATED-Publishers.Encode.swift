@@ -222,8 +222,7 @@ extension Publishers.Encode {
             } catch {
                 lock.lock()
                 finished = true
-                let subscription = self.subscription
-                self.subscription = nil
+                let subscription = self.subscription.take()
                 lock.unlock()
                 subscription?.cancel()
                 downstream.receive(completion: .failure(error))
@@ -252,11 +251,10 @@ extension Publishers.Encode {
 
         func cancel() {
             lock.lock()
-            guard !finished, let subscription = self.subscription else {
+            guard !finished, let subscription = self.subscription.take() else {
                 lock.unlock()
                 return
             }
-            self.subscription = nil
             finished = true
             lock.unlock()
             subscription.cancel()
@@ -336,8 +334,7 @@ extension Publishers.Decode {
             } catch {
                 lock.lock()
                 finished = true
-                let subscription = self.subscription
-                self.subscription = nil
+                let subscription = self.subscription.take()
                 lock.unlock()
                 subscription?.cancel()
                 downstream.receive(completion: .failure(error))
@@ -366,11 +363,10 @@ extension Publishers.Decode {
 
         func cancel() {
             lock.lock()
-            guard !finished, let subscription = self.subscription else {
+            guard !finished, let subscription = self.subscription.take() else {
                 lock.unlock()
                 return
             }
-            self.subscription = nil
             finished = true
             lock.unlock()
             subscription.cancel()

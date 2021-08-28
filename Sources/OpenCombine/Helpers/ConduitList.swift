@@ -11,6 +11,12 @@ internal enum ConduitList<Output, Failure: Error> {
     case many(Set<ConduitBase<Output, Failure>>)
 }
 
+extension ConduitList: HasDefaultValue {
+    init() {
+        self = .empty
+    }
+}
+
 extension ConduitList {
     internal mutating func insert(_ conduit: ConduitBase<Output, Failure>) {
         switch self {
@@ -49,9 +55,5 @@ extension ConduitList {
             set.remove(conduit)
             self = .many(set)
         }
-    }
-
-    internal mutating func removeAll() {
-        self = .empty
     }
 }

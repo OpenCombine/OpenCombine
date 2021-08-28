@@ -187,8 +187,7 @@ extension PublishedSubject {
                 return
             }
             self.downstream = nil
-            let parent = self.parent
-            self.parent = nil
+            let parent = self.parent.take()
             lock.unlock()
             parent?.disassociate(self)
         }
