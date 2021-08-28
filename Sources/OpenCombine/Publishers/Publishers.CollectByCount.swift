@@ -128,8 +128,7 @@ extension Publishers.CollectByCount {
                 lock.unlock()
                 return .none
             }
-            let output = self.buffer
-            self.buffer = []
+            let output = self.buffer.take()
             lock.unlock()
             return downstream.receive(output) * count
         }
@@ -143,8 +142,7 @@ extension Publishers.CollectByCount {
                 if buffer.isEmpty {
                     lock.unlock()
                 } else {
-                    let buffer = self.buffer
-                    self.buffer = []
+                    let buffer = self.buffer.take()
                     lock.unlock()
                     _ = downstream.receive(buffer)
                 }
@@ -168,10 +166,9 @@ extension Publishers.CollectByCount {
 
         func cancel() {
             lock.lock()
-            if let subscription = self.subscription {
+            if let subscription = self.subscription.take() {
                 buffer = []
                 finished = true
-                self.subscription = nil
                 lock.unlock()
                 subscription.cancel()
             } else {

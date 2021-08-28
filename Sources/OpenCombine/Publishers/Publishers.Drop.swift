@@ -139,8 +139,7 @@ extension Publishers.Drop {
 
         func cancel() {
             lock.lock()
-            let subscription = self.subscription
-            self.subscription = nil
+            let subscription = self.subscription.take()
             lock.unlock()
             subscription?.cancel()
         }

@@ -204,8 +204,7 @@ extension Publishers.DropUntilOutput {
             }
 
             otherFinished = true
-            if let upstreamSubscription = self.upstreamSubscription {
-                self.upstreamSubscription = nil
+            if let upstreamSubscription = self.upstreamSubscription.take() {
                 lock.unlock()
                 upstreamSubscription.cancel()
             } else {
@@ -229,10 +228,8 @@ extension Publishers.DropUntilOutput {
 
         func cancel() {
             lock.lock()
-            let upstreamSubscription = self.upstreamSubscription
-            let otherSubscription = self.otherSubscription
-            self.upstreamSubscription = nil
-            self.otherSubscription = nil
+            let upstreamSubscription = self.upstreamSubscription.take()
+            let otherSubscription = self.otherSubscription.take()
             cancelled = true
             lock.unlock()
 

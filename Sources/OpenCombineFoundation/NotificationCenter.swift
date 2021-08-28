@@ -200,13 +200,13 @@ extension Notification {
 
         func cancel() {
             lock.lock()
-            guard let center = self.center, let observation = self.observation else {
+            guard let center = self.center.take(),
+                  let observation = self.observation.take()
+            else {
                 lock.unlock()
                 return
             }
-            self.center = nil
             self.object = nil
-            self.observation = nil
             lock.unlock()
             center.removeObserver(observation)
         }

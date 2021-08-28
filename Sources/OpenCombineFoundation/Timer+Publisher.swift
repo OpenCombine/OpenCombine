@@ -202,11 +202,10 @@ extension Foundation.Timer {
 
                 func cancel() {
                     lock.lock()
-                    if downstream == nil {
+                    if downstream.take() == nil {
                         lock.unlock()
                         return
                     }
-                    downstream = nil
                     lock.unlock()
                     parent?.disconnect(combineIdentifier)
                 }
