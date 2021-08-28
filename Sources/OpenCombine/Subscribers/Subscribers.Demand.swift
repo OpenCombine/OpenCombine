@@ -466,3 +466,7 @@ extension Subscribers {
         }
     }
 }
+
+#if compiler(>=5.5)
+extension Subscribers.Demand: Sendable {}
+#endif

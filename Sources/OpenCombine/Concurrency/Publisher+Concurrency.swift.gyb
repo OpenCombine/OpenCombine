@@ -1,0 +1,196 @@
+${template_header}
+//
+//  Publisher+Concurrency.swift
+// 
+//
+//  Created by Sergej Jaskiewicz on 28.08.2021.
+//
+
+// async/await is only available since Swift 5.5
+#if compiler(>=5.5)
+%{
+instantiations = [('AsyncPublisher', False), ('AsyncThrowingPublisher', True)]
+}%
+% for instantiation, throwing in instantiations:
+extension Publisher ${'' if throwing else 'where Failure == Never '}{
+
+    @available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
+    public var values: ${instantiation}<Self> {
+        return .init(self)
+    }
+}
+
+@available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
+public struct ${instantiation}<Upstream: Publisher>: AsyncSequence
+%   if not throwing:
+    where Upstream.Failure == Never
+%   end
+{
+
+    public typealias Element = Upstream.Output
+
+    public struct Iterator: AsyncIteratorProtocol {
+
+        public typealias Element = Upstream.Output
+
+        fileprivate let inner: Inner
+
+        public func next() async ${'throws ' if throwing else ''}-> Element? {
+            return ${'try ' if throwing else ''}await withTaskCancellationHandler(
+                handler: { [inner] in inner.cancel() },
+                operation: { [inner] in ${'try ' if throwing else ''}await inner.next() }
+            )
+        }
+    }
+
+    public typealias AsyncIterator = Iterator
+
+    private let publisher: Upstream
+
+    public init(_ publisher: Upstream) {
+        self.publisher = publisher
+    }
+
+    public func makeAsyncIterator() -> Iterator {
+        let inner = Iterator.Inner()
+        publisher.subscribe(inner)
+        return Iterator(inner: inner)
+    }
+}
+
+@available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
+extension ${instantiation}.Iterator {
+
+    // TODO: Test if it's really cancellable
+    fileprivate final class Inner: Subscriber, Cancellable {
+        typealias Input = Upstream.Output
+        typealias Failure = Upstream.Failure
+
+        private enum State {
+            case awaitingSubscription
+            case subscribed(Subscription)
+            case terminal${'(Error?)' if throwing else ''}
+        }
+
+        private let lock = UnfairLock.allocate()
+        private var pending: [UnsafeContinuation<Input?, ${'Error' if throwing else 'Never'}>] = []
+        private var state = State.awaitingSubscription
+        private var pendingDemand = Subscribers.Demand.none
+
+        deinit {
+            lock.deallocate()
+        }
+
+        func receive(subscription: Subscription) {
+            lock.lock()
+            guard case .awaitingSubscription = state else {
+                lock.unlock()
+                subscription.cancel()
+                return
+            }
+            state = .subscribed(subscription)
+            let pendingDemand = self.pendingDemand
+            self.pendingDemand = .none
+            lock.unlock()
+            if pendingDemand != .none {
+                subscription.request(pendingDemand)
+            }
+        }
+
+        func receive(_ input: Input) -> Subscribers.Demand {
+            lock.lock()
+            guard case .subscribed = state else {
+                let pending = self.pending.take()
+                lock.unlock()
+                pending.resumeAllWithNil()
+                return .none
+            }
+            precondition(!pending.isEmpty, "Received an output without requesting demand")
+            let continuation = pending.removeFirst()
+            lock.unlock()
+            continuation.resume(returning: input)
+            return .none
+        }
+
+        func receive(completion: Subscribers.Completion<Failure>) {
+            lock.lock()
+%   if throwing:
+            switch state {
+            case .awaitingSubscription, .subscribed:
+                if let continuation = pending.first {
+                    // TODO: Test that it's nil even if the publisher fails
+                    state = .terminal(nil)
+                    let remaining = pending.take().dropFirst()
+                    lock.unlock()
+                    switch completion {
+                    case .finished:
+                        continuation.resume(returning: nil)
+                    case .failure(let error):
+                        continuation.resume(throwing: error)
+                    }
+                    remaining.resumeAllWithNil()
+                } else {
+                    state = .terminal(completion.failure)
+                    lock.unlock()
+                }
+            case .terminal:
+                let pending = self.pending.take()
+                lock.unlock()
+                pending.resumeAllWithNil()
+            }
+%   else:
+            state = .terminal
+            let pending = self.pending.take()
+            lock.unlock()
+            pending.resumeAllWithNil()
+%   end
+        }
+
+        func cancel() {
+            lock.lock()
+            let pending = self.pending.take()
+            guard case .subscribed(let subscription) = state else {
+                state = .terminal${'(nil)' if throwing else ''}
+                lock.unlock()
+                pending.resumeAllWithNil()
+                return
+            }
+            state = .terminal${'(nil)' if throwing else ''}
+            lock.unlock()
+            subscription.cancel()
+            pending.resumeAllWithNil()
+        }
+
+        fileprivate func next() async ${'throws ' if throwing else ''}-> Input? {
+            return ${'try ' if throwing else ''}await withUnsafe${'Throwing' if throwing else ''}Continuation { continuation in
+                lock.lock()
+                switch state {
+                case .awaitingSubscription:
+                    pending.append(continuation)
+                    pendingDemand += 1
+                    lock.unlock()
+                case .subscribed(let subscription):
+                    pending.append(continuation)
+                    lock.unlock()
+                    subscription.request(.max(1))
+                case .terminal:
+                    lock.unlock()
+                    continuation.resume(returning: nil)
+                }
+            }
+        }
+    }
+}
+% end
+
+@available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
+extension Sequence {
+    fileprivate func resumeAllWithNil<Output, Failure: Error>()
+        where Element == UnsafeContinuation<Output?, Failure>
+    {
+        for continuation in self {
+            continuation.resume(returning: nil)
+        }
+    }
+}
+#endif // compiler(>=5.5)

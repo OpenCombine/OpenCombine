@@ -23,6 +23,10 @@ extension Subscribers.Completion: Equatable where Failure: Equatable {}
 
 extension Subscribers.Completion: Hashable where Failure: Hashable {}
 
+#if compiler(>=5.5)
+extension Subscribers.Completion: Sendable {}
+#endif
+
 extension Subscribers.Completion {
     private enum CodingKeys: String, CodingKey {
         case success = "success"
@@ -68,6 +72,15 @@ extension Subscribers.Completion {
             return .finished
         case .failure(let error):
             return .failure(error)
+        }
+    }
+
+    internal var failure: Failure? {
+        switch self {
+        case .finished:
+            return nil
+        case .failure(let failure):
+            return failure
         }
     }
 }
