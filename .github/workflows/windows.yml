@@ -1,0 +1,17 @@
+name: Windows 
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  windows_test:
+    runs-on: windows-2019
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: MaxDesiatov/swift-windows-action@v1
+        with:
+          shell-action: swift test
