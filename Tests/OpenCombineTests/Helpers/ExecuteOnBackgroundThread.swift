@@ -11,38 +11,76 @@
 import Darwin
 #elseif canImport(Glibc)
 import Glibc
+#elseif os(Windows)
+import WinSDK
 #else
 #error("How to do threads on this platform?")
 #endif
 
-#if canImport(Darwin)
-private typealias ThreadPtr = UnsafeMutablePointer<pthread_t?>
-#else
-private typealias ThreadPtr = UnsafeMutablePointer<pthread_t>
-#endif
+// We could use Foundation's Thread, but it doesn't work on Linux for some
+// reason.
 
 func executeOnBackgroundThread<ResultType>(
     _ body: () -> ResultType
 ) -> ResultType {
     return withoutActuallyEscaping(body) { body in
+        typealias ThreadRoutine = () -> UnsafeMutableRawPointer
 
-        // We need this because @convention(c) closures can't capture generic params.
-        var typeErasedBody: () -> UnsafeMutableRawPointer = {
+#if canImport(Darwin)
+        typealias ThreadHandle = UnsafeMutablePointer<pthread_t?>
+#elseif canImport(Glibc)
+        typealias ThreadHandle = UnsafeMutablePointer<pthread_t>
+#elseif os(Windows)
+        typealias ThreadHandle = HANDLE?
+#endif
+
+        let typeErasedBody: ThreadRoutine = {
             let resultPtr = UnsafeMutablePointer<ResultType>.allocate(capacity: 1)
             resultPtr.initialize(to: body())
             return UnsafeMutableRawPointer(resultPtr)
         }
 
-        return withUnsafeMutablePointer(to: &typeErasedBody) { typeErasedBody in
-            let _backgroundThread = ThreadPtr.allocate(capacity: 1)
+        var _backgroundThread: ThreadHandle
 
-            defer { _backgroundThread.deallocate() }
+#if os(Windows)
+        typealias ResultPtr = UnsafeMutablePointer<UnsafeMutableRawPointer>
+        typealias Context = (ThreadRoutine, ResultPtr)
+        var resultPtr: ResultPtr = .allocate(capacity: 1)
+        defer { resultPtr.deallocate() }
+        _backgroundThread = nil
+        var context: Context = (typeErasedBody, resultPtr)
+#else
+        _backgroundThread = .allocate(capacity: 1)
+        defer { _backgroundThread.deallocate() }
+        var context = typeErasedBody
+#endif
 
-            var status: Int32 = 0
+        return withUnsafeMutablePointer(to: &context) { context in
+#if os(Windows)
+            _backgroundThread = CreateThread(
+                nil, // default security attributes
+                0, // use default stack size
+                { context in
+                    let (typeErasedBody, resultPtr) = context!
+                        .assumingMemoryBound(to: Context.self)
+                        .pointee
 
-            // We could use Foundation's Thread, but it doesn't work on Linux for some
-            // reason.
-            status = pthread_create(
+                    resultPtr.initialize(to: typeErasedBody())
+                    return 0
+                },
+                context,
+                0, // use default creation flags
+                nil // don't return thread identifier
+            )
+            precondition(_backgroundThread != nil, "Could not create a thread")
+
+            WaitForSingleObject(_backgroundThread!, INFINITE)
+
+            defer { resultPtr.pointee.deallocate() }
+
+            return resultPtr.pointee.assumingMemoryBound(to: ResultType.self).move()
+#else
+            var status = pthread_create(
                 _backgroundThread,
                 nil,
                 { context in
@@ -52,19 +90,17 @@ func executeOnBackgroundThread<ResultType>(
                     let context = context!
 #endif
                     return context
-                        .assumingMemoryBound(to: (() -> UnsafeMutableRawPointer).self)
+                        .assumingMemoryBound(to: ThreadRoutine.self)
                         .pointee()
                 },
-                typeErasedBody
+                context
             )
 
-            guard status == 0 else {
-                preconditionFailure("Could not create a background thread")
-            }
+            precondition(status == 0, "Could not create a thread")
 
 #if canImport(Darwin)
             guard let backgroundThread = _backgroundThread.pointee else {
-                preconditionFailure("Could not create a background thread")
+                preconditionFailure("Could not join thread")
             }
 #else
             let backgroundThread = _backgroundThread.pointee
@@ -74,12 +110,13 @@ func executeOnBackgroundThread<ResultType>(
             status = pthread_join(backgroundThread, &_resultPtr)
 
             guard status == 0, let resultPtr = _resultPtr else {
-                preconditionFailure("Could not join threads")
+                preconditionFailure("Could not join thread")
             }
 
             defer { resultPtr.deallocate() }
 
             return resultPtr.assumingMemoryBound(to: ResultType.self).move()
+#endif
         }
     }
 }
