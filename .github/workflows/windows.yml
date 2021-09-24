@@ -7,11 +7,20 @@ on:
     branches: [master]
 
 jobs:
-  windows_test:
+  windows_test_5_4_2:
+    name: "Execute tests on Windows Server 2019 (Swift 5.4.2)"
     runs-on: windows-2019
-
     steps:
       - uses: actions/checkout@v2
       - uses: MaxDesiatov/swift-windows-action@v1
         with:
-          shell-action: swift test
+          swift-version: "5.4.2"
+  
+  windows_test_5_5:
+    name: "Execute tests on Windows Server 2019 (Swift 5.5)"
+    runs-on: windows-2019
+    steps:
+      - uses: actions/checkout@v2
+      - uses: MaxDesiatov/swift-windows-action@v1
+        with:
+          swift-version: "5.5"
