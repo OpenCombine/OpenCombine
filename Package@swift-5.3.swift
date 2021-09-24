@@ -1,4 +1,4 @@
-// swift-tools-version:5.4
+// swift-tools-version:5.3
 
 import PackageDescription
 
@@ -11,7 +11,8 @@ let supportedPlatforms: [Platform] = [
     .tvOS,
     .linux,
     .android,
-    .windows,
+    // Disable Windows because of https://bugs.swift.org/browse/SR-13817
+    // .windows,
     .wasi,
 ]
 
@@ -72,7 +73,7 @@ let package = Package(
             ]
         )
     ],
-    cxxLanguageStandard: .cxx17
+    cxxLanguageStandard: .cxx1z
 )
 
 // MARK: Helpers
