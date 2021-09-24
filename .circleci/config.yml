@@ -170,67 +170,6 @@ jobs:
           command: |
             make test-compatibility
 
-  "Execute tests on iOS 9.3 (Xcode 10.2.1, Swift 5.0.1)":
-    macos:
-      xcode: "10.2.1"
-    environment:
-      BUNDLE_PATH: .bundle # path to install gems and use for caching
-      SWIFT_VERSION: "5.0.1"
-    steps:
-      - checkout
-      - run:
-          name: Installing gem dependencies
-          command: bundle install && bundle clean
-      - restore_cache:
-           keys:
-             - v1-simulator-cache-{{ arch }}
-      - run:
-          # CircleCI doesn't have an iOS 9 simulator, so we need to install it manually.
-          name: Installing iOS 9 simulator
-          command: |
-            bundle exec xcversion simulators --install="iOS 9.3"
-            bundle exec xcversion simulators
-            xcrun simctl list
-      - save_cache:
-           key: v1-simulator-cache-{{ arch }}
-           paths:
-             - ~/Library/Caches/XcodeInstall
-      - run:
-          name: Generating Xcode project
-          command: |
-            make generate-xcodeproj SWIFT_BUILD_FLAGS="-Xswiftc -warnings-as-errors"
-            xcodebuild -scheme OpenCombine-Package -showdestinations
-      - run:
-           name: Building for testing on iOS 9.3 with xcodebuild
-           command: |
-             set -o pipefail \
-               && xcodebuild build-for-testing \
-                    -scheme OpenCombine-Package \
-                    -destination "platform=iOS Simulator,name=iPhone 4s,OS=9.3" \
-                    -derivedDataPath DerivedData \
-               | tee xcodebuild_build-for-testing.log \
-               | xcpretty
-      - store_artifacts:
-          path: xcodebuild_build-for-testing.log
-      - run:
-          name: Testing on iOS 9.3 with xcodebuild
-          command: |
-            set -o pipefail \
-              && xcodebuild test-without-building \
-                   -scheme OpenCombine-Package \
-                   -destination "platform=iOS Simulator,name=iPhone 4s,OS=9.3" \
-                   -derivedDataPath DerivedData \
-              | tee xcodebuild_test-without-building.log \
-              | xcpretty --report junit -o build/reports/results.xml
-      - store_artifacts:
-          path: xcodebuild_test-without-building.log
-      - store_test_results:
-          path: build/reports
-      - run:
-          name: Uploading code coverage
-          command: |
-            bash <(curl -s https://codecov.io/bash) -D DerivedData
-
   "Execute tests on Ubuntu 18.04 (Swift 5.0)":
     docker:
       - image: swift:5.0-bionic
@@ -308,9 +247,6 @@ workflows:
     jobs:
     # - "Execute compatibility tests on iOS 14.5 (Xcode 12.5.0, Swift 5.4.0)"
       - "Execute compatibility tests on macOS 11.4.0 (Xcode 12.5.0, Swift 5.4.0)"
-  "OpenCombine: execute tests on iOS":
-    jobs:
-      - "Execute tests on iOS 9.3 (Xcode 10.2.1, Swift 5.0.1)"
   "OpenCombine: execute tests on Linux":
     jobs:
       - "Execute tests on Ubuntu 18.04 (Swift 5.0)"
