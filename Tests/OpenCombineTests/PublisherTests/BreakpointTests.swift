@@ -46,9 +46,11 @@ final class BreakpointTests: XCTestCase {
         XCTAssertEqual(helper.subscription.history, [])
         shouldStop = true
         XCTAssertEqual(counter, 2)
+#if !os(Windows)
         assertCrashes {
             helper.publisher.send(subscription: CustomSubscription())
         }
+#endif
     }
 
     func testReceiveValue() {
@@ -77,9 +79,11 @@ final class BreakpointTests: XCTestCase {
                                                  .subscription("CustomSubscription")])
         XCTAssertEqual(helper.subscription.history, [])
         XCTAssertEqual(counter, 2)
+#if !os(Windows)
         assertCrashes {
             _ = helper.publisher.send(-1)
         }
+#endif
     }
 
     func testReceiveCompletion() {
@@ -107,9 +111,11 @@ final class BreakpointTests: XCTestCase {
                                                  .value(21),
                                                  .subscription("CustomSubscription")])
         XCTAssertEqual(counter, 2)
+#if !os(Windows)
         assertCrashes {
             helper.publisher.send(completion: .finished)
         }
+#endif
     }
 
     func testBreakpointOnError() throws {
@@ -139,9 +145,11 @@ final class BreakpointTests: XCTestCase {
         XCTAssertEqual(helper.sut.receiveCompletion?(.finished), false)
         XCTAssertEqual(helper.sut.receiveCompletion?(.failure(.oops)), true)
 
+#if !os(Windows)
         assertCrashes {
             helper.publisher.send(completion: .failure(.oops))
         }
+#endif
     }
 
     func testCancelAlreadyCancelled() throws {

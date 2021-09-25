@@ -5,7 +5,10 @@
 //  Created by Sergej Jaskiewicz on 28.10.2020.
 //
 
+#if canImport(CoreFoundation)
 import CoreFoundation
+#endif
+
 import Foundation
 
 /// Use CoreFoundation on Darwin, since some pure
@@ -93,6 +96,7 @@ internal struct Timer {
 #endif
     }
 
+#if canImport(CoreFoundation)
     fileprivate func getCFRunLoopTimer() -> CFRunLoopTimer? {
 #if canImport(Darwin)
         return underlyingTimer
@@ -113,6 +117,7 @@ internal struct Timer {
         fatalError("unreachable")
 #endif
     }
+#endif // canImport(CoreFoundation)
 }
 
 extension RunLoop {
@@ -138,6 +143,7 @@ extension RunLoop {
     }
 }
 
+#if canImport(CoreFoundation)
 extension RunLoop.Mode {
     fileprivate func asCFRunLoopMode() -> CFRunLoopMode {
 #if canImport(Darwin)
@@ -159,3 +165,4 @@ extension RunLoop.Mode {
 #endif
     }
 }
+#endif // canImport(CoreFoundation)
