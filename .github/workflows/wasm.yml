@@ -7,10 +7,19 @@ on:
     branches: [master]
 
 jobs:
-  carton_wasmer_test:
+  carton_wasmer_test_5_3:
+    name: "Execute tests on WASM (Swift 5.3)"
     runs-on: ubuntu-20.04
 
     steps:
       - uses: actions/checkout@v2
       - uses: swiftwasm/swiftwasm-action@v5.3
+  
+  carton_wasmer_test_5_4:
+    name: "Execute tests on WASM (Swift 5.4)"
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: swiftwasm/swiftwasm-action@v5.4
 
