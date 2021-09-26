@@ -202,7 +202,8 @@ final class ZipTests: XCTestCase {
         XCTAssertEqual(downstreamSubscriber.history, [.subscription("Zip"),
                                                       .value(101),
                                                       .value(202),
-                                                      .value(303)])
+                                                      .value(303),
+                                                      .completion(.finished)])
 
         child2Publisher.send(completion: .finished)
         XCTAssertEqual(downstreamSubscriber.history, [.subscription("Zip"),
@@ -213,7 +214,7 @@ final class ZipTests: XCTestCase {
 
         XCTAssertEqual(
             upstreamSubscription.history,
-            [.requested(.unlimited), .requested(.unlimited)]
+            [.requested(.unlimited), .requested(.unlimited), .cancelled]
         )
     }
 
@@ -472,7 +473,8 @@ final class ZipTests: XCTestCase {
 
         child2Publisher.send(1)
         XCTAssertEqual(downstreamSubscriber.history, [.subscription("Zip"),
-                                                      .value(101)])
+                                                      .value(101),
+                                                      .completion(.finished)])
 
         child2Publisher.send(completion: .finished)
         XCTAssertEqual(downstreamSubscriber.history, [.subscription("Zip"),
@@ -499,7 +501,8 @@ final class ZipTests: XCTestCase {
 
         child2Publisher.send(1)
         XCTAssertEqual(downstreamSubscriber.history, [.subscription("Zip"),
-                                                      .value(101)])
+                                                      .value(101),
+                                                      .completion(.finished)])
 
         child2Publisher.send(completion: .finished)
         XCTAssertEqual(downstreamSubscriber.history, [.subscription("Zip"),
@@ -711,7 +714,7 @@ final class ZipTests: XCTestCase {
         zip.subscribe(downstreamSubscriber)
 
         let history = downstreamSubscriber.history
-        XCTAssertEqual(history.count, 2)
+        XCTAssertEqual(history.count, 3)
 
         // tuples aren't Equatable, so matching the elements one by one
         switch history[0] {
@@ -728,6 +731,13 @@ final class ZipTests: XCTestCase {
             }
         default:
           XCTFail("Failed to match the value event in \(#function)")
+        }
+        
+        switch history[2] {
+        case .completion(.finished):
+            break
+        default:
+            XCTFail("Failed to match the completion event in \(#function)")
         }
     }
 }

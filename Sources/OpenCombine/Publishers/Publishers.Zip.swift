@@ -441,6 +441,7 @@ private class InnerBase<Downstream: Subscriber>: CustomStringConvertible {
     private var downstreamDemand = Subscribers.Demand.none
     private var valueIsBeingProcessed = false
     private var value: Downstream.Input?
+    private var isFinished = false
 
     // The following two pieces of state are a hacky implementation of subtle Apple
     // concurrency behaviors. Specifically, when Zip is processing an upstream child value
@@ -492,7 +493,10 @@ private class InnerBase<Downstream: Subscriber>: CustomStringConvertible {
     ) -> Subscribers.Demand {
         lock.lock()
         lockedStoreValue()
-        defer { lock.unlock() }
+        defer {
+            checkShouldFinish()
+            lock.unlock()
+        }
         if let dequeuedValue = maybeDequeueValue() {
             value = dequeuedValue
             assert(processingValueForChild == nil)
@@ -521,13 +525,20 @@ private class InnerBase<Downstream: Subscriber>: CustomStringConvertible {
             child.state = .finished
             if !valueIsBeingProcessed {
                 valueIsBeingProcessed = true
-                if processingValueForChild == nil && !areMoreValuesPossible {
+                if processingValueForChild == nil && !areMoreValuesPossible && !isFinished {
                     sendFinishDownstream()
                 } else {
                     processValue()
                 }
             }
             lock.unlock()
+        }
+    }
+    
+    private func checkShouldFinish() {
+        if processingValueForChild == nil && upstreamSubscriptions.shouldFinish() {
+            sendFinishDownstream()
+            isFinished = true
         }
     }
 
@@ -615,6 +626,13 @@ extension InnerBase: Subscription {
         let subscriptionsToCancel = upstreamSubscriptions
         lock.unlock()
         subscriptionsToCancel.forEach { $0.cancel() }
+    }
+}
+
+extension Array where Element == ChildSubscription {
+    func shouldFinish() -> Bool {
+        for subscription in self where subscription.state == .finished && !subscription.hasValue { return true }
+        return false
     }
 }
 
