@@ -5,7 +5,7 @@
 //  Created by Sergej Jaskiewicz on 11.06.2019.
 //
 
-#if canImport(_Concurrency)
+#if canImport(_Concurrency) && compiler(>=5.5)
 import _Concurrency
 #endif
 
@@ -27,8 +27,7 @@ extension Subscribers.Completion: Equatable where Failure: Equatable {}
 
 extension Subscribers.Completion: Hashable where Failure: Hashable {}
 
-// TODO: Uncomment when macOS 12 is released
-#if canImport(_Concurrency) /* || compiler(>=5.5.x) */
+#if canImport(_Concurrency) && compiler(>=5.5) || compiler(>=5.5.1)
 extension Subscribers.Completion: Sendable {}
 #endif
 
