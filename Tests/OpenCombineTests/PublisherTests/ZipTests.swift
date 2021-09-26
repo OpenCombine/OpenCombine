@@ -722,7 +722,6 @@ final class ZipTests: XCTestCase {
         }
 
         switch history[1] {
-        // swiftlint:disable:next empty_enum_arguments
         case .value(let v):
             if v.0 != 42 || v.1 != () {
                 XCTFail("Failed to match the value event in \(#function)")
