@@ -525,7 +525,9 @@ private class InnerBase<Downstream: Subscriber>: CustomStringConvertible {
             child.state = .finished
             if !valueIsBeingProcessed {
                 valueIsBeingProcessed = true
-                if processingValueForChild == nil && !areMoreValuesPossible && !isFinished {
+                if processingValueForChild == nil &&
+                    !areMoreValuesPossible &&
+                    !isFinished {
                     sendFinishDownstream()
                 } else {
                     processValue()
@@ -534,7 +536,7 @@ private class InnerBase<Downstream: Subscriber>: CustomStringConvertible {
             lock.unlock()
         }
     }
-    
+
     private func checkShouldFinish() {
         if processingValueForChild == nil && upstreamSubscriptions.shouldFinish() {
             sendFinishDownstream()
@@ -631,7 +633,10 @@ extension InnerBase: Subscription {
 
 extension Array where Element == ChildSubscription {
     func shouldFinish() -> Bool {
-        for subscription in self where subscription.state == .finished && !subscription.hasValue { return true }
+        for subscription in self
+        where subscription.state == .finished && !subscription.hasValue{
+            return true
+        }
         return false
     }
 }
