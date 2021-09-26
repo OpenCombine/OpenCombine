@@ -6,8 +6,12 @@ ${template_header}
 //  Created by Sergej Jaskiewicz on 28.08.2021.
 //
 
-// async/await is only available since Swift 5.5
-#if compiler(>=5.5)
+#if canImport(_Concurrency)
+import _Concurrency
+#endif
+
+// TODO: Uncomment when macOS 12 is released
+#if canImport(_Concurrency) /* || compiler(>=5.5.x) */
 %{
 instantiations = [('AsyncPublisher', False), ('AsyncThrowingPublisher', True)]
 }%
@@ -193,4 +197,4 @@ extension Sequence {
         }
     }
 }
-#endif // compiler(>=5.5)
+#endif

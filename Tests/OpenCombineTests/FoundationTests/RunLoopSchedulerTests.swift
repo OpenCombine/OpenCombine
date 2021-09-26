@@ -628,6 +628,7 @@ extension RunLoopScheduler.SchedulerTimeType.Stride: TimeIntervalBackedScheduler
 @available(macOS 10.15, iOS 13.0, *)
 extension RunLoopScheduler.SchedulerTimeType: DateBackedSchedulerTimeType {}
 
+@available(macOS 10.15, iOS 13.0, *)
 extension RunLoopScheduler: RunLoopLikeScheduler {}
 
 #endif // !WASI

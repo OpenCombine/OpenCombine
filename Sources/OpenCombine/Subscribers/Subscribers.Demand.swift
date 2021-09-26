@@ -7,6 +7,10 @@
 
 // swiftlint:disable shorthand_operator - because of false positives here
 
+#if canImport(_Concurrency)
+import _Concurrency
+#endif
+
 extension Subscribers {
 
     /// A requested number of items, sent to a publisher from a subscriber through
@@ -467,6 +471,7 @@ extension Subscribers {
     }
 }
 
-#if compiler(>=5.5)
+// TODO: Uncomment when macOS 12 is released
+#if canImport(_Concurrency) /* || compiler(>=5.5.x) */
 extension Subscribers.Demand: Sendable {}
 #endif

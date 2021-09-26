@@ -5,6 +5,10 @@
 //  Created by Sergej Jaskiewicz on 11.06.2019.
 //
 
+#if canImport(_Concurrency)
+import _Concurrency
+#endif
+
 extension Subscribers {
 
     /// A signal that a publisher doesn’t produce additional elements, either due to
@@ -23,7 +27,8 @@ extension Subscribers.Completion: Equatable where Failure: Equatable {}
 
 extension Subscribers.Completion: Hashable where Failure: Hashable {}
 
-#if compiler(>=5.5)
+// TODO: Uncomment when macOS 12 is released
+#if canImport(_Concurrency) /* || compiler(>=5.5.x) */
 extension Subscribers.Completion: Sendable {}
 #endif
 

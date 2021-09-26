@@ -331,6 +331,7 @@ extension OperationQueueScheduler.SchedulerTimeType.Stride
 @available(macOS 10.15, iOS 13.0, *)
 extension OperationQueueScheduler.SchedulerTimeType: DateBackedSchedulerTimeType {}
 
+@available(macOS 10.15, iOS 13.0, *)
 extension OperationQueueScheduler: RunLoopLikeScheduler {}
 
 private final class TestOperationQueue: OperationQueue {

@@ -5,8 +5,12 @@
 //  Created by Sergej Jaskiewicz on 28.08.2021.
 //
 
-// async/await is only available since Swift 5.5
-#if compiler(>=5.5)
+#if canImport(_Concurrency)
+import _Concurrency
+#endif
+
+// TODO: Uncomment when macOS 12 is released
+#if canImport(_Concurrency) /* || compiler(>=5.5.x) */
 extension Future where Failure == Never {
 
     @available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
@@ -116,4 +120,4 @@ extension ContinuationSubscriber where UpstreamFailure == Never, ErrorOrNever ==
     }
 }
 
-#endif // compiler(>=5.5)
+#endif
