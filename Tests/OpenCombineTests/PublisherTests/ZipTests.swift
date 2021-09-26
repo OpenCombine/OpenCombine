@@ -732,7 +732,7 @@ final class ZipTests: XCTestCase {
         default:
           XCTFail("Failed to match the value event in \(#function)")
         }
-        
+
         switch history[2] {
         case .completion(.finished):
             break
