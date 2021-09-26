@@ -80,10 +80,6 @@ let package = Package(
 
 extension Array where Element == Platform {
     func except(_ exceptions: [Platform]) -> [Platform] {
-        // See: https://bugs.swift.org/browse/SR-13813
-        let exceptionsDescriptions = exceptions.map(String.init(describing:))
-        return filter { platform in
-            !exceptionsDescriptions.contains(String(describing: platform))
-        }
+        return filter { !exceptions.contains($0) }
     }
 }
