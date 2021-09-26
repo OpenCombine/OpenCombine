@@ -727,7 +727,6 @@ final class ZipTests: XCTestCase {
             if v.0 != 42 || v.1 != () {
                 XCTFail("Failed to match the value event in \(#function)")
             }
-          break
         default:
           XCTFail("Failed to match the value event in \(#function)")
         }
