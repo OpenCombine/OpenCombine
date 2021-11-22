@@ -241,6 +241,7 @@ workflows:
       - "Execute tests on Ubuntu 18.04 (Swift 5.2)"
       - "Execute tests on Ubuntu 18.04 (Swift 5.3)"
       - "Execute tests on Ubuntu 18.04 (Swift 5.4)"
+      - "Execute tests on Ubuntu 18.04 (Swift 5.5)"
   "OpenCombine: validate podspec files":
     jobs:
       - "Run Pod spec lint"
