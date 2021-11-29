@@ -205,24 +205,12 @@ jobs:
       SWIFT_VERSION: "5.4"
     <<: *ubuntu_tests_steps
 
-  "Run SwiftLint and Danger":
-    macos:
-      xcode: "11.4.0"
+  "Execute tests on Ubuntu 18.04 (Swift 5.5)":
+    docker:
+      - image: swift:5.5-bionic
     environment:
-      HOMEBREW_NO_AUTO_UPDATE: "1"
-    steps:
-      - checkout
-      - run:
-          name: Install SwiftLint
-          command: |
-            brew install swiftlint
-      - run:
-          name: Install danger-swift
-          command: |
-            brew install danger/tap/danger-swift
-      - run:
-          name: Run danger-swift
-          command: danger-swift ci
+      SWIFT_VERSION: "5.5"
+    <<: *ubuntu_tests_steps
 
   "Run Pod spec lint":
     macos:
@@ -253,9 +241,7 @@ workflows:
       - "Execute tests on Ubuntu 18.04 (Swift 5.2)"
       - "Execute tests on Ubuntu 18.04 (Swift 5.3)"
       - "Execute tests on Ubuntu 18.04 (Swift 5.4)"
-  "OpenCombine: run SwiftLint and Danger":
-    jobs:
-      - "Run SwiftLint and Danger"
+      - "Execute tests on Ubuntu 18.04 (Swift 5.5)"
   "OpenCombine: validate podspec files":
     jobs:
       - "Run Pod spec lint"
