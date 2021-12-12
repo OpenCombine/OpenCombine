@@ -23,4 +23,4 @@ jobs:
       - uses: actions/checkout@v2
       - uses: MaxDesiatov/swift-windows-action@v1
         with:
-          swift-version: "5.5"
+          swift-version: "5.5.1"
