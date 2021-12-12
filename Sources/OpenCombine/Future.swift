@@ -86,12 +86,32 @@ extension Future {
           CustomPlaygroundDisplayConvertible
         where Downstream.Input == Output, Downstream.Failure == Failure
     {
+        private enum State {
+            case active(Downstream, hasAnyDemand: Bool)
+            case terminal
 
-        fileprivate var parent: Future?
+            var downstream: Downstream? {
+                switch self {
+                case .active(let downstream, hasAnyDemand: _):
+                    return downstream
+                case .terminal:
+                    return nil
+                }
+            }
 
-        fileprivate var downstream: Downstream?
+            var hasAnyDemand: Bool {
+                switch self {
+                case .active(_, let hasAnyDemand):
+                    return hasAnyDemand
+                case .terminal:
+                    return false
+                }
+            }
+        }
 
-        fileprivate var hasAnyDemand = false
+        private var parent: Future?
+
+        private var state: State
 
         private var lock = UnfairLock.allocate()
 
@@ -99,7 +119,7 @@ extension Future {
 
         fileprivate init(parent: Future, downstream: Downstream) {
             self.parent = parent
-            self.downstream = downstream
+            self.state = .active(downstream, hasAnyDemand: false)
         }
 
         deinit {
@@ -107,21 +127,8 @@ extension Future {
             downstreamLock.deallocate()
         }
 
-        fileprivate func fulfill(_ result: Result<Output, Failure>) {
-            lock.lock()
-            guard let downstream = self.downstream else {
-                lock.unlock()
-                return
-            }
-            let parent = self.parent
-            if case .success = result, !hasAnyDemand {
-                lock.unlock()
-                return
-            }
-            self.downstream = nil
-            self.parent = nil
-            lock.unlock()
-            downstreamLock.lock()
+        fileprivate func lockedFulfill(downstream: Downstream,
+                                       result: Result<Output, Failure>) {
             switch result {
             case .success(let output):
                 _ = downstream.receive(output)
@@ -129,6 +136,24 @@ extension Future {
             case .failure(let error):
                 downstream.receive(completion: .failure(error))
             }
+        }
+
+        fileprivate func fulfill(_ result: Result<Output, Failure>) {
+            lock.lock()
+            guard case let .active(downstream, hasAnyDemand) = state else {
+                lock.unlock()
+                return
+            }
+            if case .success = result, !hasAnyDemand {
+                lock.unlock()
+                return
+            }
+
+            state = .terminal
+            lock.unlock()
+            downstreamLock.lock()
+            lockedFulfill(downstream: downstream, result: result)
+            let parent = self.parent.take()
             downstreamLock.unlock()
             parent?.disassociate(self)
         }
@@ -149,45 +174,37 @@ extension Future {
         override func request(_ demand: Subscribers.Demand) {
             demand.assertNonZero()
             lock.lock()
-            guard let downstream = self.downstream, let parent = self.parent else {
+            guard case .active(let downstream, hasAnyDemand: _) = state else {
                 lock.unlock()
                 return
             }
-            hasAnyDemand = true
+            state = .active(downstream, hasAnyDemand: true)
 
-            parent.lock.lock()
-            guard let result = parent.result else {
-                parent.lock.unlock()
+            if let parent = parent, let result = parent.result {
+                // If the promise is already resolved, send the result downstream
+                // immediately
+                state = .terminal
                 lock.unlock()
-                return
+                downstreamLock.lock()
+                lockedFulfill(downstream: downstream, result: result)
+                downstreamLock.unlock()
+                parent.disassociate(self)
+            } else {
+                lock.unlock()
             }
-            parent.lock.unlock()
-            self.downstream = nil
-            self.parent = nil
-            lock.unlock()
-            downstreamLock.lock()
-            switch result {
-            case .success(let output):
-                _ = downstream.receive(output)
-                downstream.receive(completion: .finished)
-            case .failure(let error):
-                // This branch is not reachable under normal circumstances,
-                // but may be reachable in case of a race condition.
-                downstream.receive(completion: .failure(error))
-            }
-            downstreamLock.unlock()
-            parent.disassociate(self)
         }
 
         override func cancel() {
             lock.lock()
-            if downstream.take() == nil {
+            switch state {
+            case .active:
+                state = .terminal
+                let parent = self.parent.take()
                 lock.unlock()
-                return
+                parent?.disassociate(self)
+            case .terminal:
+                lock.unlock()
             }
-            let parent = self.parent.take()
-            lock.unlock()
-            parent?.disassociate(self)
         }
 
         var description: String { return "Future" }
@@ -197,8 +214,8 @@ extension Future {
             defer { lock.unlock() }
             let children: [Mirror.Child] = [
                 ("parent", parent as Any),
-                ("downstream", downstream as Any),
-                ("hasAnyDemand", hasAnyDemand),
+                ("downstream", state.downstream as Any),
+                ("hasAnyDemand", state.hasAnyDemand),
                 ("subject", parent as Any)
             ]
             return Mirror(self, children: children)
