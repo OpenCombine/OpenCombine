@@ -231,7 +231,7 @@ final class FutureTests: XCTestCase {
         XCTAssertTrue(hasStarted)
     }
 
-    func testWaitsForDemandSuccess() {
+    func testWaitsForDemandSuccess() throws {
         var promise: Sut.Promise?
 
         let future = Sut { promise = $0 }
@@ -248,13 +248,22 @@ final class FutureTests: XCTestCase {
             .subscription("Future")
         ])
 
-        downstreamSubscription?.request(.max(1))
+        let unwrappedDownstreamSubscription = try XCTUnwrap(downstreamSubscription)
+
+        unwrappedDownstreamSubscription.request(.max(1))
 
         XCTAssertEqual(subscriber.history, [
             .subscription("Future"),
             .value(42),
             .completion(.finished)
         ])
+
+        let parent = try XCTUnwrap(
+            Mirror(reflecting: unwrappedDownstreamSubscription)
+                .descendant("parent") as? Sut?
+        )
+
+        XCTAssertNotNil(parent)
     }
 
     func testReleasesEverythingOnTermination() {
@@ -314,6 +323,18 @@ final class FutureTests: XCTestCase {
             ),
             playgroundDescription: "Future",
             sut: Sut { _ in }
+        )
+
+        try testSubscriptionReflection(
+            description: "Future",
+            customMirror: expectedChildren(
+                ("parent", "nil"),
+                ("downstream", "nil"),
+                ("hasAnyDemand", "false"),
+                ("subject", "nil")
+            ),
+            playgroundDescription: "Future",
+            sut: Sut { promise in promise(.failure(.oops)) }
         )
     }
 }
