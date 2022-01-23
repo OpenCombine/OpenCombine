@@ -14,7 +14,7 @@ extension Publisher {
     /// the elements from one kind of publisher into a new publisher that is sent
     /// to subscribers. Use `flatMap(maxPublishers:_:)` when you want to create a new
     /// series of events for downstream subscribers based on the received value.
-    /// The closure creates the new `Publishe`` based on the received value.
+    /// The closure creates the new `Publisher` based on the received value.
     /// The new `Publisher` can emit more than one event, and successful completion of
     /// the new `Publisher` does not complete the overall stream.
     /// Failure of the new `Publisher` will fail the overall stream.
