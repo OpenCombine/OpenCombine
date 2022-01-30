@@ -18,13 +18,13 @@ import _Concurrency
 #if canImport(_Concurrency) && compiler(>=5.5) || compiler(>=5.5.1)
 extension Publisher where Failure == Never {
 
-    @available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
+    @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
     public var values: AsyncPublisher<Self> {
         return .init(self)
     }
 }
 
-@available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
+@available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
 public struct AsyncPublisher<Upstream: Publisher>: AsyncSequence
     where Upstream.Failure == Never
 {
@@ -60,7 +60,7 @@ public struct AsyncPublisher<Upstream: Publisher>: AsyncSequence
     }
 }
 
-@available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
+@available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
 extension AsyncPublisher.Iterator {
 
     // TODO: Test if it's really cancellable
@@ -159,13 +159,13 @@ extension AsyncPublisher.Iterator {
 }
 extension Publisher {
 
-    @available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
+    @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
     public var values: AsyncThrowingPublisher<Self> {
         return .init(self)
     }
 }
 
-@available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
+@available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
 public struct AsyncThrowingPublisher<Upstream: Publisher>: AsyncSequence
 {
 
@@ -200,7 +200,7 @@ public struct AsyncThrowingPublisher<Upstream: Publisher>: AsyncSequence
     }
 }
 
-@available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
+@available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
 extension AsyncThrowingPublisher.Iterator {
 
     // TODO: Test if it's really cancellable
@@ -317,7 +317,7 @@ extension AsyncThrowingPublisher.Iterator {
     }
 }
 
-@available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
+@available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
 extension Sequence {
     fileprivate func resumeAllWithNil<Output, Failure: Error>()
         where Element == UnsafeContinuation<Output?, Failure>

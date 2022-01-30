@@ -12,7 +12,7 @@ import _Concurrency
 #if canImport(_Concurrency) && compiler(>=5.5) || compiler(>=5.5.1)
 extension Future where Failure == Never {
 
-    @available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
+    @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
     public var value: Output {
         get async { // swiftlint:disable:this implicit_getter
             await ContinuationSubscriber.withUnsafeSubscription(self)
@@ -22,7 +22,7 @@ extension Future where Failure == Never {
 
 extension Future {
 
-    @available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
+    @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
     public var value: Output {
         get async throws { // swiftlint:disable:this implicit_getter
             try await ContinuationSubscriber.withUnsafeThrowingSubscription(self)
@@ -30,7 +30,7 @@ extension Future {
     }
 }
 
-@available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
+@available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
 private final class ContinuationSubscriber<Input,
                                            UpstreamFailure: Error,
                                            ErrorOrNever: Error>
@@ -53,6 +53,7 @@ private final class ContinuationSubscriber<Input,
     func receive(subscription: Subscription) {
         lock.lock()
         guard self.subscription == nil else {
+            assertionFailure("Unexpected state: received subscription twice")
             lock.unlock()
             subscription.cancel()
             return
@@ -68,6 +69,7 @@ private final class ContinuationSubscriber<Input,
             lock.unlock()
             continuation.resume(returning: input)
         } else {
+            assertionFailure("Unexpected state: already completed")
             lock.unlock()
         }
         return .none
@@ -86,12 +88,13 @@ private final class ContinuationSubscriber<Input,
             lock.unlock()
             continuation.resume(throwing: error as! ErrorOrNever)
         } else {
+            assertionFailure("Unexpected state: already completed")
             lock.unlock()
         }
     }
 }
 
-@available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
+@available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
 extension ContinuationSubscriber where ErrorOrNever == Error {
     fileprivate static func withUnsafeThrowingSubscription<Upstream: Publisher>(
         _ upstream: Upstream
@@ -105,7 +108,7 @@ extension ContinuationSubscriber where ErrorOrNever == Error {
     }
 }
 
-@available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
+@available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
 extension ContinuationSubscriber where UpstreamFailure == Never, ErrorOrNever == Never {
     fileprivate static func withUnsafeSubscription<Upstream: Publisher>(
         _ upstream: Upstream
