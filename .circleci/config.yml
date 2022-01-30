@@ -87,18 +87,6 @@ jobs:
       SWIFT_VERSION: "5.5.1"
     <<: *macOS_tests_steps
 
-  "Run Pod spec lint":
-    macos:
-      xcode: "11.4.0"
-    environment:
-      HOMEBREW_NO_AUTO_UPDATE: "1"
-    steps:
-      - checkout
-      - run:
-          name: Pod lib lint
-          command: |
-            pod lib lint --allow-warnings --verbose
-
 workflows:
   version: 2
   "OpenCombine: execute tests on macOS":
@@ -107,6 +95,3 @@ workflows:
       - "Execute tests on macOS 10.15.0 (Xcode 12.1.0, Swift 5.3.0)"
       - "Execute tests on macOS 11.4.0 (Xcode 12.5.1, Swift 5.4.0)"
       - "Execute tests on macOS 11.6.1 (Xcode 13.1.0, Swift 5.5.1)"
-  "OpenCombine: validate podspec files":
-    jobs:
-      - "Run Pod spec lint"
