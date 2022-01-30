@@ -17,13 +17,13 @@ instantiations = [('AsyncPublisher', False), ('AsyncThrowingPublisher', True)]
 % for instantiation, throwing in instantiations:
 extension Publisher ${'' if throwing else 'where Failure == Never '}{
 
-    @available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
+    @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
     public var values: ${instantiation}<Self> {
         return .init(self)
     }
 }
 
-@available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
+@available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
 public struct ${instantiation}<Upstream: Publisher>: AsyncSequence
 %   if not throwing:
     where Upstream.Failure == Never
@@ -61,7 +61,7 @@ public struct ${instantiation}<Upstream: Publisher>: AsyncSequence
     }
 }
 
-@available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
+@available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
 extension ${instantiation}.Iterator {
 
     // TODO: Test if it's really cancellable
@@ -186,7 +186,7 @@ extension ${instantiation}.Iterator {
 }
 % end
 
-@available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
+@available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
 extension Sequence {
     fileprivate func resumeAllWithNil<Output, Failure: Error>()
         where Element == UnsafeContinuation<Output?, Failure>
