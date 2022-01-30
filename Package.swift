@@ -6,9 +6,11 @@ import PackageDescription
 // See: https://bugs.swift.org/browse/SR-13814
 let supportedPlatforms: [Platform] = [
     .macOS,
+    .macCatalyst,
     .iOS,
     .watchOS,
     .tvOS,
+    .driverKit,
     .linux,
     .android,
     .windows,
