@@ -1,0 +1,28 @@
+name: Compatibility tests 
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  schedule:
+    - cron: "0 9 * * 1" # Every Monday at 9:00 AM
+
+jobs:
+  compatibility_tests_macos:
+    name: Execute compatibility tests
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run tests against Apple's Combine
+        # Attempt to run compatibility tests on macOS.
+        # If they fail, run on iOS.
+        run: |
+          make test-compatibility \
+            || (set -o pipefail \
+                  && xcodebuild test \
+                      -scheme OpenCombine-Package \
+                      -destination "name=iPhone 13" \
+                      -xcconfig Combine-Compatibility.xcconfig \
+                  | tee xcodebuild_test.log \
+                  | xcpretty)

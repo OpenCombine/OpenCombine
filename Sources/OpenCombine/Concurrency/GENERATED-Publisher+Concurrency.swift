@@ -37,7 +37,7 @@ public struct AsyncPublisher<Upstream: Publisher>: AsyncSequence
 
         fileprivate let inner: Inner
 
-        public func next() async -> Element? {
+        public mutating func next() async -> Element? {
             return await withTaskCancellationHandler(
                 handler: { [inner] in inner.cancel() },
                 operation: { [inner] in await inner.next() }
@@ -176,7 +176,7 @@ public struct AsyncThrowingPublisher<Upstream: Publisher>: AsyncSequence
 
         fileprivate let inner: Inner
 
-        public func next() async throws -> Element? {
+        public mutating func next() async throws -> Element? {
             return try await withTaskCancellationHandler(
                 handler: { [inner] in inner.cancel() },
                 operation: { [inner] in try await inner.next() }

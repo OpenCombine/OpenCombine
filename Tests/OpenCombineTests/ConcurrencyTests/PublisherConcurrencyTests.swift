@@ -59,7 +59,7 @@ final class PublisherConcurrencyTests: XCTestCase {
 
         let asyncPublisher = publisher.values
 
-        let asyncIterator = asyncPublisher.makeAsyncIterator()
+        let asyncIterator = IteratorWrapper(asyncPublisher.makeAsyncIterator())
 
         try await withThrowingTaskGroup(of: Void.self) { group in
             group.addTask { _ = await asyncIterator.next() }
@@ -89,7 +89,7 @@ final class PublisherConcurrencyTests: XCTestCase {
 
         let asyncPublisher = publisher.values
 
-        let asyncIterator = asyncPublisher.makeAsyncIterator()
+        let asyncIterator = IteratorWrapper(asyncPublisher.makeAsyncIterator())
 
         try await withThrowingTaskGroup(of: Void.self) { group in
             group.addTask { _ = try await asyncIterator.next() }
