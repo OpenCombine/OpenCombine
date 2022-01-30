@@ -16,6 +16,7 @@ import OpenCombine
 ///
 /// In order to inject `CustomSubscription` into the chain of subscriptions,
 /// use the `CustomSubscriber` class.
+@available(macOS 10.15, iOS 13.0, *)
 final class CustomSubscription: Subscription, CustomStringConvertible {
 
     enum Event: Equatable, CustomStringConvertible {
@@ -78,6 +79,7 @@ final class CustomSubscription: Subscription, CustomStringConvertible {
     var description: String { return "CustomSubscription" }
 }
 
+@available(macOS 10.15, iOS 13.0, *)
 extension CustomSubscription: Equatable {
     static func == (lhs: CustomSubscription, rhs: CustomSubscription) -> Bool {
         return lhs === rhs

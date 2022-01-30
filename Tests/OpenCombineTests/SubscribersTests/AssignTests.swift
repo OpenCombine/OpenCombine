@@ -170,6 +170,7 @@ final class AssignTests: XCTestCase {
     }
 }
 
+@available(macOS 10.15, iOS 13.0, *)
 final class ObjectToModify {
     let autofinish = AutomaticallyFinish<Int, Never>()
     var value = 0

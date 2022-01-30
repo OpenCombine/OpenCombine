@@ -11,6 +11,7 @@ import Combine
 import OpenCombine
 #endif
 
+@available(macOS 10.15, iOS 13.0, *)
 final class AutomaticallyFinish<Output, Failure: Error> {
 
     let subscription: CustomSubscription
@@ -36,6 +37,7 @@ final class AutomaticallyFinish<Output, Failure: Error> {
     }
 }
 
+@available(macOS 10.15, iOS 13.0, *)
 extension AutomaticallyFinish: Publisher {
     func receive<Downstream: Subscriber>(subscriber: Downstream)
         where Downstream.Failure == Failure, Downstream.Input == Output
@@ -44,6 +46,7 @@ extension AutomaticallyFinish: Publisher {
     }
 }
 
+@available(macOS 10.15, iOS 13.0, *)
 extension AutomaticallyFinish where Failure == Never {
     func assign<Root>(to keyPath: ReferenceWritableKeyPath<Root, Output>,
                       on object: Root) -> AnyCancellable {

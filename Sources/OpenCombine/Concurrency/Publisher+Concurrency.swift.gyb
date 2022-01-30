@@ -38,7 +38,7 @@ public struct ${instantiation}<Upstream: Publisher>: AsyncSequence
 
         fileprivate let inner: Inner
 
-        public func next() async ${'throws ' if throwing else ''}-> Element? {
+        public mutating func next() async ${'throws ' if throwing else ''}-> Element? {
             return ${'try ' if throwing else ''}await withTaskCancellationHandler(
                 handler: { [inner] in inner.cancel() },
                 operation: { [inner] in ${'try ' if throwing else ''}await inner.next() }
