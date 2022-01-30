@@ -1,0 +1,16 @@
+name: CocoaPods 
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  validate_podspec:
+    name: Run pod lib lint
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run pod lib lint
+        run: pod lib lint --allow-warnings --verbose
