@@ -1,0 +1,50 @@
+name: Ubuntu 
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  ubuntu_test:
+    name: Execute tests on Ubuntu
+    strategy:
+      fail-fast: false
+      matrix:
+        swift_version: ["5.0", "5.1", "5.2", "5.3", "5.4", "5.5"]
+    runs-on: ubuntu-latest
+    container: swift:${{ matrix.swift_version }}-bionic
+    steps:
+      - uses: actions/checkout@v2
+      - name: Installing Python 3.8
+        run: |
+          apt update -y
+          apt upgrade -y
+          apt install -y curl python3.8
+      - name: Generating LinuxMain.swift
+        run: python3.8 utils/discover_tests.py
+      - name: Building and running tests in debug mode with coverage
+        run: |
+          make test-debug \
+            SWIFT_BUILD_FLAGS="-Xswiftc -warnings-as-errors" \
+            SWIFT_TEST_FLAGS="--enable-code-coverage \
+                              --disable-index-store \
+                              --build-path .build-test-debug"
+          llvm-cov show \
+            -instr-profile=.build-test-debug/debug/codecov/default.profdata \
+            .build-test-debug/debug/OpenCombinePackageTests.xctest \
+            > coverage.txt
+      - name: Building and running tests in debug mode with TSan
+        run: |
+          make test-debug-sanitize-thread \
+            SWIFT_TEST_FLAGS="--disable-index-store \
+                              --build-path .build-test-debug-sanitize-thread"
+      - name: Building and running tests in release mode
+        run: |
+          make test-release \
+            SWIFT_BUILD_FLAGS="-Xswiftc -warnings-as-errors" \
+            SWIFT_TEST_FLAGS="--build-path .build-test-release"
+      - uses: codecov/codecov-action@v2
+        with:
+          verbose: true
