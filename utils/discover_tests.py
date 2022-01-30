@@ -15,16 +15,25 @@ import re
 from pathlib import Path
 from argparse import ArgumentParser
 
+class Test:
+    def __init__(self, name, is_async):
+        self.name = name
+        self.is_async = is_async
+    
+    def __str__(self):
+     return self.name
+
+
 TEST_METHOD_PATTERN = \
-    re.compile(r"func\s*(test\w+)\s*\(\s*\)\s*(?:throws\s*)?{")
+    re.compile(r"func\s*(test\w+)\s*\(\s*\)\s*(async\s*)?(?:throws\s*)?{")
 TEST_DISCOVERY_CONDITION_PATTERN = \
     re.compile(r"^#if (.+)\s*\/\/\s*TEST_DISCOVERY_CONDITION\s*$", flags=re.MULTILINE)
 
 def extract_test_names(test_file):
     contents = test_file.read_text()
-    test_names = [match[1] for match in TEST_METHOD_PATTERN.finditer(contents)]
+    tests = [Test(match[1], match[2] is not None) for match in TEST_METHOD_PATTERN.finditer(contents)]
     condition = TEST_DISCOVERY_CONDITION_PATTERN.search(contents)
-    return (test_names, condition[1] if condition else None)
+    return (tests, condition[1] if condition else None)
 
 def generate_linuxmain(workdir):
     workdir = Path(workdir)
@@ -41,14 +50,17 @@ var tests = [XCTestCaseEntry]()
 
 """)
         for test_file in test_files:
-            (test_names, condition) = extract_test_names(test_file)
-            if not test_names:
+            (tests, condition) = extract_test_names(test_file)
+            if not tests:
                 continue
             if condition:
                 linuxmain.write(f"#if {condition}\n")
             linuxmain.write(f"let allTests_{test_file.stem} = [\n")
-            for test_name in test_names:
-                linuxmain.write(f"    (\"{test_name}\", {test_file.stem}.{test_name}),\n")
+            for test in tests:
+                if test.is_async:
+                    linuxmain.write(f"    (\"{test}\", asyncTest({test_file.stem}.{test})),\n")
+                else:
+                    linuxmain.write(f"    (\"{test}\", {test_file.stem}.{test}),\n")
             linuxmain.write("]\n")
             linuxmain.write(f"tests.append(testCase(allTests_{test_file.stem}))\n")
             if condition:
