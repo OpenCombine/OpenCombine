@@ -8,7 +8,7 @@ on:
 
 jobs:
   carton_wasmer_test_5_3:
-    name: "Execute tests on WASM (Swift 5.3)"
+    name: "Execute tests on Wasm (Swift 5.3)"
     runs-on: ubuntu-20.04
 
     steps:
@@ -16,7 +16,7 @@ jobs:
       - uses: swiftwasm/swiftwasm-action@v5.3
   
   carton_wasmer_test_5_4:
-    name: "Execute tests on WASM (Swift 5.4)"
+    name: "Execute tests on Wasm (Swift 5.4)"
     runs-on: ubuntu-20.04
 
     steps:
@@ -25,7 +25,7 @@ jobs:
   
   # FIXME: Async tests don't compile
   # carton_wasmer_test_5_5:
-  #   name: "Execute tests on WASM (Swift 5.5)"
+  #   name: "Execute tests on Wasm (Swift 5.5)"
   #   runs-on: ubuntu-20.04
 
   #   steps:
