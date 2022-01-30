@@ -7,8 +7,12 @@ on:
     branches: [master]
 
 jobs:
-  windows_test_5_4_2:
-    name: "Execute tests on Windows Server 2019 (Swift 5.4.2)"
+  windows_test:
+    name: Execute tests on Windows
+    strategy:
+      fail-fast: false
+      matrix:
+        swift_version: ["5.4.2", "5.5.1"]
     runs-on: windows-2019
     steps:
       - uses: actions/checkout@v2
@@ -16,15 +20,4 @@ jobs:
         run: python utils/discover_tests.py
       - uses: MaxDesiatov/swift-windows-action@v1
         with:
-          swift-version: "5.4.2"
-  
-  windows_test_5_5:
-    name: "Execute tests on Windows Server 2019 (Swift 5.5.1)"
-    runs-on: windows-2019
-    steps:
-      - uses: actions/checkout@v2
-      - name: Generating LinuxMain.swift
-        run: python utils/discover_tests.py
-      - uses: MaxDesiatov/swift-windows-action@v1
-        with:
-          swift-version: "5.5.1"
+          swift-version: ${{ matrix.swift_version }}
