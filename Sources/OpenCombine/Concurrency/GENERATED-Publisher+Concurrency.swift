@@ -63,7 +63,6 @@ public struct AsyncPublisher<Upstream: Publisher>: AsyncSequence
 @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
 extension AsyncPublisher.Iterator {
 
-    // TODO: Test if it's really cancellable
     fileprivate final class Inner: Subscriber, Cancellable {
         typealias Input = Upstream.Output
         typealias Failure = Upstream.Failure
@@ -203,7 +202,6 @@ public struct AsyncThrowingPublisher<Upstream: Publisher>: AsyncSequence
 @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
 extension AsyncThrowingPublisher.Iterator {
 
-    // TODO: Test if it's really cancellable
     fileprivate final class Inner: Subscriber, Cancellable {
         typealias Input = Upstream.Output
         typealias Failure = Upstream.Failure
@@ -259,7 +257,6 @@ extension AsyncThrowingPublisher.Iterator {
             switch state {
             case .awaitingSubscription, .subscribed:
                 if let continuation = pending.first {
-                    // TODO: Test that it's nil even if the publisher fails
                     state = .terminal(nil)
                     let remaining = pending.take().dropFirst()
                     lock.unlock()
@@ -308,9 +305,13 @@ extension AsyncThrowingPublisher.Iterator {
                     pending.append(continuation)
                     lock.unlock()
                     subscription.request(.max(1))
-                case .terminal:
+                case .terminal(nil):
                     lock.unlock()
                     continuation.resume(returning: nil)
+                case .terminal(let error?):
+                    state = .terminal(nil)
+                    lock.unlock()
+                    continuation.resume(throwing: error)
                 }
             }
         }
