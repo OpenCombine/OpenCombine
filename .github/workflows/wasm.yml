@@ -23,12 +23,11 @@ jobs:
       - uses: actions/checkout@v2
       - uses: swiftwasm/swiftwasm-action@v5.4
   
-  # FIXME: Async tests don't compile
-  # carton_wasmer_test_5_5:
-  #   name: "Execute tests on Wasm (Swift 5.5)"
-  #   runs-on: ubuntu-20.04
+  carton_wasmer_test_5_5:
+    name: "Execute tests on Wasm (Swift 5.5)"
+    runs-on: ubuntu-20.04
 
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #     - uses: swiftwasm/swiftwasm-action@v5.5
+    steps:
+      - uses: actions/checkout@v2
+      - uses: swiftwasm/swiftwasm-action@v5.5
 
