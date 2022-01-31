@@ -1,4 +1,4 @@
-name: SwiftWasm 
+name: Wasm 
 
 on:
   push:
