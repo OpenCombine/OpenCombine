@@ -14,7 +14,7 @@ extension Future where Failure == Never {
 
     @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
     public var value: Output {
-        get async { // swiftlint:disable:this implicit_getter
+        get async {
             await ContinuationSubscriber.withUnsafeSubscription(self)
         }
     }
@@ -24,7 +24,7 @@ extension Future {
 
     @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
     public var value: Output {
-        get async throws { // swiftlint:disable:this implicit_getter
+        get async throws {
             try await ContinuationSubscriber.withUnsafeThrowingSubscription(self)
         }
     }

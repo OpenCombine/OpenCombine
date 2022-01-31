@@ -22,3 +22,5 @@ jobs:
         env:
           DIFF_BASE: ${{ github.base_ref }}
           DIFF_HEAD: HEAD
+        with:
+          args: --strict
