@@ -7,8 +7,6 @@
 
 // swiftlint:disable multiline_arguments
 
-#if !WASI
-
 import Foundation
 import XCTest
 
@@ -20,7 +18,7 @@ import FoundationNetworking
 // swift-corelibs-foundation that were making these tests impossible to build.
 //
 // Those were fixed in https://github.com/apple/swift-corelibs-foundation/pull/2587.
-#if canImport(Darwin) || swift(>=5.3) // TEST_DISCOVERY_CONDITION
+#if canImport(Darwin) || swift(>=5.3) && !WASI // TEST_DISCOVERY_CONDITION
 
 #if OPENCOMBINE_COMPATIBILITY_TEST
 import Combine
@@ -746,6 +744,4 @@ private func makePublisher(
 }
 #endif // OPENCOMBINE_COMPATIBILITY_TEST || !canImport(Combine)
 
-#endif // canImport(Darwin)
-
-#endif // !WASI
+#endif
