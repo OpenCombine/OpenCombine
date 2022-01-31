@@ -16,8 +16,6 @@ jobs:
     runs-on: windows-2019
     steps:
       - uses: actions/checkout@v2
-      - name: Generating LinuxMain.swift
-        run: python utils/discover_tests.py
       - uses: MaxDesiatov/swift-windows-action@v1
         with:
           swift-version: ${{ matrix.swift_version }}
