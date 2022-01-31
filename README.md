@@ -1,14 +1,21 @@
 # OpenCombine
-[![OpenCombine](https://circleci.com/gh/OpenCombine/OpenCombine.svg?style=svg)](https://circleci.com/gh/OpenCombine/OpenCombine)
 [![codecov](https://codecov.io/gh/OpenCombine/OpenCombine/branch/master/graph/badge.svg)](https://codecov.io/gh/OpenCombine/OpenCombine)
 ![Language](https://img.shields.io/badge/Swift-5.0-orange.svg)
-![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20iOS%20%7C%20watchOS%20%7C%20tvOS%20%7C%20Wasm%20%7C%20Windows-lightgrey.svg)
 ![Cocoapods](https://img.shields.io/cocoapods/v/OpenCombine?color=blue)
 [<img src="https://img.shields.io/badge/slack-OpenCombine-yellow.svg?logo=slack">](https://join.slack.com/t/opencombine/shared_invite/zt-96rr6cyf-0Hk5_hY8nM5zta6M56Jfzg)
 
 Open-source implementation of Apple's [Combine](https://developer.apple.com/documentation/combine) framework for processing values over time.
 
 The main goal of this project is to provide a compatible, reliable and efficient implementation which can be used on Apple's operating systems before macOS 10.15 and iOS 13, as well as Linux, Windows and WebAssembly.
+
+| **CI Status** |
+|---|
+|[![Compatibility tests](https://github.com/OpenCombine/OpenCombine/actions/workflows/compatibility_tests.yml/badge.svg)](https://github.com/OpenCombine/OpenCombine/actions/workflows/compatibility_tests.yml)|
+|[![macOS](https://github.com/OpenCombine/OpenCombine/actions/workflows/macos.yml/badge.svg)](https://github.com/OpenCombine/OpenCombine/actions/workflows/macos.yml)|
+|[![Ubuntu](https://github.com/OpenCombine/OpenCombine/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/OpenCombine/OpenCombine/actions/workflows/ubuntu.yml)|
+|[![Windows](https://github.com/OpenCombine/OpenCombine/actions/workflows/windows.yml/badge.svg)](https://github.com/OpenCombine/OpenCombine/actions/workflows/windows.yml)|
+|[![Wasm](https://github.com/OpenCombine/OpenCombine/actions/workflows/wasm.yml/badge.svg)](https://github.com/OpenCombine/OpenCombine/actions/workflows/wasm.yml)|
+
 
 ### Installation
 `OpenCombine` contains three public targets: `OpenCombine`, `OpenCombineFoundation` and `OpenCombineDispatch` (the fourth one, `COpenCombineHelpers`, is considered private. Don't import it in your projects).
