@@ -2,7 +2,6 @@
 [![codecov](https://codecov.io/gh/OpenCombine/OpenCombine/branch/master/graph/badge.svg)](https://codecov.io/gh/OpenCombine/OpenCombine)
 ![Language](https://img.shields.io/badge/Swift-5.0-orange.svg)
 ![Cocoapods](https://img.shields.io/cocoapods/v/OpenCombine?color=blue)
-[<img src="https://img.shields.io/badge/slack-OpenCombine-yellow.svg?logo=slack">](https://join.slack.com/t/opencombine/shared_invite/zt-96rr6cyf-0Hk5_hY8nM5zta6M56Jfzg)
 
 Open-source implementation of Apple's [Combine](https://developer.apple.com/documentation/combine) framework for processing values over time.
 
