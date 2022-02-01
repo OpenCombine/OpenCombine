@@ -1,17 +1,17 @@
 Pod::Spec.new do |spec|
     spec.name          = "OpenCombineFoundation"
-    spec.version       = "0.12.0"
+    spec.version       = "0.13.0"
     spec.summary       = "OpenCombine + OpenCombineFoundation interoperability"
   
     spec.description   = <<-DESC
     Adds publishers to Foundation types like NotificationCenter, URLSession etc.
     DESC
   
-    spec.homepage      = "https://github.com/broadwaylamb/OpenCombine/"
+    spec.homepage      = "https://github.com/OpenCombine/OpenCombine/"
     spec.license       = "MIT"
   
     spec.authors       = { "Sergej Jaskiewicz" => "jaskiewiczs@icloud.com" }
-    spec.source        = { :git => "https://github.com/broadwaylamb/OpenCombine.git", :tag => "#{spec.version}" }
+    spec.source        = { :git => "https://github.com/OpenCombine/OpenCombine.git", :tag => "#{spec.version}" }
   
     spec.swift_version = "5.0"
   
@@ -21,5 +21,5 @@ Pod::Spec.new do |spec|
     spec.tvos.deployment_target    = "9.0"
   
     spec.source_files = "Sources/OpenCombineFoundation/**/*.swift"
-    spec.dependency     "OpenCombine", '>= 0.10.2'
+    spec.dependency     "OpenCombine", '>= 0.12.0'
   end

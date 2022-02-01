@@ -1,17 +1,17 @@
 Pod::Spec.new do |spec|
   spec.name          = "OpenCombine"
-  spec.version       = "0.12.0"
+  spec.version       = "0.13.0"
   spec.summary       = "Open source implementation of Apple's Combine framework for processing values over time."
 
   spec.description   = <<-DESC
   An open source implementation of Apple's Combine framework for processing values over time.
   DESC
 
-  spec.homepage      = "https://github.com/broadwaylamb/OpenCombine/"
+  spec.homepage      = "https://github.com/OpenCombine/OpenCombine/"
   spec.license       = "MIT"
 
   spec.authors       = { "Sergej Jaskiewicz" => "jaskiewiczs@icloud.com" }
-  spec.source        = { :git => "https://github.com/broadwaylamb/OpenCombine.git", :tag => "#{spec.version}" }
+  spec.source        = { :git => "https://github.com/OpenCombine/OpenCombine.git", :tag => "#{spec.version}" }
 
   spec.swift_version = "5.0"
 
