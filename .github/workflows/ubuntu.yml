@@ -41,6 +41,7 @@ jobs:
             > coverage.txt
       - name: Building and running tests in debug mode with TSan
         run: |
+          TSAN_OPTIONS="suppressions=tsan_suppressions.txt" \
           swift test \
             -c debug \
             --sanitize thread \
