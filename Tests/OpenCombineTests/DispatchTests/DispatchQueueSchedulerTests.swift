@@ -484,11 +484,11 @@ final class DispatchQueueSchedulerTests: XCTestCase {
         let main = expectation(description: "scheduled on main queue")
         main.assertForOverFulfill = true
 
-        var didExecuteMainAction = false
+        let didExecuteMainAction = Atomic(false)
         let didExecuteBackgroundAction = Atomic(false)
 
         mainScheduler.schedule {
-            didExecuteMainAction = true
+            didExecuteMainAction.set(true)
             main.fulfill()
         }
 
@@ -499,12 +499,14 @@ final class DispatchQueueSchedulerTests: XCTestCase {
                 didExecuteBackgroundAction.set(true)
             }
 
-        XCTAssertFalse(didExecuteMainAction, "action should be executed asynchronously")
+        XCTAssertFalse(didExecuteMainAction.value,
+                       "action should be executed asynchronously")
 
         // Wait for the background scheduler to execute the work.
         XCTAssertEqual(group.wait(timeout: .now() + 5.0), .success)
 
-        XCTAssertFalse(didExecuteMainAction, "action should be executed asynchronously")
+        XCTAssertFalse(didExecuteMainAction.value,
+                       "action should be executed asynchronously")
         XCTAssertTrue(didExecuteBackgroundAction.value)
 
         wait(for: [main], timeout: 0.1)

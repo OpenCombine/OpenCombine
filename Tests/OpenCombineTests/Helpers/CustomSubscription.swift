@@ -33,8 +33,28 @@ final class CustomSubscription: Subscription, CustomStringConvertible {
         }
     }
 
+    private struct State {
+        var cancelled: Bool
+        var history: [Event]
+    }
+
+    private let state = Atomic(State(cancelled: false, history: []))
+
     /// The history of requests and cancellations of this subscription.
-    private(set) var history: [Event] = []
+    var history: [Event] {
+        return state.value.history
+    }
+
+    var cancelled: Bool {
+        get {
+            return state.value.cancelled
+        }
+        set {
+            state.do { state in
+                state.cancelled = newValue
+            }
+        }
+    }
 
     var onRequest: ((Subscribers.Demand) -> Void)?
     var onCancel: (() -> Void)?
@@ -63,16 +83,18 @@ final class CustomSubscription: Subscription, CustomStringConvertible {
         }.last
     }
 
-    var cancelled = false
-
     func request(_ demand: Subscribers.Demand) {
-        history.append(.requested(demand))
+        state.do { state in
+            state.history.append(.requested(demand))
+        }
         onRequest?(demand)
     }
 
     func cancel() {
-        history.append(.cancelled)
-        cancelled = true
+        state.do { state in
+            state.history.append(.cancelled)
+            state.cancelled = true
+        }
         onCancel?()
     }
 
