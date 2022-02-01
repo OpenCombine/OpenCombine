@@ -1,0 +1,7 @@
+# ThreadSanitizer suppressions.
+
+race:^_dispatch_continuation_pop$
+race:^_dispatch_source_dispose$
+race:^_dispatch_dispose$
+race:^opencombine_unfair_lock_lock$
+race:^\$s8Dispatch0A5QueueC011OpenCombineA0E8OCombineV8schedule7options_yAF16SchedulerOptionsVSg_yyctF$
