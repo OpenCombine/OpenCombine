@@ -40,8 +40,8 @@ jobs:
             .build-test-debug/debug/OpenCombinePackageTests.xctest \
             > coverage.txt
       - name: Building and running tests in debug mode with TSan
+        if: ${{ matrix.swift_version != '5.0' }} # There are false positives there
         run: |
-          TSAN_OPTIONS="suppressions=tsan_suppressions.txt" \
           swift test \
             -c debug \
             --sanitize thread \
