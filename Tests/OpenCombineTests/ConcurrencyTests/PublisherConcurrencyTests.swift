@@ -808,24 +808,26 @@ final class PublisherConcurrencyTests: XCTestCase {
         let asyncPublisher = publisher.values
         let asyncIterator = IteratorWrapper(asyncPublisher.makeAsyncIterator())
 
+        let task1started = Atomic(false)
+        let task2started = Atomic(false)
         let numberOfTasksFinished = Atomic<Int>(0)
 
         try await withThrowingTaskGroup(of: Void.self) { group in
             group.addTask {
+                task1started.set(true)
                 let value = try await asyncIterator.next()
                 XCTAssertNil(value)
                 numberOfTasksFinished += 1
             }
             group.addTask {
-                try await Task.sleep(nanoseconds: 10_000_000)
+                try await Task.sleepUntil { task1started.value }
+                task2started.set(true)
                 let value = try await asyncIterator.next()
                 XCTAssertNil(value)
                 numberOfTasksFinished += 1
             }
-
             group.addTask {
-                // Send completion _after_ we request some values.
-                try await Task.sleep(nanoseconds: 20_000_000)
+                try await Task.sleepUntil { task1started.value && task2started.value }
                 publisher.send(completion: .finished)
                 numberOfTasksFinished += 1
             }
@@ -844,11 +846,14 @@ final class PublisherConcurrencyTests: XCTestCase {
         let asyncPublisher = publisher.values
         let asyncIterator = IteratorWrapper(asyncPublisher.makeAsyncIterator())
 
+        let task1started = Atomic(false)
+        let task2started = Atomic(false)
         let numberOfTasksFinished = Atomic<Int>(0)
 
         try await withThrowingTaskGroup(of: Void.self) { group in
             group.addTask {
                 defer { numberOfTasksFinished += 1 }
+                task1started.set(true)
                 do {
                     let value = try await asyncIterator.next()
                     XCTFail("Didn't throw an error: \(String(describing: value))")
@@ -857,7 +862,8 @@ final class PublisherConcurrencyTests: XCTestCase {
                 }
             }
             group.addTask {
-                try await Task.sleep(nanoseconds: 10_000_000)
+                try await Task.sleepUntil { task1started.value }
+                task2started.set(true)
                 let value = try await asyncIterator.next()
                 XCTAssertNil(value)
                 numberOfTasksFinished += 1
@@ -865,7 +871,7 @@ final class PublisherConcurrencyTests: XCTestCase {
 
             group.addTask {
                 // Send completion _after_ we request some values.
-                try await Task.sleep(nanoseconds: 20_000_000)
+                try await Task.sleepUntil { task1started.value && task2started.value }
                 publisher.send(completion: .failure(.oops))
                 numberOfTasksFinished += 1
             }
@@ -884,16 +890,21 @@ final class PublisherConcurrencyTests: XCTestCase {
         let asyncPublisher = publisher.values
         let asyncIterator = IteratorWrapper(asyncPublisher.makeAsyncIterator())
 
+        let task1started = Atomic(false)
+        let task2started = Atomic(false)
+        let task3started = Atomic(false)
         let numberOfTasksFinished = Atomic<Int>(0)
 
         try await withThrowingTaskGroup(of: Void.self) { group in
             group.addTask {
+                task1started.set(true)
                 publisher.send(completion: .failure(.oops))
                 numberOfTasksFinished += 1
             }
             group.addTask {
                 defer { numberOfTasksFinished += 1 }
-                try await Task.sleep(nanoseconds: 10_000_000)
+                try await Task.sleepUntil { task1started.value }
+                task2started.set(true)
                 do {
                     let value = try await asyncIterator.next()
                     XCTFail("Didn't throw an error: \(String(describing: value))")
@@ -902,13 +913,16 @@ final class PublisherConcurrencyTests: XCTestCase {
                 }
             }
             group.addTask {
-                try await Task.sleep(nanoseconds: 20_000_000)
+                try await Task.sleepUntil { task1started.value && task2started.value }
+                task3started.set(true)
                 let value = try await asyncIterator.next()
                 XCTAssertNil(value)
                 numberOfTasksFinished += 1
             }
             group.addTask {
-                try await Task.sleep(nanoseconds: 30_000_000)
+                try await Task.sleepUntil {
+                    task1started.value && task2started.value && task3started.value
+                }
                 publisher.send(completion: .failure(.oops))
                 numberOfTasksFinished += 1
             }
@@ -1025,6 +1039,17 @@ private final class RefError: Error {
 
     deinit {
         onDeinit()
+    }
+}
+
+@available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
+extension Task where Success == Never, Failure == Never {
+    static func sleepUntil(wakeupIntervalNanoseconds: UInt64 = 50_000_000,
+                           _ condition: () -> Bool) async throws {
+        while !condition() {
+            try await sleep(nanoseconds: wakeupIntervalNanoseconds)
+        }
+        try await sleep(nanoseconds: wakeupIntervalNanoseconds)
     }
 }
 
