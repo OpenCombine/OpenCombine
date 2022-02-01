@@ -47,33 +47,11 @@ jobs:
             -instr-profile=.build-test-debug/debug/codecov/default.profdata \
             .build-test-debug/debug/OpenCombinePackageTests.xctest/Contents/MacOS/OpenCombinePackageTests \
             > coverage.txt
-      - name: Build and run tests in debug mode with TSan
-        run: |
-          swift build \
-            --build-tests \
-            -c debug \
-            --sanitize thread \
-            -Xswiftc -warnings-as-errors \
-            -Xswiftc -profile-generate \
-            -Xswiftc -profile-coverage-mapping \
-            --build-path .build-test-debug-sanitize-thread
-          install_name_tool \
-            -rpath /Applications/Xcode_10.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx /usr/lib/swift \
-            .build-test-debug-sanitize-thread/debug/OpenCombinePackageTests.xctest/Contents/MacOS/OpenCombinePackageTests
-          install_name_tool \
-            -add_rpath /Applications/Xcode_10.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx \
-            .build-test-debug-sanitize-thread/debug/OpenCombinePackageTests.xctest/Contents/MacOS/OpenCombinePackageTests
-          DYLD_INSERT_LIBRARIES=/Applications/Xcode_10.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/10.0.1/lib/darwin/libclang_rt.tsan_osx_dynamic.dylib \
-          swift test \
-            --skip-build \
-            --enable-code-coverage \
-            --build-path .build-test-debug-sanitize-thread
       - name: Build and run tests in release mode
         run: |
           swift build \
             --build-tests \
             -c release \
-            --sanitize thread \
             -Xswiftc -warnings-as-errors \
             -Xswiftc -profile-generate \
             -Xswiftc -profile-coverage-mapping \
@@ -128,6 +106,7 @@ jobs:
             .build-test-debug/debug/OpenCombinePackageTests.xctest/Contents/MacOS/OpenCombinePackageTests \
             > coverage.txt
       - name: Build and run tests in debug mode with TSan
+        if: ${{ matrix.xcode-version != '13.2.1' }} # https://bugs.swift.org/browse/SR-15444
         run: |
           swift test \
           -c debug \
