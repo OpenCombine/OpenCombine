@@ -13,10 +13,6 @@ This release is compatible with Xcode 13.2.
 - Fixed reentrancy bugs in ` Subscribers.Sink` and `Subscribers.Assign` (#210)
 - Fixed lifecycle bugs in `Publishers.Concatenate` (#210)
 
-### Known issues
-- The default implementation of the `objectWillChange` requirement of the `ObservableObject` protocol is not available in Swift 5.1 and later.
-
-
 # 0.12.0 (29 Jan 2021)
 
 This release adds a new `OpenCombineShim` product that will conditionally re-export either
