@@ -38,7 +38,7 @@ public protocol SchedulerTimeIntervalConvertible {
 /// with the convenience functions like `.milliseconds(500)`. Schedulers can accept
 /// options to control how they execute the actions passed to them. These options may
 /// control factors like which threads or dispatch queues execute the actions.
-public protocol Scheduler {
+public protocol Scheduler<SchedulerTimeType> {
 
     /// Describes an instant in time for this scheduler.
     associatedtype SchedulerTimeType: Strideable

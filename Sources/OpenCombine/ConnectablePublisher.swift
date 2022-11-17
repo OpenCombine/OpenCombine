@@ -14,7 +14,7 @@
 ///
 /// Use `makeConnectable()` to create a `ConnectablePublisher` from any publisher whose
 /// failure type is `Never`.
-public protocol ConnectablePublisher: Publisher {
+public protocol ConnectablePublisher<Output, Failure>: Publisher {
 
     /// Connects to the publisher, allowing it to produce elements, and returns
     /// an instance with which to cancel publishing.

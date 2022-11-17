@@ -28,7 +28,7 @@
 ///   it receives a completion signal and each time it receives a new element.
 /// - `assign(to:on:)` writes each newly-received value to a property identified by
 ///   a key path on a given instance.
-public protocol Subscriber: CustomCombineIdentifierConvertible {
+public protocol Subscriber<Input, Failure>: CustomCombineIdentifierConvertible {
 
     /// The kind of values this subscriber receives.
     associatedtype Input

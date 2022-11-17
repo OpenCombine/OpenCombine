@@ -41,7 +41,7 @@
 /// - Add the `@Published` annotation to a property of one of your own types. In doing so,
 ///   the property gains a publisher that emits an event whenever the property’s value
 ///   changes. See the `Published` type for an example of this approach.
-public protocol Publisher {
+public protocol Publisher<Output, Failure> {
 
     /// The kind of values published by this publisher.
     associatedtype Output
