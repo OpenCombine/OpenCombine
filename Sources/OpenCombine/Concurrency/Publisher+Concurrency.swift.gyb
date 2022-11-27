@@ -17,12 +17,33 @@ instantiations = [('AsyncPublisher', False), ('AsyncThrowingPublisher', True)]
 % for instantiation, throwing in instantiations:
 extension Publisher ${'' if throwing else 'where Failure == Never '}{
 
+    /// The elements produced by the publisher, as ${'a throwing' if throwing else 'an'} asynchronous sequence.
+    ///
+    /// This property provides an `${instantiation}`, which allows you to use
+    /// the Swift `async`-`await` syntax to receive the publisher's elements.
+    /// Because `AsyncPublisher` conforms to `AsyncSequence`, you iterate over its
+    /// elements with a `for`-`await`-`in` loop, rather than attaching a subscriber.
+% if throwing:
+    /// If the publisher terminates with an error, the awaiting caller receives the error
+    /// as a `throw`.
+% end
     @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
     public var values: ${instantiation}<Self> {
         return .init(self)
     }
 }
 
+/// A publisher that exposes its elements as ${'a throwing' if throwing else 'an'} asynchronous sequence.
+///
+/// `${instantiation}` conforms to `AsyncSequence`, which allows callers to receive
+/// values with the `for`-`await`-`in` syntax, rather than attaching a `Subscriber`.
+% if throwing:
+/// If the upstream publisher terminates with an error, `${instantiation}` throws
+/// the error to the awaiting caller.
+% end
+///
+/// Use the `values` property of the `Publisher` protocol to wrap an existing publisher
+/// with an instance of this type.
 @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
 public struct ${instantiation}<Upstream: Publisher>: AsyncSequence
 %   if not throwing:
@@ -32,28 +53,53 @@ public struct ${instantiation}<Upstream: Publisher>: AsyncSequence
 
     public typealias Element = Upstream.Output
 
+    /// The iterator that produces elements of the asynchronous publisher sequence.
     public struct Iterator: AsyncIteratorProtocol {
 
         public typealias Element = Upstream.Output
 
         fileprivate let inner: Inner
 
+        /// Produces the next element in the prefix sequence.
+        ///
+        /// - Returns: The next published element, or `nil` if the publisher finishes
+        ///   normally.
+% if throwing:
+        ///   If the publisher terminates with an error, the call point receives
+        ///   the error as a `throw`.
+% end
         public mutating func next() async ${'throws ' if throwing else ''}-> Element? {
             return ${'try ' if throwing else ''}await withTaskCancellationHandler(
-                handler: { [inner] in inner.cancel() },
-                operation: { [inner] in ${'try ' if throwing else ''}await inner.next() }
+                operation: { [inner] in ${'try ' if throwing else ''}await inner.next() },
+                onCancel: { [inner] in inner.cancel() }
             )
         }
     }
 
+    /// The type of asynchronous iterator that produces elements of this
+    /// asynchronous sequence.
     public typealias AsyncIterator = Iterator
 
     private let publisher: Upstream
 
+    /// Creates a publisher that exposes elements received from an upstream publisher as
+% if throwing:
+    /// an asynchronous sequence.
+% else:
+    /// a throwing asynchronous sequence.
+% end
+    ///
+    /// - Parameter publisher: An upstream publisher. The asynchronous publisher converts
+    ///   elements received from this publisher into an asynchronous sequence.
     public init(_ publisher: Upstream) {
         self.publisher = publisher
     }
 
+    /// Creates the asynchronous iterator that produces elements of this asynchronous
+    /// sequence.
+    ///
+    /// - Returns: An instance of the `AsyncIterator` type used to produce elements of
+    ///   the asynchronous sequence.
     public func makeAsyncIterator() -> Iterator {
         let inner = Iterator.Inner()
         publisher.subscribe(inner)

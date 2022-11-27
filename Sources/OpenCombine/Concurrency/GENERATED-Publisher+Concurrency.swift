@@ -18,12 +18,25 @@ import _Concurrency
 #if canImport(_Concurrency) && compiler(>=5.5) || compiler(>=5.5.1)
 extension Publisher where Failure == Never {
 
+    /// The elements produced by the publisher, as an asynchronous sequence.
+    ///
+    /// This property provides an `AsyncPublisher`, which allows you to use
+    /// the Swift `async`-`await` syntax to receive the publisher's elements.
+    /// Because `AsyncPublisher` conforms to `AsyncSequence`, you iterate over its
+    /// elements with a `for`-`await`-`in` loop, rather than attaching a subscriber.
     @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
     public var values: AsyncPublisher<Self> {
         return .init(self)
     }
 }
 
+/// A publisher that exposes its elements as an asynchronous sequence.
+///
+/// `AsyncPublisher` conforms to `AsyncSequence`, which allows callers to receive
+/// values with the `for`-`await`-`in` syntax, rather than attaching a `Subscriber`.
+///
+/// Use the `values` property of the `Publisher` protocol to wrap an existing publisher
+/// with an instance of this type.
 @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
 public struct AsyncPublisher<Upstream: Publisher>: AsyncSequence
     where Upstream.Failure == Never
@@ -31,28 +44,45 @@ public struct AsyncPublisher<Upstream: Publisher>: AsyncSequence
 
     public typealias Element = Upstream.Output
 
+    /// The iterator that produces elements of the asynchronous publisher sequence.
     public struct Iterator: AsyncIteratorProtocol {
 
         public typealias Element = Upstream.Output
 
         fileprivate let inner: Inner
 
+        /// Produces the next element in the prefix sequence.
+        ///
+        /// - Returns: The next published element, or `nil` if the publisher finishes
+        ///   normally.
         public mutating func next() async -> Element? {
             return await withTaskCancellationHandler(
-                handler: { [inner] in inner.cancel() },
-                operation: { [inner] in await inner.next() }
+                operation: { [inner] in await inner.next() },
+                onCancel: { [inner] in inner.cancel() }
             )
         }
     }
 
+    /// The type of asynchronous iterator that produces elements of this
+    /// asynchronous sequence.
     public typealias AsyncIterator = Iterator
 
     private let publisher: Upstream
 
+    /// Creates a publisher that exposes elements received from an upstream publisher as
+    /// a throwing asynchronous sequence.
+    ///
+    /// - Parameter publisher: An upstream publisher. The asynchronous publisher converts
+    ///   elements received from this publisher into an asynchronous sequence.
     public init(_ publisher: Upstream) {
         self.publisher = publisher
     }
 
+    /// Creates the asynchronous iterator that produces elements of this asynchronous
+    /// sequence.
+    ///
+    /// - Returns: An instance of the `AsyncIterator` type used to produce elements of
+    ///   the asynchronous sequence.
     public func makeAsyncIterator() -> Iterator {
         let inner = Iterator.Inner()
         publisher.subscribe(inner)
@@ -158,40 +188,76 @@ extension AsyncPublisher.Iterator {
 }
 extension Publisher {
 
+    /// The elements produced by the publisher, as a throwing asynchronous sequence.
+    ///
+    /// This property provides an `AsyncThrowingPublisher`, which allows you to use
+    /// the Swift `async`-`await` syntax to receive the publisher's elements.
+    /// Because `AsyncPublisher` conforms to `AsyncSequence`, you iterate over its
+    /// elements with a `for`-`await`-`in` loop, rather than attaching a subscriber.
+    /// If the publisher terminates with an error, the awaiting caller receives the error
+    /// as a `throw`.
     @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
     public var values: AsyncThrowingPublisher<Self> {
         return .init(self)
     }
 }
 
+/// A publisher that exposes its elements as a throwing asynchronous sequence.
+///
+/// `AsyncThrowingPublisher` conforms to `AsyncSequence`, which allows callers to receive
+/// values with the `for`-`await`-`in` syntax, rather than attaching a `Subscriber`.
+/// If the upstream publisher terminates with an error, `AsyncThrowingPublisher` throws
+/// the error to the awaiting caller.
+///
+/// Use the `values` property of the `Publisher` protocol to wrap an existing publisher
+/// with an instance of this type.
 @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
 public struct AsyncThrowingPublisher<Upstream: Publisher>: AsyncSequence
 {
 
     public typealias Element = Upstream.Output
 
+    /// The iterator that produces elements of the asynchronous publisher sequence.
     public struct Iterator: AsyncIteratorProtocol {
 
         public typealias Element = Upstream.Output
 
         fileprivate let inner: Inner
 
+        /// Produces the next element in the prefix sequence.
+        ///
+        /// - Returns: The next published element, or `nil` if the publisher finishes
+        ///   normally.
+        ///   If the publisher terminates with an error, the call point receives
+        ///   the error as a `throw`.
         public mutating func next() async throws -> Element? {
             return try await withTaskCancellationHandler(
-                handler: { [inner] in inner.cancel() },
-                operation: { [inner] in try await inner.next() }
+                operation: { [inner] in try await inner.next() },
+                onCancel: { [inner] in inner.cancel() }
             )
         }
     }
 
+    /// The type of asynchronous iterator that produces elements of this
+    /// asynchronous sequence.
     public typealias AsyncIterator = Iterator
 
     private let publisher: Upstream
 
+    /// Creates a publisher that exposes elements received from an upstream publisher as
+    /// an asynchronous sequence.
+    ///
+    /// - Parameter publisher: An upstream publisher. The asynchronous publisher converts
+    ///   elements received from this publisher into an asynchronous sequence.
     public init(_ publisher: Upstream) {
         self.publisher = publisher
     }
 
+    /// Creates the asynchronous iterator that produces elements of this asynchronous
+    /// sequence.
+    ///
+    /// - Returns: An instance of the `AsyncIterator` type used to produce elements of
+    ///   the asynchronous sequence.
     public func makeAsyncIterator() -> Iterator {
         let inner = Iterator.Inner()
         publisher.subscribe(inner)

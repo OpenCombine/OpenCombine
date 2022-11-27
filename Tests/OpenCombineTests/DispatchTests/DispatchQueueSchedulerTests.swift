@@ -31,23 +31,34 @@ final class DispatchQueueSchedulerTests: XCTestCase {
                 uptimeNanoseconds: DispatchTime.distantFuture.uptimeNanoseconds - 1024
             )
         )
+        let int64max = Scheduler.SchedulerTimeType(
+            DispatchTime(
+                uptimeNanoseconds: UInt64(Int.max)
+            )
+        )
 
         XCTAssertEqual(time1.distance(to: time2), .nanoseconds(431))
         XCTAssertEqual(time2.distance(to: time1), .nanoseconds(-431))
 
-        XCTAssertEqual(time1.distance(to: distantFuture), .nanoseconds(-10001))
-        XCTAssertEqual(distantFuture.distance(to: time1), .nanoseconds(10001))
-        XCTAssertEqual(time2.distance(to: distantFuture), .nanoseconds(-10432))
-        XCTAssertEqual(distantFuture.distance(to: time2), .nanoseconds(10432))
+        XCTAssertEqual(time1.distance(to: distantFuture), .nanoseconds(.max))
+        XCTAssertEqual(distantFuture.distance(to: time1), .nanoseconds(.max))
+        XCTAssertEqual(time2.distance(to: distantFuture), .nanoseconds(.max))
+        XCTAssertEqual(distantFuture.distance(to: time2), .nanoseconds(.max))
 
-        XCTAssertEqual(time1.distance(to: notSoDistantFuture), .nanoseconds(-11025))
-        XCTAssertEqual(notSoDistantFuture.distance(to: time1), .nanoseconds(11025))
-        XCTAssertEqual(time2.distance(to: notSoDistantFuture), .nanoseconds(-11456))
-        XCTAssertEqual(notSoDistantFuture.distance(to: time2), .nanoseconds(11456))
+        XCTAssertEqual(time1.distance(to: notSoDistantFuture), .nanoseconds(.max))
+        XCTAssertEqual(notSoDistantFuture.distance(to: time1), .nanoseconds(.max))
+        XCTAssertEqual(time2.distance(to: notSoDistantFuture), .nanoseconds(.max))
+        XCTAssertEqual(notSoDistantFuture.distance(to: time2), .nanoseconds(.max))
+
+        XCTAssertEqual(time1.distance(to: int64max), .nanoseconds(.max - 10000))
+        XCTAssertEqual(int64max.distance(to: time1), .nanoseconds(-(.max - 10000)))
+        XCTAssertEqual(time2.distance(to: int64max), .nanoseconds(.max - 10431))
+        XCTAssertEqual(int64max.distance(to: time2), .nanoseconds(-(.max - 10431)))
 
         XCTAssertEqual(distantFuture.distance(to: distantFuture), .nanoseconds(0))
         XCTAssertEqual(notSoDistantFuture.distance(to: notSoDistantFuture),
                        .nanoseconds(0))
+        XCTAssertEqual(int64max.distance(to: int64max), .nanoseconds(0))
     }
 
     func testSchedulerTimeTypeAdvanced() {

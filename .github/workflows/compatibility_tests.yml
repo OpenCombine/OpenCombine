@@ -15,14 +15,5 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Run tests against Apple's Combine
-        # Attempt to run compatibility tests on macOS.
-        # If they fail, run on iOS.
-        run: |
-          make test-compatibility \
-            || (set -o pipefail \
-                  && xcodebuild test \
-                      -scheme OpenCombine-Package \
-                      -destination "name=iPhone 13" \
-                      -xcconfig Combine-Compatibility.xcconfig \
-                  | tee xcodebuild_test.log \
-                  | xcpretty)
+        run: make test-compatibility
+        

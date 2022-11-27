@@ -10,10 +10,10 @@ extension Publisher {
     /// Raises a fatal error when its upstream publisher fails, and otherwise republishes
     /// all received input.
     ///
-    /// Use `assertNoFailure()` for internal sanity checks that are active during testing.
-    /// However, it is important to note that, like its Swift counterpart
+    /// Use `assertNoFailure()` for internal integrity checks that are active during
+    /// testing. However, it is important to note that, like its Swift counterpart
     /// `fatalError(_:)`, the `assertNoFailure()` operator asserts a fatal exception when
-    /// triggered in both development/testing _and_ shipping versions of code.
+    /// triggered during development and testing, _and_ in shipping versions of code.
     ///
     /// In the example below, a `CurrentValueSubject` publishes the initial and second
     /// values successfully. The third value, containing a `genericSubjectError`, causes
@@ -57,8 +57,8 @@ extension Publishers {
     /// A publisher that raises a fatal error upon receiving any failure, and otherwise
     /// republishes all received input.
     ///
-    /// Use this function for internal sanity checks that are active during testing but
-    /// do not impact performance of shipping code.
+    /// Use this function for internal integrity checks that are active during testing but
+    /// don't affect performance of shipping code.
     public struct AssertNoFailure<Upstream: Publisher>: Publisher {
 
         public typealias Output = Upstream.Output

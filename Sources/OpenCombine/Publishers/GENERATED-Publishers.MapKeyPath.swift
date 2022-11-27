@@ -11,6 +11,8 @@
 //  Created by Sergej Jaskiewicz on 03/10/2019.
 //
 
+// swiftlint:disable large_tuple
+
 extension Publisher {
     /// Publishes the value of the key path.
     ///
@@ -31,7 +33,7 @@ extension Publisher {
     ///         .sink {
     ///             print ("Rolled: \($0)")
     ///         }
-    ///     // Prints "Rolled: 6 (or some other random value).
+    ///     // Prints "Rolled: 4 (or some other random value).
     ///
     /// - Parameters:
     ///    - keyPath: The key path of a property on `Output`.
@@ -68,7 +70,7 @@ extension Publisher {
     ///             (total \(values.0 + values.1))
     ///             """)
     ///         }
-    ///     // Prints "Rolled: 5, 3 (total: 8)" (or other random values).
+    ///     // Prints "Rolled: 4, 1 (total: 5)" (or other random values).
     ///
     /// - Parameters:
     ///    - keyPath0: The key path of a property on `Output`.
@@ -110,7 +112,7 @@ extension Publisher {
     ///             (total \(values.0 + values.1 + values.2))
     ///             """)
     ///         }
-    ///     // Prints "Rolled: 2, 4, 3 (total: 9)" (or other random values).
+    ///     // Prints "Rolled: 3, 5, 4 (total: 12)" (or other random values).
     ///
     /// - Parameters:
     ///    - keyPath0: The key path of a property on `Output`.

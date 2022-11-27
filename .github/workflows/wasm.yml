@@ -31,3 +31,18 @@ jobs:
       - uses: actions/checkout@v2
       - uses: swiftwasm/swiftwasm-action@v5.5
 
+  carton_wasmer_test_5_6:
+    name: "Execute tests on Wasm (Swift 5.6)"
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: swiftwasm/swiftwasm-action@v5.6
+
+  carton_wasmer_test_5_7:
+    name: "Execute tests on Wasm (Swift 5.7)"
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: swiftwasm/swiftwasm-action@v5.7

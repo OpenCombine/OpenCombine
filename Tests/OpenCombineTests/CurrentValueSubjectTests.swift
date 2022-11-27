@@ -314,7 +314,7 @@ final class CurrentValueSubjectTests: XCTestCase {
             receiveSubscription: { subscription in
                 subscription.request(.unlimited)
             },
-            receiveCompletion: { completion in
+            receiveCompletion: { _ in
                 cvs.send(completion: .failure("must not recurse"))
             }
         )

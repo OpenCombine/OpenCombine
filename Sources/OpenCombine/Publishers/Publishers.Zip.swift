@@ -4,6 +4,8 @@
 //  Created by Eric Patey on 29.08.2019.
 //
 
+// swiftlint:disable large_tuple
+
 #if canImport(COpenCombineHelpers)
 import COpenCombineHelpers
 #endif
@@ -85,7 +87,6 @@ extension Publishers {
         public func receive<Downstream>(subscriber: Downstream)
             where Downstream: Subscriber,
             UpstreamC.Failure == Downstream.Failure,
-            // swiftlint:disable:next large_tuple
             Downstream.Input == (UpstreamA.Output, UpstreamB.Output, UpstreamC.Output)
         {
             _ = Inner<Downstream>(downstream: subscriber, a, b, c)
@@ -140,7 +141,6 @@ extension Publishers {
         ///                   once attached it can begin to receive values.
         public func receive<Downstream: Subscriber>(subscriber: Downstream)
             where UpstreamD.Failure == Downstream.Failure,
-            // swiftlint:disable:next large_tuple
             Downstream.Input == (
             UpstreamA.Output,
             UpstreamB.Output,
@@ -659,7 +659,7 @@ private protocol ChildSubscription: AnyObject, Subscription {
     var hasValue: Bool { get }
 }
 
-fileprivate final class ChildSubscriber<Upstream: Publisher, Downstream: Subscriber>
+private final class ChildSubscriber<Upstream: Publisher, Downstream: Subscriber>
     where Upstream.Failure == Downstream.Failure
 {
     typealias Input = Upstream.Output
