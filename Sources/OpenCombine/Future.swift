@@ -153,8 +153,10 @@ extension Future {
             lock.unlock()
             downstreamLock.lock()
             lockedFulfill(downstream: downstream, result: result)
-            let parent = self.parent.take()
             downstreamLock.unlock()
+            lock.lock()
+            let parent = self.parent.take()
+            lock.unlock()
             parent?.disassociate(self)
         }
 

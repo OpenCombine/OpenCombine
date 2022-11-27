@@ -5,6 +5,7 @@
 //  Created by Sergej Jaskiewicz on 27.09.2020.
 //
 
+// swiftlint:disable:next type_name
 public protocol _Introspection: AnyObject {
 
      func willReceive<Upstream: Publisher, Downstream: Subscriber>(

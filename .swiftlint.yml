@@ -5,6 +5,7 @@ included:
 child_config: Tests/.swiftlint.yml
 
 disabled_rules:
+  - blanket_disable_command
   - block_based_kvo
   - class_delegate_protocol
   - colon

@@ -6,6 +6,8 @@ ${template_header}
 //  Created by Sergej Jaskiewicz on 03/10/2019.
 //
 
+// swiftlint:disable large_tuple
+
 %{
 from gyb_opencombine_support import (
     suffix_variadic,

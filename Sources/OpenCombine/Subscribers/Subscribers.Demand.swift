@@ -5,7 +5,7 @@
 //  Created by Sergej Jaskiewicz on 10.06.2019.
 //
 
-// swiftlint:disable shorthand_operator - because of false positives here
+// swiftlint:disable attributes
 
 #if canImport(_Concurrency) && compiler(>=5.5)
 import _Concurrency

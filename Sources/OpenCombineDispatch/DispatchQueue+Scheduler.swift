@@ -50,13 +50,7 @@ extension DispatchQueue {
             /// - Parameter other: Another dispatch queue time.
             /// - Returns: The time interval between this time and the provided time.
             public func distance(to other: SchedulerTimeType) -> Stride {
-                let start = dispatchTime.rawValue
-                let end = other.dispatchTime.rawValue
-                return .nanoseconds(
-                    end >= start
-                        ? Int(Int64(bitPattern: end) - Int64(bitPattern: start))
-                        : -Int(Int64(bitPattern: start) - Int64(bitPattern: end))
-                )
+                return Stride(dispatchTime.polyfillDistance(to: other.dispatchTime))
             }
 
             /// Returns a dispatch queue scheduler time calculated by advancing
@@ -414,4 +408,32 @@ private func clampedIntProduct(_ lhs: Int64, _ rhs: Int64) -> Int64 {
         return lhs > 0 ? .max : .min
     }
     return result
+}
+
+extension DispatchTime {
+
+    fileprivate func polyfillDistance(to other: DispatchTime) -> DispatchTimeInterval {
+#if canImport(Darwin) && compiler(>=5.1)
+        if #available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *) {
+            return distance(to: other)
+        }
+#endif
+        let start = rawValue
+        let end = other.rawValue
+        if end >= start {
+            let result = end &- start
+            if result > UInt64(Int.max) {
+                return .never
+            } else {
+                return .nanoseconds(Int(result))
+            }
+        } else {
+            let result = start &- end
+            if result > UInt64(Int.max) {
+                return .never
+            } else {
+                return .nanoseconds(-Int(result))
+            }
+        }
+    }
 }

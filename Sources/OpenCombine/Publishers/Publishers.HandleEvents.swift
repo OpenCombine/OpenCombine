@@ -139,12 +139,12 @@ extension Publishers.HandleEvents {
 
         private var status = SubscriptionStatus.awaitingSubscription
         private let lock = UnfairLock.allocate()
-        public var receiveSubscription: ((Subscription) -> Void)?
-        public var receiveOutput: ((Upstream.Output) -> Void)?
-        public var receiveCompletion:
+        fileprivate var receiveSubscription: ((Subscription) -> Void)?
+        fileprivate var receiveOutput: ((Upstream.Output) -> Void)?
+        fileprivate var receiveCompletion:
             ((Subscribers.Completion<Upstream.Failure>) -> Void)?
-        public var receiveCancel: (() -> Void)?
-        public var receiveRequest: ((Subscribers.Demand) -> Void)?
+        fileprivate var receiveCancel: (() -> Void)?
+        fileprivate var receiveRequest: ((Subscribers.Demand) -> Void)?
         private let downstream: Downstream
 
         init(_ events: Publishers.HandleEvents<Upstream>, downstream: Downstream) {
