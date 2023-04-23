@@ -1,3 +1,12 @@
+# 0.14.0 (23 Apr 2023)
+This release is compatible with Xcode 14.2 and Swift 5.7
+
+### Additions
+- Primary associated type support for `Publisher`, `Subscriber`, `ConnectablePublisher`, `Subject` and `Scheduler` protocols (#239)
+
+### Bugfixes
+- Fixed nullifying the reference to parent in `Future`'s conduit (#239)
+
 # 0.13.0 (1 Feb 2022)
 This release is compatible with Xcode 13.2.
 
