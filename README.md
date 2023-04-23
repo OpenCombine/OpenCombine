@@ -32,7 +32,7 @@ To add `OpenCombine` to your [SwiftPM](https://swift.org/package-manager/) packa
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/OpenCombine/OpenCombine.git", from: "0.13.0")
+    .package(url: "https://github.com/OpenCombine/OpenCombine.git", from: "0.14.0")
 ],
 targets: [
     .target(
@@ -60,9 +60,9 @@ To do so, open Xcode, use **File** → **Swift Packages** → **Add Package Depe
 To add `OpenCombine` to a project using [CocoaPods](https://cocoapods.org/), add `OpenCombine` and `OpenCombineDispatch` to the list of target dependencies in your `Podfile`. 
 
 ```ruby
-pod 'OpenCombine', '~> 0.13.0'
-pod 'OpenCombineDispatch', '~> 0.13.0'
-pod 'OpenCombineFoundation', '~> 0.13.0'
+pod 'OpenCombine', '~> 0.14.0'
+pod 'OpenCombineDispatch', '~> 0.14.0'
+pod 'OpenCombineFoundation', '~> 0.14.0'
 ```
 
 #### Debugger Support
