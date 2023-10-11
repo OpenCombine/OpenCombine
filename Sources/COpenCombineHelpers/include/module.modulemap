@@ -1,0 +1,3 @@
+module COpenCombineHelpers {
+  header "COpenCombineHelpers.h"
+}
