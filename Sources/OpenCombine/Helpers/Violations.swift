@@ -24,10 +24,10 @@ internal func abstractMethod(file: StaticString = #file, line: UInt = #line) -> 
 }
 
 extension Subscribers.Demand {
-    internal func assertNonZero(file: StaticString = #file,
-                                line: UInt = #line) {
-        if self == .none {
-            fatalError("API Violation: demand must not be zero", file: file, line: line)
-        }
+    @_transparent
+    @inline(__always)
+    internal func assertNonZero() {
+        precondition(rawValue <= 0x8000_0000_0000_0000)
+        precondition(rawValue > 0)
     }
 }
