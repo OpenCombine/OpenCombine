@@ -7,10 +7,8 @@
 
 /// A protocol for uniquely identifying publisher streams.
 ///
-/// If you create a custom `Subscription` or `Subscriber` type, implement this protocol
-/// so that development tools can uniquely identify publisher chains in your app.
-/// If your type is a class, OpenCombine provides an implementation of `combineIdentifier`
-/// for you.
+/// If you create a custom ``Subscription`` or ``Subscriber`` type, implement this protocol so that development tools can uniquely identify publisher chains in your app.
+/// If your type is a class, Combine provides an implementation of ``CustomCombineIdentifierConvertible/combineIdentifier-2xc6y`` for you.
 /// If your type is a structure, set up the identifier as follows:
 ///
 ///     let combineIdentifier = CombineIdentifier()
