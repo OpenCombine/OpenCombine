@@ -7,38 +7,6 @@ on:
     branches: [master]
 
 jobs:
-  carton_wasmer_test_5_3:
-    name: "Execute tests on Wasm (Swift 5.3)"
-    runs-on: ubuntu-20.04
-
-    steps:
-      - uses: actions/checkout@v2
-      - uses: swiftwasm/swiftwasm-action@v5.3
-  
-  carton_wasmer_test_5_4:
-    name: "Execute tests on Wasm (Swift 5.4)"
-    runs-on: ubuntu-20.04
-
-    steps:
-      - uses: actions/checkout@v2
-      - uses: swiftwasm/swiftwasm-action@v5.4
-  
-  carton_wasmer_test_5_5:
-    name: "Execute tests on Wasm (Swift 5.5)"
-    runs-on: ubuntu-20.04
-
-    steps:
-      - uses: actions/checkout@v2
-      - uses: swiftwasm/swiftwasm-action@v5.5
-
-  carton_wasmer_test_5_6:
-    name: "Execute tests on Wasm (Swift 5.6)"
-    runs-on: ubuntu-20.04
-
-    steps:
-      - uses: actions/checkout@v2
-      - uses: swiftwasm/swiftwasm-action@v5.6
-
   carton_wasmer_test_5_7:
     name: "Execute tests on Wasm (Swift 5.7)"
     runs-on: ubuntu-20.04
@@ -46,3 +14,20 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: swiftwasm/swiftwasm-action@v5.7
+
+  # swiftwasm/swiftwasm-action@v5.8 and @v5.9 is not supported upstream
+  # carton_wasmer_test_5_8:
+  #   name: "Execute tests on Wasm (Swift 5.8)"
+  #   runs-on: ubuntu-20.04
+
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - uses: swiftwasm/swiftwasm-action@v5.8
+
+  # carton_wasmer_test_5_9:
+  #   name: "Execute tests on Wasm (Swift 5.9)"
+  #   runs-on: ubuntu-20.04
+
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - uses: swiftwasm/swiftwasm-action@v5.9

@@ -14,13 +14,11 @@ jobs:
       matrix:
         include:
           - os: windows-2019
-            swift_version: "5.4.2"
-          - os: windows-2019
-            swift_version: "5.5.1"
-          - os: windows-2019
-            swift_version: "5.6.1"
-          - os: windows-2019
             swift_version: "5.7.2"
+          - os: windows-2019
+            swift_version: "5.8.1"
+          - os: windows-2019
+            swift_version: "5.9.1"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2

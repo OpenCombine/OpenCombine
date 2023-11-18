@@ -12,22 +12,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        swift_version: ["5.0", "5.1", "5.2", "5.3", "5.4", "5.5", "5.6", "5.7"]
+        swift_version: ["5.7", "5.8", "5.9"]
     runs-on: ubuntu-latest
     container: swift:${{ matrix.swift_version }}-bionic
     steps:
       - uses: actions/checkout@v2
-      - name: Generating LinuxMain.swift
-        if: >-
-          ${{ matrix.swift_version == '5.0' ||
-              matrix.swift_version == '5.1' ||
-              matrix.swift_version == '5.2' ||
-              matrix.swift_version == '5.3' }}
-        run: |
-          apt update -y
-          apt upgrade -y
-          apt install -y python3.8
-          python3.8 utils/discover_tests.py
       - name: Building and running tests in debug mode with coverage
         run: |
           swift test \
@@ -40,7 +29,6 @@ jobs:
             .build-test-debug/debug/OpenCombinePackageTests.xctest \
             > coverage.txt
       - name: Building and running tests in debug mode with TSan
-        if: ${{ matrix.swift_version != '5.0' }} # There are false positives there
         run: |
           swift test \
             -c debug \
