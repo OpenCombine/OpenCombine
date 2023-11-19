@@ -740,4 +740,35 @@ final class ZipTests: XCTestCase {
             XCTFail("Failed to match the completion event in \(#function)")
         }
     }
+
+    // FIXME: swift-testing macro for specifying the relationship between a bug and a test case
+    // Uncomment the following line when we migrate to swift-testing
+    // @Test("Zip reference issue", .bug("#241", relationship: .verifiesFix))
+    func testZipReferenceIssue() throws {
+        var subscriptions: Set<AnyCancellable> = []
+        #if OPENCOMBINE_COMPATIBILITY_TEST
+        let scheduler = DispatchQueue.main
+        #else
+        let scheduler = DispatchQueue.OCombine(DispatchQueue.main)
+        #endif
+
+        let expectation = self.expectation(description: #function)
+        var result: (Int, Int)?
+
+        let firstPublisher = Just(1)
+            .delay(for: .milliseconds(600), scheduler: scheduler)
+        let secondPublisher = Just(2)
+            .delay(for: .milliseconds(600), scheduler: scheduler)
+        Publishers.Zip(firstPublisher, secondPublisher)
+            .sink(receiveValue: {
+                result = ($0.0, $0.1)
+                expectation.fulfill()
+            })
+            .store(in: &subscriptions)
+
+        wait(for: [expectation], timeout: 5)
+
+        XCTAssertEqual(result?.0, 1)
+        XCTAssertEqual(result?.1, 2)
+    }
 }
