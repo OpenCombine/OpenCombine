@@ -771,4 +771,49 @@ final class ZipTests: XCTestCase {
         XCTAssertEqual(result?.0, 1)
         XCTAssertEqual(result?.1, 2)
     }
+
+    func testZipDocumentationDemo() {
+        let numbersPub = PassthroughSubject<Int, TestingError>()
+        let lettersPub = PassthroughSubject<String, TestingError>()
+        let emojiPub = PassthroughSubject<String, TestingError>()
+        let fractionsPub = PassthroughSubject<Double, TestingError>()
+        let zip = numbersPub
+            .zip(lettersPub, emojiPub, fractionsPub) { number, letter, emoji, fraction in
+                "\(String(repeating: emoji, count: number)) \(String(repeating: letter, count: number)) \(fraction)"
+            }
+
+        let downstreamSubscriber = TrackingSubscriberBase<String, TestingError>(
+            receiveSubscription: { $0.request(.unlimited) })
+        zip.subscribe(downstreamSubscriber)
+        XCTAssertEqual(
+            downstreamSubscriber.history,
+            [
+                .subscription("Zip"),
+            ]
+        )
+        numbersPub.send(1)      // numbersPub: 1       lettersPub:          emojiPub:          zip output: <none>
+        numbersPub.send(2)      // numbersPub: 1,2     lettersPub:          emojiPub:          zip output: <none>
+        numbersPub.send(3)      // numbersPub: 1,2,3   lettersPub:          emojiPub:          zip output: <none>
+        fractionsPub.send(0.1)  // numbersPub: 1,2,3   lettersPub: "A"      emojiPub:          zip output: <none>
+        lettersPub.send("A")    // numbersPub: 1,2,3   lettersPub: "A"      emojiPub:          zip output: <none>
+        emojiPub.send("😀")     // numbersPub: 1,2,3   lettersPub: "A"      emojiPub:"😀"      zip output: "😀 A"
+        XCTAssertEqual(
+            downstreamSubscriber.history,
+            [
+                .subscription("Zip"),
+                .value("😀 A 0.1"),
+            ]
+        )
+        lettersPub.send("B")    // numbersPub: 2,3     lettersPub: "B"      emojiPub:          zip output: <none>
+        fractionsPub.send(0.8)  // numbersPub: 2,3     lettersPub: "A"      emojiPub:          zip output: <none>
+        emojiPub.send("🥰")     // numbersPub: 3       lettersPub: "B"      emojiPub:          zip output: "🥰🥰 BB"
+        XCTAssertEqual(
+            downstreamSubscriber.history,
+            [
+                .subscription("Zip"),
+                .value("😀 A 0.1"),
+                .value("🥰🥰 BB 0.8")
+            ]
+        )
+    }
 }

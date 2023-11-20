@@ -109,7 +109,7 @@ extension Publishers {
         ///
         /// Implementations of ``Publisher`` must implement this method.
         ///
-        /// The provided implementation of ``Publisher/subscribe(_:)-4u8kn``calls
+        /// The provided implementation of ``Publisher/subscribe(_:)-199o9``calls
         /// this method.
         ///
         /// - Parameter subscriber: The subscriber to attach to this ``Publisher``,

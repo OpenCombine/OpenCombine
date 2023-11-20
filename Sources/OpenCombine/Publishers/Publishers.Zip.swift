@@ -43,9 +43,9 @@ extension Publisher {
 
     /// Combines elements from another publisher and delivers a transformed output.
     ///
-    /// Use ``Publisher/zip(_:_:)-4xn21`` to return a new publisher that combines the elements from two publishers using a transformation you specify to publish a new value to the downstream.  The returned publisher waits until both publishers have emitted an event, then delivers the oldest unconsumed event from each publisher together that the operator uses in the transformation.
+    /// Use ``Publisher/zip(_:_:)-7ve7u`` to return a new publisher that combines the elements from two publishers using a transformation you specify to publish a new value to the downstream.  The returned publisher waits until both publishers have emitted an event, then delivers the oldest unconsumed event from each publisher together that the operator uses in the transformation.
     ///
-    /// In this example, ``PassthroughSubject`` instances `numbersPub` and `lettersPub` emit values; ``Publisher/zip(_:_:)-4xn21`` receives the oldest value from each publisher, uses the `Int` from `numbersPub` and publishes a string that repeats the <doc://com.apple.documentation/documentation/Swift/String> from `lettersPub` that many times.
+    /// In this example, ``PassthroughSubject`` instances `numbersPub` and `lettersPub` emit values; ``Publisher/zip(_:_:)-7ve7u`` receives the oldest value from each publisher, uses the `Int` from `numbersPub` and publishes a string that repeats the [String](https://developer.apple.com/documentation/swift/string) from `lettersPub` that many times.
     ///
     ///     let numbersPub = PassthroughSubject<Int, Never>()
     ///     let lettersPub = PassthroughSubject<String, Never>()
@@ -75,10 +75,10 @@ extension Publisher {
 
     /// Combines elements from two other publishers and delivers groups of elements as tuples.
     ///
-    /// Use ``Publisher/zip(_:_:)-8d7k7`` to return a new publisher that combines the elements from two additional publishers to publish a tuple to the downstream. The returned publisher waits until all three publishers have emitted an event, then delivers the oldest unconsumed event from each publisher as a tuple to the subscriber.
+    /// Use ``Publisher/zip(_:_:)-2p498`` to return a new publisher that combines the elements from two additional publishers to publish a tuple to the downstream. The returned publisher waits until all three publishers have emitted an event, then delivers the oldest unconsumed event from each publisher as a tuple to the subscriber.
     ///
     /// In this example, `numbersPub`, `lettersPub` and `emojiPub` are each a ``PassthroughSubject``;
-    /// ``Publisher/zip(_:_:)-8d7k7`` receives the oldest unconsumed value from each publisher and combines them into a tuple that it republishes to the downstream:
+    /// ``Publisher/zip(_:_:)-2p498`` receives the oldest unconsumed value from each publisher and combines them into a tuple that it republishes to the downstream:
     ///
     ///     let numbersPub = PassthroughSubject<Int, Never>()
     ///     let lettersPub = PassthroughSubject<String, Never>()
@@ -111,9 +111,9 @@ extension Publisher {
 
     /// Combines elements from two other publishers and delivers a transformed output.
     ///
-    /// Use ``Publisher/zip(_:_:_:)-9yqi1`` to return a new publisher that combines the elements from two other publishers using a transformation you specify to publish a new value to the downstream subscriber. The returned publisher waits until all three publishers have emitted an event, then delivers the oldest unconsumed event from each publisher together that the operator uses in the transformation.
+    /// Use ``Publisher/zip(_:_:_:)-19jxo`` to return a new publisher that combines the elements from two other publishers using a transformation you specify to publish a new value to the downstream subscriber. The returned publisher waits until all three publishers have emitted an event, then delivers the oldest unconsumed event from each publisher together that the operator uses in the transformation.
     ///
-    /// In this example, `numbersPub`, `lettersPub` and `emojiPub` are each a ``PassthroughSubject`` that emit values; ``Publisher/zip(_:_:_:)-9yqi1`` receives the oldest value from each publisher and uses the `Int` from `numbersPub` and publishes a string that repeats the <doc://com.apple.documentation/documentation/Swift/String> from `lettersPub` and `emojiPub` that many times.
+    /// In this example, `numbersPub`, `lettersPub` and `emojiPub` are each a ``PassthroughSubject`` that emit values; ``Publisher/zip(_:_:_:)-19jxo`` receives the oldest value from each publisher and uses the `Int` from `numbersPub` and publishes a string that repeats the [String](https://developer.apple.com/documentation/swift/string) from `lettersPub` and `emojiPub` that many times.
     ///
     ///     let numbersPub = PassthroughSubject<Int, Never>()
     ///     let lettersPub = PassthroughSubject<String, Never>()
@@ -150,9 +150,9 @@ extension Publisher {
 
     /// Combines elements from three other publishers and delivers groups of elements as tuples.
     ///
-    /// Use ``Publisher/zip(_:_:_:)-16rcy`` to return a new publisher that combines the elements from three other publishers to publish a tuple to the downstream subscriber. The returned publisher waits until all four publishers have emitted an event, then delivers the oldest unconsumed event from each publisher as a tuple to the subscriber.
+    /// Use ``Publisher/zip(_:_:_:)-67czn`` to return a new publisher that combines the elements from three other publishers to publish a tuple to the downstream subscriber. The returned publisher waits until all four publishers have emitted an event, then delivers the oldest unconsumed event from each publisher as a tuple to the subscriber.
     ///
-    /// In this example, several ``PassthroughSubject`` instances emit values; ``Publisher/zip(_:_:_:)-16rcy`` receives the oldest unconsumed value from each publisher and combines them into a tuple that it republishes to the downstream:
+    /// In this example, several ``PassthroughSubject`` instances emit values; ``Publisher/zip(_:_:_:)-67czn`` receives the oldest unconsumed value from each publisher and combines them into a tuple that it republishes to the downstream:
     ///
     ///     let numbersPub = PassthroughSubject<Int, Never>()
     ///     let lettersPub = PassthroughSubject<String, Never>()
@@ -192,7 +192,7 @@ extension Publisher {
     /// Use ``Publisher/zip(_:_:_:_:)`` to return a new publisher that combines the elements from three other publishers using a transformation you specify to publish a new value to the downstream subscriber. The returned publisher waits until all four publishers have emitted an event, then delivers the oldest unconsumed event from each publisher together that the operator uses in the transformation.
     ///
     /// In this example, the ``PassthroughSubject`` publishers, `numbersPub`,
-    /// `fractionsPub`, `lettersPub`, and `emojiPub` emit values. The ``Publisher/zip(_:_:_:_:)`` operator receives the oldest value from each publisher and uses the `Int` from `numbersPub` and publishes a string that repeats the <doc://com.apple.documentation/documentation/Swift/String> from `lettersPub` and `emojiPub` that many times and prints out the value in `fractionsPub`.
+    /// `fractionsPub`, `lettersPub`, and `emojiPub` emit values. The ``Publisher/zip(_:_:_:_:)`` operator receives the oldest value from each publisher and uses the `Int` from `numbersPub` and publishes a string that repeats the [String](https://developer.apple.com/documentation/swift/string) from `lettersPub` and `emojiPub` that many times and prints out the value in `fractionsPub`.
     ///
     ///     let numbersPub = PassthroughSubject<Int, Never>()      // first publisher
     ///     let lettersPub = PassthroughSubject<String, Never>()   // second
@@ -269,7 +269,7 @@ extension Publishers {
         ///
         /// Implementations of ``Publisher`` must implement this method.
         ///
-        /// The provided implementation of ``Publisher/subscribe(_:)-4u8kn``calls this method.
+        /// The provided implementation of ``Publisher/subscribe(_:)-199o9``calls this method.
         ///
         /// - Parameter subscriber: The subscriber to attach to this ``Publisher``, after which it can receive values.
         public func receive<S>(subscriber: S) where S: Subscriber, B.Failure == S.Failure, S.Input == (A.Output, B.Output) {
@@ -320,7 +320,7 @@ extension Publishers {
         ///
         /// Implementations of ``Publisher`` must implement this method.
         ///
-        /// The provided implementation of ``Publisher/subscribe(_:)-4u8kn``calls this method.
+        /// The provided implementation of ``Publisher/subscribe(_:)-199o9``calls this method.
         ///
         /// - Parameter subscriber: The subscriber to attach to this ``Publisher``, after which it can receive values.
         public func receive<S>(subscriber: S) where S: Subscriber, C.Failure == S.Failure, S.Input == (A.Output, B.Output, C.Output) {
@@ -377,7 +377,7 @@ extension Publishers {
         ///
         /// Implementations of ``Publisher`` must implement this method.
         ///
-        /// The provided implementation of ``Publisher/subscribe(_:)-4u8kn``calls this method.
+        /// The provided implementation of ``Publisher/subscribe(_:)-199o9``calls this method.
         ///
         /// - Parameter subscriber: The subscriber to attach to this ``Publisher``, after which it can receive values.
         public func receive<S>(subscriber: S) where S: Subscriber, D.Failure == S.Failure, S.Input == (A.Output, B.Output, C.Output, D.Output) {
