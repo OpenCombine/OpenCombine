@@ -741,6 +741,7 @@ final class ZipTests: XCTestCase {
         }
     }
 
+    #if !WASI
     // FIXME: swift-testing macro for specifying the relationship between a bug and a test case
     // Uncomment the following line when we migrate to swift-testing
     // @Test("Zip reference issue", .bug("#241", relationship: .verifiesFix))
@@ -771,6 +772,7 @@ final class ZipTests: XCTestCase {
         XCTAssertEqual(result?.0, 1)
         XCTAssertEqual(result?.1, 2)
     }
+    #endif
 
     func testZipDocumentationDemo() {
         let numbersPub = PassthroughSubject<Int, TestingError>()

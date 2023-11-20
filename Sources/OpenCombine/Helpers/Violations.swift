@@ -27,13 +27,13 @@ extension Subscribers.Demand {
     @_transparent
     @inline(__always)
     internal func assertNonZero() {
-        precondition(rawValue <= 0x8000_0000_0000_0000)
-        precondition(rawValue > 0)
+        precondition(rawValue <= Subscribers.Demand.unlimited.rawValue)
+        precondition(rawValue > Subscribers.Demand.none.rawValue)
     }
 
     @_transparent
     @inline(__always)
     internal func assertValid() {
-        precondition(rawValue <= 0x8000_0000_0000_0000)
+        precondition(rawValue <= Subscribers.Demand.unlimited.rawValue)
     }
 }
