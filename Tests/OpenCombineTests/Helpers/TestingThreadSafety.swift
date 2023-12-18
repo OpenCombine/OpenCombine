@@ -88,7 +88,7 @@ extension Atomic where Value: AdditiveArithmetic {
     }
 }
 
-extension Atomic where Value: Collection {
+extension Atomic where Value: Swift.Collection {
 
     var count: Int {
         return value.count
