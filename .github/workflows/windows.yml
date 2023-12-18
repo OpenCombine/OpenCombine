@@ -2,9 +2,9 @@ name: Windows
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
-    branches: [master]
+    branches: [main]
 
 jobs:
   windows_test:
@@ -14,14 +14,10 @@ jobs:
       matrix:
         include:
           - os: windows-2019
-            swift_version: "5.7.2"
-          - os: windows-2019
-            swift_version: "5.8.1"
-          - os: windows-2019
-            swift_version: "5.9.1"
+            swift_version: "5.9.2"
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: compnerd/gha-setup-swift@main
         with:
           branch: swift-${{ matrix.swift_version }}-release

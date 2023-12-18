@@ -2,9 +2,9 @@ name: Wasm
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
-    branches: [master]
+    branches: [main]
 
 jobs:
   carton_wasmer_test_5_7:
@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: swiftwasm/swiftwasm-action@v5.7
 
   # swiftwasm/swiftwasm-action@v5.8 and @v5.9 is not supported upstream

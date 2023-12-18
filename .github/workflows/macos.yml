@@ -2,9 +2,9 @@ name: macOS
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
-    branches: [master]
+    branches: [main]
 
 jobs:
   macos_test:
@@ -21,7 +21,7 @@ jobs:
             xcode-version: "15.0.1"   # Swift 5.9
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -53,6 +53,6 @@ jobs:
             -Xswiftc -warnings-as-errors \
             --enable-code-coverage \
             --build-path .build-test-release
-      - uses: codecov/codecov-action@v2
+      - uses: codecov/codecov-action@v3
         with:
           verbose: true

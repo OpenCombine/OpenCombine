@@ -2,9 +2,9 @@ name: Ubuntu
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
-    branches: [master]
+    branches: [main]
 
 jobs:
   ubuntu_test:
@@ -12,9 +12,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        swift_version: ["5.7", "5.8", "5.9"]
-    runs-on: ubuntu-latest
-    container: swift:${{ matrix.swift_version }}-bionic
+        swift_version: ["5.9.2"]
+        os: [ubuntu-20.04, ubuntu-22.04]
+        include:
+          - os: ubuntu-20.04
+            os_name: focal
+          - os: ubuntu-22.04
+            os_name: jammy
+    runs-on: ${{ matrix.os }}
+    container: swift:${{ matrix.swift_version }}-${{ matrix.os_name }}
     steps:
       - uses: actions/checkout@v2
       - name: Building and running tests in debug mode with coverage
@@ -40,6 +46,6 @@ jobs:
             -c release \
             -Xswiftc -warnings-as-errors \
             --build-path .build-test-release
-      - uses: codecov/codecov-action@v2
+      - uses: codecov/codecov-action@v3
         with:
           verbose: true
