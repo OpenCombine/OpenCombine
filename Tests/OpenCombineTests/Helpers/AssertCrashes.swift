@@ -8,6 +8,10 @@
 import Foundation
 import XCTest
 
+#if canImport(COpenCombineHelpers)
+import COpenCombineHelpers
+#endif
+
 extension XCTest {
 
     var testcaseName: String {
@@ -29,6 +33,11 @@ extension XCTest {
     // Taken from swift-corelibs-foundation and slightly modified for OpenCombine
     @available(macOS 10.13, iOS 8.0, *)
     func assertCrashes(within block: () throws -> Void) rethrows {
+#if os(Linux) // FIXME: Skip assertCrashes on Linux when TSAN is enabled. This combination will run timeout on CI now.
+        if __sanitizeThreadEnabled() {
+            return
+        }
+#endif
 #if !Xcode && !os(iOS) && !os(watchOS) && !os(tvOS) && !WASI
         let childProcessEnvVariable = "OPENCOMBINE_TEST_PERFORM_ASSERT_CRASHES_BLOCKS"
         let childProcessEnvVariableOnValue = "YES"
