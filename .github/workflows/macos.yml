@@ -47,6 +47,7 @@ jobs:
           -Xswiftc -warnings-as-errors \
           --build-path .build-test-debug-sanitize-thread
       - name: Build and run tests in release mode
+        if: ${{ matrix.xcode-version != '14.3.1' }} # error: no input files specified. See llvm-profdata merge -help
         run: |
           swift test \
             -c release \
