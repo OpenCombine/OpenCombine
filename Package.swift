@@ -1,4 +1,4 @@
-// swift-tools-version:5.5
+// swift-tools-version:5.7
 
 import PackageDescription
 
@@ -34,7 +34,6 @@ let package = Package(
                         condition: .when(platforms: supportedPlatforms.except([.wasi])))
             ],
             exclude: [
-                "RootProtocols.swift.gyb",
                 "Concurrency/Publisher+Concurrency.swift.gyb",
                 "Publishers/Publishers.Encode.swift.gyb",
                 "Publishers/Publishers.MapKeyPath.swift.gyb",

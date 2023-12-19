@@ -43,19 +43,19 @@ extension Publishers {
 
 extension Publishers.Sequence {
 
-    private final class Inner<Downstream: Subscriber, Elements: Sequence, Failure>
+    private final class Inner<InnerElements: Swift.Sequence, InnerFailure: Error, Downstream: Subscriber>
         : Subscription,
           CustomStringConvertible,
           CustomReflectable,
           CustomPlaygroundDisplayConvertible
-        where Downstream.Input == Elements.Element,
-              Downstream.Failure == Failure
+        where Downstream.Input == InnerElements.Element,
+              Downstream.Failure == InnerFailure
     {
 
-        typealias Iterator = Elements.Iterator
-        typealias Element = Elements.Element
+        typealias Iterator = InnerElements.Iterator
+        typealias Element = InnerElements.Element
 
-        private var sequence: Elements?
+        private var sequence: InnerElements?
         private var downstream: Downstream?
         private var iterator: Iterator
         private var next: Element?
@@ -63,7 +63,7 @@ extension Publishers.Sequence {
         private var recursion = false
         private var lock = UnfairLock.allocate()
 
-        fileprivate init(downstream: Downstream, sequence: Elements) {
+        fileprivate init(downstream: Downstream, sequence: InnerElements) {
             self.sequence = sequence
             self.downstream = downstream
             self.iterator = sequence.makeIterator()

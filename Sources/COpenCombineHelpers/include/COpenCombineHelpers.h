@@ -9,6 +9,8 @@
 #define COPENCOMBINEHELPERS_H
 
 #include <stdint.h>
+#include <stdbool.h>
+#include "Compiler.h"
 
 #if __has_attribute(swift_name)
 # define OPENCOMBINE_SWIFT_NAME(_name) __attribute__((swift_name(#_name)))
@@ -71,6 +73,14 @@ void opencombine_unfair_recursive_lock_dealloc(OpenCombineUnfairRecursiveLock lo
 #pragma mark - Breakpoint
 
 void opencombine_stop_in_debugger(void) OPENCOMBINE_SWIFT_NAME(__stopInDebugger());
+
+#pragma mark - COMPILER_SUPPORTS
+
+bool opencombine_sanitize_address_enabled(void) OPENCOMBINE_SWIFT_NAME(__sanitizeAddressEnabled());
+
+bool opencombine_sanitize_thread_enabled(void) OPENCOMBINE_SWIFT_NAME(__sanitizeThreadEnabled());
+
+bool opencombine_sanitize_coverage_enabled(void) OPENCOMBINE_SWIFT_NAME(__sanitizeCoverageEnabled());
 
 #ifdef __cplusplus
 } // extern "C"

@@ -5,11 +5,6 @@
 //  Created by Sergej Jaskiewicz on 28.08.2021.
 //
 
-#if canImport(_Concurrency) && compiler(>=5.5)
-import _Concurrency
-#endif
-
-#if canImport(_Concurrency) && compiler(>=5.5) || compiler(>=5.5.1)
 extension Future where Failure == Never {
 
     /// The published value of the future, delivered asynchronously.
@@ -132,5 +127,3 @@ extension ContinuationSubscriber where UpstreamFailure == Never, ErrorOrNever ==
         }
     }
 }
-
-#endif

@@ -266,3 +266,27 @@ void opencombine_stop_in_debugger(void) {
     raise(SIGTRAP);
 #endif
 }
+
+bool opencombine_sanitize_address_enabled(void) {
+    #if ASAN_ENABLED
+    return true;
+    #else
+    return false;
+    #endif
+}
+
+bool opencombine_sanitize_thread_enabled(void) {
+    #if TSAN_ENABLED
+    return true;
+    #else
+    return false;
+    #endif
+}
+
+bool opencombine_sanitize_coverage_enabled(void) {
+    #if COVERAGE_ENABLED
+    return true;
+    #else
+    return false;
+    #endif
+}

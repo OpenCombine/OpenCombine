@@ -104,16 +104,6 @@ extension Publishers {
         }
 
         // swiftlint:disable generic_type_name
-
-        /// Attaches the specified subscriber to this publisher.
-        ///
-        /// Implementations of ``Publisher`` must implement this method.
-        ///
-        /// The provided implementation of ``Publisher/subscribe(_:)-4u8kn``calls
-        /// this method.
-        ///
-        /// - Parameter subscriber: The subscriber to attach to this ``Publisher``,
-        ///     after which it can receive values.
         public func receive<S>(subscriber: S)
         where S: Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
         {

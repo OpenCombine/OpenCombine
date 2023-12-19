@@ -7,6 +7,8 @@ Open-source implementation of Apple's [Combine](https://developer.apple.com/docu
 
 The main goal of this project is to provide a compatible, reliable and efficient implementation which can be used on Apple's operating systems before macOS 10.15 and iOS 13, as well as Linux, Windows and WebAssembly.
 
+The documentation of the package can be found at [OpenCombine Documentation] (https://swiftpackageindex.com/OpenCombine/OpenCombine/main/documentation/OpenCombine)
+
 | **CI Status** |
 |---|
 |[![Compatibility tests](https://github.com/OpenCombine/OpenCombine/actions/workflows/compatibility_tests.yml/badge.svg)](https://github.com/OpenCombine/OpenCombine/actions/workflows/compatibility_tests.yml)|

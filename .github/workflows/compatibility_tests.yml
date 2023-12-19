@@ -2,9 +2,9 @@ name: Compatibility tests
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
-    branches: [master]
+    branches: [main]
   schedule:
     - cron: "0 9 * * 1" # Every Monday at 9:00 AM
 
@@ -13,7 +13,7 @@ jobs:
     name: Execute compatibility tests
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Run tests against Apple's Combine
         run: make test-compatibility
         
