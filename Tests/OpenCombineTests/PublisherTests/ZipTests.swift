@@ -740,4 +740,82 @@ final class ZipTests: XCTestCase {
             XCTFail("Failed to match the completion event in \(#function)")
         }
     }
+
+    #if !WASI
+    // FIXME: swift-testing macro for specifying the relationship between a bug and a test case
+    // Uncomment the following line when we migrate to swift-testing
+    // @Test("Zip reference issue", .bug("#241", relationship: .verifiesFix))
+    func testZipReferenceIssue() throws {
+        var subscriptions: Set<AnyCancellable> = []
+        #if OPENCOMBINE_COMPATIBILITY_TEST
+        let scheduler = DispatchQueue.main
+        #else
+        let scheduler = DispatchQueue.OCombine(DispatchQueue.main)
+        #endif
+
+        let expectation = self.expectation(description: #function)
+        var result: (Int, Int)?
+
+        let firstPublisher = Just(1)
+            .delay(for: .milliseconds(600), scheduler: scheduler)
+        let secondPublisher = Just(2)
+            .delay(for: .milliseconds(600), scheduler: scheduler)
+        Publishers.Zip(firstPublisher, secondPublisher)
+            .sink(receiveValue: {
+                result = ($0.0, $0.1)
+                expectation.fulfill()
+            })
+            .store(in: &subscriptions)
+
+        wait(for: [expectation], timeout: 5)
+
+        XCTAssertEqual(result?.0, 1)
+        XCTAssertEqual(result?.1, 2)
+    }
+    #endif
+
+    func testZipDocumentationDemo() {
+        let numbersPub = PassthroughSubject<Int, TestingError>()
+        let lettersPub = PassthroughSubject<String, TestingError>()
+        let emojiPub = PassthroughSubject<String, TestingError>()
+        let fractionsPub = PassthroughSubject<Double, TestingError>()
+        let zip = numbersPub
+            .zip(lettersPub, emojiPub, fractionsPub) { number, letter, emoji, fraction in
+                "\(String(repeating: emoji, count: number)) \(String(repeating: letter, count: number)) \(fraction)"
+            }
+
+        let downstreamSubscriber = TrackingSubscriberBase<String, TestingError>(
+            receiveSubscription: { $0.request(.unlimited) })
+        zip.subscribe(downstreamSubscriber)
+        XCTAssertEqual(
+            downstreamSubscriber.history,
+            [
+                .subscription("Zip"),
+            ]
+        )
+        numbersPub.send(1)      // numbersPub: 1       lettersPub:          emojiPub:          zip output: <none>
+        numbersPub.send(2)      // numbersPub: 1,2     lettersPub:          emojiPub:          zip output: <none>
+        numbersPub.send(3)      // numbersPub: 1,2,3   lettersPub:          emojiPub:          zip output: <none>
+        fractionsPub.send(0.1)  // numbersPub: 1,2,3   lettersPub: "A"      emojiPub:          zip output: <none>
+        lettersPub.send("A")    // numbersPub: 1,2,3   lettersPub: "A"      emojiPub:          zip output: <none>
+        emojiPub.send("😀")     // numbersPub: 1,2,3   lettersPub: "A"      emojiPub:"😀"      zip output: "😀 A"
+        XCTAssertEqual(
+            downstreamSubscriber.history,
+            [
+                .subscription("Zip"),
+                .value("😀 A 0.1"),
+            ]
+        )
+        lettersPub.send("B")    // numbersPub: 2,3     lettersPub: "B"      emojiPub:          zip output: <none>
+        fractionsPub.send(0.8)  // numbersPub: 2,3     lettersPub: "A"      emojiPub:          zip output: <none>
+        emojiPub.send("🥰")     // numbersPub: 3       lettersPub: "B"      emojiPub:          zip output: "🥰🥰 BB"
+        XCTAssertEqual(
+            downstreamSubscriber.history,
+            [
+                .subscription("Zip"),
+                .value("😀 A 0.1"),
+                .value("🥰🥰 BB 0.8")
+            ]
+        )
+    }
 }
