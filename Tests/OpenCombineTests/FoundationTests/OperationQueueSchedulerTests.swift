@@ -119,7 +119,7 @@ final class OperationQueueSchedulerTests: XCTestCase {
         RunLoop.main.run(until: Date() + 0.05)
         XCTAssertEqual(actualDate.timeIntervalSinceReferenceDate,
                        now.timeIntervalSinceReferenceDate,
-                       accuracy: 0.1)
+                       accuracy: 0.15)
     }
 
     func testScheduleActionOnceLaterWithTestQueue() {

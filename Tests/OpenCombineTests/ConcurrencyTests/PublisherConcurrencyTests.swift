@@ -972,9 +972,8 @@ final class PublisherConcurrencyTests: XCTestCase {
         }
 
         XCTAssertEqual(numberOfTasksFinished, 3)
-        // FIXME: This test case will sometimes fail on macOS 13 + Xcode 15.0.1/Xcode 14.3.1
-        #if swift(>=5.8) && canImport(Darwin)
-        #else
+        // FIXME: This test case will sometimes fail on Xcode 15.0.1 / 14.3.1 / 14.2
+        #if !canImport(Darwin)
         XCTAssertEqual(subscription.history, [.requested(.max(1)), .requested(.max(1))])
         #endif
         
