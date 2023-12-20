@@ -1,21 +1,20 @@
 # OpenCombine
-[![codecov](https://codecov.io/gh/OpenCombine/OpenCombine/branch/master/graph/badge.svg)](https://codecov.io/gh/OpenCombine/OpenCombine)
-![Language](https://img.shields.io/badge/Swift-5.0-orange.svg)
-[![Cocoapods](https://img.shields.io/cocoapods/v/OpenCombine?color=blue)](https://cocoapods.org/pods/OpenCombine)
+[![codecov](https://codecov.io/gh/OpenSwiftUIProject/OpenCombine/branch/master/graph/badge.svg)](https://codecov.io/gh/OpenSwiftUIProject/OpenCombine)
+![Language](https://img.shields.io/badge/Swift-5.9-orange.svg)
 
 Open-source implementation of Apple's [Combine](https://developer.apple.com/documentation/combine) framework for processing values over time.
 
 The main goal of this project is to provide a compatible, reliable and efficient implementation which can be used on Apple's operating systems before macOS 10.15 and iOS 13, as well as Linux, Windows and WebAssembly.
 
-The documentation of the package can be found at [OpenCombine Documentation] (https://swiftpackageindex.com/OpenCombine/OpenCombine/main/documentation/OpenCombine)
+The documentation of the package can be found at [OpenCombine Documentation] (https://swiftpackageindex.com/OpenSwiftUIProject/OpenCombine/main/documentation/OpenCombine)
 
 | **CI Status** |
 |---|
-|[![Compatibility tests](https://github.com/OpenCombine/OpenCombine/actions/workflows/compatibility_tests.yml/badge.svg)](https://github.com/OpenCombine/OpenCombine/actions/workflows/compatibility_tests.yml)|
-|[![macOS](https://github.com/OpenCombine/OpenCombine/actions/workflows/macos.yml/badge.svg)](https://github.com/OpenCombine/OpenCombine/actions/workflows/macos.yml)|
-|[![Ubuntu](https://github.com/OpenCombine/OpenCombine/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/OpenCombine/OpenCombine/actions/workflows/ubuntu.yml)|
-|[![Windows](https://github.com/OpenCombine/OpenCombine/actions/workflows/windows.yml/badge.svg)](https://github.com/OpenCombine/OpenCombine/actions/workflows/windows.yml)|
-|[![Wasm](https://github.com/OpenCombine/OpenCombine/actions/workflows/wasm.yml/badge.svg)](https://github.com/OpenCombine/OpenCombine/actions/workflows/wasm.yml)|
+|[![Compatibility tests](https://github.com/OpenSwiftUIProject/OpenCombine/actions/workflows/compatibility_tests.yml/badge.svg)](https://github.com/OpenSwiftUIProject/OpenCombine/actions/workflows/compatibility_tests.yml)|
+|[![macOS](https://github.com/OpenSwiftUIProject/OpenCombine/actions/workflows/macos.yml/badge.svg)](https://github.com/OpenSwiftUIProject/OpenCombine/actions/workflows/macos.yml)|
+|[![Ubuntu](https://github.com/OpenSwiftUIProject/OpenCombine/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/OpenSwiftUIProject/OpenCombine/actions/workflows/ubuntu.yml)|
+|[![Windows](https://github.com/OpenSwiftUIProject/OpenCombine/actions/workflows/windows.yml/badge.svg)](https://github.com/OpenSwiftUIProject/OpenCombine/actions/workflows/windows.yml)|
+|[![Wasm](https://github.com/OpenSwiftUIProject/OpenCombine/actions/workflows/wasm.yml/badge.svg)](https://github.com/OpenSwiftUIProject/OpenCombine/actions/workflows/wasm.yml)|
 
 
 ### Installation
@@ -34,7 +33,7 @@ To add `OpenCombine` to your [SwiftPM](https://swift.org/package-manager/) packa
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/OpenCombine/OpenCombine.git", from: "0.14.0")
+    .package(url: "https://github.com/OpenSwiftUIProject/OpenCombine.git", from: "0.14.0")
 ],
 targets: [
     .target(
@@ -51,7 +50,7 @@ targets: [
 ###### Xcode
 `OpenCombine` can also be added as a SwiftPM dependency directly in your Xcode project *(requires Xcode 11 upwards)*.
 
-To do so, open Xcode, use **File** → **Swift Packages** → **Add Package Dependency…**, enter the [repository URL](https://github.com/OpenCombine/OpenCombine.git), choose the latest available version, and activate the checkboxes:
+To do so, open Xcode, use **File** → **Swift Packages** → **Add Package Dependency…**, enter the [repository URL](https://github.com/OpenSwiftUIProject/OpenCombine.git), choose the latest available version, and activate the checkboxes:
 
 <p align="center">
 <img alt="Select the OpenCombine and OpenCombineDispatch targets" 
@@ -71,9 +70,9 @@ pod 'OpenCombineFoundation', '~> 0.14.0'
 
 The file `opencombine_lldb.py`  defines some `lldb` type summaries for easier debugging. These type summaries improve the way `lldb` and Xcode display some OpenCombine values.
 
-To use `opencombine_lldb.py`, figure out its full path. Let's say the full path is `~/projects/OpenCombine/opencombine_lldb.py`. Then the following statement to your `~/.lldbinit` file:
+To use `opencombine_lldb.py`, figure out its full path. Let's say the full path is `~/projects/OpenSwiftUIProject/OpenCombine_lldb.py`. Then the following statement to your `~/.lldbinit` file:
 
-    command script import ~/projects/OpenCombine/opencombine_lldb.py
+    command script import ~/projects/OpenSwiftUIProject/OpenCombine_lldb.py
 
 Currently, `opencombine_lldb.py` defines type summaries for these types:
 

@@ -818,4 +818,26 @@ final class ZipTests: XCTestCase {
             ]
         )
     }
+
+    func testEquatable() {
+        enum E: Equatable {
+            case a, b
+        }
+        let numbersPub = Just(1)
+        let lettersPub = Just("A")
+        let enumPub = Just(E.a)
+        let fractionsPub = Just(1.0)
+
+        let zipNumberLetter = numbersPub.zip(lettersPub)
+        XCTAssertEqual(zipNumberLetter, Publishers.Zip(numbersPub, lettersPub))
+        XCTAssertNotEqual(zipNumberLetter, Publishers.Zip(numbersPub, Just("B")))
+
+        let zipNumberLetterEnum = numbersPub.zip(lettersPub, enumPub)
+        XCTAssertEqual(zipNumberLetterEnum, Publishers.Zip3(numbersPub, lettersPub, enumPub))
+        XCTAssertNotEqual(zipNumberLetterEnum, Publishers.Zip3(numbersPub, lettersPub, Just(E.b)))
+
+        let zipNumberLetterEnumFraction = numbersPub.zip(lettersPub, enumPub, fractionsPub)
+        XCTAssertEqual(zipNumberLetterEnumFraction, Publishers.Zip4(numbersPub, lettersPub, enumPub, fractionsPub))
+        XCTAssertNotEqual(zipNumberLetterEnumFraction, Publishers.Zip4(numbersPub, lettersPub, enumPub, Just(1.5)))
+    }
 }

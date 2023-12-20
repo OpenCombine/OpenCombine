@@ -11,7 +11,7 @@ on:
 jobs:
   compatibility_tests_macos:
     name: Execute compatibility tests
-    runs-on: macos-latest
+    runs-on: macos-13
     steps:
       - uses: actions/checkout@v4
       - name: Run tests against Apple's Combine

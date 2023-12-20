@@ -23,13 +23,6 @@ swift-version:
 test-compatibility:
 	$(SWIFT_EXE) test -Xswiftc -DOPENCOMBINE_COMPATIBILITY_TEST
 
-generate-compatibility-xcodeproj:
-	$(SWIFT_EXE) package generate-xcodeproj --xcconfig-overrides Combine-Compatibility.xcconfig; \
-	open OpenCombine.xcodeproj
-
-generate-xcodeproj:
-	$(SWIFT_EXE) package $(SWIFT_BUILD_FLAGS) generate-xcodeproj --enable-code-coverage
-
 gyb:
 	$(shell ./utils/recursively_gyb.sh)
 
@@ -41,7 +34,5 @@ clean:
 	    test-release \
 	    swift-version \
 	    test-compatibility-debug \
-	    generate-compatibility-xcodeproj \
-	    generate-xcodeproj \
 	    gyb \
 	    clean
