@@ -193,13 +193,13 @@ internal final class ClosureBasedAnySubscriber<Input, Failure: Error>
     : AnySubscriberBase<Input, Failure>
 {
     @usableFromInline
-    internal let receiveSubscriptionThunk: (Subscription) -> Void
+    final internal let receiveSubscriptionThunk: (Subscription) -> Void
 
     @usableFromInline
-    internal let receiveValueThunk: (Input) -> Subscribers.Demand
+    final internal let receiveValueThunk: (Input) -> Subscribers.Demand
 
     @usableFromInline
-    internal let receiveCompletionThunk: (Subscribers.Completion<Failure>) -> Void
+    final internal let receiveCompletionThunk: (Subscribers.Completion<Failure>) -> Void
 
     @inlinable
     internal init(_ rcvSubscription: @escaping (Subscription) -> Void,
