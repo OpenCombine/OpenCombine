@@ -599,7 +599,6 @@ private class AbstractZip<Input, Failure, Downstream> where Downstream: Subscrib
         let demand = pendingDemand
         pendingDemand = .none
         lock.unlock()
-        demand.assertValid()
         guard demand != .none, !subscriptions.isEmpty else {
             return
         }
