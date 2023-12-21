@@ -6,7 +6,7 @@ Open-source implementation of Apple's [Combine](https://developer.apple.com/docu
 
 The main goal of this project is to provide a compatible, reliable and efficient implementation which can be used on Apple's operating systems before macOS 10.15 and iOS 13, as well as Linux, Windows and WebAssembly.
 
-The documentation of the package can be found at [OpenCombine Documentation] (https://swiftpackageindex.com/OpenSwiftUIProject/OpenCombine/main/documentation/OpenCombine)
+The documentation of the package can be found at [OpenCombine Documentation](https://swiftpackageindex.com/OpenSwiftUIProject/OpenCombine/main/documentation/OpenCombine)
 
 | **CI Status** |
 |---|
@@ -24,10 +24,10 @@ OpenCombine itself does not have any dependencies. Not even Foundation or Dispat
 
 If you develop code for multiple platforms, you may find it more convenient to import the
 `OpenCombineShim` module instead. It conditionally re-exports Combine on Apple platforms (if
-available), and all OpenCombine modules on other platforms. You can import `OpenCombineShim` only
-when using SwiftPM. It is not currently available for CocoaPods.
+available), and all OpenCombine modules on other platforms.
 
 ##### Swift Package Manager
+
 ###### Swift Package
 To add `OpenCombine` to your [SwiftPM](https://swift.org/package-manager/) package, add the `OpenCombine` package to the list of package and target dependencies in your `Package.swift` file. `OpenCombineDispatch` and `OpenCombineFoundation` products are currently not supported on WebAssembly. If your project targets WebAssembly exclusively, you should omit them from the list of your dependencies. If it targets multiple platforms including WebAssembly, depend on them only on non-WebAssembly platforms with [conditional target dependencies](https://github.com/apple/swift-evolution/blob/main/proposals/0273-swiftpm-conditional-target-dependencies.md).
 
@@ -56,15 +56,6 @@ To do so, open Xcode, use **File** → **Swift Packages** → **Add Package Depe
 <img alt="Select the OpenCombine and OpenCombineDispatch targets" 
 	src="https://user-images.githubusercontent.com/16309982/67618468-bd379f80-f7f8-11e9-917f-e76e878a1aee.png" width="70%">
 </p>
-
-##### CocoaPods
-To add `OpenCombine` to a project using [CocoaPods](https://cocoapods.org/), add `OpenCombine` and `OpenCombineDispatch` to the list of target dependencies in your `Podfile`. 
-
-```ruby
-pod 'OpenCombine', '~> 0.14.0'
-pod 'OpenCombineDispatch', '~> 0.14.0'
-pod 'OpenCombineFoundation', '~> 0.14.0'
-```
 
 #### Debugger Support
 
