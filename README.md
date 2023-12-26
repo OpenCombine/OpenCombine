@@ -1,5 +1,5 @@
 # OpenCombine
-[![codecov](https://codecov.io/gh/OpenSwiftUIProject/OpenCombine/branch/master/graph/badge.svg)](https://codecov.io/gh/OpenSwiftUIProject/OpenCombine)
+[![codecov](https://codecov.io/gh/OpenSwiftUIProject/OpenCombine/graph/badge.svg?token=BJSI3J7RZQ)](https://codecov.io/gh/OpenSwiftUIProject/OpenCombine)
 ![Language](https://img.shields.io/badge/Swift-5.9-orange.svg)
 
 Open-source implementation of Apple's [Combine](https://developer.apple.com/documentation/combine) framework for processing values over time.

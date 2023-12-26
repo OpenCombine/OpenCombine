@@ -468,7 +468,7 @@ extension Subscribers {
 
         /// Creates a demand instance from a decoder.
         ///
-        /// - Parameter decoder: The decoder of a previously-encoded ``Subscribers.Demand``
+        /// - Parameter decoder: The decoder of a previously-encoded ``Subscribers/Demand``
         ///   instance.
         public init(from decoder: Decoder) throws {
             try self.init(rawValue: decoder.singleValueContainer().decode(UInt.self))

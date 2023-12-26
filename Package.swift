@@ -71,7 +71,7 @@ let package = Package(
             ],
             swiftSettings: [
                 .unsafeFlags(["-enable-testing"]),
-                .define("WASI", .when(platforms: [.wasi]))
+                .define("WASI", .when(platforms: [.wasi])),
             ]
         )
     ],
