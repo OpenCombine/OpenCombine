@@ -18,6 +18,19 @@ let supportedPlatforms: [Platform] = [
     .wasi,
 ]
 
+let cOpenCombineHelpersTarget: Target = .target(
+    name: "COpenCombineHelpers"
+)
+let openCombineShimTarget: Target = .target(
+    name: "OpenCombineShim",
+    dependencies: [
+        "OpenCombine",
+        .target(name: "OpenCombineDispatch",
+                condition: .when(platforms: supportedPlatforms.except([.wasi]))),
+        .target(name: "OpenCombineFoundation",
+                condition: .when(platforms: supportedPlatforms.except([.wasi]))),
+    ]
+)
 let openCombineTarget: Target = .target(
     name: "OpenCombine",
     dependencies: [
@@ -47,7 +60,6 @@ let openCombineDispatchTarget: Target = .target(
     name: "OpenCombineDispatch",
     dependencies: ["OpenCombine"]
 )
-
 let openCombineTestsTarget: Target = .testTarget(
     name: "OpenCombineTests",
     dependencies: [
@@ -71,17 +83,8 @@ let package = Package(
         .library(name: "OpenCombineShim", targets: ["OpenCombineShim"]),
     ],
     targets: [
-        .target(name: "COpenCombineHelpers"),
-        .target(
-            name: "OpenCombineShim",
-            dependencies: [
-                "OpenCombine",
-                .target(name: "OpenCombineDispatch",
-                        condition: .when(platforms: supportedPlatforms.except([.wasi]))),
-                .target(name: "OpenCombineFoundation",
-                        condition: .when(platforms: supportedPlatforms.except([.wasi]))),
-            ]
-        ),
+        cOpenCombineHelpersTarget,
+        openCombineShimTarget,
         openCombineTarget,
         openCombineFoundationTarget,
         openCombineDispatchTarget,
@@ -98,11 +101,17 @@ extension [Platform] {
     }
 }
 
-func envEnable(_ key: String) -> Bool {
+func envEnable(_ key: String, default defaultValue: Bool = false) -> Bool {
     guard let value = ProcessInfo.processInfo.environment[key] else {
-        return false
+        return defaultValue
     }
-    return value == "1"
+    if value == "1" {
+        return true
+    } else if value == "0" {
+        return false
+    } else {
+        return defaultValue
+    }
 }
 
 let enableLibraryEvolution = envEnable("OPENCOMBINE_LIBRARY_EVOLUTION")
@@ -123,4 +132,15 @@ if enableCompatibilityTest {
     var settings = openCombineTestsTarget.swiftSettings ?? []
     settings.append(.define("OPENCOMBINE_COMPATIBILITY_TEST"))
     openCombineTestsTarget.swiftSettings = settings
+}
+
+let enableOSLockPrivate = envEnable("OPENCOMBINE_OSLOCK_PRIVATE", default: true)
+if enableOSLockPrivate {
+    var cSettings = cOpenCombineHelpersTarget.cSettings ?? []
+    cSettings.append(.define("OPENCOMBINE_OSLOCK_PRIVATE"))
+    cOpenCombineHelpersTarget.cSettings = cSettings
+    
+    var cxxSettings = cOpenCombineHelpersTarget.cxxSettings ?? []
+    cxxSettings.append(.define("OPENCOMBINE_OSLOCK_PRIVATE"))
+    cOpenCombineHelpersTarget.cxxSettings = cxxSettings
 }

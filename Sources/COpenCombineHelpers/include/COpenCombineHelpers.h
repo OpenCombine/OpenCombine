@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "Compiler.h"
+#include "lock_private.h"
 
 #if __has_attribute(swift_name)
 # define OPENCOMBINE_SWIFT_NAME(_name) __attribute__((swift_name(#_name)))

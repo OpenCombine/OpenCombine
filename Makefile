@@ -29,6 +29,9 @@ library-evolution:
 module-interface:
 	xcodebuild build -scheme OpenCombine -sdk macosx -destination "platform=macOS" BUILD_LIBRARY_FOR_DISTRIBUTION=1
 
+disable-oslock-private:
+	OPENCOMBINE_OSLOCK_PRIVATE=0 $(SWIFT_EXE) build
+
 gyb:
 	$(shell ./utils/recursively_gyb.sh)
 
@@ -42,5 +45,6 @@ clean:
 	    test-compatibility-debug \
 		library-evolution \
 		module-interface \
+		disable-oslock-private \
 	    gyb \
 	    clean

@@ -162,6 +162,33 @@ public:
         os_unfair_lock_assert_owner(&mutex_);
     }
 };
+
+#ifdef OPENCOMBINE_OSLOCK_PRIVATE
+class OS_UNFAIR_RECURSIVE_LOCK_AVAILABILITY OSUnfairRecursiveLock final : PlatformIndependentMutex {
+    os_unfair_recursive_lock mutex_ = OS_UNFAIR_RECURSIVE_LOCK_INIT;
+public:
+    OSUnfairRecursiveLock() = default;
+
+    OSUnfairRecursiveLock(const OSUnfairRecursiveLock&) = delete;
+    OSUnfairRecursiveLock& operator=(const OSUnfairRecursiveLock&) = delete;
+
+    OSUnfairRecursiveLock(OSUnfairRecursiveLock&&) = delete;
+    OSUnfairRecursiveLock& operator=(OSUnfairRecursiveLock&&) = delete;
+
+    void lock() override {
+        os_unfair_recursive_lock_lock(&mutex_);
+    }
+
+    void unlock() override {
+        os_unfair_recursive_lock_unlock(&mutex_);
+    }
+
+    void assertOwner() override {
+        os_unfair_recursive_lock_assert_owner(&mutex_);
+    }
+};
+#endif // OPENCOMBINE_OSLOCK_PRIVATE
+
 #endif // __APPLE__
 
 template <typename Mu>
@@ -216,8 +243,15 @@ OpenCombineUnfairLock opencombine_unfair_lock_alloc(void) {
 
 OpenCombineUnfairRecursiveLock opencombine_unfair_recursive_lock_alloc(void) {
     OPENCOMBINE_HANDLE_EXCEPTION_BEGIN
-    // TODO: Use os_unfair_recursive_lock on Darwin as soon as it becomes public API.
+#if defined(__APPLE__) && defined(OPENCOMBINE_OSLOCK_PRIVATE)
+    if (__builtin_available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 5.0, *)) {
+        return {new OSUnfairRecursiveLock};
+    } else {
+        return {new StdRecursiveMutex};
+    }
+#else
     return {new StdRecursiveMutex};
+#endif
     OPENCOMBINE_HANDLE_EXCEPTION_END
 }
 

@@ -32,3 +32,5 @@ jobs:
         run: make library-evolution
       - name: Generate swiftinterface
         run: make module-interface
+      - name: Build without private header of OSLock
+        run: make disable-oslock-private
