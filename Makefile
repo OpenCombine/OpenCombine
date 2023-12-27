@@ -23,6 +23,12 @@ swift-version:
 test-compatibility:
 	OPENCOMBINE_COMPATIBILITY_TEST=1 $(SWIFT_EXE) test
 
+library-evolution:
+	OPENCOMBINE_LIBRARY_EVOLUTION=1 $(SWIFT_EXE) build
+
+module-interface:
+	xcodebuild build -scheme OpenCombine -sdk macosx -destination "platform=macOS" BUILD_LIBRARY_FOR_DISTRIBUTION=1
+
 gyb:
 	$(shell ./utils/recursively_gyb.sh)
 
@@ -34,5 +40,7 @@ clean:
 	    test-release \
 	    swift-version \
 	    test-compatibility-debug \
+		library-evolution \
+		module-interface \
 	    gyb \
 	    clean

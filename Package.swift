@@ -24,13 +24,13 @@ let openCombineTarget: Target = .target(
         .target(
             name: "COpenCombineHelpers",
             condition: .when(platforms: supportedPlatforms.except([.wasi]))
-        )
+        ),
     ],
     exclude: [
         "Concurrency/Publisher+Concurrency.swift.gyb",
         "Publishers/Publishers.Encode.swift.gyb",
         "Publishers/Publishers.MapKeyPath.swift.gyb",
-        "Publishers/Publishers.Catch.swift.gyb"
+        "Publishers/Publishers.Catch.swift.gyb",
     ]
 )
 let openCombineFoundationTarget: Target = .target(
@@ -40,7 +40,7 @@ let openCombineFoundationTarget: Target = .target(
         .target(
             name: "COpenCombineHelpers",
             condition: .when(platforms: supportedPlatforms.except([.wasi]))
-        )
+        ),
     ]
 )
 let openCombineDispatchTarget: Target = .target(
@@ -79,7 +79,7 @@ let package = Package(
                 .target(name: "OpenCombineDispatch",
                         condition: .when(platforms: supportedPlatforms.except([.wasi]))),
                 .target(name: "OpenCombineFoundation",
-                        condition: .when(platforms: supportedPlatforms.except([.wasi])))
+                        condition: .when(platforms: supportedPlatforms.except([.wasi]))),
             ]
         ),
         openCombineTarget,
@@ -92,9 +92,9 @@ let package = Package(
 
 // MARK: Helpers
 
-extension Array where Element == Platform {
+extension [Platform] {
     func except(_ exceptions: [Platform]) -> [Platform] {
-        return filter { !exceptions.contains($0) }
+        filter { !exceptions.contains($0) }
     }
 }
 
@@ -103,6 +103,19 @@ func envEnable(_ key: String) -> Bool {
         return false
     }
     return value == "1"
+}
+
+let enableLibraryEvolution = envEnable("OPENCOMBINE_LIBRARY_EVOLUTION")
+if enableLibraryEvolution {
+    let libraryEvolutionSetting: SwiftSetting = .unsafeFlags([
+        "-Xfrontend", "-enable-library-evolution",
+    ])
+    let targets = [openCombineTarget, openCombineFoundationTarget, openCombineDispatchTarget]
+    for target in targets {
+        var settings = target.swiftSettings ?? []
+        settings.append(libraryEvolutionSetting)
+        target.swiftSettings = settings
+    }
 }
 
 let enableCompatibilityTest = envEnable("OPENCOMBINE_COMPATIBILITY_TEST")

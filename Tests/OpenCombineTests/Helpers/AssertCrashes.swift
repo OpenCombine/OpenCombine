@@ -9,7 +9,7 @@ import Foundation
 import XCTest
 
 #if canImport(COpenCombineHelpers)
-import COpenCombineHelpers
+@_implementationOnly import COpenCombineHelpers
 #endif
 
 extension XCTest {

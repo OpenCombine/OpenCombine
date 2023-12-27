@@ -1,12 +1,12 @@
 //
 //  Publishers.Merge.swift
-//
+//  OpenCombine
 //
 //  Created by Kyle on 2023/11/21.
 //  Audited for Combine 2023
 
 #if canImport(COpenCombineHelpers)
-import COpenCombineHelpers
+@_implementationOnly import COpenCombineHelpers
 #endif
 
 extension Publisher {
@@ -355,13 +355,6 @@ extension Publishers {
             self.b = b
         }
         
-        /// Attaches the specified subscriber to this publisher.
-        ///
-        /// Implementations of ``Publisher`` must implement this method.
-        ///
-        /// The provided implementation of ``Publisher/subscribe(_:)-199o9``calls this method.
-        ///
-        /// - Parameter subscriber: The subscriber to attach to this ``Publisher``, after which it can receive values.
         public func receive<S>(subscriber: S) where S: Subscriber, B.Failure == S.Failure, B.Output == S.Input {
             typealias Inner = _Merged<A.Output, Failure, S>
             let merger = Inner(downstream: subscriber, count: 2)
@@ -427,13 +420,6 @@ extension Publishers {
             self.c = c
         }
 
-        /// Attaches the specified subscriber to this publisher.
-        ///
-        /// Implementations of ``Publisher`` must implement this method.
-        ///
-        /// The provided implementation of ``Publisher/subscribe(_:)-199o9``calls this method.
-        ///
-        /// - Parameter subscriber: The subscriber to attach to this ``Publisher``, after which it can receive values.
         public func receive<S>(subscriber: S) where S: Subscriber, C.Failure == S.Failure, C.Output == S.Input {
             typealias Inner = _Merged<A.Output, Failure, S>
             let merger = Inner(downstream: subscriber, count: 3)
@@ -501,13 +487,6 @@ extension Publishers {
             self.d = d
         }
 
-        /// Attaches the specified subscriber to this publisher.
-        ///
-        /// Implementations of ``Publisher`` must implement this method.
-        ///
-        /// The provided implementation of ``Publisher/subscribe(_:)-199o9``calls this method.
-        ///
-        /// - Parameter subscriber: The subscriber to attach to this ``Publisher``, after which it can receive values.
         public func receive<S>(subscriber: S) where S: Subscriber, D.Failure == S.Failure, D.Output == S.Input {
             typealias Inner = _Merged<A.Output, Failure, S>
             let merger = Inner(downstream: subscriber, count: 4)
@@ -577,13 +556,6 @@ extension Publishers {
             self.e = e
         }
 
-        /// Attaches the specified subscriber to this publisher.
-        ///
-        /// Implementations of ``Publisher`` must implement this method.
-        ///
-        /// The provided implementation of ``Publisher/subscribe(_:)-199o9``calls this method.
-        ///
-        /// - Parameter subscriber: The subscriber to attach to this ``Publisher``, after which it can receive values.
         public func receive<S>(subscriber: S) where S: Subscriber, E.Failure == S.Failure, E.Output == S.Input {
             typealias Inner = _Merged<A.Output, Failure, S>
             let merger = Inner(downstream: subscriber, count: 5)
@@ -655,13 +627,6 @@ extension Publishers {
             self.f = f
         }
 
-        /// Attaches the specified subscriber to this publisher.
-        ///
-        /// Implementations of ``Publisher`` must implement this method.
-        ///
-        /// The provided implementation of ``Publisher/subscribe(_:)-199o9``calls this method.
-        ///
-        /// - Parameter subscriber: The subscriber to attach to this ``Publisher``, after which it can receive values.
         public func receive<S>(subscriber: S) where S: Subscriber, F.Failure == S.Failure, F.Output == S.Input {
             typealias Inner = _Merged<A.Output, Failure, S>
             let merger = Inner(downstream: subscriber, count: 6)
@@ -735,13 +700,6 @@ extension Publishers {
             self.g = g
         }
 
-        /// Attaches the specified subscriber to this publisher.
-        ///
-        /// Implementations of ``Publisher`` must implement this method.
-        ///
-        /// The provided implementation of ``Publisher/subscribe(_:)-199o9``calls this method.
-        ///
-        /// - Parameter subscriber: The subscriber to attach to this ``Publisher``, after which it can receive values.
         public func receive<S>(subscriber: S) where S: Subscriber, G.Failure == S.Failure, G.Output == S.Input {
             typealias Inner = _Merged<A.Output, Failure, S>
             let merger = Inner(downstream: subscriber, count: 7)
@@ -817,13 +775,6 @@ extension Publishers {
             self.h = h
         }
 
-        /// Attaches the specified subscriber to this publisher.
-        ///
-        /// Implementations of ``Publisher`` must implement this method.
-        ///
-        /// The provided implementation of ``Publisher/subscribe(_:)-199o9``calls this method.
-        ///
-        /// - Parameter subscriber: The subscriber to attach to this ``Publisher``, after which it can receive values.
         public func receive<S>(subscriber: S) where S: Subscriber, H.Failure == S.Failure, H.Output == S.Input {
             typealias Inner = _Merged<A.Output, Failure, S>
             let merger = Inner(downstream: subscriber, count: 8)
@@ -866,13 +817,6 @@ extension Publishers {
             publishers = Array(upstream)
         }
 
-        /// Attaches the specified subscriber to this publisher.
-        ///
-        /// Implementations of ``Publisher`` must implement this method.
-        ///
-        /// The provided implementation of ``Publisher/subscribe(_:)-199o9``calls this method.
-        ///
-        /// - Parameter subscriber: The subscriber to attach to this ``Publisher``, after which it can receive values.
         public func receive<S>(subscriber: S) where S: Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input {
             typealias Inner = _Merged<Upstream.Output, Failure, S>
             let merger = Inner(downstream: subscriber, count: publishers.count)

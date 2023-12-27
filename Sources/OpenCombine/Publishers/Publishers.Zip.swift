@@ -1,12 +1,12 @@
 //
 //  Publishers.Zip.swift
-//
+//  OpenCombine
 //
 //  Created by Kyle on 2023/7/25.
 //  Audited for Combine 2023
 
 #if canImport(COpenCombineHelpers)
-import COpenCombineHelpers
+@_implementationOnly import COpenCombineHelpers
 #endif
 
 extension Publisher {
@@ -266,13 +266,6 @@ extension Publishers {
             self.b = b
         }
 
-        /// Attaches the specified subscriber to this publisher.
-        ///
-        /// Implementations of ``Publisher`` must implement this method.
-        ///
-        /// The provided implementation of ``Publisher/subscribe(_:)-199o9``calls this method.
-        ///
-        /// - Parameter subscriber: The subscriber to attach to this ``Publisher``, after which it can receive values.
         public func receive<S>(subscriber: S) where S: Subscriber, B.Failure == S.Failure, S.Input == (A.Output, B.Output) {
             typealias Inner = Zip2Inner<A.Output, B.Output, Failure, S>
             let zip = Inner(downstream: subscriber, upstreamCount: 2)
@@ -317,13 +310,6 @@ extension Publishers {
             self.c = c
         }
 
-        /// Attaches the specified subscriber to this publisher.
-        ///
-        /// Implementations of ``Publisher`` must implement this method.
-        ///
-        /// The provided implementation of ``Publisher/subscribe(_:)-199o9``calls this method.
-        ///
-        /// - Parameter subscriber: The subscriber to attach to this ``Publisher``, after which it can receive values.
         public func receive<S>(subscriber: S) where S: Subscriber, C.Failure == S.Failure, S.Input == (A.Output, B.Output, C.Output) {
             typealias Inner = Zip3Inner<A.Output, B.Output, C.Output, Failure, S>
             let zip = Inner(downstream: subscriber, upstreamCount: 3)
@@ -374,13 +360,6 @@ extension Publishers {
             self.d = d
         }
 
-        /// Attaches the specified subscriber to this publisher.
-        ///
-        /// Implementations of ``Publisher`` must implement this method.
-        ///
-        /// The provided implementation of ``Publisher/subscribe(_:)-199o9``calls this method.
-        ///
-        /// - Parameter subscriber: The subscriber to attach to this ``Publisher``, after which it can receive values.
         public func receive<S>(subscriber: S) where S: Subscriber, D.Failure == S.Failure, S.Input == (A.Output, B.Output, C.Output, D.Output) {
             typealias Inner = Zip4Inner<A.Output, B.Output, C.Output, D.Output, Failure, S>
             let zip = Inner(downstream: subscriber, upstreamCount: 4)

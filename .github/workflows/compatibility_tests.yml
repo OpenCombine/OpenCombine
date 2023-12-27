@@ -28,4 +28,7 @@ jobs:
         run: swift --version
       - name: Run tests against Apple's Combine
         run: make test-compatibility
-        
+      - name: Build with library evolution
+        run: make library-evolution
+      - name: Generate swiftinterface
+        run: make module-interface

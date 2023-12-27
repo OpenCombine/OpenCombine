@@ -54,21 +54,18 @@ public struct ImmediateScheduler: Scheduler {
             public var magnitude: Int
 
             /// Creates an immediate scheduler time interval from the given time interval.
-            @inlinable
             public init(_ value: Int) {
                 magnitude = value
             }
 
             /// Creates an immediate scheduler time interval from an integer seconds
             /// value.
-            @inlinable
             public init(integerLiteral value: Int) {
                 self.init(value)
             }
 
             /// Creates an immediate scheduler time interval from a floating-point seconds
             /// value.
-            @inlinable
             public init(floatLiteral value: Double) {
                 self.init(Int(value))
             }
@@ -77,7 +74,6 @@ public struct ImmediateScheduler: Scheduler {
             ///
             /// If `exactly` can’t convert to an `Int`, the resulting time interval is
             /// `nil`.
-            @inlinable
             public init?<BinaryIntegerType: BinaryInteger>(
                 exactly source: BinaryIntegerType
             ) {
@@ -87,27 +83,22 @@ public struct ImmediateScheduler: Scheduler {
                 self.init(magnitude)
             }
 
-            @inlinable
             public static func < (lhs: Stride, rhs: Stride) -> Bool {
                 return lhs.magnitude < rhs.magnitude
             }
 
-            @inlinable
             public static func * (lhs: Stride, rhs: Stride) -> Stride {
                 return Stride(lhs.magnitude * rhs.magnitude)
             }
 
-            @inlinable
             public static func + (lhs: Stride, rhs: Stride) -> Stride {
                 return Stride(lhs.magnitude + rhs.magnitude)
             }
 
-            @inlinable
             public static func - (lhs: Stride, rhs: Stride) -> Stride {
                 return Stride(lhs.magnitude - rhs.magnitude)
             }
 
-            @inlinable
             public static func -= (lhs: inout Stride, rhs: Stride) {
                 lhs.magnitude -= rhs.magnitude
             }
@@ -142,7 +133,6 @@ public struct ImmediateScheduler: Scheduler {
     public static let shared = ImmediateScheduler()
 
     /// Performs the action at the next possible opportunity.
-    @inlinable
     public func schedule(options: SchedulerOptions?, _ action: @escaping () -> Void) {
         action()
     }
@@ -167,6 +157,7 @@ public struct ImmediateScheduler: Scheduler {
     /// frequency, optionally taking into account tolerance if possible.
     ///
     /// The immediate scheduler ignores `date` and performs the action immediately.
+    @discardableResult
     public func schedule(after date: SchedulerTimeType,
                          interval: SchedulerTimeType.Stride,
                          tolerance: SchedulerTimeType.Stride,

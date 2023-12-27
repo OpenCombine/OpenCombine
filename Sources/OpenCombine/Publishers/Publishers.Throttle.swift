@@ -103,15 +103,6 @@ extension Publishers {
             self.latest = latest
         }
 
-        /// Attaches the specified subscriber to this publisher.
-        ///
-        /// Implementations of ``Publisher`` must implement this method.
-        ///
-        /// The provided implementation of ``Publisher/subscribe(_:)-199o9``calls
-        /// this method.
-        ///
-        /// - Parameter subscriber: The subscriber to attach to this ``Publisher``,
-        ///     after which it can receive values.
         // swiftlint:disable generic_type_name
         public func receive<S>(subscriber: S)
         where S: Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
