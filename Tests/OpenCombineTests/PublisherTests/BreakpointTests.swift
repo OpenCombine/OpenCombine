@@ -5,7 +5,7 @@
 //  Created by Sergej Jaskiewicz on 03.12.2019.
 //
 
-#if !WASI
+#if !os(WASI)
 
 import XCTest
 
@@ -15,7 +15,7 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 final class BreakpointTests: XCTestCase {
 
     func testReceiveSubscription() {
@@ -181,4 +181,4 @@ final class BreakpointTests: XCTestCase {
     }
 }
 
-#endif // !WASI
+#endif // !os(WASI)

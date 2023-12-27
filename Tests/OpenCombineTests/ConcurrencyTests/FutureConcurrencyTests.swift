@@ -7,10 +7,6 @@
 
 import XCTest
 
-#if canImport(_Concurrency) && compiler(>=5.5)
-import _Concurrency
-#endif
-
 #if OPENCOMBINE_COMPATIBILITY_TEST
 import Combine
 #else
@@ -18,7 +14,7 @@ import OpenCombine
 #endif
 
 // swiftlint:disable:next line_length
-#if !os(Windows) && !WASI && (canImport(_Concurrency) && compiler(>=5.5) || compiler(>=5.5.1)) // TEST_DISCOVERY_CONDITION
+#if !os(Windows) && !os(WASI) // TEST_DISCOVERY_CONDITION
 @available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
 final class FutureConcurrencyTests: XCTestCase {
 

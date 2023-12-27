@@ -13,10 +13,10 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private typealias Sut = AnySubscriber<Int, TestingError>
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 final class AnySubscriberTests: XCTestCase {
 
     func testCombineIdentifier() {
@@ -163,7 +163,7 @@ final class AnySubscriberTests: XCTestCase {
                                          .completion(.finished)])
     }
 
-    @available(macOS 11.0, iOS 14.0, *)
+    @available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
     func testErasingTwice() {
         let introspection = TrackingIntrospection()
         let subscriber = TrackingSubscriber()
@@ -185,7 +185,7 @@ final class AnySubscriberTests: XCTestCase {
     }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private let events: [TrackingSubscriber.Event] = [
     .subscription("1"),
     .subscription("2"),
@@ -199,7 +199,7 @@ private let events: [TrackingSubscriber.Event] = [
     .completion(.failure("failure"))
 ]
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private func publishEvents(_ events: [TrackingSubscriber.Event], _ erased: Sut) {
     for event in events {
         switch event {
@@ -213,7 +213,7 @@ private func publishEvents(_ events: [TrackingSubscriber.Event], _ erased: Sut) 
     }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private func publishEvents(
     _ events: [TrackingSubscriber.Event],
     _ publisher: PassthroughSubject<Int, TestingError>
@@ -230,7 +230,7 @@ private func publishEvents(
     }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private func subscriberEventToSubjectEvent(
     _ from: TrackingSubscriber.Event
 ) -> TrackingSubject<Int>.Event? {
@@ -244,7 +244,7 @@ private func subscriberEventToSubjectEvent(
     }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension Array {
     func throughFirstCompletion<SubjectOutput>() -> Array
         where Element == TrackingSubject<SubjectOutput>.Event

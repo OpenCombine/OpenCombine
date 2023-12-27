@@ -13,7 +13,7 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 final class AnyPublisherTests: XCTestCase {
 
     private typealias Sut = AnyPublisher<Int, TestingError>
@@ -32,7 +32,7 @@ final class AnyPublisherTests: XCTestCase {
         XCTAssertEqual(publisher.history, [.subscriber])
     }
 
-    @available(macOS 11.0, iOS 14.0, *)
+    @available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
     func testDoubleErasure() {
         let introspection = TrackingIntrospection()
         let subscriber = TrackingSubscriber()

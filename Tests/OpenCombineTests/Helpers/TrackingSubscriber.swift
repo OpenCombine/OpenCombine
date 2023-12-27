@@ -25,7 +25,7 @@ import OpenCombine
 /// `TrackingSubscriber.Event.subscription(Subscription.empty)`
 /// is considered equal to any other subscription no matter what the subscription object
 /// actually is.
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 typealias TrackingSubscriber = TrackingSubscriberBase<Int, TestingError>
 
 /// `TrackingSubscriber` records every event like "receiveSubscription",
@@ -39,7 +39,7 @@ typealias TrackingSubscriber = TrackingSubscriberBase<Int, TestingError>
 /// `TrackingSubscriber.Event.subscription(Subscription.empty)`
 /// is considered equal to any other subscription no matter what the subscription object
 /// actually is.
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 final class TrackingSubscriberBase<Value, Failure: Error>
     : Subscriber,
       Cancellable,
@@ -186,7 +186,7 @@ final class TrackingSubscriberBase<Value, Failure: Error>
     }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension TrackingSubscriberBase: Equatable {
     static func == (lhs: TrackingSubscriberBase<Value, Failure>,
                     rhs: TrackingSubscriberBase<Value, Failure>) -> Bool {
@@ -194,21 +194,21 @@ extension TrackingSubscriberBase: Equatable {
     }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension TrackingSubscriberBase where Value: Equatable {
     func assertHistoryEqual(_ expected: [Event]) {
         assertHistoryEqual(expected, valueComparator: ==)
     }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension TrackingSubscriberBase where Value == Void {
     func assertHistoryEqual(_ expected: [Event]) {
         assertHistoryEqual(expected, valueComparator: { _, _ in true })
     }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension TrackingSubscriberBase.Event {
     func isEqual(to other: TrackingSubscriberBase<Value, Failure>.Event,
                  valueComparator: (Value, Value) -> Bool) -> Bool {
@@ -232,7 +232,7 @@ extension TrackingSubscriberBase.Event {
     }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension TrackingSubscriberBase.Event: Equatable where Value: Equatable {
 
     static func == (lhs: TrackingSubscriberBase.Event,
@@ -241,7 +241,7 @@ extension TrackingSubscriberBase.Event: Equatable where Value: Equatable {
     }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension TrackingSubscriberBase.Event where Value == Void {
 
     static var signal: TrackingSubscriberBase.Event { return .value(()) }
@@ -252,10 +252,10 @@ extension TrackingSubscriberBase.Event where Value == Void {
     }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 typealias TrackingSubject<Output: Equatable> = TrackingSubjectBase<Output, TestingError>
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 final class TrackingSubjectBase<Output: Equatable, Failure: Error>
     : Subject,
       CustomStringConvertible
@@ -346,7 +346,7 @@ final class TrackingSubjectBase<Output: Equatable, Failure: Error>
     var description: String { return "TrackingSubject" }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 enum StringSubscription: Subscription,
                          CustomStringConvertible,
                          ExpressibleByStringLiteral {
@@ -399,7 +399,7 @@ enum StringSubscription: Subscription,
     }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension StringSubscription: Equatable {
     static func == (lhs: StringSubscription, rhs: StringSubscription) -> Bool {
         // swiftlint:disable pattern_matching_keywords

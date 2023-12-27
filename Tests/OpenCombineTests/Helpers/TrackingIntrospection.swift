@@ -13,10 +13,10 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 11.0, iOS 14.0, *)
+@available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
 typealias TrackingIntrospection = TrackingIntrospectionBase<Int, TestingError>
 
-@available(macOS 11.0, iOS 14.0, *)
+@available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
 internal final class TrackingIntrospectionBase<Value: Equatable,
                                                Failure: Error & Equatable>
     : _Introspection
@@ -133,7 +133,7 @@ internal final class TrackingIntrospectionBase<Value: Equatable,
     }
 }
 
-@available(macOS 11.0, iOS 14.0, *)
+@available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
 extension TrackingIntrospectionBase.Event: CustomStringConvertible {
     var description: String {
         switch self {
@@ -189,7 +189,7 @@ extension TrackingIntrospectionBase.Event: CustomStringConvertible {
     }
 }
 
-@available(macOS 11.0, iOS 14.0, *)
+@available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
 extension _Introspection {
     internal func temporarilyEnable(_ body: () throws -> Void) rethrows {
         enable()
@@ -198,7 +198,7 @@ extension _Introspection {
     }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension Subscribers.Completion {
     func castFailure<Target: Error>(
         to target: Target.Type
@@ -215,7 +215,7 @@ extension Subscribers.Completion {
     }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 struct StringOrPublisher: CustomStringConvertible,
                           ExpressibleByStringLiteral {
 
@@ -262,7 +262,7 @@ struct StringOrPublisher: CustomStringConvertible,
     }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension StringOrPublisher: Equatable {
     static func == (lhs: StringOrPublisher, rhs: StringOrPublisher) -> Bool {
         switch (lhs.storage, rhs.storage) {
@@ -274,7 +274,7 @@ extension StringOrPublisher: Equatable {
     }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 struct StringOrSubscriber: CustomStringConvertible,
                            ExpressibleByStringLiteral {
 
@@ -312,7 +312,7 @@ struct StringOrSubscriber: CustomStringConvertible,
     }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension StringOrSubscriber: Equatable {
     static func == (lhs: StringOrSubscriber, rhs: StringOrSubscriber) -> Bool {
         switch (lhs.storage, rhs.storage) {

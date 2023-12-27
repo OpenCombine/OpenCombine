@@ -30,10 +30,10 @@ import OpenCombine
 ///     publisher.subscribe(subscriber)
 ///
 ///     assert(subscription.history == [.requested(.max(42)), .cancelled])
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 typealias CustomPublisher = CustomPublisherBase<Int, TestingError>
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 class CustomPublisherBase<Output, Failure: Error>: Publisher, Cancellable {
 
     private(set) var subscriber: AnySubscriber<Output, Failure>?
@@ -83,7 +83,7 @@ class CustomPublisherBase<Output, Failure: Error>: Publisher, Cancellable {
     }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension CustomPublisherBase: Equatable {
     static func == (lhs: CustomPublisherBase<Output, Failure>,
                     rhs: CustomPublisherBase<Output, Failure>) -> Bool {
@@ -91,10 +91,10 @@ extension CustomPublisherBase: Equatable {
     }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 typealias CustomConnectablePublisher = CustomConnectablePublisherBase<Int, TestingError>
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 final class CustomConnectablePublisherBase<Output, Failure: Error>
     : CustomPublisherBase<Output, Failure>,
       ConnectablePublisher

@@ -13,7 +13,7 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 final class SwitchToLatestTests: XCTestCase {
 
     var cancellables = [AnyCancellable]()
@@ -736,7 +736,7 @@ final class SwitchToLatestTests: XCTestCase {
         XCTAssertEqual(nestedSubscription.history, [.requested(.max(1))])
     }
 
-    @available(macOS 11.0, iOS 14.0, *)
+    @available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
     func testOverloadWhenUpstreamNeverFailsButChildrenCanFail() {
         let helper = OperatorTestHelper(
             publisherType: CustomPublisherBase<CustomPublisher, Never>.self,
@@ -748,7 +748,7 @@ final class SwitchToLatestTests: XCTestCase {
         XCTAssertEqual(helper.sut.upstream.upstream, helper.publisher)
     }
 
-    @available(macOS 11.0, iOS 14.0, *)
+    @available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
     func testOverloadWhenUpstreamCanFailButChildrenNeverFail() {
         let helper = OperatorTestHelper(
             publisherType: CustomPublisherBase<CustomPublisherBase<Int, Never>,

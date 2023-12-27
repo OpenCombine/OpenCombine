@@ -13,7 +13,7 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 final class HandleEventsTests: XCTestCase {
 
     func testBasicBehavior() throws {
@@ -240,7 +240,7 @@ final class HandleEventsTests: XCTestCase {
     }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private enum Event<Failure: Error & Equatable>: Equatable {
     case receiveSubscription(StringSubscription)
     case receiveOutput(Int)
@@ -249,7 +249,7 @@ private enum Event<Failure: Error & Equatable>: Equatable {
     case receiveRequest(Subscribers.Demand)
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension Publisher where Output == Int, Failure: Equatable {
     fileprivate func handleAllEvents(
         _ handle: @escaping (Event<Failure>) -> Void

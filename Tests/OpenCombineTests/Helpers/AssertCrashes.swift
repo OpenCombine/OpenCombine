@@ -38,7 +38,7 @@ extension XCTest {
             return
         }
 #endif
-#if !Xcode && !os(iOS) && !os(watchOS) && !os(tvOS) && !WASI
+#if !Xcode && !os(iOS) && !os(watchOS) && !os(tvOS) && !os(WASI)
         let childProcessEnvVariable = "OPENCOMBINE_TEST_PERFORM_ASSERT_CRASHES_BLOCKS"
         let childProcessEnvVariableOnValue = "YES"
 
@@ -91,6 +91,6 @@ extension XCTest {
                 printDiagnostics()
             }
         }
-#endif // !Xcode && !os(iOS) && !os(watchOS) && !os(tvOS) && !WASI
+#endif // !Xcode && !os(iOS) && !os(watchOS) && !os(tvOS) && !os(WASI)
     }
 }

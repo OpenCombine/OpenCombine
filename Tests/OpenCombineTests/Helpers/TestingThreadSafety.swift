@@ -5,7 +5,7 @@
 //  Created by Sergej Jaskiewicz on 11.06.2019.
 //
 
-#if !WASI
+#if !os(WASI)
 import Dispatch
 #endif
 
@@ -13,7 +13,7 @@ import Foundation
 import XCTest
 
 func race(times: Int = 100, _ bodies: () -> Void...) {
-    #if WASI
+    #if os(WASI)
     for body in bodies {
         for _ in 0..<times {
             body()
@@ -29,7 +29,7 @@ func race(times: Int = 100, _ bodies: () -> Void...) {
 }
 
 final class Atomic<Value> {
-#if !WASI
+#if !os(WASI)
     let lock = NSLock()
 #endif
 
@@ -40,7 +40,7 @@ final class Atomic<Value> {
     }
 
     var value: Value {
-#if !WASI
+#if !os(WASI)
         lock.lock()
         defer { lock.unlock() }
 #endif
@@ -49,7 +49,7 @@ final class Atomic<Value> {
     }
 
     func set(_ newValue: Value) {
-#if !WASI
+#if !os(WASI)
         lock.lock()
         defer { lock.unlock() }
 #endif
@@ -58,7 +58,7 @@ final class Atomic<Value> {
     }
 
     func `do`(_ body: (inout Value) throws -> Void) rethrows {
-#if !WASI
+#if !os(WASI)
         lock.lock()
         defer { lock.unlock() }
 #endif

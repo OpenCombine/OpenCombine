@@ -1,4 +1,4 @@
-// swift-tools-version:5.7
+// swift-tools-version:5.9
 
 import Foundation
 import PackageDescription
@@ -16,6 +16,7 @@ let supportedPlatforms: [Platform] = [
     .android,
     .windows,
     .wasi,
+    .visionOS,
 ]
 
 let openCombineTarget: Target = .target(

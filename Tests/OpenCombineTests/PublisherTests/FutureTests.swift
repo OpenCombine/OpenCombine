@@ -15,7 +15,7 @@ import OpenCombine
 
 // swiftlint:enable generic_type_name
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 final class FutureTests: XCTestCase {
     private typealias Sut = Future<Int, TestingError>
 

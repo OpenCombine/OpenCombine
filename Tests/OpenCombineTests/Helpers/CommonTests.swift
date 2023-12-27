@@ -13,7 +13,7 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension XCTest {
 
     enum ValueBeforeSubscriptionBehavior<Value, Failure: Error> {
@@ -164,7 +164,7 @@ extension XCTest {
     }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension XCTestCase.ValueBeforeSubscriptionBehavior where Value: Equatable {
     static func history(
         _ history: [TrackingSubscriberBase<Value, Failure>.Event],
@@ -174,7 +174,7 @@ extension XCTestCase.ValueBeforeSubscriptionBehavior where Value: Equatable {
     }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension XCTestCase.CompletionBeforeSubscriptionBehavior where Value: Equatable {
     static func history(
         _ history: [TrackingSubscriberBase<Value, Failure>.Event]

@@ -13,7 +13,7 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 final class SequenceTests: XCTestCase {
 
 #if OPENCOMBINE_COMPATIBILITY_TEST || !canImport(Combine)
@@ -737,7 +737,7 @@ private final class Counter: Sequence, IteratorProtocol, CustomStringConvertible
 ///
 ///     let publisher = makePublisher([1, 2, 3, 4])
 ///
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private func makePublisher<Elements: Sequence>(
     _ elements: Elements
 ) -> Publishers.Sequence<Elements, Never> {

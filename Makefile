@@ -21,7 +21,7 @@ swift-version:
 	$(SWIFT_EXE) -version
 
 test-compatibility:
-	$(SWIFT_EXE) test -Xswiftc -DOPENCOMBINE_COMPATIBILITY_TEST
+	OPENCOMBINE_COMPATIBILITY_TEST=1 $(SWIFT_EXE) test
 
 gyb:
 	$(shell ./utils/recursively_gyb.sh)

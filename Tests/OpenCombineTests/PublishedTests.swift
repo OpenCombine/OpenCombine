@@ -12,10 +12,10 @@ import XCTest
 #if OPENCOMBINE_COMPATIBILITY_TEST
 import Combine
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private typealias Published = Combine.Published
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private typealias ObservableObject = Combine.ObservableObject
 #else
 import OpenCombine
@@ -25,7 +25,7 @@ private typealias Published = OpenCombine.Published
 private typealias ObservableObject = OpenCombine.ObservableObject
 #endif
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 final class PublishedTests: XCTestCase {
 
     func testBasicBehavior() {
@@ -110,7 +110,7 @@ final class PublishedTests: XCTestCase {
         tracking1.assertHistoryEqual([.subscription("ObservableObjectPublisher")])
     }
 
-    @available(macOS 11.0, iOS 14.0, *)
+    @available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
     func testAssignToPublished() throws {
         let subscription = CustomSubscription()
         let publisher = CustomPublisherBase<Int, Never>(subscription: subscription)
@@ -149,7 +149,7 @@ final class PublishedTests: XCTestCase {
                                               .cancelled])
     }
 
-    @available(macOS 11.0, iOS 14.0, *)
+    @available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
     func testAssignToPublishedFinish() {
         let subscription = CustomSubscription()
         let publisher = CustomPublisherBase<Int, Never>(subscription: subscription)
@@ -291,7 +291,7 @@ final class PublishedTests: XCTestCase {
         )
     }
 
-    @available(macOS 11.0, iOS 14.0, *)
+    @available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
     func testProjectedValueSetter() {
         let testObject1 = TestObject(1)
         let testObject2 = TestObject(2)
@@ -311,7 +311,7 @@ final class PublishedTests: XCTestCase {
     }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private final class TestObject: ObservableObject {
 
     let objectWillChange = ObservableObjectPublisher()

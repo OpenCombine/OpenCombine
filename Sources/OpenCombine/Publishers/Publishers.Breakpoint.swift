@@ -5,7 +5,7 @@
 //  Created by Sergej Jaskiewicz on 03.12.2019.
 //
 
-#if !WASI
+#if !os(WASI)
 
 #if canImport(COpenCombineHelpers)
 import COpenCombineHelpers
@@ -228,4 +228,4 @@ extension Publishers.Breakpoint {
     }
 }
 
-#endif // !WASI
+#endif // !os(WASI)

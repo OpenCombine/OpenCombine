@@ -12,7 +12,7 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 final class ZipTests: XCTestCase {
     static let arities = (2...4)
 
@@ -741,7 +741,7 @@ final class ZipTests: XCTestCase {
         }
     }
 
-    #if !WASI
+    #if !os(WASI)
     // FIXME: swift-testing macro for specifying the relationship between a bug and a test case
     // Uncomment the following line when we migrate to swift-testing
     // @Test("Zip reference issue", .bug("#241", relationship: .verifiesFix))
