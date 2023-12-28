@@ -186,11 +186,12 @@ final class DispatchQueueSchedulerTests: XCTestCase {
         makeStride = Stride.init(__guessFromUnknown:)
 #endif
 
-#if arch(x86_64) || arch(arm64) || arch(s390x) || arch(powerpc64) || arch(powerpc64le)
+// riscv64 is not support on Swift 5.7 Toolchain
+#if arch(x86_64) || arch(arm64) || arch(powerpc64) || arch(powerpc64le) || arch(s390x) /*|| arch(riscv64)*/
         // 64-bit platforms
         let minNanoseconds = -0x13B13B13B13B13B0 // Int64.min / 6.5
         let maxNanoseconds =  0x2C4EC4EC4EC4EC4D // Int64.max / 2.889
-#elseif arch(i386) || arch(arm)
+#elseif arch(i386) || arch(arm) || arch(arm64_32) || arch(wasm32) || arch(powerpc)
         // 32-bit platforms
         let minNanoseconds = Int.min + 1
         let maxNanoseconds = Int.max
@@ -262,13 +263,14 @@ final class DispatchQueueSchedulerTests: XCTestCase {
         XCTAssertEqual(Stride.microseconds(2).magnitude, 2_000)
         XCTAssertEqual(Stride.nanoseconds(2).magnitude, 2)
 
-#if arch(x86_64) || arch(arm64) || arch(s390x) || arch(powerpc64) || arch(powerpc64le)
+// riscv64 is not support on Swift 5.7 Toolchain
+#if arch(x86_64) || arch(arm64) || arch(powerpc64) || arch(powerpc64le) || arch(s390x) /*|| arch(riscv64)*/
         // 64-bit platforms
         XCTAssertEqual(
             Stride.seconds(Double(Int.max) / 1_000_000_000 - 1).magnitude,
             9223372035854776320
         )
-#elseif arch(i386) || arch(arm)
+#elseif arch(i386) || arch(arm) || arch(arm64_32) || arch(wasm32) || arch(powerpc)
         // 32-bit platforms
         XCTAssertEqual(
             Stride.seconds(Double(Int.max) / 1_000_000_000).magnitude,
@@ -291,13 +293,14 @@ final class DispatchQueueSchedulerTests: XCTestCase {
     }
 
     func testStrideFromTooMuchSeconds() {
-#if arch(x86_64) || arch(arm64) || arch(s390x) || arch(powerpc64) || arch(powerpc64le)
+// riscv64 is not support on Swift 5.7 Toolchain
+#if arch(x86_64) || arch(arm64) || arch(powerpc64) || arch(powerpc64le) || arch(s390x) /*|| arch(riscv64)*/
         // 64-bit platforms
         XCTAssertEqual(
             Stride.seconds(Double(Int.max) / 1_000_000_000).magnitude,
             .max
         )
-#elseif arch(i386) || arch(arm)
+#elseif arch(i386) || arch(arm) || arch(arm64_32) || arch(wasm32) || arch(powerpc)
         // 32-bit platforms
         XCTAssertEqual(
             Stride.seconds(Double(Int.max) / 1_000_000_000).magnitude,

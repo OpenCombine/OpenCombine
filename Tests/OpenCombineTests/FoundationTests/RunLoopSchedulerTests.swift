@@ -79,14 +79,15 @@ final class RunLoopSchedulerTests: XCTestCase {
         XCTAssertEqual(time.advanced(by: stride2),
                        .init(Date(timeIntervalSinceReferenceDate: 9780)))
 
-#if arch(x86_64) || arch(arm64) || arch(s390x) || arch(powerpc64) || arch(powerpc64le)
+// riscv64 is not support on Swift 5.7 Toolchain
+#if arch(x86_64) || arch(arm64) || arch(powerpc64) || arch(powerpc64le) || arch(s390x) /*|| arch(riscv64)*/
         // 64-bit platforms
         XCTAssertEqual(time.advanced(by: .nanoseconds(.max)).date,
                        Date(timeIntervalSinceReferenceDate: 9223382036.854776))
 
         XCTAssertEqual(time.advanced(by: .seconds(.max)).date,
                        Date(timeIntervalSinceReferenceDate: 9.223372036854786E+18))
-#elseif arch(i386) || arch(arm)
+#elseif arch(i386) || arch(arm) || arch(arm64_32) || arch(wasm32) || arch(powerpc)
         // 32-bit platforms
         XCTAssertEqual(time.advanced(by: .nanoseconds(.max)).date,
                        Date(timeIntervalSinceReferenceDate: 10002.147483647))
@@ -166,13 +167,14 @@ final class RunLoopSchedulerTests: XCTestCase {
         XCTAssertEqual(Stride.milliseconds(2).timeInterval, 0.002)
         XCTAssertEqual(Stride.microseconds(2).timeInterval, 2E-06)
         XCTAssertEqual(Stride.nanoseconds(2).timeInterval, 2E-09)
-#if arch(x86_64) || arch(arm64) || arch(s390x) || arch(powerpc64) || arch(powerpc64le)
+// riscv64 is not support on Swift 5.7 Toolchain
+#if arch(x86_64) || arch(arm64) || arch(powerpc64) || arch(powerpc64le) || arch(s390x) /*|| arch(riscv64)*/
         // 64-bit platforms
         XCTAssertEqual(Stride.seconds(Int.max).timeInterval, 9.223372036854776E+18)
         XCTAssertEqual(Stride.milliseconds(.max).timeInterval, 9.223372036854776E+15)
         XCTAssertEqual(Stride.microseconds(.max).timeInterval, 9223372036854.775)
         XCTAssertEqual(Stride.nanoseconds(.max).timeInterval, 9223372036.854776)
-#elseif arch(i386) || arch(arm)
+#elseif arch(i386) || arch(arm) || arch(arm64_32) || arch(wasm32) || arch(powerpc)
         // 32-bit platforms
         XCTAssertEqual(Stride.seconds(Int.max).timeInterval, 2147483647)
         XCTAssertEqual(Stride.milliseconds(.max).timeInterval, 2147483.647)
