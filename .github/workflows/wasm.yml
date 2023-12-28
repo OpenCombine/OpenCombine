@@ -2,9 +2,9 @@ name: Wasm
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
-    branches: [main]
+    branches: [master]
 
 jobs:
   carton_wasmer_test_5_7:

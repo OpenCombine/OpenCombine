@@ -2,9 +2,9 @@ name: Compatibility tests
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
-    branches: [main]
+    branches: [master]
 
 jobs:
   compatibility_tests_macos:

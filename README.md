@@ -1,23 +1,18 @@
 # OpenCombine
-[![codecov](https://codecov.io/gh/OpenSwiftUIProject/OpenCombine/graph/badge.svg?token=BJSI3J7RZQ)](https://codecov.io/gh/OpenSwiftUIProject/OpenCombine)
-
-[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2FOpenSwiftUIProject%2FOpenCombine%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/OpenSwiftUIProject/OpenCombine)
-
-[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2FOpenSwiftUIProject%2FOpenCombine%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/OpenSwiftUIProject/OpenCombine)
+[![codecov](https://codecov.io/gh/OpenCombine/OpenCombine/branch/master/graph/badge.svg)](https://codecov.io/gh/OpenCombine/OpenCombine)
+![Language](https://img.shields.io/badge/Swift-5.7-orange.svg)
 
 Open-source implementation of Apple's [Combine](https://developer.apple.com/documentation/combine) framework for processing values over time.
 
 The main goal of this project is to provide a compatible, reliable and efficient implementation which can be used on Apple's operating systems before macOS 10.15 and iOS 13, as well as Linux, Windows and WebAssembly.
 
-The documentation of the package can be found at [OpenCombine Documentation](https://swiftpackageindex.com/OpenSwiftUIProject/OpenCombine/main/documentation/OpenCombine)
-
 | **CI Status** |
 |---|
-|[![Compatibility tests](https://github.com/OpenSwiftUIProject/OpenCombine/actions/workflows/compatibility_tests.yml/badge.svg)](https://github.com/OpenSwiftUIProject/OpenCombine/actions/workflows/compatibility_tests.yml)|
-|[![macOS](https://github.com/OpenSwiftUIProject/OpenCombine/actions/workflows/macos.yml/badge.svg)](https://github.com/OpenSwiftUIProject/OpenCombine/actions/workflows/macos.yml)|
-|[![Ubuntu](https://github.com/OpenSwiftUIProject/OpenCombine/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/OpenSwiftUIProject/OpenCombine/actions/workflows/ubuntu.yml)|
-|[![Windows](https://github.com/OpenSwiftUIProject/OpenCombine/actions/workflows/windows.yml/badge.svg)](https://github.com/OpenSwiftUIProject/OpenCombine/actions/workflows/windows.yml)|
-|[![Wasm](https://github.com/OpenSwiftUIProject/OpenCombine/actions/workflows/wasm.yml/badge.svg)](https://github.com/OpenSwiftUIProject/OpenCombine/actions/workflows/wasm.yml)|
+|[![Compatibility tests](https://github.com/OpenCombine/OpenCombine/actions/workflows/compatibility_tests.yml/badge.svg)](https://github.com/OpenCombine/OpenCombine/actions/workflows/compatibility_tests.yml)|
+|[![macOS](https://github.com/OpenCombine/OpenCombine/actions/workflows/macos.yml/badge.svg)](https://github.com/OpenCombine/OpenCombine/actions/workflows/macos.yml)|
+|[![Ubuntu](https://github.com/OpenCombine/OpenCombine/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/OpenCombine/OpenCombine/actions/workflows/ubuntu.yml)|
+|[![Windows](https://github.com/OpenCombine/OpenCombine/actions/workflows/windows.yml/badge.svg)](https://github.com/OpenCombine/OpenCombine/actions/workflows/windows.yml)|
+|[![Wasm](https://github.com/OpenCombine/OpenCombine/actions/workflows/wasm.yml/badge.svg)](https://github.com/OpenCombine/OpenCombine/actions/workflows/wasm.yml)|
 
 
 ### Installation
@@ -30,13 +25,12 @@ If you develop code for multiple platforms, you may find it more convenient to i
 available), and all OpenCombine modules on other platforms.
 
 ##### Swift Package Manager
-
 ###### Swift Package
 To add `OpenCombine` to your [SwiftPM](https://swift.org/package-manager/) package, add the `OpenCombine` package to the list of package and target dependencies in your `Package.swift` file. `OpenCombineDispatch` and `OpenCombineFoundation` products are currently not supported on WebAssembly. If your project targets WebAssembly exclusively, you should omit them from the list of your dependencies. If it targets multiple platforms including WebAssembly, depend on them only on non-WebAssembly platforms with [conditional target dependencies](https://github.com/apple/swift-evolution/blob/main/proposals/0273-swiftpm-conditional-target-dependencies.md).
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/OpenSwiftUIProject/OpenCombine.git", from: "0.14.0")
+    .package(url: "https://github.com/OpenCombine/OpenCombine.git", from: "0.14.0")
 ],
 targets: [
     .target(
@@ -53,7 +47,7 @@ targets: [
 ###### Xcode
 `OpenCombine` can also be added as a SwiftPM dependency directly in your Xcode project *(requires Xcode 11 upwards)*.
 
-To do so, open Xcode, use **File** → **Swift Packages** → **Add Package Dependency…**, enter the [repository URL](https://github.com/OpenSwiftUIProject/OpenCombine.git), choose the latest available version, and activate the checkboxes:
+To do so, open Xcode, use **File** → **Swift Packages** → **Add Package Dependency…**, enter the [repository URL](https://github.com/OpenCombine/OpenCombine.git), choose the latest available version, and activate the checkboxes:
 
 <p align="center">
 <img alt="Select the OpenCombine and OpenCombineDispatch targets" 
@@ -64,9 +58,9 @@ To do so, open Xcode, use **File** → **Swift Packages** → **Add Package Depe
 
 The file `opencombine_lldb.py`  defines some `lldb` type summaries for easier debugging. These type summaries improve the way `lldb` and Xcode display some OpenCombine values.
 
-To use `opencombine_lldb.py`, figure out its full path. Let's say the full path is `~/projects/OpenSwiftUIProject/opencombine_lldb.py`. Then the following statement to your `~/.lldbinit` file:
+To use `opencombine_lldb.py`, figure out its full path. Let's say the full path is `~/projects/OpenCombine/opencombine_lldb.py`. Then the following statement to your `~/.lldbinit` file:
 
-    command script import ~/projects/OpenSwiftUIProject/opencombine_lldb.py
+    command script import ~/projects/OpenCombine/opencombine_lldb.py
 
 Currently, `opencombine_lldb.py` defines type summaries for these types:
 
