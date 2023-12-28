@@ -33,10 +33,8 @@
 /// by mapping or filtering elements, while only OpenCombine provides time-based
 /// operations like
 /// ``Publisher/debounce(for:scheduler:options:)`` and
-/// ``Publisher/throttle(for:scheduler:latest:)``.
-/// <!--Uncomment the following doc when merge and combineLatest is implemented.-->
-/// <!--``Publisher/throttle(for:scheduler:latest:)``, and combining operations like-->
-/// <!--``Publisher/merge(with:)-7fk3a`` and ``Publisher/combineLatest(_:_:)-1n30g``.-->
+/// ``Publisher/throttle(for:scheduler:latest:)``, and combining operations like
+/// ``Publisher/merge(with:)-9qb5x`` and ``Publisher/combineLatest(_:_:)-9ip85``.
 /// To bridge the two approaches, the property ``Publisher/values-32o4h`` exposes
 /// a publisher's elements as an `AsyncSequence`, allowing you to iterate over
 /// them with `for`-`await`-`in` rather than attaching a ``Subscriber``.

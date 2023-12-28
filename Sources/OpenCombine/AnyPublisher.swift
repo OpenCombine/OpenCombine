@@ -3,7 +3,7 @@
 //  OpenCombine
 //
 //  Created by Sergej Jaskiewicz on 10.06.2019.
-//  Audited for Combine 2023
+//  Audited for 2023 Release
 
 extension Publisher {
     /// Wraps this publisher with a type eraser.

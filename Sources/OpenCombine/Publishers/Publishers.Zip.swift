@@ -3,11 +3,13 @@
 //  OpenCombine
 //
 //  Created by Kyle on 2023/7/25.
-//  Audited for Combine 2023
+//  Audited for 2023 Release
 
 #if canImport(COpenCombineHelpers)
 @_implementationOnly import COpenCombineHelpers
 #endif
+
+// MARK: - zip methods on Publisher
 
 extension Publisher {
     /// Combines elements from another publisher and deliver pairs of elements as tuples.
@@ -71,7 +73,7 @@ extension Publisher {
     ///   - transform: A closure that receives the most-recent value from each publisher and returns a new value to publish.
     /// - Returns: A publisher that uses the `transform` closure to emit new elements, produced by combining the most recent value from two upstream publishers.
     public func zip<P, T>(_ other: P, _ transform: @escaping (Self.Output, P.Output) -> T) -> Publishers.Map<Publishers.Zip<Self, P>, T> where P: Publisher, Self.Failure == P.Failure {
-        zip(other).map(transform)
+        Publishers.Zip(self, other).map(transform)
     }
 
     /// Combines elements from two other publishers and delivers groups of elements as tuples.
@@ -146,7 +148,7 @@ extension Publisher {
     ///   - transform: A closure that receives the most-recent value from each publisher and returns a new value to publish.
     /// - Returns: A publisher that uses the `transform` closure to emit new elements, produced by combining the most recent value from three upstream publishers.
     public func zip<P, Q, T>(_ publisher1: P, _ publisher2: Q, _ transform: @escaping (Self.Output, P.Output, Q.Output) -> T) -> Publishers.Map<Publishers.Zip3<Self, P, Q>, T> where P: Publisher, Q: Publisher, Self.Failure == P.Failure, P.Failure == Q.Failure {
-        zip(publisher1, publisher2).map(transform)
+        Publishers.Zip3(self, publisher1, publisher2).map(transform)
     }
 
     /// Combines elements from three other publishers and delivers groups of elements as tuples.
@@ -228,9 +230,11 @@ extension Publisher {
     ///   - transform: A closure that receives the most-recent value from each publisher and returns a new value to publish.
     /// - Returns: A publisher that uses the `transform` closure to emit new elements, produced by combining the most recent value from four upstream publishers.
     public func zip<P, Q, R, T>(_ publisher1: P, _ publisher2: Q, _ publisher3: R, _ transform: @escaping (Self.Output, P.Output, Q.Output, R.Output) -> T) -> Publishers.Map<Publishers.Zip4<Self, P, Q, R>, T> where P: Publisher, Q: Publisher, R: Publisher, Self.Failure == P.Failure, P.Failure == Q.Failure, Q.Failure == R.Failure {
-        zip(publisher1, publisher2, publisher3).map(transform)
+        Publishers.Zip4(self, publisher1, publisher2, publisher3).map(transform)
     }
 }
+
+// MARK: - Zip Publishers
 
 extension Publishers {
     /// A publisher created by applying the zip function to two upstream publishers.
@@ -371,6 +375,8 @@ extension Publishers {
     }
 }
 
+// MARK: - Equatable conformances
+
 extension Publishers.Zip: Equatable where A: Equatable, B: Equatable {
     /// Returns a Boolean value that indicates whether two publishers are equivalent.
     ///
@@ -409,35 +415,33 @@ extension Publishers.Zip4: Equatable where A: Equatable, B: Equatable, C: Equata
 
 // MARK: - AbstractZip
 
-private class AbstractZip<Input, Failure, Downstream> where Downstream: Subscriber, Input == Downstream.Input, Failure == Downstream.Failure {
+private class AbstractZip<
+    Output,
+    Failure,
+    Downstream
+> where Downstream: Subscriber,
+    Downstream.Input == Output,
+    Downstream.Failure == Failure {
     let downstream: Downstream
     var buffers: [[Any]]
     var subscriptions: [Subscription?]
-    var cancelled: Bool
-    var errored: Bool
-    var finished: Bool
+    var cancelled = false
+    var errored = false
+    var finished = false
     var upstreamFinished: [Bool]
     let upstreamCount: Int
-    var lock: UnfairLock
-    let downstreamLock: UnfairRecursiveLock
-    var recursive: Bool
-    var pendingDemand: Subscribers.Demand
+    var lock = UnfairLock.allocate()
+    let downstreamLock = UnfairRecursiveLock.allocate()
+    var recursive = false
+    var pendingDemand = Subscribers.Demand.none
     var pendingCompletion: Subscribers.Completion<Failure>?
 
     init(downstream: Downstream, upstreamCount: Int) {
         self.downstream = downstream
-        self.buffers = Array(repeating: [], count: upstreamCount)
-        self.subscriptions = Array(repeating: nil, count: upstreamCount)
-        self.cancelled = false
-        self.errored = false
-        self.finished = false
-        self.upstreamFinished = Array(repeating: false, count: upstreamCount)
+        buffers = Array(repeating: [], count: upstreamCount)
+        subscriptions = Array(repeating: nil, count: upstreamCount)
+        upstreamFinished = Array(repeating: false, count: upstreamCount)
         self.upstreamCount = upstreamCount
-        self.lock = UnfairLock.allocate()
-        self.downstreamLock = UnfairRecursiveLock.allocate()
-        self.recursive = false
-        self.pendingDemand = .none
-        self.pendingCompletion = nil
     }
 
     deinit {
@@ -445,8 +449,8 @@ private class AbstractZip<Input, Failure, Downstream> where Downstream: Subscrib
         downstreamLock.deallocate()
     }
 
-    func convert(values _: [Any]) -> Input {
-        fatalError("Abstract method")
+    func convert(values _: [Any]) -> Output {
+        abstractMethod()
     }
 
     func receive(subscription: Subscription, index: Int) {
@@ -476,6 +480,7 @@ private class AbstractZip<Input, Failure, Downstream> where Downstream: Subscrib
         }
     }
 
+    // FIXME: To be audited
     func receive(_ value: Any, index: Int) -> Subscribers.Demand {
         precondition(upstreamCount > index)
         lock.lock()
@@ -484,7 +489,7 @@ private class AbstractZip<Input, Failure, Downstream> where Downstream: Subscrib
             return .none
         }
         buffers[index].append(value)
-        if buffers.contains(where: { $0.isEmpty }) {
+        if buffers.contains(where: \.isEmpty) {
             lock.unlock()
             return .none
         }
@@ -545,7 +550,7 @@ private class AbstractZip<Input, Failure, Downstream> where Downstream: Subscrib
             } else {
                 lock.unlock()
             }
-        case .failure(_):
+        case .failure:
             errored = true
             lockedSendCompletion(completion: completion)
         }
@@ -617,7 +622,7 @@ extension AbstractZip: Subscription {
         let subscriptions = self.subscriptions
         cancelled = true
         self.subscriptions = Array(repeating: nil, count: upstreamCount)
-        self.buffers = Array(repeating: [], count: upstreamCount)
+        buffers = Array(repeating: [], count: upstreamCount)
         lock.unlock()
         for subscription in subscriptions {
             subscription?.cancel()
@@ -625,8 +630,22 @@ extension AbstractZip: Subscription {
     }
 }
 
+extension AbstractZip: CustomStringConvertible {
+    var description: String { "Zip" }
+}
+
+extension AbstractZip: CustomPlaygroundDisplayConvertible {
+    var playgroundDescription: Any { description }
+}
+
+extension AbstractZip: CustomReflectable {
+    var customMirror: Mirror { Mirror(self, children: [:]) }
+}
+
+// MARK: - AbstractZip.Side
+
 extension AbstractZip {
-    struct Side<SideInput> {
+    struct Side<Input> {
         let index: Int
         let zip: AbstractZip
         let combineIdentifier: CombineIdentifier
@@ -640,13 +659,11 @@ extension AbstractZip {
 }
 
 extension AbstractZip.Side: Subscriber {
-    typealias Input = SideInput
-
     func receive(subscription: Subscription) {
         zip.receive(subscription: subscription, index: index)
     }
 
-    func receive(_ input: SideInput) -> Subscribers.Demand {
+    func receive(_ input: Input) -> Subscribers.Demand {
         zip.receive(input, index: index)
     }
 
@@ -655,48 +672,84 @@ extension AbstractZip.Side: Subscriber {
     }
 }
 
-extension AbstractZip: CustomStringConvertible {
-    var description: String { "Zip" }
-}
-
 extension AbstractZip.Side: CustomStringConvertible {
     var description: String { "Zip" }
-}
-
-extension AbstractZip: CustomPlaygroundDisplayConvertible {
-    var playgroundDescription: Any { description }
 }
 
 extension AbstractZip.Side: CustomPlaygroundDisplayConvertible {
     var playgroundDescription: Any { description }
 }
 
-extension AbstractZip: CustomReflectable {
-    var customMirror: Mirror { Mirror(self, children: [:]) }
-}
-
 extension AbstractZip.Side: CustomReflectable {
     var customMirror: Mirror {
-        Mirror(self, children: ["parentSubscription" : zip.combineIdentifier])
+        Mirror(self, children: ["parentSubscription": zip.combineIdentifier])
     }
 }
 
-// MARK: ZipInner
+// MARK: Zip Inners
 
-private final class Zip2Inner<Input1, Input2, Failure, Downstream>: AbstractZip<(Input1, Input2), Failure, Downstream> where Downstream: Subscriber, (Input1, Input2) == Downstream.Input, Failure == Downstream.Failure {
-    override func convert(values: [Any]) -> (Input1, Input2) {
-        (values[0] as! Input1, values[1] as! Input2)
+private final class Zip2Inner<
+    Output0,
+    Output1,
+    Failure,
+    Downstream
+>: AbstractZip<
+    (Output0, Output1),
+    Failure,
+    Downstream
+> where Downstream: Subscriber,
+    Downstream.Input == (Output0, Output1),
+    Downstream.Failure == Failure {
+    override func convert(values: [Any]) -> (Output0, Output1) {
+        (
+            values[0] as! Output0,
+            values[1] as! Output1
+        )
     }
 }
 
-private final class Zip3Inner<Input1, Input2, Input3, Failure, Downstream>: AbstractZip<(Input1, Input2, Input3), Failure, Downstream> where Downstream: Subscriber, (Input1, Input2, Input3) == Downstream.Input, Failure == Downstream.Failure {
-    override func convert(values: [Any]) -> (Input1, Input2, Input3) {
-        (values[0] as! Input1, values[1] as! Input2, values[2] as! Input3)
+private final class Zip3Inner<
+    Output0,
+    Output1,
+    Output2,
+    Failure,
+    Downstream
+>: AbstractZip<
+    (Output0, Output1, Output2),
+    Failure,
+    Downstream
+> where Downstream: Subscriber,
+    Downstream.Input == (Output0, Output1, Output2),
+    Downstream.Failure == Failure {
+    override func convert(values: [Any]) -> (Output0, Output1, Output2) {
+        (
+            values[0] as! Output0,
+            values[1] as! Output1,
+            values[2] as! Output2
+        )
     }
 }
 
-private final class Zip4Inner<Input1, Input2, Input3, Input4, Failure, Downstream>: AbstractZip<(Input1, Input2, Input3, Input4), Failure, Downstream> where Downstream: Subscriber, (Input1, Input2, Input3, Input4) == Downstream.Input, Failure == Downstream.Failure {
-    override func convert(values: [Any]) -> (Input1, Input2, Input3, Input4) {
-        (values[0] as! Input1, values[1] as! Input2, values[2] as! Input3, values[3] as! Input4)
+private final class Zip4Inner<
+    Output0,
+    Output1,
+    Output2,
+    Output3,
+    Failure,
+    Downstream: Subscriber
+>: AbstractZip<
+    (Output0, Output1, Output2, Output3),
+    Failure,
+    Downstream
+> where Downstream: Subscriber,
+    Downstream.Input == (Output0, Output1, Output2, Output3),
+    Downstream.Failure == Failure {
+    override func convert(values: [Any]) -> (Output0, Output1, Output2, Output3) {
+        (
+            values[0] as! Output0,
+            values[1] as! Output1,
+            values[2] as! Output2,
+            values[3] as! Output3
+        )
     }
 }
