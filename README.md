@@ -64,9 +64,9 @@ To do so, open Xcode, use **File** → **Swift Packages** → **Add Package Depe
 
 The file `opencombine_lldb.py`  defines some `lldb` type summaries for easier debugging. These type summaries improve the way `lldb` and Xcode display some OpenCombine values.
 
-To use `opencombine_lldb.py`, figure out its full path. Let's say the full path is `~/projects/OpenSwiftUIProject/OpenCombine_lldb.py`. Then the following statement to your `~/.lldbinit` file:
+To use `opencombine_lldb.py`, figure out its full path. Let's say the full path is `~/projects/OpenSwiftUIProject/opencombine_lldb.py`. Then the following statement to your `~/.lldbinit` file:
 
-    command script import ~/projects/OpenSwiftUIProject/OpenCombine_lldb.py
+    command script import ~/projects/OpenSwiftUIProject/opencombine_lldb.py
 
 Currently, `opencombine_lldb.py` defines type summaries for these types:
 
