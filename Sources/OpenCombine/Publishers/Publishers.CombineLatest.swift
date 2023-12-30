@@ -643,7 +643,14 @@ extension AbstractCombineLatest {
     struct Side<Input> {
         let index: Int
         let combiner: AbstractCombineLatest
-
+        // `CombineIdentifier(AbstractCombineLatest.self)` will cause build fail on non-ObjC platform
+        // Even we can make trick to compile successfully by using `CombineIdentifier(AbstractCombineLatest.self as AnyObject)`
+        // The runtime behavior is still not correct and may give different result here.
+        // Tracked by https://github.com/apple/swift/issues/70645
+        #if !canImport(ObjectiveC)
+        let combineIdentifier = CombineIdentifier()
+        #endif
+        
         init(index: Int, combiner: AbstractCombineLatest) {
             self.index = index
             self.combiner = combiner
@@ -652,13 +659,17 @@ extension AbstractCombineLatest {
 }
 
 extension AbstractCombineLatest.Side: Subscriber {
+    // `CombineIdentifier(AbstractCombineLatest.self)` will cause build fail on non-ObjC platform
+    // Even we can make trick to compile successfully by using `CombineIdentifier(AbstractCombineLatest.self as AnyObject)`
+    // The runtime behavior is still not correct and may give different result here.
+    // Tracked by https://github.com/apple/swift/issues/70645
+    #if canImport(ObjectiveC)
     // NOTE: Audited with Combine 2023 release.
     // A better implementation is `let combineIdentifier = CombineIdentifier()` IMO.
     var combineIdentifier: CombineIdentifier {
-        // `CombineIdentifier(AbstractCombineLatest.self) will cause build fail on non-Darwin platform
-        // Tracked by https://github.com/apple/swift/issues/70645
-        CombineIdentifier(AbstractCombineLatest.self as AnyObject)
+        CombineIdentifier(AbstractCombineLatest.self)
     }
+    #endif
     
     func receive(subscription: Subscription) {
         combiner.receive(subscription: subscription, index: index)
