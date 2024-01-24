@@ -16,7 +16,7 @@ import OpenCombine
 /// `OperatorTestHelper` is an abstraction that helps avoid a lot of boilerplate when
 /// testing an operator.  It is initialized with a publisher type and creates a
 /// `CustomSubscription`, `CustomPublisherBase` and `TrackingSubscriberBase`.
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 class OperatorTestHelper<SourceValue,
                          SourceError: Error,
                          SourcePublisher,

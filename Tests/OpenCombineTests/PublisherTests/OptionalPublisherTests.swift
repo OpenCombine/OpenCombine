@@ -13,7 +13,7 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 11.0, iOS 14.0, *)
+@available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
 final class OptionalPublisherTests: XCTestCase {
 
     private typealias Sut<Output> = OptionalPublisher<Output>
@@ -383,10 +383,10 @@ final class OptionalPublisherTests: XCTestCase {
 }
 
 #if OPENCOMBINE_COMPATIBILITY_TEST || !canImport(Combine)
-@available(macOS 11.0, iOS 14.0, *)
+@available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
 typealias OptionalPublisher<Output> = Optional<Output>.Publisher
 
-@available(macOS 11.0, iOS 14.0, *)
+@available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
 func makePublisher<Output>(_ optional: Output?) -> OptionalPublisher<Output> {
     return optional.publisher
 }

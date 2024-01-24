@@ -12,10 +12,10 @@ import XCTest
 #if OPENCOMBINE_COMPATIBILITY_TEST
 import Combine
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private typealias Published = Combine.Published
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private typealias ObservableObject = Combine.ObservableObject
 #else
 import OpenCombine
@@ -25,7 +25,7 @@ private typealias Published = OpenCombine.Published
 private typealias ObservableObject = OpenCombine.ObservableObject
 #endif
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 final class ObservableObjectTests: XCTestCase {
     var disposeBag = [AnyCancellable]()
 
@@ -307,21 +307,21 @@ final class ObservableObjectTests: XCTestCase {
     }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private final class NoFields: ObservableObject {}
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private final class NoPublishedFields: ObservableObject {
     var field = NoFields()
     var int = 0
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private final class PublishedFieldIsConstant: ObservableObject {
     let publishedValue = Published(initialValue: 42)
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private class ObservedBase: ObservableObject {
     @Published var publishedValue0 = 0
     var publishedValue1 = Published(initialValue: "Hello!")
@@ -329,36 +329,36 @@ private class ObservedBase: ObservableObject {
     var simpleValue = "what"
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private final class ObservedDerivedWithObservedBase: ObservedBase {
     @Published var subclassPublished0 = 0
     @Published var subclassPublished1 = 1
     @Published var subclassPublished2 = 2
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension NSNumber: ObservableObject {}
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private final class ObjCClassSubclass: NSObject, ObservableObject {
     @Published var published = 10
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private class ResilientClassSubclass: JSONDecoder, ObservableObject {
     @Published var published0 = 10
     @Published var published1 = "hello!"
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private final class ResilientClassSubclass2: ResilientClassSubclass {
     @Published var published3 = true
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension JSONEncoder: ObservableObject {}
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private final class GenericClass<Value1, Value2>: ObservableObject {
     @Published var value1: Value1
     @Published var value2: Value2
@@ -369,25 +369,25 @@ private final class GenericClass<Value1, Value2>: ObservableObject {
     }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private class NonObservedBase {
     @Published var nonObservedBaseValue0 = 10
     @Published var nonObservedBaseValue1 = Double.pi
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private class ObservedDerivedWithNonObservedBase: NonObservedBase, ObservableObject {
     @Published var observedDerivedValue2 = "Asuka is obviously the best girl."
     @Published var observedDerivedValue3: UInt8 = 255
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private class NSObjectSubclass: NSObject, ObservableObject {
     @Published var value0 = 0
     @Published var value1: UInt8 = 42
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private class ResilientClassGenericSubclass<Value1, Value2>
     : JSONDecoder,
       ObservableObject
@@ -401,14 +401,14 @@ private class ResilientClassGenericSubclass<Value1, Value2>
     }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private final class ResilientClassGenericSubclass2<Value1, Value2>
     : ResilientClassGenericSubclass<Value1, Value2>
 {
     @Published var value3 = false
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private final class TestObject: ObservableObject {
     @Published var state1: Int
     @Published var state2: Int

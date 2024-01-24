@@ -13,7 +13,7 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 final class SubscribersDemandTests: XCTestCase {
 
     func testCrashesOnNegativeValue() {
@@ -197,7 +197,7 @@ final class SubscribersDemandTests: XCTestCase {
         XCTAssertEqual(Subscribers.Demand.unlimited.description, "unlimited")
     }
 
-#if !WASI
+#if !os(WASI)
     func testEncodeDecodeJSON() throws {
         try testEncodeDecode(
             encoder: JSONEncoder(),
@@ -212,9 +212,6 @@ final class SubscribersDemandTests: XCTestCase {
     }
 
     func testEncodeDecodePlist() throws {
-// PropertyListEncoder and PropertyListDecoder are unavailable in
-// swift-corelibs-foundation prior to Swift 5.1.
-#if canImport(Darwin) || swift(>=5.1)
         let encoder = PropertyListEncoder()
         encoder.outputFormat = .xml
         try testEncodeDecode(
@@ -271,7 +268,6 @@ final class SubscribersDemandTests: XCTestCase {
             stringToDecoderInput: { Data($0.utf8) },
             encoderOutputToString: { String(decoding: $0, as: UTF8.self) }
         )
-#endif // canImport(Darwin) || swift(>=5.1)
     }
 
     private func testEncodeDecode<Encoder: TopLevelEncoder, Decoder: TopLevelDecoder>(
@@ -317,10 +313,10 @@ final class SubscribersDemandTests: XCTestCase {
         XCTAssertEqual(decodedIllFormedTooBig.value.description, "unlimited")
     }
 
-#endif // !WASI
+#endif // !os(WASI)
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private struct DemandKeyedWrapper: Codable, Equatable {
     let value: Subscribers.Demand
 

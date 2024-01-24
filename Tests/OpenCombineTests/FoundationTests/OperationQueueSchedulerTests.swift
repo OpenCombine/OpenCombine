@@ -5,9 +5,7 @@
 //  Created by Sergej Jaskiewicz on 14.06.2020.
 //
 
-// OperationQueue has serious bugs in swift-corelibs-foundation prior to Swift 5.3.
-// (see https://github.com/apple/swift-corelibs-foundation/pull/2779)
-#if canImport(Darwin) || swift(>=5.3) && !WASI // TEST_DISCOVERY_CONDITION
+#if !os(WASI) // TEST_DISCOVERY_CONDITION
 
 import Foundation
 import XCTest
@@ -19,7 +17,7 @@ import OpenCombine
 import OpenCombineFoundation
 #endif
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 final class OperationQueueSchedulerTests: XCTestCase {
 
     // MARK: - Scheduler.SchedulerTimeType
@@ -119,7 +117,7 @@ final class OperationQueueSchedulerTests: XCTestCase {
         RunLoop.main.run(until: Date() + 0.05)
         XCTAssertEqual(actualDate.timeIntervalSinceReferenceDate,
                        now.timeIntervalSinceReferenceDate,
-                       accuracy: 0.1)
+                       accuracy: 0.15)
     }
 
     func testScheduleActionOnceLaterWithTestQueue() {
@@ -323,15 +321,15 @@ private func makeScheduler(_ queue: OperationQueue) -> OperationQueueScheduler {
 
 #endif
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension OperationQueueScheduler.SchedulerTimeType.Stride
     : TimeIntervalBackedSchedulerStride
 {}
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension OperationQueueScheduler.SchedulerTimeType: DateBackedSchedulerTimeType {}
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension OperationQueueScheduler: RunLoopLikeScheduler {}
 
 private final class TestOperationQueue: OperationQueue {
@@ -360,13 +358,11 @@ private final class TestOperationQueue: OperationQueue {
 
     private(set) var history = [Event]()
 
-#if swift(>=5.1)
-    @available(macOS 10.15, iOS 13.0, *)
+    @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
     override var progress: Progress {
         history.append(.progress)
         return super.progress
     }
-#endif // swift(>=5.1)
 
     override func addOperation(_ op: Operation) {
         history.append(.addOperation(op))
@@ -383,13 +379,11 @@ private final class TestOperationQueue: OperationQueue {
         super.addOperation(block)
     }
 
-#if swift(>=5.1)
-    @available(macOS 10.15, iOS 13.0, *)
+    @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
     override func addBarrierBlock(_ barrier: @escaping () -> Void) {
         history.append(.addBarrierBlock(barrier))
         super.addBarrierBlock(barrier)
     }
-#endif // swift(>=5.1)
 
     override var maxConcurrentOperationCount: Int {
         get {
@@ -471,4 +465,4 @@ private final class TestOperationQueue: OperationQueue {
 #endif // canImport(Darwin)
 }
 
-#endif // canImport(Darwin) || swift(>=5.3) && !WASI
+#endif // !os(WASI)

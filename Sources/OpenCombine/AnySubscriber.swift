@@ -11,6 +11,7 @@
 /// expose. You can also use `AnySubscriber` to create a custom subscriber by providing
 /// closures for the methods defined in `Subscriber`, rather than implementing
 /// `Subscriber` directly.
+@frozen
 public struct AnySubscriber<Input, Failure: Error>: Subscriber,
                                                     CustomStringConvertible,
                                                     CustomReflectable,
@@ -42,37 +43,40 @@ public struct AnySubscriber<Input, Failure: Error>: Subscriber,
     /// - Parameter s: The subscriber to type-erase.
     @inline(__always)
     @inlinable
-    public init<Subscriber: OpenCombine.Subscriber>(_ subscriber: Subscriber)
-        where Input == Subscriber.Input, Failure == Subscriber.Failure
-    {
-        if let erased = subscriber as? AnySubscriber<Input, Failure> {
+    public init<S>(_ s: S) where Input == S.Input, Failure == S.Failure, S: Subscriber {
+        if let erased = s as? AnySubscriber<Input, Failure> {
             self = erased
-            return
-        }
-
-        combineIdentifier = subscriber.combineIdentifier
-
-        box = AnySubscriberBox(subscriber)
-
-        if let description = subscriber as? CustomStringConvertible {
-            descriptionThunk = { description.description }
         } else {
-            let fixedDescription = String(describing: type(of: subscriber))
-            descriptionThunk = { fixedDescription }
-        }
+            combineIdentifier = s.combineIdentifier
 
-        customMirrorThunk = {
-            (subscriber as? CustomReflectable)?.customMirror
-                ?? Mirror(subscriber, children: EmptyCollection())
-        }
+            box = AnySubscriberBox(s)
 
-        if let playgroundDescription = subscriber as? CustomPlaygroundDisplayConvertible {
-            playgroundDescriptionThunk = { playgroundDescription.playgroundDescription }
-        } else if let description = subscriber as? CustomStringConvertible {
-            playgroundDescriptionThunk = { description.description }
-        } else {
-            let fixedDescription = String(describing: type(of: subscriber))
-            playgroundDescriptionThunk = { fixedDescription }
+            // The following use normal memory management semantics
+            if let desc = s as? CustomStringConvertible {
+                descriptionThunk = {
+                    desc.description
+                }
+            } else {
+                let fixedDescription = "\(type(of: s))"
+                descriptionThunk = { fixedDescription }
+            }
+
+            customMirrorThunk = {
+                if let mir = s as? CustomReflectable {
+                    return mir.customMirror
+                } else {
+                    return Mirror(s, children: [:])
+                }
+            }
+
+            if let play = s as? CustomPlaygroundDisplayConvertible {
+                playgroundDescriptionThunk = { play.playgroundDescription }
+            } else if let desc = s as? CustomStringConvertible {
+                playgroundDescriptionThunk = { desc.description }
+            } else {
+                let fixedDescription = "\(type(of: s))"
+                playgroundDescriptionThunk = { fixedDescription }
+            }
         }
     }
 
@@ -118,7 +122,7 @@ public struct AnySubscriber<Input, Failure: Error>: Subscriber,
     @inline(__always)
     @inlinable
     public func receive(_ value: Input) -> Subscribers.Demand {
-        return box.receive(value)
+        box.receive(value)
     }
 
     @inline(__always)
@@ -131,6 +135,7 @@ public struct AnySubscriber<Input, Failure: Error>: Subscriber,
 /// A type-erasing base class. Its concrete subclass is generic over the underlying
 /// subscriber.
 @usableFromInline
+@_fixed_layout
 internal class AnySubscriberBase<Input, Failure: Error>: Subscriber {
 
     @inline(__always)
@@ -158,6 +163,7 @@ internal class AnySubscriberBase<Input, Failure: Error>: Subscriber {
 }
 
 @usableFromInline
+@_fixed_layout
 internal final class AnySubscriberBox<Base: Subscriber>
     : AnySubscriberBase<Base.Input, Base.Failure>
 {
@@ -189,17 +195,18 @@ internal final class AnySubscriberBox<Base: Subscriber>
 }
 
 @usableFromInline
+@_fixed_layout
 internal final class ClosureBasedAnySubscriber<Input, Failure: Error>
     : AnySubscriberBase<Input, Failure>
 {
     @usableFromInline
-    internal let receiveSubscriptionThunk: (Subscription) -> Void
+    final internal let receiveSubscriptionThunk: (Subscription) -> Void
 
     @usableFromInline
-    internal let receiveValueThunk: (Input) -> Subscribers.Demand
+    final internal let receiveValueThunk: (Input) -> Subscribers.Demand
 
     @usableFromInline
-    internal let receiveCompletionThunk: (Subscribers.Completion<Failure>) -> Void
+    final internal let receiveCompletionThunk: (Subscribers.Completion<Failure>) -> Void
 
     @inlinable
     internal init(_ rcvSubscription: @escaping (Subscription) -> Void,

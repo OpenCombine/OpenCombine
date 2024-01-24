@@ -13,7 +13,7 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 final class ResultPublisherTests: XCTestCase {
 
     private typealias Sut<Output> = ResultPublisher<Output, TestingError>
@@ -426,11 +426,11 @@ final class ResultPublisherTests: XCTestCase {
 }
 
 #if OPENCOMBINE_COMPATIBILITY_TEST || !canImport(Combine)
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 typealias ResultPublisher<Output, Failure: Error> =
     Result<Output, Failure>.Publisher
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 func makePublisher<Output, Failure: Error>(
     _ result: Result<Output, Failure>
 ) -> ResultPublisher<Output, Failure> {
@@ -447,7 +447,7 @@ func makePublisher<Output, Failure: Error>(
 }
 #endif
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private func makePublisher<Output>(
     _ output: Output
 ) -> ResultPublisher<Output, TestingError> {

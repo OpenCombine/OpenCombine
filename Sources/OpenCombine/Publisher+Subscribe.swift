@@ -17,6 +17,7 @@ extension Publisher {
     /// - Parameters:
     ///     - subscriber: The subscriber to attach to this `Publisher`. After attaching,
     ///       the subscriber can start to receive values.
+    @inline(never)
     public func subscribe<Subscriber: OpenCombine.Subscriber>(_ subscriber: Subscriber)
         where Failure == Subscriber.Failure, Output == Subscriber.Input
     {

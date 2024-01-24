@@ -11,7 +11,7 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 protocol CancellableTokenProtocol: Cancellable {
 
     init(_ scheduler: VirtualTimeScheduler)
@@ -19,7 +19,7 @@ protocol CancellableTokenProtocol: Cancellable {
     var isCancelled: Bool { get }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 final class VirtualTimeScheduler: Scheduler {
 
     struct SchedulerTimeType: Strideable,

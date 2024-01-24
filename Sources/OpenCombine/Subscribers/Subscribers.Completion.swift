@@ -13,6 +13,7 @@ extension Subscribers {
 
     /// A signal that a publisher doesn’t produce additional elements, either due to
     /// normal completion or an error.
+    @frozen
     public enum Completion<Failure: Error> {
 
         /// The publisher finished normally.

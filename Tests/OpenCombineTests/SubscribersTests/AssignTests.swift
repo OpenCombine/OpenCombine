@@ -13,7 +13,7 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 final class AssignTests: XCTestCase {
 
     private typealias Sut<Root> = Subscribers.Assign<Root, Int>
@@ -170,7 +170,7 @@ final class AssignTests: XCTestCase {
     }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 final class ObjectToModify {
     let autofinish = AutomaticallyFinish<Int, Never>()
     var value = 0

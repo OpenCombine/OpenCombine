@@ -19,15 +19,16 @@ internal func APIViolationUnexpectedCompletion(file: StaticString = #file,
     fatalError("API Violation: received an unexpected completion", file: file, line: line)
 }
 
-internal func abstractMethod(file: StaticString = #file, line: UInt = #line) -> Never {
-    fatalError("Abstract method call", file: file, line: line)
+@_transparent
+@inline(__always)
+func abstractMethod(file: StaticString = #file, line: UInt = #line) -> Never {
+    fatalError("Abstract method", file: file, line: line)
 }
 
 extension Subscribers.Demand {
-    internal func assertNonZero(file: StaticString = #file,
-                                line: UInt = #line) {
-        if self == .none {
-            fatalError("API Violation: demand must not be zero", file: file, line: line)
-        }
+    @_transparent
+    @inline(__always)
+    func assertNonZero() {
+        precondition(self != 0)
     }
 }

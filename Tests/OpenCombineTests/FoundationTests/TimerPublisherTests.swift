@@ -5,7 +5,7 @@
 //  Created by Sergej Jaskiewicz on 23.06.2020.
 //
 
-#if !WASI // TEST_DISCOVERY_CONDITION
+#if !os(WASI) // TEST_DISCOVERY_CONDITION
 
 import Foundation
 import XCTest
@@ -17,7 +17,7 @@ import OpenCombine
 import OpenCombineFoundation
 #endif
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 final class TimerPublisherTests: XCTestCase {
 
     private lazy var timerSubscription: StringSubscription = {
@@ -211,10 +211,10 @@ final class TimerPublisherTests: XCTestCase {
 }
 
 #if OPENCOMBINE_COMPATIBILITY_TEST || !canImport(Combine)
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private typealias TimerPublisher = Timer.TimerPublisher
 #else
 private typealias TimerPublisher = Timer.OCombine.TimerPublisher
 #endif
 
-#endif // !WASI
+#endif // !os(WASI)

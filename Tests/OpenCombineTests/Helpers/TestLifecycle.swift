@@ -13,7 +13,7 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 func testLifecycle<UpstreamOutput, Operator: Publisher>(
     sendValue valueToBeSent: UpstreamOutput,
     cancellingSubscriptionReleasesSubscriber: Bool,

@@ -1,7 +1,6 @@
 # OpenCombine
 [![codecov](https://codecov.io/gh/OpenCombine/OpenCombine/branch/master/graph/badge.svg)](https://codecov.io/gh/OpenCombine/OpenCombine)
-![Language](https://img.shields.io/badge/Swift-5.0-orange.svg)
-[![Cocoapods](https://img.shields.io/cocoapods/v/OpenCombine?color=blue)](https://cocoapods.org/pods/OpenCombine)
+![Language](https://img.shields.io/badge/Swift-5.7-orange.svg)
 
 Open-source implementation of Apple's [Combine](https://developer.apple.com/documentation/combine) framework for processing values over time.
 
@@ -23,8 +22,7 @@ OpenCombine itself does not have any dependencies. Not even Foundation or Dispat
 
 If you develop code for multiple platforms, you may find it more convenient to import the
 `OpenCombineShim` module instead. It conditionally re-exports Combine on Apple platforms (if
-available), and all OpenCombine modules on other platforms. You can import `OpenCombineShim` only
-when using SwiftPM. It is not currently available for CocoaPods.
+available), and all OpenCombine modules on other platforms.
 
 ##### Swift Package Manager
 ###### Swift Package
@@ -55,15 +53,6 @@ To do so, open Xcode, use **File** → **Swift Packages** → **Add Package Depe
 <img alt="Select the OpenCombine and OpenCombineDispatch targets" 
 	src="https://user-images.githubusercontent.com/16309982/67618468-bd379f80-f7f8-11e9-917f-e76e878a1aee.png" width="70%">
 </p>
-
-##### CocoaPods
-To add `OpenCombine` to a project using [CocoaPods](https://cocoapods.org/), add `OpenCombine` and `OpenCombineDispatch` to the list of target dependencies in your `Podfile`. 
-
-```ruby
-pod 'OpenCombine', '~> 0.14.0'
-pod 'OpenCombineDispatch', '~> 0.14.0'
-pod 'OpenCombineFoundation', '~> 0.14.0'
-```
 
 #### Debugger Support
 

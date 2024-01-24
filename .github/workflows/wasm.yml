@@ -7,42 +7,22 @@ on:
     branches: [master]
 
 jobs:
-  carton_wasmer_test_5_3:
-    name: "Execute tests on Wasm (Swift 5.3)"
-    runs-on: ubuntu-20.04
-
+  wasmer_test:
+    name: Execute tests on WASM
+    strategy:
+      fail-fast: false
+      matrix:
+        swift_version: ["wasm-5.9.1-RELEASE", "wasm-5.10-SNAPSHOT-2024-01-13-a"]
+        os: [ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
-      - uses: swiftwasm/swiftwasm-action@v5.3
-  
-  carton_wasmer_test_5_4:
-    name: "Execute tests on Wasm (Swift 5.4)"
-    runs-on: ubuntu-20.04
-
-    steps:
-      - uses: actions/checkout@v2
-      - uses: swiftwasm/swiftwasm-action@v5.4
-  
-  carton_wasmer_test_5_5:
-    name: "Execute tests on Wasm (Swift 5.5)"
-    runs-on: ubuntu-20.04
-
-    steps:
-      - uses: actions/checkout@v2
-      - uses: swiftwasm/swiftwasm-action@v5.5
-
-  carton_wasmer_test_5_6:
-    name: "Execute tests on Wasm (Swift 5.6)"
-    runs-on: ubuntu-20.04
-
-    steps:
-      - uses: actions/checkout@v2
-      - uses: swiftwasm/swiftwasm-action@v5.6
-
-  carton_wasmer_test_5_7:
-    name: "Execute tests on Wasm (Swift 5.7)"
-    runs-on: ubuntu-20.04
-
-    steps:
-      - uses: actions/checkout@v2
-      - uses: swiftwasm/swiftwasm-action@v5.7
+      - uses: actions/checkout@v4
+      - uses: swiftwasm/setup-swiftwasm@v1
+        with:
+          swift-version: ${{ matrix.swift_version }}
+      - name: build
+        run: |
+          swift build
+      - name: test
+        run: |
+          swift test

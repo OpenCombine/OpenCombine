@@ -11,11 +11,6 @@
 //  Created by Sergej Jaskiewicz on 28.08.2021.
 //
 
-#if canImport(_Concurrency) && compiler(>=5.5)
-import _Concurrency
-#endif
-
-#if canImport(_Concurrency) && compiler(>=5.5) || compiler(>=5.5.1)
 extension Publisher where Failure == Never {
 
     /// The elements produced by the publisher, as an asynchronous sequence.
@@ -394,4 +389,3 @@ extension Sequence {
         }
     }
 }
-#endif

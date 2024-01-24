@@ -157,3 +157,5 @@ dmypy.json
 
 .bundle/
 node_modules/
+
+/.build*

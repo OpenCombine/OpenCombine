@@ -67,7 +67,7 @@ func reduceLikeOperatorMirror() -> (Mirror) -> Bool {
     )
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 internal func testReflection<Output, Failure: Error, Operator: Publisher>(
     parentInput: Output.Type,
     parentFailure: Failure.Type,
@@ -135,7 +135,7 @@ internal func testReflection<Output, Failure: Error, Operator: Publisher>(
     }
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 internal func testSubscriptionReflection<Sut: Publisher>(
     description expectedDescription: String,
     customMirror customMirrorPredicate: ((Mirror) -> Bool)?,

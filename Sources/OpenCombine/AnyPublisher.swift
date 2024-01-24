@@ -1,29 +1,18 @@
 //
 //  AnyPublisher.swift
-//  
+//  OpenCombine
 //
 //  Created by Sergej Jaskiewicz on 10.06.2019.
-//
+//  Audited for 2023 Release
 
 extension Publisher {
-
     /// Wraps this publisher with a type eraser.
     ///
-    /// Use `eraseToAnyPublisher()` to expose an instance of `AnyPublisher`` to
-    /// the downstream subscriber, rather than this publisher’s actual type.
-    /// This form of _type erasure_ preserves abstraction across API boundaries, such as
-    /// different modules.
-    /// When you expose your publishers as the `AnyPublisher` type, you can change
-    /// the underlying implementation over time without affecting existing clients.
+    /// Use ``Publisher/eraseToAnyPublisher()`` to expose an instance of ``AnyPublisher`` to the downstream subscriber, rather than this publisher’s actual type.
+    /// This form of _type erasure_ preserves abstraction across API boundaries, such as different modules.
+    /// When you expose your publishers as the ``AnyPublisher`` type, you can change the underlying implementation over time without affecting existing clients.
     ///
-    /// The following example shows two types that each have a `publisher` property.
-    /// `TypeWithSubject` exposes this property as its actual type, `PassthroughSubject`,
-    /// while `TypeWithErasedSubject` uses `eraseToAnyPublisher()` to expose it as
-    /// an `AnyPublisher`. As seen in the output, a caller from another module can access
-    /// `TypeWithSubject.publisher` as its native type. This means you can’t change your
-    /// publisher to a different type without breaking the caller. By comparison,
-    /// `TypeWithErasedSubject.publisher` appears to callers as an `AnyPublisher`, so you
-    /// can change the underlying publisher type at will.
+    /// The following example shows two types that each have a `publisher` property. `TypeWithSubject` exposes this property as its actual type, ``PassthroughSubject``, while `TypeWithErasedSubject` uses ``Publisher/eraseToAnyPublisher()`` to expose it as an ``AnyPublisher``. As seen in the output, a caller from another module can access `TypeWithSubject.publisher` as its native type. This means you can’t change your publisher to a different type without breaking the caller. By comparison, `TypeWithErasedSubject.publisher` appears to callers as an ``AnyPublisher``, so you can change the underlying publisher type at will.
     ///
     ///     public class TypeWithSubject {
     ///         public let publisher: some Publisher = PassthroughSubject<Int,Never>()
@@ -48,64 +37,44 @@ extension Publisher {
     /// - Returns: An ``AnyPublisher`` wrapping this publisher.
     @inlinable
     public func eraseToAnyPublisher() -> AnyPublisher<Output, Failure> {
-        return .init(self)
+        AnyPublisher(self)
     }
 }
 
-/// A type-erasing publisher.
+/// A publisher that performs type erasure by wrapping another publisher.
 ///
-/// Use `AnyPublisher` to wrap a publisher whose type has details you don’t want to expose
-/// across API boundaries, such as different modules. Wrapping a `Subject` with
-/// `AnyPublisher` also prevents callers from accessing its `send(_:)` method. When you
-/// use type erasure this way, you can change the underlying publisher implementation over
-/// time without affecting existing clients.
+/// ``AnyPublisher`` is a concrete implementation of ``Publisher`` that has no significant properties of its own, and passes through elements and completion values from its upstream publisher.
 ///
-/// You can use OpenCombine’s `eraseToAnyPublisher()` operator to wrap a publisher with
-/// `AnyPublisher`.
-public struct AnyPublisher<Output, Failure: Error>
-  : CustomStringConvertible,
-    CustomPlaygroundDisplayConvertible
+/// Use ``AnyPublisher`` to wrap a publisher whose type has details you don’t want to expose across API boundaries, such as different modules. Wrapping a ``Subject`` with ``AnyPublisher`` also prevents callers from accessing its ``Subject/send(_:)`` method. When you use type erasure this way, you can change the underlying publisher implementation over time without affecting existing clients.
+///
+/// You can use OpenCombine’s ``Publisher/eraseToAnyPublisher()`` operator to wrap a publisher with ``AnyPublisher``.
+@frozen
+public struct AnyPublisher<Output, Failure: Error>: CustomStringConvertible, CustomPlaygroundDisplayConvertible
 {
     @usableFromInline
-    internal let box: PublisherBoxBase<Output, Failure>
+    let box: PublisherBoxBase<Output, Failure>
 
+    public var description: String { "AnyPublisher" }
+
+    public var playgroundDescription: Any { description }
+    
     /// Creates a type-erasing publisher to wrap the provided publisher.
     ///
     /// - Parameter publisher: A publisher to wrap with a type-eraser.
     @inlinable
-    public init<PublisherType: Publisher>(_ publisher: PublisherType)
-        where Output == PublisherType.Output, Failure == PublisherType.Failure
-    {
+    public init<P>(_ publisher: P) where Output == P.Output, Failure == P.Failure, P: Publisher {
         // If this has already been boxed, avoid boxing again
         if let erased = publisher as? AnyPublisher<Output, Failure> {
             box = erased.box
         } else {
-            box = PublisherBox(base: publisher)
+            box = PublisherBox(publisher)
         }
-    }
-
-    public var description: String {
-        return "AnyPublisher"
-    }
-
-    public var playgroundDescription: Any {
-        return description
     }
 }
 
 extension AnyPublisher: Publisher {
-
-    /// This function is called to attach the specified `Subscriber` to this `Publisher`
-    /// by `subscribe(_:)`
-    ///
-    /// - SeeAlso: `subscribe(_:)`
-    /// - Parameters:
-    ///     - subscriber: The subscriber to attach to this `Publisher`.
-    ///                   once attached it can begin to receive values.
     @inlinable
-    public func receive<Downstream: Subscriber>(subscriber: Downstream)
-        where Output == Downstream.Input, Failure == Downstream.Failure
-    {
+    public func receive<S>(subscriber: S) where Output == S.Input, Failure == S.Failure, S: Subscriber {
         box.receive(subscriber: subscriber)
     }
 }
@@ -113,35 +82,34 @@ extension AnyPublisher: Publisher {
 /// A type-erasing base class. Its concrete subclass is generic over the underlying
 /// publisher.
 @usableFromInline
-internal class PublisherBoxBase<Output, Failure: Error>: Publisher {
-
+@_fixed_layout
+class PublisherBoxBase<Output, Failure: Error>: Publisher {
     @inlinable
-    internal init() {}
+    init() {}
+    
+    @inlinable deinit {}
 
     @usableFromInline
-    internal func receive<Downstream: Subscriber>(subscriber: Downstream)
-        where Failure == Downstream.Failure, Output == Downstream.Input
-    {
+    func receive<S>(subscriber _: S) where Output == S.Input, Failure == S.Failure, S: Subscriber {
         abstractMethod()
     }
 }
 
 @usableFromInline
-internal final class PublisherBox<PublisherType: Publisher>
-    : PublisherBoxBase<PublisherType.Output, PublisherType.Failure>
-{
+@_fixed_layout
+final class PublisherBox<Base: Publisher>: PublisherBoxBase<Base.Output, Base.Failure> {
     @usableFromInline
-    internal let base: PublisherType
+    let base: Base
 
     @inlinable
-    internal init(base: PublisherType) {
+    init(_ base: Base) {
         self.base = base
-        super.init()
     }
+    
+    @inlinable deinit {}
 
     @inlinable
-    override internal func receive<Downstream: Subscriber>(subscriber: Downstream)
-        where Failure == Downstream.Failure, Output == Downstream.Input
+    override final func receive<S: Subscriber>(subscriber: S) where Failure == S.Failure, Output == S.Input
     {
         base.receive(subscriber: subscriber)
     }

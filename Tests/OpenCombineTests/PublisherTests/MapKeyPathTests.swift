@@ -13,7 +13,7 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 final class MapKeyPathTests: XCTestCase {
 
     func testEmpty() {
@@ -118,6 +118,82 @@ final class MapKeyPathTests: XCTestCase {
         }
     }
 
+    #if swift(>=5.8)
+    #if Xcode
+    func testMapKeyPathReflection() throws {
+        try testReflection(parentInput: Int.self,
+                           parentFailure: Never.self,
+                           description: "ValueForKey",
+                           customMirror: expectedChildren(
+                               ("keyPath", .matches(#"\Int.doubled"#))
+                           ),
+                           playgroundDescription: "ValueForKey",
+                           subscriberIsAlsoSubscription: false,
+                           { $0.map(\.doubled) })
+
+        try testReflection(parentInput: Int.self,
+                           parentFailure: Never.self,
+                           description: "ValueForKeys",
+                           customMirror: expectedChildren(
+                               ("keyPath0", .matches(#"\Int.doubled"#)),
+                               ("keyPath1", .matches(#"\Int.tripled"#))
+                           ),
+                           playgroundDescription: "ValueForKeys",
+                           subscriberIsAlsoSubscription: false,
+                           { $0.map(\.doubled, \.tripled) })
+
+        try testReflection(parentInput: Int.self,
+                           parentFailure: Never.self,
+                           description: "ValueForKeys",
+                           customMirror: expectedChildren(
+                               ("keyPath0", .matches(#"\Int.doubled"#)),
+                               ("keyPath1", .matches(#"\Int.tripled"#)),
+                               ("keyPath2", .matches(#"\Int.quadrupled"#))
+                           ),
+                           playgroundDescription: "ValueForKeys",
+                           subscriberIsAlsoSubscription: false,
+                           { $0.map(\.doubled, \.tripled, \.quadrupled) })
+    }
+    #else
+    // on Swift 5.8 + non-Xcode env, the result will sometimes be "\Int.<computed 0x00007ff62fe3b2c0 (Int)>" and sometimes be "\Int.doubled"
+    func testMapKeyPathReflection() throws {
+        try testReflection(parentInput: Int.self,
+                           parentFailure: Never.self,
+                           description: "ValueForKey",
+                           customMirror: expectedChildren(
+                               ("keyPath", .contains(#"\Int."#))
+                           ),
+                           playgroundDescription: "ValueForKey",
+                           subscriberIsAlsoSubscription: false,
+                           { $0.map(\.doubled) })
+
+        try testReflection(parentInput: Int.self,
+                           parentFailure: Never.self,
+                           description: "ValueForKeys",
+                           customMirror: expectedChildren(
+                               ("keyPath0", .contains(#"\Int."#)),
+                               ("keyPath1", .contains(#"\Int."#))
+                           ),
+                           playgroundDescription: "ValueForKeys",
+                           subscriberIsAlsoSubscription: false,
+                           { $0.map(\.doubled, \.tripled) })
+
+        try testReflection(parentInput: Int.self,
+                           parentFailure: Never.self,
+                           description: "ValueForKeys",
+                           customMirror: expectedChildren(
+                               ("keyPath0", .contains(#"\Int."#)),
+                               ("keyPath1", .contains(#"\Int."#)),
+                               ("keyPath2", .contains(#"\Int."#))
+                           ),
+                           playgroundDescription: "ValueForKeys",
+                           subscriberIsAlsoSubscription: false,
+                           { $0.map(\.doubled, \.tripled, \.quadrupled) })
+    }
+    #endif
+    #else
+    // WASM Platform CI still use Swift 5.7
+    // which will get old KeyPath.description behavior
     func testMapKeyPathReflection() throws {
         try testReflection(parentInput: Int.self,
                            parentFailure: Never.self,
@@ -152,6 +228,7 @@ final class MapKeyPathTests: XCTestCase {
                            subscriberIsAlsoSubscription: false,
                            { $0.map(\.doubled, \.tripled, \.quadrupled) })
     }
+    #endif
 
     func testMapKeyPathReceiveValueBeforeSubscription() {
         testReceiveValueBeforeSubscription(value: 0,

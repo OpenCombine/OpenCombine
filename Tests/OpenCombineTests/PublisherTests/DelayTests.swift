@@ -13,7 +13,7 @@ import Combine
 import OpenCombine
 #endif
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 final class DelayTests: XCTestCase {
 
     // Delay's Inner doesn't conform to CustomStringConvertible, so we can't compare

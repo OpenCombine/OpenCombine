@@ -21,14 +21,16 @@ swift-version:
 	$(SWIFT_EXE) -version
 
 test-compatibility:
-	$(SWIFT_EXE) test -Xswiftc -DOPENCOMBINE_COMPATIBILITY_TEST
+	OPENCOMBINE_COMPATIBILITY_TEST=1 $(SWIFT_EXE) test
 
-generate-compatibility-xcodeproj:
-	$(SWIFT_EXE) package generate-xcodeproj --xcconfig-overrides Combine-Compatibility.xcconfig; \
-	open OpenCombine.xcodeproj
+library-evolution:
+	OPENCOMBINE_LIBRARY_EVOLUTION=1 $(SWIFT_EXE) build
 
-generate-xcodeproj:
-	$(SWIFT_EXE) package $(SWIFT_BUILD_FLAGS) generate-xcodeproj --enable-code-coverage
+module-interface:
+	xcodebuild build -scheme OpenCombine -sdk macosx -destination "platform=macOS" BUILD_LIBRARY_FOR_DISTRIBUTION=1
+
+disable-oslock-private:
+	OPENCOMBINE_OSLOCK_PRIVATE=0 $(SWIFT_EXE) build
 
 gyb:
 	$(shell ./utils/recursively_gyb.sh)
@@ -41,7 +43,8 @@ clean:
 	    test-release \
 	    swift-version \
 	    test-compatibility-debug \
-	    generate-compatibility-xcodeproj \
-	    generate-xcodeproj \
+		library-evolution \
+		module-interface \
+		disable-oslock-private \
 	    gyb \
 	    clean

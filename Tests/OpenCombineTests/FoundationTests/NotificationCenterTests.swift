@@ -5,7 +5,7 @@
 //  Created by Sergej Jaskiewicz on 10.12.2019.
 //
 
-#if !WASI // TEST_DISCOVERY_CONDITION
+#if !os(WASI) // TEST_DISCOVERY_CONDITION
 
 import Foundation
 import XCTest
@@ -17,7 +17,7 @@ import OpenCombine
 import OpenCombineFoundation
 #endif
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 final class NotificationCenterTests: XCTestCase {
 
     func testRequestingDemand() {
@@ -456,7 +456,7 @@ final class NotificationCenterTests: XCTestCase {
 }
 
 #if OPENCOMBINE_COMPATIBILITY_TEST || !canImport(Combine)
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private func makePublisher(
     _ center: NotificationCenter,
     for name: Notification.Name,
@@ -626,12 +626,4 @@ extension TestNotificationCenter.Event: CustomStringConvertible {
     }
 }
 
-#if !canImport(Darwin) && swift(<5.1)
-extension Notification.Name {
-    init(_ rawValue: String) {
-        self.init(rawValue: rawValue)
-    }
-}
-#endif // !canImport(Darwin) && swift(<5.1)
-
-#endif // !WASI
+#endif // !os(WASI)

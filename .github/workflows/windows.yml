@@ -14,16 +14,10 @@ jobs:
       matrix:
         include:
           - os: windows-2019
-            swift_version: "5.4.2"
-          - os: windows-2019
-            swift_version: "5.5.1"
-          - os: windows-2019
-            swift_version: "5.6.1"
-          - os: windows-2019
-            swift_version: "5.7.2"
+            swift_version: "5.9.2"
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: compnerd/gha-setup-swift@main
         with:
           branch: swift-${{ matrix.swift_version }}-release

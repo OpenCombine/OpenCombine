@@ -14,11 +14,7 @@ import XCTest
 import FoundationNetworking
 #endif
 
-// Prior to Swift 5.3 there were incompatibilities between Darwin Foundation and
-// swift-corelibs-foundation that were making these tests impossible to build.
-//
-// Those were fixed in https://github.com/apple/swift-corelibs-foundation/pull/2587.
-#if canImport(Darwin) || swift(>=5.3) && !WASI // TEST_DISCOVERY_CONDITION
+#if !os(WASI) // TEST_DISCOVERY_CONDITION
 
 #if OPENCOMBINE_COMPATIBILITY_TEST
 import Combine
@@ -27,7 +23,7 @@ import OpenCombine
 import OpenCombineFoundation
 #endif
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 final class URLSessionTests: XCTestCase {
 
     private typealias TrackingSubscriber =
@@ -281,12 +277,12 @@ private class TestURLSession: URLSession {
         case downloadTaskWithResumeData(Data)
         case downloadTaskWithResumeDataAndCompletion(Data)
         case streamTaskWithHostNameAndPort(String, Int)
-#if canImport(Darwin) && swift(>=5.1)
+#if canImport(Darwin) && !os(watchOS)
         case streamTaskWithService(NetService)
         case webSocketTaskWithURL(URL)
         case webSocketTaskWithURLAndProtocols(URL, [String])
         case webSocketTaskWithRequest(URLRequest)
-#endif // canImport(Darwin) && swift(>=5.1)
+#endif // canImport(Darwin) && !os(watchOS)
     }
 
     private(set) var history = [Event]()
@@ -496,7 +492,7 @@ private class TestURLSession: URLSession {
         return super.downloadTask(withResumeData: resumeData)
     }
 
-#if canImport(Darwin)
+#if canImport(Darwin) && !os(watchOS)
     @available(macOS 10.11, iOS 9.0, *)
     override func streamTask(withHostName hostname: String,
                              port: Int) -> URLSessionStreamTask {
@@ -504,33 +500,31 @@ private class TestURLSession: URLSession {
         return super.streamTask(withHostName: hostname, port: port)
     }
 
-#if swift(>=5.1)
     @available(macOS 10.11, iOS 9.0, *)
     override func streamTask(with service: NetService) -> URLSessionStreamTask {
         history.append(.streamTaskWithService(service))
         return super.streamTask(with: service)
     }
 
-    @available(macOS 10.15, iOS 13.0, *)
+    @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
     override func webSocketTask(with url: URL) -> URLSessionWebSocketTask {
         history.append(.webSocketTaskWithURL(url))
         return super.webSocketTask(with: url)
     }
 
-    @available(macOS 10.15, iOS 13.0, *)
+    @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
     override func webSocketTask(with url: URL,
                                 protocols: [String]) -> URLSessionWebSocketTask {
         history.append(.webSocketTaskWithURLAndProtocols(url, protocols))
         return super.webSocketTask(with: url, protocols: protocols)
     }
 
-    @available(macOS 10.15, iOS 13.0, *)
+    @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
     override func webSocketTask(with request: URLRequest) -> URLSessionWebSocketTask {
         history.append(.webSocketTaskWithRequest(request))
         return super.webSocketTask(with: request)
     }
-#endif // swift(>=5.1)
-#endif // canImport(Darwin)
+#endif // canImport(Darwin) && !os(watchOS)
 }
 
 private final class TestURLSessionDataTask: URLSessionDataTask {
@@ -713,7 +707,7 @@ private final class TestURLSessionDataTask: URLSessionDataTask {
 extension URLError: EquatableError {}
 
 #if OPENCOMBINE_COMPATIBILITY_TEST || !canImport(Combine)
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private func makePublisher(
     _ session: URLSession,
     _ url: URL
@@ -721,7 +715,7 @@ private func makePublisher(
     return session.dataTaskPublisher(for: url)
 }
 
-@available(macOS 10.15, iOS 13.0, *)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private func makePublisher(
     _ session: URLSession,
     _ request: URLRequest
